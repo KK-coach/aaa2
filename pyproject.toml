@@ -34,6 +34,8 @@ include = ["aaa2*"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = "-m 'not live'"
+markers = ["live: élő site-ot hív; csak kézzel, `pytest -m live`"]
 
 [tool.ruff]
 line-length = 100
