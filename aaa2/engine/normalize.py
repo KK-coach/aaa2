@@ -129,10 +129,15 @@ def normalize(url: str, policy: UrlPolicy) -> str | None:
     if port is not None:
         netloc = f"{netloc}:{port}"
 
-    path = _PATH_TOKEN.sub(_normalize_path_token, parts.path) or "/"
+    path = normalize_path_encoding(parts.path) or "/"
     if internal:
         path = _apply_trailing_slash(path, policy.trailing_slash)
     return urlunsplit((scheme, netloc, path, _clean_query(parts.query), ""))
+
+
+def normalize_path_encoding(path: str) -> str:
+    """A 8. szabály egy path-ra: egységes %XX-kódolás, a fenntartott karakter formája marad."""
+    return _PATH_TOKEN.sub(_normalize_path_token, path)
 
 
 def decide_trailing_slash(
@@ -140,7 +145,7 @@ def decide_trailing_slash(
 ) -> bool | None:
     """A domináns path-forma az első `sample` URL-ből; None, ha egyik forma sincs többségben.
 
-    A gyökér és a fájlszerű path (kiterjesztés az utolsó szegmensben) nem számít bele.
+    A gyökér és a fájl (ismert kiterjesztés az utolsó szegmensben) nem számít bele.
     """
     with_slash = without_slash = 0
     for url in islice(urls, sample):
