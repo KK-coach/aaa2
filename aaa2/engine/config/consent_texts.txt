@@ -1,0 +1,13 @@
+# Consent-gomb feliratok, sorrendben próbálva (v1 _CONSENT_TEXTS + Zaraz).
+# Egy sor = egy látható gombszöveg, pontos egyezés, kis-nagybetű nem számít.
+Accept all
+Accept All
+Allow all
+Accept
+I agree
+Agree
+Got it
+Összes elfogadása
+Mindet elfogadom
+Elfogadom
+Elfogad

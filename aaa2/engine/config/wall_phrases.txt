@@ -1,0 +1,7 @@
+# UA/JS-wall jelek: ha a renderelt szöveg ezekből áll, a render nem érvényes.
+browser not supported
+unsupported browser
+enable javascript
+please enable javascript
+nem támogatott böngésző
+böngésződ nem támogatott

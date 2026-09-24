@@ -1,0 +1,40 @@
+[project]
+name = "aaa2"
+version = "0.1.0"
+description = "AAA v2 — sitewide SEO/GEO elemzőmotor: oldalak × entitások × belső linkek"
+requires-python = ">=3.12"
+dependencies = [
+    "playwright>=1.47",
+    "selectolax>=0.3",
+    "duckdb>=1.1",
+    "httpx>=0.27",
+    "typer>=0.12",
+    "pydantic>=2.8",
+    "zstandard>=0.23",
+    "tldextract>=5.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.6"]
+
+[project.scripts]
+aaa = "aaa2.cli.main:app"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["aaa2*"]
+
+[tool.setuptools.package-data]
+"aaa2.db" = ["*.sql"]
+"aaa2.engine.config" = ["*.txt"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

@@ -1,0 +1,28 @@
+# Route-abort: ezekről a hostokról semmit nem töltünk be render közben.
+# Egy sor = egy host-végződés. A '#'-os sorok kommentek.
+# Első verzió — M1 alatt bővül, amit a három referencia-site kihoz.
+google-analytics.com
+googletagmanager.com
+analytics.google.com
+doubleclick.net
+googlesyndication.com
+googleadservices.com
+facebook.net
+connect.facebook.net
+facebook.com/tr
+hotjar.com
+clarity.ms
+c.bing.com
+bat.bing.com
+linkedin.com/px
+snap.licdn.com
+ads-twitter.com
+analytics.twitter.com
+tiktok.com/i18n/pixel
+pinimg.com/ct
+sentry.io
+intercom.io
+crisp.chat
+tawk.to
+hs-scripts.com
+hs-analytics.net

@@ -1,0 +1,1 @@
+A tervezési dokumentumok a Claude "AAA v2" projektben élnek (projektindító + M1 spec tab). Ide csak olyan kerül, aminek a repóban a helye: séma-változások indoklása (`db/`), fixture-felvétel leírása, mérési jegyzőkönyvek.
