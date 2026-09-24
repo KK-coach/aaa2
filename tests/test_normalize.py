@@ -66,9 +66,35 @@ CASES = [
     ("gyökér marad, slash-es site", SLASH, "https://kk.coach/", "https://kk.coach/"),
     ("gyökér marad, slash nélküli site", NO_SLASH, "https://kk.coach/", "https://kk.coach/"),
     ("fájl nem kap slasht", SLASH, "https://kk.coach/cv.pdf", "https://kk.coach/cv.pdf"),
+    ("fájl kiterjesztése nagybetűvel", SLASH, "https://kk.coach/CV.PDF", "https://kk.coach/CV.PDF"),
+    ("fájl nem veszít slasht", NO_SLASH, "https://kk.coach/sitemap.xml", "https://kk.coach/sitemap.xml"),
+    ("pontos slug nem fájl", SLASH, "https://kk.coach/ipad-10.9", "https://kk.coach/ipad-10.9/"),
+    ("verziószámos slug nem fájl", SLASH, "https://kk.coach/verzio-2.0", "https://kk.coach/verzio-2.0/"),
+    ("pontos slug slash nélkül", NO_SLASH, "https://kk.coach/ipad-10.9/", "https://kk.coach/ipad-10.9"),
+    ("ismeretlen kiterjesztés nem fájl", SLASH, "https://kk.coach/a.aspx", "https://kk.coach/a.aspx/"),
     ("döntés nélkül érintetlen /a", BARE, "https://kk.coach/a", "https://kk.coach/a"),
     ("döntés nélkül érintetlen /a/", BARE, "https://kk.coach/a/", "https://kk.coach/a/"),
     ("külső path érintetlen", SLASH, "https://example.com/a", "https://example.com/a"),
+    # 8. a path kódolása egységes
+    ("nyers ékezet kódolva", BARE, "https://kk.coach/könyv/", "https://kk.coach/k%C3%B6nyv/"),
+    ("kódolt ékezet marad", BARE, "https://kk.coach/k%C3%B6nyv/", "https://kk.coach/k%C3%B6nyv/"),
+    ("kisbetűs hex nagybetűre", BARE, "https://kk.coach/k%c3%b6nyv/", "https://kk.coach/k%C3%B6nyv/"),
+    ("nagybetűs ékezet", BARE, "https://kk.coach/KÖNYV", "https://kk.coach/K%C3%96NYV"),
+    ("%2F a szegmensen belül marad", BARE, "https://kk.coach/a%2Fb/", "https://kk.coach/a%2Fb/"),
+    ("%2f nagybetűre, nem szegmenshatár", BARE, "https://kk.coach/a%2fb", "https://kk.coach/a%2Fb"),
+    ("kódolt nem fenntartott ASCII nyersen", BARE, "https://kk.coach/%7Euser/%41bc%2D1",
+     "https://kk.coach/~user/Abc-1"),
+    ("szóköz kódolva", BARE, "https://kk.coach/szép kert", "https://kk.coach/sz%C3%A9p%20kert"),
+    ("magányos % kódolva", BARE, "https://kk.coach/100%/", "https://kk.coach/100%25/"),
+    ("nyers fenntartott marad nyers", BARE, "https://kk.coach/a:b@c+d,e;f=g",
+     "https://kk.coach/a:b@c+d,e;f=g"),
+    ("kódolt fenntartott marad kódolt", BARE, "https://kk.coach/a%3Ab%2Bc", "https://kk.coach/a%3Ab%2Bc"),
+    ("nem UTF-8 escape érintetlen", BARE, "https://kk.coach/k%f6nyv", "https://kk.coach/k%F6nyv"),
+    ("query kódolása érintetlen", BARE, "https://kk.coach/k%c3%b6nyv?q=k%c3%b6nyv&x=könyv",
+     "https://kk.coach/k%C3%B6nyv?q=k%c3%b6nyv&x=könyv"),
+    ("dekódolt pont után fájl, 8. a 6. előtt", SLASH, "https://kk.coach/doc%2Epdf",
+     "https://kk.coach/doc.pdf"),
+    ("kódolás és slash együtt", SLASH, "https://kk.coach/k%c3%b6nyv", "https://kk.coach/k%C3%B6nyv/"),
     # szintaktikai azonosság
     ("üres path → /", BARE, "https://kk.coach", "https://kk.coach/"),
     ("üres path query-vel", BARE, "https://kk.coach?x=1", "https://kk.coach/?x=1"),
@@ -116,6 +142,16 @@ def test_variants_dedup_to_one_url():
         "https://kk.coach:443/szolgaltatasok/?fbclid=x#top",
     ]
     assert {normalize(v, FULL) for v in variants} == {"https://kk.coach/szolgaltatasok/"}
+
+
+def test_encoding_variants_dedup_to_one_url():
+    variants = [
+        "https://kk.coach/könyv/",
+        "https://kk.coach/k%C3%B6nyv/",
+        "https://kk.coach/k%c3%b6nyv/",
+        "https://kk.coach/k%C3%b6nyv",
+    ]
+    assert {normalize(v, SLASH) for v in variants} == {"https://kk.coach/k%C3%B6nyv/"}
 
 
 SCOPE = [
@@ -194,6 +230,7 @@ TRAILING = [
     ("üres", [], None),
     ("query és fragment nem számít", _urls("/a/?x=1", "/b/#y", "/c"), True),
     ("fájl nem szavaz", _urls("/a", "/x.pdf", "/y.html", "/z.jpg", "/b/"), None),
+    ("pontos slug szavaz", _urls("/ipad-10.9/", "/verzio-2.0/", "/c"), True),
     ("csak az első 50", _urls(*[f"/n{i}" for i in range(50)], *[f"/s{i}/" for i in range(100)]),
      False),
 ]

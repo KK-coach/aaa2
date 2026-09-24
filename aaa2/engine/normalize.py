@@ -1,6 +1,6 @@
 """URL-normalizálás és scope egy site-on belül.
 
-Normalizálási szabályok, ebben a sorrendben:
+Normalizálási szabályok, ebben a sorrendben (a 8. a path-on a 6. előtt fut):
 
 1. host kisbetűre, a `www.`-változat a seed formájára;
 2. séma https-re, ha a site http→https 301-et ad (csak belső URL-en);
@@ -8,7 +8,12 @@ Normalizálási szabályok, ebben a sorrendben:
 4. tracking-paraméterek eldobva: `utm_*`, `gclid`, `fbclid`, `mc_*`, `ref`;
 5. a megmaradó query-paraméterek kulcs szerint ábécérendben, azonos kulcsnál eredeti sorrendben;
 6. trailing slash a site domináns formájára (`site.trailing_slash`, csak belső URL-en);
-7. a canonical nem írja felül az URL-t: ez a modul nem is látja.
+   fájl az, aminek az utolsó szegmense ismert kiterjesztésre végződik, az érintetlen;
+7. a canonical nem írja felül az URL-t: ez a modul nem is látja;
+8. a path kódolása egységes: a nem fenntartott ASCII (betű, szám, `-._~`) nyersen, a nem-ASCII
+   és a path-ban nem megengedett karakter UTF-8 %XX-kódolva, a hex nagybetűvel. A fenntartott
+   karakter (`/`, `:`, `@`, `+`, ...) abban a formában marad, ahogy jött: a kódolt `%2F` nem
+   válik szegmenshatárrá, a nyers `+` nem válik `%2B`-vé.
 
 Ezen felül csak szintaktikai azonosság: üres path helyett `/`, az alapértelmezett port eldobva.
 A query kódolása érintetlen marad.
@@ -32,7 +37,14 @@ TRAILING_SLASH_SAMPLE = 50
 _DEFAULT_PORTS = {"http": 80, "https": 443}
 _TRACKING_PREFIXES = ("utm_", "mc_")
 _TRACKING_NAMES = frozenset({"gclid", "fbclid", "ref"})
-_FILE_SEGMENT = re.compile(r"\.[A-Za-z0-9]{1,5}$")
+_FILE_EXTENSIONS = frozenset({
+    "html", "htm", "php", "pdf", "xml", "txt", "csv", "json",
+    "jpg", "jpeg", "png", "gif", "webp", "svg", "ico",
+    "css", "js", "woff", "woff2", "mp4", "zip",
+})
+_UNRESERVED = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+# Egy érvényes %XX-escape, vagy egy karakter, ami nyersen nem állhat a path-ban.
+_PATH_TOKEN = re.compile(r"%[0-9A-Fa-f]{2}|[^A-Za-z0-9\-._~!$&'()*+,;=:@/]")
 
 # A csomagba épített PSL-pillanatkép, hálózat és lemez-cache nélkül; a privát utótagok
 # (github.io, ...) külön site-ot jelentenek.
@@ -117,7 +129,7 @@ def normalize(url: str, policy: UrlPolicy) -> str | None:
     if port is not None:
         netloc = f"{netloc}:{port}"
 
-    path = parts.path or "/"
+    path = _PATH_TOKEN.sub(_normalize_path_token, parts.path) or "/"
     if internal:
         path = _apply_trailing_slash(path, policy.trailing_slash)
     return urlunsplit((scheme, netloc, path, _clean_query(parts.query), ""))
@@ -171,6 +183,15 @@ def _apply_trailing_slash(path: str, trailing_slash: bool | None) -> str:
     return path.rstrip("/") or "/"
 
 
+def _normalize_path_token(match: re.Match[str]) -> str:
+    token = match.group()
+    if len(token) == 3:
+        char = chr(int(token[1:], 16))
+        return char if char in _UNRESERVED else token.upper()
+    return "".join(f"%{byte:02X}" for byte in token.encode("utf-8"))
+
+
 def _is_file(path: str) -> bool:
     last = path.rstrip("/").rsplit("/", 1)[-1]
-    return bool(_FILE_SEGMENT.search(last))
+    _, dot, extension = last.rpartition(".")
+    return bool(dot) and extension.lower() in _FILE_EXTENSIONS
