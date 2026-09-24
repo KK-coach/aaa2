@@ -7,7 +7,8 @@ a sitemap-URL-ek és a seed linkjei 1, a többi a felfedező oldal mélysége + 
 
 A site-döntések a crawl elején rögzülnek, és a crawl alatt nem változnak:
 
-- `https_redirect`: a seed http-változata 301-et vagy 308-at ad https-re;
+- `https_redirect`: a seed http-változata 301, 302, 307 vagy 308 átirányítással https-re visz;
+  a kapott státusz a `site.https_redirect_status`-ba kerül;
 - `trailing_slash`: a seed első 50 különböző belső linkjének domináns formája; ha nincs
   domináns forma, a sitemap összes belső URL-jének formája dönt; ha az sem, None.
 
@@ -41,7 +42,7 @@ MAX_SITEMAP_FILES = 100
 MAX_SITEMAP_URLS = 50_000
 MAX_SITEMAP_BYTES = 50 * 1024 * 1024
 
-_PERMANENT_REDIRECTS = frozenset({301, 308})
+_HTTPS_REDIRECTS = frozenset({301, 302, 307, 308})
 _LOC = re.compile(
     r"<loc(?:\s[^>]*)?>\s*(?:<!\[CDATA\[)?\s*(.*?)\s*(?:\]\]>)?\s*</loc>", re.IGNORECASE | re.DOTALL
 )
@@ -97,6 +98,7 @@ class Discovery:
     """A crawl előtti hálózati felmérés: átirányítás, robots.txt, sitemap-URL-ek."""
 
     https_redirect: bool = False
+    https_redirect_status: int | None = None
     robots: Robots | None = None
     sitemap_urls: tuple[str, ...] = ()
 
@@ -119,7 +121,7 @@ async def discover(
     """https-próba, robots.txt, sitemap. A sitemap a `sitemap` URL-ből, különben a robots.txt
     Sitemap-soraiból, különben a `/sitemap.xml`-ből jön. A robots.txt Sitemap-sorait
     `respect_robots=False` mellett is felhasználja."""
-    https_redirect = await probe_https_redirect(client, seed_url)
+    https_redirect, https_redirect_status = await probe_https_redirect(client, seed_url)
     robots = await fetch_robots(client, seed_url)
     if sitemap:
         roots = [sitemap]
@@ -128,28 +130,38 @@ async def discover(
     else:
         roots = [urljoin(seed_url, "/sitemap.xml")]
     urls = await read_sitemaps(client, roots, max_urls=max_urls)
-    return Discovery(https_redirect, robots if respect_robots else None, tuple(urls))
+    return Discovery(
+        https_redirect=https_redirect,
+        https_redirect_status=https_redirect_status,
+        robots=robots if respect_robots else None,
+        sitemap_urls=tuple(urls),
+    )
 
 
-async def probe_https_redirect(client: httpx.AsyncClient, seed_url: str) -> bool:
-    """A seed http-változatára 301 vagy 308 jön, és a cél https ugyanazon a registrable domainen."""
+async def probe_https_redirect(
+    client: httpx.AsyncClient, seed_url: str
+) -> tuple[bool, int | None]:
+    """(átirányít-e https-re, a kapott státusz) a seed http-változatára. Átirányítás: 301, 302,
+    307 vagy 308, a cél https ugyanazon a registrable domainen. Hálózati hibánál a státusz None."""
     parts = urlsplit(seed_url.strip())
     host = parts.hostname
     if not host:
-        return False
+        return False, None
     probe = urlunsplit(("http", host, parts.path or "/", parts.query, ""))
     try:
         response = await client.get(probe, follow_redirects=False)
     except httpx.HTTPError:
-        return False
-    if response.status_code not in _PERMANENT_REDIRECTS:
-        return False
+        return False, None
+    status = response.status_code
+    if status not in _HTTPS_REDIRECTS:
+        return False, status
     target = urlsplit(urljoin(probe, response.headers.get("location", "")))
-    return (
+    redirect = (
         target.scheme == "https"
         and target.hostname is not None
         and registrable_domain(target.hostname) == registrable_domain(host)
     )
+    return redirect, status
 
 
 async def fetch_robots(client: httpx.AsyncClient, seed_url: str) -> Robots | None:
@@ -245,11 +257,16 @@ class Frontier:
         try:
             con.execute("DELETE FROM crawl_queue")
             con.execute(
-                "INSERT INTO site (domain, seed_url, trailing_slash, https_redirect) "
-                "VALUES (?, ?, ?, ?) ON CONFLICT (domain) DO UPDATE SET "
+                "INSERT INTO site "
+                "(domain, seed_url, trailing_slash, https_redirect, https_redirect_status) "
+                "VALUES (?, ?, ?, ?, ?) ON CONFLICT (domain) DO UPDATE SET "
                 "seed_url = excluded.seed_url, trailing_slash = excluded.trailing_slash, "
-                "https_redirect = excluded.https_redirect",
-                [policy.domain, seed, policy.trailing_slash, policy.https_redirect],
+                "https_redirect = excluded.https_redirect, "
+                "https_redirect_status = excluded.https_redirect_status",
+                [
+                    policy.domain, seed, policy.trailing_slash, policy.https_redirect,
+                    discovery.https_redirect_status,
+                ],
             )
             frontier = cls(
                 con, policy, robots=discovery.robots, max_pages=max_pages,

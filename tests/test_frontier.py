@@ -140,29 +140,30 @@ async def test_read_sitemaps_missing_broken_and_html():
 # ---------------------------------------------------------------------------
 
 PROBES = [
-    ("301 https-re", (301, {"location": "https://kk.coach/"}), True),
-    ("308 https-re", (308, {"location": "https://kk.coach/"}), True),
-    ("301 https www-re", (301, {"location": "https://www.kk.coach/"}), True),
-    ("302 nem végleges", (302, {"location": "https://kk.coach/"}), False),
-    ("307 nem végleges", (307, {"location": "https://kk.coach/"}), False),
-    ("nincs átirányítás", 200, False),
-    ("301 http-re", (301, {"location": "http://www.kk.coach/"}), False),
-    ("301 relatív cél, marad http", (301, {"location": "/hu/"}), False),
-    ("301 más domainre", (301, {"location": "https://example.com/"}), False),
-    ("hálózati hiba", httpx.ConnectError("nincs kapcsolat"), False),
+    ("301 https-re", (301, {"location": "https://kk.coach/"}), (True, 301)),
+    ("308 https-re", (308, {"location": "https://kk.coach/"}), (True, 308)),
+    ("302 https-re", (302, {"location": "https://kk.coach/"}), (True, 302)),
+    ("307 https-re", (307, {"location": "https://kk.coach/"}), (True, 307)),
+    ("301 https www-re", (301, {"location": "https://www.kk.coach/"}), (True, 301)),
+    ("303 nem átirányítás https-re", (303, {"location": "https://kk.coach/"}), (False, 303)),
+    ("nincs átirányítás", 200, (False, 200)),
+    ("302 http-re", (302, {"location": "http://www.kk.coach/"}), (False, 302)),
+    ("301 relatív cél, marad http", (301, {"location": "/hu/"}), (False, 301)),
+    ("307 más domainre", (307, {"location": "https://example.com/"}), (False, 307)),
+    ("hálózati hiba", httpx.ConnectError("nincs kapcsolat"), (False, None)),
 ]
 
 
 @pytest.mark.parametrize(("response", "expected"), [p[1:] for p in PROBES], ids=[p[0] for p in PROBES])
 async def test_probe_https_redirect(response, expected):
     async with mock_client({"http://kk.coach/": response}) as client:
-        assert await probe_https_redirect(client, SEED) is expected
+        assert await probe_https_redirect(client, SEED) == expected
 
 
 async def test_probe_uses_seed_path():
-    routes = {"http://kk.coach/hu/": (301, {"location": "https://kk.coach/hu/"})}
+    routes = {"http://kk.coach/hu/": (302, {"location": "https://kk.coach/hu/"})}
     async with mock_client(routes) as client:
-        assert await probe_https_redirect(client, "https://kk.coach/hu/") is True
+        assert await probe_https_redirect(client, "https://kk.coach/hu/") == (True, 302)
 
 
 # ---------------------------------------------------------------------------
@@ -222,6 +223,7 @@ async def test_discover_from_robots_sitemap():
     async with mock_client(SITE_ROUTES) as client:
         found = await discover(client, SEED)
     assert found.https_redirect is True
+    assert found.https_redirect_status == 301
     assert found.robots is not None and not found.robots.allowed("https://kk.coach/wp-admin/")
     assert list(found.sitemap_urls) == SITEMAP_URLS
 
@@ -232,6 +234,7 @@ async def test_discover_falls_back_to_sitemap_xml():
         found = await discover(client, SEED)
     assert found == Discovery(
         https_redirect=False,
+        https_redirect_status=404,
         robots=None,
         sitemap_urls=("https://kk.coach/blog/elso/", "https://kk.coach/rolam/"),
     )
@@ -281,7 +284,10 @@ SEED_LINKS = [
 ]
 
 DISCOVERY = Discovery(
-    https_redirect=True, robots=Robots.parse(ROBOTS), sitemap_urls=tuple(SITEMAP_URLS)
+    https_redirect=True,
+    https_redirect_status=301,
+    robots=Robots.parse(ROBOTS),
+    sitemap_urls=tuple(SITEMAP_URLS),
 )
 
 
@@ -294,7 +300,7 @@ def queue(con):
 
 def site_row(con):
     return con.execute(
-        "SELECT domain, seed_url, trailing_slash, https_redirect FROM site"
+        "SELECT domain, seed_url, trailing_slash, https_redirect, https_redirect_status FROM site"
     ).fetchall()
 
 
@@ -313,7 +319,7 @@ def test_start_fills_queue_in_order():
         ("https://kk.coach/uj-oldal/", 1, PRIORITY["aside"], q, SEED),
         ("https://kk.coach/adatvedelem/", 1, PRIORITY["footer"], q, SEED),
     ]
-    assert site_row(con) == [("kk.coach", SEED, True, True)]
+    assert site_row(con) == [("kk.coach", SEED, True, True, 301)]
 
 
 def test_next_batch_hands_out_queue_order():
@@ -345,7 +351,7 @@ def test_start_resets_previous_queue():
     Frontier.start(con, SEED, DISCOVERY, SEED_LINKS)
     Frontier.start(con, SEED, Discovery(), [("https://kk.coach/masik/", "nav")])
     assert [row[0] for row in queue(con)] == [SEED, "https://kk.coach/masik/"]
-    assert site_row(con) == [("kk.coach", SEED, True, False)]
+    assert site_row(con) == [("kk.coach", SEED, True, False, None)]
 
 
 def test_start_rolls_back_on_error():
@@ -356,7 +362,7 @@ def test_start_rolls_back_on_error():
     with pytest.raises(TypeError):
         Frontier.start(con, SEED, Discovery(), broken_links)
     assert queue(con) == before
-    assert site_row(con) == [("kk.coach", SEED, True, True)]
+    assert site_row(con) == [("kk.coach", SEED, True, True, 301)]
 
 
 # ---------------------------------------------------------------------------
