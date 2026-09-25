@@ -13,6 +13,7 @@ import json
 import shutil
 from pathlib import Path
 
+import httpx
 from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import Request, Route
 
@@ -49,33 +50,85 @@ class Recording:
         )
 
     async def record(self, route: Route, request: Request) -> None:
-        """Upstream: élő lekérés, mentés, kiszolgálás."""
+        """Renderer-upstream: élő lekérés, mentés, kiszolgálás."""
         try:
             response = await route.fetch()
             body = await response.body()
         except PlaywrightError:
             await route.abort()
             return
-        headers = {k: v for k, v in response.headers.items() if k.lower() not in _DROPPED_HEADERS}
-        key = _key(request)
-        name = hashlib.sha1(key.encode()).hexdigest()
-        (self.path / name).write_bytes(body)
-        self.responses[key] = {"status": response.status, "headers": headers, "body": name}
+        headers = self._store(_key(request), response.status, response.headers, body)
         await route.fulfill(status=response.status, headers=headers, body=body)
 
     async def replay(self, route: Route, request: Request) -> None:
-        """Upstream: a felvett válasz, vagy hálózati hiba, ha nincs felvéve."""
-        entry = self.responses.get(_key(request))
+        """Renderer-upstream: a felvett válasz, vagy hálózati hiba, ha nincs felvéve."""
+        entry = self._load(_key(request))
         if entry is None:
             self.misses.append(request.url)
             await route.abort("internetdisconnected")
             return
-        body = (self.path / entry["body"]).read_bytes()
-        await route.fulfill(status=entry["status"], headers=entry["headers"], body=body)
+        status, headers, body = entry
+        await route.fulfill(status=status, headers=headers, body=body)
+
+    def recording_transport(self) -> httpx.AsyncBaseTransport:
+        """httpx-transport: élő kérés, mentés. Az átirányítás minden lépése külön kulcs."""
+        return _RecordingTransport(self)
+
+    def replay_transport(self) -> httpx.AsyncBaseTransport:
+        """httpx-transport: a felvett válasz, vagy ConnectError, ha nincs felvéve."""
+        return _ReplayTransport(self)
+
+    def _store(self, key: str, status: int, headers: dict, body: bytes) -> dict:
+        kept = {k: v for k, v in headers.items() if k.lower() not in _DROPPED_HEADERS}
+        name = hashlib.sha1(key.encode()).hexdigest()
+        (self.path / name).write_bytes(body)
+        self.responses[key] = {"status": status, "headers": kept, "body": name}
+        return kept
+
+    def _load(self, key: str) -> tuple[int, dict, bytes] | None:
+        entry = self.responses.get(key)
+        if entry is None:
+            return None
+        return entry["status"], entry["headers"], (self.path / entry["body"]).read_bytes()
+
+
+class _RecordingTransport(httpx.AsyncBaseTransport):
+    def __init__(self, recording: Recording) -> None:
+        self.recording = recording
+        self.inner = httpx.AsyncHTTPTransport()
+
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        response = await self.inner.handle_async_request(request)
+        body = await response.aread()
+        await response.aclose()
+        headers = self.recording._store(
+            _http_key(request), response.status_code, dict(response.headers), body
+        )
+        return httpx.Response(response.status_code, headers=headers, content=body, request=request)
+
+    async def aclose(self) -> None:
+        await self.inner.aclose()
+
+
+class _ReplayTransport(httpx.AsyncBaseTransport):
+    def __init__(self, recording: Recording) -> None:
+        self.recording = recording
+
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        entry = self.recording._load(_http_key(request))
+        if entry is None:
+            self.recording.misses.append(str(request.url))
+            raise httpx.ConnectError("nincs felvéve", request=request)
+        status, headers, body = entry
+        return httpx.Response(status, headers=headers, content=body, request=request)
 
 
 def _key(request: Request) -> str:
     return f"{request.method} {request.url}"
+
+
+def _http_key(request: httpx.Request) -> str:
+    return f"httpx {request.method} {request.url}"
 
 
 PAGES_DIR = FIXTURES_DIR / "pages"

@@ -14,7 +14,8 @@ Tiszta függvény, adatbázist nem ír; az oldalankénti tranzakció a crawl dol
   id-tokenjei (a body és a html kivételével); különben body. `nofollow` a `rel`-ből. A `<noscript>` és `<template>`
   tartalma kimarad. A külső http(s) link csak számolva van.
 - `schema_blocks`: minden `application/ld+json`; tömb és `@graph` elemenként, `@type`-pal
-  (több típus vesszővel); hibás JSON `type = 'invalid'`, nyers szöveggel.
+  (több típus vesszővel); a `@graph` eleme megkapja a szülő `@context`-jét, ha nincs sajátja;
+  hibás JSON `type = 'invalid'`, nyers szöveggel.
 - main content: öt stratégia sorban, az első, ami 100 szó fölött ad: `main`, `article`,
   `[role=main]`, ismert tartalom-szelektorok, readability-pontszám (szöveg / link arány a
   bekezdéssűrűséggel súlyozva) a `div` és `section` elemeken; végül a body a
@@ -341,12 +342,15 @@ def _split_robots_scope(value: str) -> tuple[str | None, str]:
     return None, value
 
 
-def _schema_items(data: object) -> Iterator[object]:
+def _schema_items(data: object, context: object = None) -> Iterator[object]:
     if isinstance(data, list):
         for item in data:
-            yield from _schema_items(item)
+            yield from _schema_items(item, context)
     elif isinstance(data, dict) and isinstance(data.get("@graph"), list):
-        yield from _schema_items(data["@graph"])
+        for item in data["@graph"]:
+            yield from _schema_items(item, data.get("@context", context))
+    elif context is not None and isinstance(data, dict) and "@context" not in data:
+        yield {"@context": context, **data}
     else:
         yield data
 

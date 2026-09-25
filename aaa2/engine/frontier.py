@@ -101,6 +101,8 @@ class Discovery:
     https_redirect_status: int | None = None
     robots: Robots | None = None
     sitemap_urls: tuple[str, ...] = ()
+    robots_status: int | None = None
+    robots_txt: str | None = None
 
 
 @dataclass(frozen=True)
@@ -122,7 +124,8 @@ async def discover(
     Sitemap-soraiból, különben a `/sitemap.xml`-ből jön. A robots.txt Sitemap-sorait
     `respect_robots=False` mellett is felhasználja."""
     https_redirect, https_redirect_status = await probe_https_redirect(client, seed_url)
-    robots = await fetch_robots(client, seed_url)
+    robots_status, robots_txt = await fetch_robots_file(client, seed_url)
+    robots = Robots.parse(robots_txt) if robots_txt is not None else None
     if sitemap:
         roots = [sitemap]
     elif robots is not None and robots.sitemaps:
@@ -135,6 +138,8 @@ async def discover(
         https_redirect_status=https_redirect_status,
         robots=robots if respect_robots else None,
         sitemap_urls=tuple(urls),
+        robots_status=robots_status,
+        robots_txt=robots_txt,
     )
 
 
@@ -166,8 +171,22 @@ async def probe_https_redirect(
 
 async def fetch_robots(client: httpx.AsyncClient, seed_url: str) -> Robots | None:
     """A seed hostjának robots.txt-je; None, ha nem 200 (4xx, 5xx, hálózati hiba: nincs tiltás)."""
-    body = await _fetch(client, urljoin(seed_url, "/robots.txt"))
-    return Robots.parse(body.decode("utf-8", "replace")) if body is not None else None
+    _, text = await fetch_robots_file(client, seed_url)
+    return Robots.parse(text) if text is not None else None
+
+
+async def fetch_robots_file(
+    client: httpx.AsyncClient, seed_url: str
+) -> tuple[int | None, str | None]:
+    """(státusz, szöveg) a seed hostjának robots.txt-jére, átirányítást követve. A szöveg csak
+    200-nál van meg; a státusz None, ha a kérés hálózati hibával elbukott."""
+    try:
+        response = await client.get(urljoin(seed_url, "/robots.txt"), follow_redirects=True)
+    except httpx.HTTPError:
+        return None, None
+    if response.status_code != 200:
+        return response.status_code, None
+    return 200, response.content.decode("utf-8", "replace")
 
 
 async def read_sitemaps(
@@ -257,15 +276,17 @@ class Frontier:
         try:
             con.execute("DELETE FROM crawl_queue")
             con.execute(
-                "INSERT INTO site "
-                "(domain, seed_url, trailing_slash, https_redirect, https_redirect_status) "
-                "VALUES (?, ?, ?, ?, ?) ON CONFLICT (domain) DO UPDATE SET "
+                "INSERT INTO site (domain, seed_url, trailing_slash, https_redirect, "
+                "https_redirect_status, robots_status, robots_txt) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (domain) DO UPDATE SET "
                 "seed_url = excluded.seed_url, trailing_slash = excluded.trailing_slash, "
                 "https_redirect = excluded.https_redirect, "
-                "https_redirect_status = excluded.https_redirect_status",
+                "https_redirect_status = excluded.https_redirect_status, "
+                "robots_status = excluded.robots_status, robots_txt = excluded.robots_txt",
                 [
                     policy.domain, seed, policy.trailing_slash, policy.https_redirect,
-                    discovery.https_redirect_status,
+                    discovery.https_redirect_status, discovery.robots_status,
+                    discovery.robots_txt,
                 ],
             )
             frontier = cls(
@@ -380,6 +401,26 @@ class Frontier:
 
     def mark_done(self, url: str) -> None:
         self._finish(url, "done", None)
+
+    def claim(self, url: str, *, depth: int, discovered_from: str | None = None) -> str | None:
+        """Egy már renderelt URL (egy átirányítás célja) sorát a hívó veszi át és `done`-ra
+        állítja; ha nincs a sorban, a `max_pages` alól kivételként kerül be. Visszaadja a sor
+        URL-jét, ha a hívónak kell megírnia az oldalt; None, ha a szűrők nem engedik, a sor már
+        kész vagy hibás, vagy épp egy másik worker rendereli."""
+        target = self.admit(url)
+        if target is None or target in self._leased:
+            return None
+        if target in self._known:
+            (status,) = self.con.execute(
+                "SELECT status FROM crawl_queue WHERE url = ?", [target]
+            ).fetchone()
+            if status != "queued":
+                return None
+        else:
+            self._insert(target, depth=depth, priority=PRIORITY["body"],
+                         discovered_from=discovered_from)
+        self.mark_done(target)
+        return target
 
     def mark_failed(self, url: str, error: str) -> None:
         self._finish(url, "failed", error)

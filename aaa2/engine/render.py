@@ -20,7 +20,9 @@ hostjai (host-végződés, opcionális path-előtaggal). CSS és JS átmegy. A s
 tiltva vannak, hogy minden kérés a route-on menjen át.
 
 Retry: navigációs timeout 1×, 5xx 2× exponenciális várakozással, 403 1× másik
-user-agenttel. A `render()` sosem dob kivételt: minden hívás egy `RenderResult`.
+user-agenttel. A `render()` sosem dob kivételt: minden hívás egy `RenderResult`. Egy
+kísérlet legfeljebb `2 × render_timeout + 10` mp; ha ezt túllépi, `error = 'hard_timeout'`
+(nincs retry), és a context helyett új kerül a poolba.
 """
 from __future__ import annotations
 
@@ -62,6 +64,9 @@ STABILITY_THRESHOLD = 0.01
 WALL_MAX_WORDS = 50
 ROCKET_EVENT_WAIT_MS = 2000
 CONSENT_CLICK_TIMEOUT_MS = 1500
+CONSENT_FRAME_TIMEOUT_S = 3.0
+HARD_TIMEOUT_MARGIN_S = 10.0
+CLOSE_TIMEOUT_S = 5.0
 CONSENT_ROUNDS = ("button", "link", "text")
 SCROLL_MAX_STEPS = 30
 VIEWPORT = {"width": 1920, "height": 1080}
@@ -260,13 +265,27 @@ class Renderer:
                 await _close_quietly(context)
         generation = self._generation
         context = await self._pool.get()
+        stuck = False
         try:
-            return await self._render_page(context, url, retryable)
+            return await asyncio.wait_for(
+                self._render_page(context, url, retryable), self._hard_timeout
+            )
+        except TimeoutError:
+            stuck = True
+            return RenderResult(url, error="hard_timeout", render_ms=int(self._hard_timeout * 1000))
         finally:
-            if generation == self._generation:
+            if generation == self._generation and not stuck:
                 self._pool.put_nowait(context)
             else:
                 await _close_quietly(context)
+                if generation == self._generation:
+                    self._pool.put_nowait(await self._new_context(self.user_agent))
+
+    @property
+    def _hard_timeout(self) -> float:
+        """Biztonsági háló egy kísérletre: a lépések a `render_timeout` keretben futnak, egy
+        határidő nélkül várakozó Playwright-hívás se tartsa fel a crawlt."""
+        return self.render_timeout * 2 + HARD_TIMEOUT_MARGIN_S
 
     async def _render_page(
         self, context: BrowserContext, url: str, retryable: Callable[[int | None], bool]
@@ -313,7 +332,7 @@ class Renderer:
                 )
 
             await _wait_network_idle(page, deadline)
-            await _accept_consent(page, self.consent_texts)
+            await _accept_consent(page, self.consent_texts, deadline)
             await _activate(page, deadline)
             await _wait_dom_stable(page, deadline)
             rendered_html = await _content(page)
@@ -388,17 +407,35 @@ async def _wait_network_idle(page: Page, deadline: float) -> None:
         pass
 
 
-async def _accept_consent(page: Page, texts: Iterable[str]) -> tuple[str, str] | None:
+async def _accept_consent(
+    page: Page, texts: Iterable[str], deadline: float
+) -> tuple[str, str] | None:
     """Consent-kattintás három körben, mindegyikben a teljes feliratlistával, a sorrendjében:
     `button` szerep, `link` szerep, végül bármely elem pontos szövege. Az első látható
     egyezés kattint, a kattintási hiba a következő jelöltre visz. Ha a kattintás másik
-    oldalra navigált, visszalép. Visszaadja a (kör, felirat) párt, vagy None-t."""
+    oldalra navigált, visszalép. Egy frame-re legfeljebb `CONSENT_FRAME_TIMEOUT_S` jut: a
+    dokumentum nélküli iframe-en a locator-hívás határidő nélkül várna; ami egyszer nem
+    válaszolt, az a továbbiakban kimarad. Az egész a render keretén belül fut. Visszaadja a
+    (kör, felirat) párt, vagy None-t."""
     patterns = [(text, re.compile(rf"^\s*{re.escape(text)}\s*$", re.IGNORECASE)) for text in texts]
+    unresponsive: set[Frame] = set()
     for kind in CONSENT_ROUNDS:
         for text, name in patterns:
             for frame in page.frames:
+                if _remaining_ms(deadline) <= 0:
+                    return None
+                if frame in unresponsive or frame.is_detached():
+                    continue
                 before = _without_fragment(page.url)
-                if await _click_first_visible(_consent_candidates(frame, kind, name)):
+                try:
+                    clicked = await asyncio.wait_for(
+                        _click_first_visible(_consent_candidates(frame, kind, name)),
+                        CONSENT_FRAME_TIMEOUT_S,
+                    )
+                except TimeoutError:
+                    unresponsive.add(frame)
+                    continue
+                if clicked:
                     if _without_fragment(page.url) != before:
                         await _go_back(page)
                     return kind, text
@@ -536,8 +573,8 @@ async def _evaluate(page: Page, script: str, arg: object = None, *, default: obj
 
 async def _close_quietly(target: Page | BrowserContext) -> None:
     try:
-        await target.close()
-    except PlaywrightError:
+        await asyncio.wait_for(target.close(), CLOSE_TIMEOUT_S)
+    except (PlaywrightError, TimeoutError):
         pass
 
 
