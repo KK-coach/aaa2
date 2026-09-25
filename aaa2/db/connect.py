@@ -34,7 +34,12 @@ def connect(path: Path | str = ":memory:") -> duckdb.DuckDBPyConnection:
 
 
 def migrate(con: duckdb.DuckDBPyConnection) -> list[str]:
-    """NNN_*.sql fájlok sorrendben; a lefutottakat a _migrations tábla tartja."""
+    """NNN_*.sql fájlok sorrendben; a lefutottakat a _migrations tábla tartja.
+
+    Ha futott migráció, utána CHECKPOINT: a séma az adatbázisfájlba kerül, a WAL-ban nem marad
+    DDL. (A DuckDB 1.5 nem játssza vissza a `DEFAULT nextval(...)` oszlopos táblára futó
+    `ALTER TABLE ... ADD COLUMN`-t, és a kilőtt folyamat adatbázisa nem nyílik meg.)
+    """
     con.execute(
         "CREATE TABLE IF NOT EXISTS _migrations (name VARCHAR PRIMARY KEY, applied_at TIMESTAMP)"
     )
@@ -48,4 +53,6 @@ def migrate(con: duckdb.DuckDBPyConnection) -> list[str]:
             "INSERT INTO _migrations VALUES (?, current_timestamp)", [sql_file.name]
         )
         applied.append(sql_file.name)
+    if applied:
+        con.execute("CHECKPOINT")
     return applied
