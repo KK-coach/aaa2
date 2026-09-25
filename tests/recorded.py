@@ -76,3 +76,25 @@ class Recording:
 
 def _key(request: Request) -> str:
     return f"{request.method} {request.url}"
+
+
+PAGES_DIR = FIXTURES_DIR / "pages"
+
+
+def save_page(name: str, result) -> Path:
+    """Egy RenderResult renderelt oldala fixture-ként: URL-ek, státusz, fejlécek, DOM."""
+    PAGES_DIR.mkdir(parents=True, exist_ok=True)
+    path = PAGES_DIR / f"{name}.json"
+    path.write_text(json.dumps({
+        "url": result.url,
+        "final_url": result.final_url,
+        "status": result.status,
+        "headers": result.headers,
+        "rendered_html": result.rendered_html,
+    }, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
+def load_page(name: str) -> dict | None:
+    path = PAGES_DIR / f"{name}.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
