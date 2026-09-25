@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import json
 import sys
 from pathlib import Path
 from typing import Annotated
@@ -72,7 +73,7 @@ def crawl(
 def status(
     domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
 ) -> None:
-    """Oldalak státusz szerint, hibák, a sor állapota, az utolsó crawl."""
+    """Oldalak státusz szerint, hibák, a sor állapota, a site-profil, az utolsó crawl."""
     con = _open(domain)
     (pages,) = con.execute("SELECT count(*) FROM pages").fetchone()
     (errors,) = con.execute("SELECT count(*) FROM pages WHERE error IS NOT NULL").fetchone()
@@ -87,6 +88,26 @@ def status(
         f"  sor: {queue.get('queued', 0)} várakozik, {queue.get('done', 0)} kész, "
         f"{queue.get('failed', 0)} hibás"
     )
+    profile = con.execute(
+        "SELECT target_country, target_country_confidence, target_country_candidates, "
+        "market_scope, market_scope_city, languages, page_count, tech_signals FROM site"
+    ).fetchone()
+    if profile:
+        country, confidence, candidates, scope, city, languages, page_count, signals = profile
+        typer.echo(
+            f"  profil: célország {country or '—'}"
+            + (f" ({confidence})" if confidence else "")
+            + f", piaci hatókör {scope or '—'}" + (f" ({city})" if city else "")
+            + f", nyelvek {', '.join(languages or []) or '—'}, {page_count or 0} sikeres oldal"
+        )
+        for candidate in json.loads(candidates or "[]"):
+            typer.echo(
+                f"    jelölt {candidate['country']} {candidate['score']:.2f}: "
+                + ", ".join(candidate["signals"])
+            )
+        if signals:
+            shown = ", ".join(signals[:8]) + (f" (+{len(signals) - 8})" if len(signals) > 8 else "")
+            typer.echo(f"  tech-jelek: {shown}")
     last = con.execute(
         "SELECT run_id, started_at, finished_at, pages_done, pages_failed, pages_skipped, "
         "pages_per_sec, notes FROM crawl_runs ORDER BY run_id DESC LIMIT 1"

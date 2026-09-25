@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS site (
     domain          VARCHAR PRIMARY KEY,          -- registrable domain
     seed_url        VARCHAR NOT NULL,
     crawled_at      TIMESTAMP,                     -- utolsó teljes crawl kezdete
-    target_country  VARCHAR,                       -- hreflang / TLD / nyelv alapján levezetve
+    target_country  VARCHAR,                       -- ISO-kód; súlyozott jelszavazás, sosem a nyelvből (004)
     languages       VARCHAR[],                     -- talált nyelvek
     tech            VARCHAR[],                     -- resolver `tech` domain kimenete (M4)
     tech_signals    VARCHAR[],                     -- M1 nyers jelek: generator meta, script-src domainek, útvonalak

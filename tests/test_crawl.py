@@ -216,7 +216,7 @@ async def test_fresh_crawl_of_mini_site(site, tools):
         "SELECT robots_status, robots_txt, trailing_slash, page_count, crawled_at IS NOT NULL "
         "FROM site").fetchone()
     assert site_row[0] == 200 and "Disallow: /tiltott/" in site_row[1]
-    assert site_row[2:] == (True, 12, True)
+    assert site_row[2:] == (True, 6, True)  # sikeres oldalak: /, /a/, /b/, /e/, /f/, /rejtett/
 
     run_row = con.execute(
         "SELECT finished_at IS NOT NULL, pages_done, pages_failed, pages_skipped, pages_per_sec, "

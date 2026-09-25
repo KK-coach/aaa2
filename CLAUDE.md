@@ -22,7 +22,7 @@ Első függőleges szelet, ebben a sorrendben, mindegyik tesztekkel:
 3. `aaa2/engine/render.py` — Playwright: perzisztens böngésző, N context, route-abort a `config/route_abort_domains.txt` alapján, consent a `config/consent_texts.txt`-ből, stabilizálás (a `legacy/renderer.py` HALT-26Y blokkjának logikája), sosem dob kivételt.
 4. `aaa2/engine/parse.py` — renderelt DOM → `pages`, `links` (pozícióval), `headings`, `schema_blocks`. Main content: `legacy/crawler.py` readability-scoring.
 5. `aaa2/engine/crawl.py` — összefűzés, oldalanként egy tranzakció, `crawl_runs` naplózás.
-6. `aaa2/engine/site_profile.py` — célország, nyelvek, nyers tech-jelek a crawl végén.
+6. `aaa2/engine/site_profile.py` — célország (a v1 súlyozott szavazása, sitewide), piaci hatókör, nyelvek, nyers tech-jelek a crawl végén.
 
 Kész, ha a három referencia-site (kk.coach, Materia Trattoria, ngx-bootstrap) végigmegy, a linkgráf egyezik a Screaming Frog JS-render baseline-nal (egy ülésben felvéve), és a `--resume` egy megszakított crawlt befejez. Stop-feltétel: kezdéstől két hét.
 

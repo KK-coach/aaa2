@@ -93,6 +93,11 @@ def registrable_domain(host: str) -> str:
     return _psl(host).top_domain_under_public_suffix or host
 
 
+def public_suffix(host: str) -> str:
+    """A host public suffixe (`co.uk`, `hu`, `github.io`); IP-címnél és localhostnál üres."""
+    return _psl(host.lower()).suffix
+
+
 def is_internal(url: str, policy: UrlPolicy) -> bool:
     """Abszolút http(s) URL a seed registrable domainjén, nem kizárt aldomainen."""
     parts = urlsplit(url.strip())
