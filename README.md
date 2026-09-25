@@ -43,4 +43,4 @@ aaa --help
 | M4 | Resolver | LLM-hívás/oldal < 20%-ra esik egy 500+ oldalas site-on | az arány nem esik |
 | M5 | Konkurencia | entity gap egyezik a kézi elemzéssel | 3-ból 2-nél kézi javítás kell |
 
-Referencia-site-ok (mind 100 oldal alatt): kk.coach (Astro, kétnyelvű, Zaraz-consent), Materia Trattoria (WP, consent, részleges JS-linkek), vestino.hu vagy másik microstore.app-bolt (tiszta CSR).
+Referencia-site-ok (mind 100 oldal alatt): kk.coach (Astro, kétnyelvű, Zaraz-consent), Materia Trattoria (WP, consent, részleges JS-linkek), ngx-bootstrap a `/ngx-bootstrap/` include-dal (tiszta CSR, Angular). Mérések és seedek: CLAUDE.md.
