@@ -31,8 +31,18 @@ Kész, ha a három referencia-site (kk.coach, Materia Trattoria, ngx-bootstrap) 
 | Site | Seed | Include | Mit fed le |
 | --- | --- | --- | --- |
 | kk.coach | `https://kk.coach/` | — | Astro, kétnyelvű, Zaraz-consent |
-| Materia Trattoria | — | — | WP, consent, részleges JS-linkek |
+| Materia Trattoria | `https://materia-tm.com/` | — | WP (Divi), WPML 4.7.4 nyelvi almappákkal (`/hu/`, `/it/`), consent, részleges JS-linkek |
 | ngx-bootstrap | `https://valor-software.com/ngx-bootstrap/components` | `/ngx-bootstrap/` | tiszta CSR (Angular), valódi path-okkal |
+
+A Materia seedje a gyökér, nem a `/hu/`: a gyökér a canonical, a `/hu/` a magyar ág. Hibái szándékosan maradnak, **ne javíts rajtuk, ezek a teszt**:
+- nincs H1;
+- nincs meta description;
+- több generator meta van (Divi-alapú téma, WordPress, WPML).
+
+Mérve 2026-09-25-én a seeden:
+- **Nyersen:** 14 `<a href>`, ebből 11 belső előfordulás és 7 különböző belső URL. Közte két Cloudflare `/cdn-cgi/l/email-protection` link.
+- **Renderelve:** 21 `<a href>`, 15 belső előfordulás, 6 különböző. A JS megduplázza a menüt, és az e-mail-védelmi linkeket `mailto:`-ra cseréli.
+- **Nyelv:** `html[lang]="en-US"`, 4 hreflang.
 
 Az ngx-bootstrap mérése (2026-09-25, `Renderer` + `Frontier`, 300-as felső korláttal):
 - **A seeden** 1 belső `<a href>` van a nyers HTML-ben és 53 a renderelt DOM-ban. Hash-link (`#/`) egy sincs.
