@@ -1,20 +1,24 @@
-"""Site-profil: táblás esetek szintetikus DB-vel, és a három rögzített crawl-készlet
-(kk.coach: Polylang, HU/EN; materia-tm.com: WPML, EN/HU/IT; ngx-bootstrap: egynyelvű).
+"""Site-profil: szintetikus DB-vel és a három rögzített crawl-készleten (kk.coach: Polylang,
+HU/EN; materia-tm.com: WPML, EN/HU/IT, budapesti cím; ngx-bootstrap: egynyelvű dokumentáció).
 Felvétel: `pytest -m live -k record_site_profile`."""
+import json
+
 import pytest
 import zstandard
 from selectolax.parser import HTMLParser
+from typer.testing import CliRunner
 
+from aaa2.cli.main import app
+from aaa2.db import connect as connect_module
 from aaa2.db.connect import connect
 from aaa2.engine.crawl import CrawlOptions
 from aaa2.engine.site_profile import (
     build_profile,
-    page_language,
     page_tech_signals,
     site_languages,
-    target_country,
     update_site_profile,
 )
+from aaa2.engine.target_country import Candidate
 from tests.recorded import record_crawl, replay_crawl
 
 HU_TEXT = "Ez egy magyar szöveg, amely azt mutatja, hogy a weboldal nem angol. " * 4
@@ -26,89 +30,49 @@ def html(body="<p>x</p>", head="", lang=None):
     return f"<html{attribute}><head>{head}</head><body>{body}</body></html>"
 
 
-def site_db(domain, seed, pages):
-    """pages: (url, status, error, html, main_content, hreflang) sorok."""
-    con = connect(":memory:")
+def page(url, *, status=200, error=None, page_html=None, main="", lang=None, hreflang=(),
+         title=None, description=None, headings=(), schema=(), final_url=None):
+    if page_html is None and status // 100 == 2:
+        page_html = html(lang=lang)
+    return {"url": url, "status": status, "error": error, "html": page_html, "main": main,
+            "lang": lang, "hreflang": list(hreflang), "title": title, "description": description,
+            "headings": list(headings), "schema": list(schema), "final_url": final_url}
+
+
+def site_db(domain, seed, pages, path=":memory:"):
+    con = connect(path)
     con.execute("INSERT INTO site (domain, seed_url) VALUES (?, ?)", [domain, seed])
     compressor = zstandard.ZstdCompressor()
-    for url, status, error, page_html, main_content, hreflang in pages:
-        compressed = compressor.compress(page_html.encode()) if page_html is not None else None
-        con.execute(
-            "INSERT INTO pages (url, status, error, rendered_html, main_content, hreflang) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
-            [url, status, error, compressed, main_content, list(hreflang)],
-        )
+    for p in pages:
+        compressed = compressor.compress(p["html"].encode()) if p["html"] is not None else None
+        (page_id,) = con.execute(
+            "INSERT INTO pages (url, status, error, rendered_html, main_content, lang, hreflang, "
+            "title, meta_description, final_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "RETURNING page_id",
+            [p["url"], p["status"], p["error"], compressed, p["main"], p["lang"], p["hreflang"],
+             p["title"], p["description"], p["final_url"]],
+        ).fetchone()
+        for ordinal, (level, text) in enumerate(p["headings"], 1):
+            con.execute("INSERT INTO headings VALUES (?, ?, ?, ?)", [page_id, level, text, ordinal])
+        for ordinal, item in enumerate(p["schema"], 1):
+            con.execute("INSERT INTO schema_blocks VALUES (?, ?, ?, ?)",
+                        [page_id, item.get("@type"), json.dumps(item), ordinal])
     return con
 
 
 # ---------------------------------------------------------------------------
-# oldalankénti nyelv
+# nyelvek, tech-jelek
 # ---------------------------------------------------------------------------
-
-PAGE_LANGUAGES = [
-    ("html lang", html(lang="hu-HU"), "", "hu-HU"),
-    ("html lang előbb, mint meta",
-     html(lang="en", head='<meta http-equiv="content-language" content="hu">'), "", "en"),
-    ("content-language http-equiv", html(head='<meta http-equiv="Content-Language" content="de-AT">'),
-     "", "de-AT"),
-    ("content-language name", html(head='<meta name="content-language" content="cs">'), "", "cs"),
-    ("og:locale aláhúzással", html(head='<meta property="og:locale" content="hu_HU">'), "", "hu-HU"),
-    ("html lang előbb, mint og:locale",
-     html(lang="hu", head='<meta property="og:locale" content="en_US">'), "", "hu"),
-    ("detekció a main contentből", html(), HU_TEXT, "hu"),
-    ("semmi", html(), "12345", None),
-    ("üres lang attribútum után detekció", html(lang=" "), EN_TEXT, "en"),
-]
-
-
-@pytest.mark.parametrize(("page_html", "main", "expected"), [p[1:] for p in PAGE_LANGUAGES],
-                         ids=[p[0] for p in PAGE_LANGUAGES])
-def test_page_language(page_html, main, expected):
-    assert page_language(HTMLParser(page_html), main) == expected
 
 
 def test_site_languages_by_page_count_then_hreflang_only():
-    tags = ["hu-HU", "en-US", "hu", None, "HU"]
+    langs = ["hu-HU", "en-US", "hu", None, "HU", "en_GB", " "]
     hreflang = ["hu", "en", "de-AT", "x-default"]
-    assert site_languages(tags, hreflang) == ("hu", "en", "de")
-
-
-# ---------------------------------------------------------------------------
-# célország
-# ---------------------------------------------------------------------------
-
-COUNTRIES = [
-    ("országkódos TLD", "bolt.hu", [], ("en",), ["en-US"], "HU"),
-    ("co.uk", "shop.co.uk", [], ("en",), [], "GB"),
-    ("generikus ccTLD nem dönt", "app.io", [], ("en",), ["en"], None),
-    ("hreflang régió többségben", "x.com", ["en-GB", "en-GB", "de-AT", "x-default"], ("en", "de"),
-     [], "GB"),
-    ("hreflang régió döntetlen, nemzeti nyelv dönt", "x.com", ["en-GB", "hu-HU"], ("en", "hu"),
-     [], "HU"),
-    ("egy nemzeti nyelv", "kk.coach", ["en", "hu"], ("en", "hu"), ["en-US", "hu-HU"], "HU"),
-    ("az olasz nem egyországos", "materia-tm.com", ["en", "hu", "it", "x-default"],
-     ("en", "hu", "it"), ["en-US", "hu-HU", "it-IT"], "HU"),
-    ("két nemzeti nyelv, vegyes régió", "x.com", [], ("hu", "cs"), ["hu-HU", "cs-CZ"], None),
-    ("egységes oldalrégió", "x.com", [], ("en",), ["en-GB", "en-GB"], "GB"),
-    ("vegyes oldalrégió", "x.com", [], ("en",), ["en-US", "en-GB"], None),
-    ("régió nélküli oldal", "valor-software.com", [], ("en",), ["en", "en"], None),
-    ("régiós és régió nélküli oldal vegyesen", "x.com", [], ("en",), ["en-GB", "en"], None),
-]
-
-
-@pytest.mark.parametrize(("domain", "hreflang", "languages", "tags", "expected"),
-                         [c[1:] for c in COUNTRIES], ids=[c[0] for c in COUNTRIES])
-def test_target_country(domain, hreflang, languages, tags, expected):
-    assert target_country(domain, hreflang, languages, tags) == expected
-
-
-# ---------------------------------------------------------------------------
-# tech-jelek, oldalszám, írás
-# ---------------------------------------------------------------------------
+    assert site_languages(langs, hreflang) == ("hu", "en", "de")
 
 
 def test_page_tech_signals():
-    page = html(
+    page_html = html(
         head='<meta name="generator" content=" WordPress 7.1.2 ">'
              '<meta name="Generator" content="WPML ver:4.7.4">'
              '<script src="https://www.googletagmanager.com/gtag/js?id=G-1"></script>'
@@ -118,7 +82,7 @@ def test_page_tech_signals():
              '<link rel="stylesheet" href="/wp-content/plugins/polylang/x.css">',
         body='<app-root ng-version="22.0.2"></app-root><script>self.__NEXT_DATA__={}</script>',
     )
-    signals = page_tech_signals(HTMLParser(page), page, "kk.coach")
+    signals = page_tech_signals(HTMLParser(page_html), page_html, "kk.coach")
     assert signals == {
         "generator:WordPress 7.1.2", "generator:WPML ver:4.7.4",
         "script:www.googletagmanager.com",
@@ -128,32 +92,132 @@ def test_page_tech_signals():
     }
 
 
+# ---------------------------------------------------------------------------
+# a profil egy szintetikus DB-n
+# ---------------------------------------------------------------------------
+
+
 def test_build_profile_counts_successful_pages_and_orders_signals():
     common = '<script src="https://cdn.example.com/a.js"></script>'
     con = site_db("bolt.hu", "https://bolt.hu/", [
-        ("https://bolt.hu/", 200, None, html(head=common + '<meta name="generator" content="X">',
-                                             lang="hu"), HU_TEXT, ["hu", "en"]),
-        ("https://bolt.hu/a/", 200, None, html(head=common, lang="hu"), HU_TEXT, []),
-        ("https://bolt.hu/en/", 200, None, html(lang="en"), EN_TEXT, []),
-        ("https://bolt.hu/404/", 404, None, html(lang="hu"), "", []),
-        ("https://bolt.hu/fal/", 200, "wall", html(lang="hu"), "", []),
-        ("https://bolt.hu/regi/", 301, None, None, None, []),
+        page("https://bolt.hu/", page_html=html(head=common + '<meta name="generator" content="X">'),
+             lang="hu", main=HU_TEXT, hreflang=["hu|https://bolt.hu/", "en|https://bolt.hu/en/"]),
+        page("https://bolt.hu/a/", page_html=html(head=common), lang="hu", main=HU_TEXT),
+        page("https://bolt.hu/en/", lang="en", main=EN_TEXT),
+        page("https://bolt.hu/404/", status=404, page_html=html(), lang="hu"),
+        page("https://bolt.hu/fal/", error="wall", page_html=html(), lang="hu"),
+        page("https://bolt.hu/regi/", status=301, final_url="https://bolt.hu/a/"),
     ])
     profile = build_profile(con)
     assert profile.page_count == 3
     assert profile.languages == ("hu", "en")
-    assert profile.target_country == "HU"
+    assert (profile.target_country, profile.target_country_confidence) == ("HU", "medium")
+    assert profile.target_country_candidates == (Candidate("HU", 1.0, ("tld",)),)
+    assert profile.market_scope == "country_specific"
     assert profile.tech_signals == ("script:cdn.example.com", "generator:X")
 
 
+def test_content_language_is_not_a_country():
+    """Magyar tartalom `.com`-on, országjel nélkül: nyelv van, célország nincs."""
+    con = site_db("pelda.com", "https://pelda.com/", [
+        page("https://pelda.com/", lang="hu", main=HU_TEXT),
+        page("https://pelda.com/b/", lang="hu-HU", main=HU_TEXT),
+    ])
+    profile = build_profile(con)
+    assert profile.languages == ("hu",)
+    assert (profile.target_country, profile.target_country_candidates) == (None, ())
+    assert profile.market_scope == "not_country_specific"
+
+
+def test_signals_are_collected_from_every_page():
+    """A telefon a kontaktoldal meta descriptionjében, a cím schemában, a pénznem egy harmadik
+    oldal címében: sitewide együtt adják."""
+    con = site_db("pelda.com", "https://pelda.com/", [
+        page("https://pelda.com/", lang="en", main=EN_TEXT),
+        page("https://pelda.com/contact/", lang="en", description="Call us: +36 1 234 5678"),
+        page("https://pelda.com/about/", lang="en", schema=[{
+            "@type": "Organization", "address": {"@type": "PostalAddress", "addressCountry": "HU"}}]),
+        page("https://pelda.com/prices/", lang="en", title="Prices in HUF"),
+    ])
+    profile = build_profile(con)
+    assert (profile.target_country, profile.target_country_confidence) == ("HU", "medium")
+    assert profile.target_country_candidates == (
+        Candidate("HU", 1.0, ("phone", "schema", "currency")),)
+    assert profile.market_scope == "country_specific"
+
+
+MIXED_SITE = [
+    page("https://plumber.co.uk/", lang="en-GB", title="Plumber",
+         headings=[(1, "Emergency plumber in London")],
+         main="Spare parts shipped worldwide. " + EN_TEXT),
+    page("https://plumber.co.uk/prices/", lang="en-GB", main="Call-out from £49."),
+]
+
+
+def test_synthetic_mixed_site():
+    """ccTLD + város a H1-ben + "worldwide" a main contentben: mixed, leírva, nem feloldva."""
+    con = site_db("plumber.co.uk", "https://plumber.co.uk/", MIXED_SITE)
+    profile = build_profile(con)
+    assert (profile.market_scope, profile.market_scope_city) == ("mixed", "London")
+    assert (profile.target_country, profile.target_country_confidence) == ("GB", "medium")
+    assert profile.target_country_candidates == (Candidate("GB", 1.0, ("tld", "currency")),)
+
+
+def test_market_scope_reads_home_pages_only():
+    """A nemzetközi szó és a város csak a seed oldalon és a hreflang-alternatíváin számít."""
+    seed = page("https://pelda.com/", lang="en", title="Trattoria",
+                hreflang=["en|https://pelda.com/", "hu|https://pelda.com/hu", "it|https://x.it/"])
+    hu_home = page("https://pelda.com/hu/", lang="hu", main="1073 Budapest, Dob u. 56")
+    menu = page("https://pelda.com/menu/", lang="en", headings=[(3, "Order Online")],
+                main="Order online. Our supplier is based in 20121 Milan.")
+    con = site_db("pelda.com", "https://pelda.com/", [seed, hu_home, menu])
+    profile = build_profile(con)
+    assert (profile.market_scope, profile.market_scope_city) == ("local", "Budapest")
+
+
+def test_market_scope_follows_seed_redirect():
+    """A seed átirányít; a céloldal H3-a számít, a H4 már nem."""
+    con = site_db("pelda.com", "https://pelda.com/", [
+        page("https://pelda.com/", status=301, final_url="https://pelda.com/en/"),
+        page("https://pelda.com/en/", lang="en",
+             headings=[(4, "Offices in London"), (3, "Plumber in Dublin")]),
+    ])
+    assert build_profile(con).market_scope_city == "Dublin"
+
+
 def test_update_site_profile_writes_site_row():
-    con = site_db("x.com", "https://x.com/", [
-        ("https://x.com/", 200, None, html(lang="en-GB"), EN_TEXT, []),
+    con = site_db("x.co.uk", "https://x.co.uk/", [
+        page("https://x.co.uk/", lang="en-GB", main="Worldwide delivery. " + EN_TEXT),
     ])
     update_site_profile(con)
     row = con.execute(
-        "SELECT target_country, languages, page_count, tech_signals FROM site").fetchone()
-    assert row == ("GB", ["en"], 1, [])
+        "SELECT target_country, target_country_confidence, target_country_candidates, "
+        "market_scope, market_scope_city, languages, page_count, tech_signals FROM site"
+    ).fetchone()
+    assert row[:2] == ("GB", "medium")
+    assert json.loads(row[2]) == [{"country": "GB", "score": 1.0, "signals": ["tld"]}]
+    assert row[3:] == ("country_specific", None, ["en"], 1, [])
+
+
+def test_update_without_country_writes_empty_candidates():
+    con = site_db("x.com", "https://x.com/", [page("https://x.com/", lang="en", main=EN_TEXT)])
+    update_site_profile(con)
+    row = con.execute("SELECT target_country, target_country_confidence, "
+                      "target_country_candidates, market_scope FROM site").fetchone()
+    assert (row[0], row[1], json.loads(row[2]), row[3]) == (None, None, [], "not_country_specific")
+
+
+def test_cli_status_prints_profile(tmp_path, monkeypatch):
+    monkeypatch.setattr(connect_module, "DATA_DIR", tmp_path)
+    con = site_db("plumber.co.uk", "https://plumber.co.uk/", MIXED_SITE,
+                  path=connect_module.db_path("plumber.co.uk"))
+    update_site_profile(con)
+    con.close()
+    status = CliRunner().invoke(app, ["status", "plumber.co.uk"])
+    assert status.exit_code == 0, status.output
+    assert ("profil: célország GB (medium), piaci hatókör mixed (London), nyelvek en, "
+            "2 sikeres oldal") in status.output
+    assert "jelölt GB 1.00: tld, currency" in status.output
 
 
 def test_profile_without_site_row_is_empty():
@@ -175,19 +239,39 @@ REFERENCE_SETS = {
 # 301-es magyar URL is tartalmi oldal: 40 sikeres oldal (élesben 36), és a magyar oldalakból
 # több van, mint az angolokból.
 EXPECTED = {
-    "kk-coach-crawl": ("HU", ("hu", "en"), 40, {
-        "path:/wp-content/themes/generatepress/", "path:/wp-includes/",
-        "script:static.cloudflareinsights.com"}),
-    "materia-crawl": ("HU", ("en", "hu", "it"), 14, {
-        "generator:WordPress 7.1.2", "path:/wp-content/plugins/sitepress-multilingual-cms/",
-        "path:/wp-content/themes/Divi/", "script:cdn-cookieyes.com"}),
-    "ngx-bootstrap-crawl": (None, ("en",), 69, {"dom:ng-version=22.0.2"}),
+    # Telefon és cím nincs a main contentben; a /hu/ ág, a forintárak és a hu_HU og:locale
+    # szavaz Magyarországra, erős jel nélkül. Az angol szolgáltatásoldalak schemája
+    # areaServed: Worldwide.
+    "kk-coach-crawl": {
+        "profile": ("HU", "low", "international_global", None, ("hu", "en"), 40),
+        "candidates": ["HU", "US"],
+        "signals": {"path:/wp-content/themes/generatepress/", "path:/wp-includes/",
+                    "script:static.cloudflareinsights.com"},
+    },
+    # A +36-os telefon a kezdőoldalakon; az adatkezelési tájékoztató +1-es és +39-es
+    # adatfeldolgozói és az /it/ ág csak jelöltek. A cím a kezdőoldal main contentjében:
+    # 1073 Budapest.
+    "materia-crawl": {
+        "profile": ("HU", "medium", "local", "Budapest", ("en", "hu", "it"), 14),
+        "candidates": ["HU", "IT", "US"],
+        "signals": {"generator:WordPress 7.1.2",
+                    "path:/wp-content/plugins/sitepress-multilingual-cms/",
+                    "path:/wp-content/themes/Divi/", "script:cdn-cookieyes.com"},
+    },
+    # Nincs országjel; a "Global styling" az alert-oldal szakaszcíme, nem piaci állítás.
+    "ngx-bootstrap-crawl": {
+        "profile": (None, None, "not_country_specific", None, ("en",), 69),
+        "candidates": [],
+        "signals": {"dom:ng-version=22.0.2"},
+    },
 }
 
 
 def site_profile_row(con):
     return con.execute(
-        "SELECT target_country, languages, page_count, tech_signals FROM site").fetchone()
+        "SELECT target_country, target_country_confidence, market_scope, market_scope_city, "
+        "languages, page_count, target_country_candidates, tech_signals FROM site"
+    ).fetchone()
 
 
 @pytest.mark.parametrize("name", list(REFERENCE_SETS))
@@ -197,11 +281,12 @@ async def test_reference_site_profile(name):
     if replayed is None:
         pytest.skip(f"nincs felvétel: pytest -m live -k record_site_profile ({name})")
     _, con = replayed
-    country, languages, page_count, signals = site_profile_row(con)
-    expected_country, expected_languages, expected_count, expected_signals = EXPECTED[name]
-    assert (country, tuple(languages), page_count) == (
-        expected_country, expected_languages, expected_count)
-    assert expected_signals <= set(signals)
+    country, confidence, scope, city, languages, page_count, candidates, signals = (
+        site_profile_row(con))
+    expected = EXPECTED[name]
+    assert (country, confidence, scope, city, tuple(languages), page_count) == expected["profile"]
+    assert [c["country"] for c in json.loads(candidates)] == expected["candidates"]
+    assert expected["signals"] <= set(signals)
 
 
 @pytest.mark.live

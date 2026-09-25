@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import json
 import sys
 from pathlib import Path
 from typing import Annotated
@@ -88,14 +89,22 @@ def status(
         f"{queue.get('failed', 0)} hibás"
     )
     profile = con.execute(
-        "SELECT target_country, languages, page_count, tech_signals FROM site"
+        "SELECT target_country, target_country_confidence, target_country_candidates, "
+        "market_scope, market_scope_city, languages, page_count, tech_signals FROM site"
     ).fetchone()
     if profile:
-        country, languages, page_count, signals = profile
+        country, confidence, candidates, scope, city, languages, page_count, signals = profile
         typer.echo(
-            f"  profil: célország {country or '—'}, nyelvek {', '.join(languages or []) or '—'}, "
-            f"{page_count or 0} sikeres oldal"
+            f"  profil: célország {country or '—'}"
+            + (f" ({confidence})" if confidence else "")
+            + f", piaci hatókör {scope or '—'}" + (f" ({city})" if city else "")
+            + f", nyelvek {', '.join(languages or []) or '—'}, {page_count or 0} sikeres oldal"
         )
+        for candidate in json.loads(candidates or "[]"):
+            typer.echo(
+                f"    jelölt {candidate['country']} {candidate['score']:.2f}: "
+                + ", ".join(candidate["signals"])
+            )
         if signals:
             shown = ", ".join(signals[:8]) + (f" (+{len(signals) - 8})" if len(signals) > 8 else "")
             typer.echo(f"  tech-jelek: {shown}")

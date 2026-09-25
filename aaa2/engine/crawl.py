@@ -5,8 +5,8 @@
 1. felmérés (`discover`): https-próba, robots.txt, sitemap;
 2. a seed renderelése; a linkjeiből dől el a trailing slash (`Frontier.start`);
 3. `concurrency` worker dolgozza fel a sort: hash-próba, render, parse, írás;
-4. a végén a linkek `to_page_id`-je, a site-profil (`site_profile.py`: célország, nyelvek,
-   `page_count`, nyers tech-jelek) és a `crawl_runs` sor lezárása.
+4. a végén a linkek `to_page_id`-je, a site-profil (`site_profile.py`: célország, piaci
+   hatókör, nyelvek, `page_count`, nyers tech-jelek) és a `crawl_runs` sor lezárása.
 
 `--resume`: a `site` táblában rögzített szabályokkal a várakozó sorokból folytat.
 
