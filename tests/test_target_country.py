@@ -153,7 +153,7 @@ def test_isolated_og_locale_is_a_soft_hint():
     isolated = [{"og_locale": {"GB"}}] * 3 + [{"path_prefix": {"HU"}}]
     assert vote(None, isolated).country == "HU"
     corroborated = isolated + [{"hreflang": {"GB"}}]
-    assert vote(None, corroborated) == TargetCountry("GB", "high", (
+    assert vote(None, corroborated) == TargetCountry("GB", "medium", (
         Candidate("GB", 0.67, ("hreflang", "og_locale")),
         Candidate("HU", 0.33, ("path_prefix",)),
     ))
@@ -181,7 +181,10 @@ CONFIDENCE = [
     ("ütközés: ccTLD és más ország telefonja", "GB", [{"phone": {"HU"}}], ("GB", "low")),
     ("három egyező erős jel felülírja az ütközést", "GB",
      [{"hreflang": {"GB"}, "schema": {"GB"}, "phone": {"HU"}}], ("GB", "high")),
-    ("megerősített og:locale", None, [{"phone": {"GB"}, "og_locale": {"GB"}}], ("GB", "high")),
+    ("megerősített og:locale: két erős jel", None,
+     [{"phone": {"GB"}, "og_locale": {"GB"}}], ("GB", "medium")),
+    ("megerősített og:locale harmadik erős jelként", None,
+     [{"phone": {"GB"}, "og_locale": {"GB"}, "hreflang": {"GB"}}], ("GB", "high")),
     ("megerősített og:locale, de ütközéssel", "HU",
      [{"phone": {"GB"}, "og_locale": {"GB"}}], ("GB", "low")),
     ("holtversenyes jelfajtának nincs vezetője", "DE",

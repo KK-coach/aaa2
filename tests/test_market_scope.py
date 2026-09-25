@@ -49,9 +49,18 @@ ADDRESSES = [
     ("holland irányítószám", "Damrak 1, 1012 LG Amsterdam", "Amsterdam"),
     ("UK postcode", "10 Downing Street, London SW1A 2AA", "London"),
     ("US ZIP", "350 5th Ave, New York, NY 10118", "New York"),
+    ("vessző az irányítószám előtt", "Dob u. 56-58, 1073 Budapest Tel.: +36 1 234 5678", "Budapest"),
+    ("cím a mondat végén", "Irodánk: 1073 Budapest.", "Budapest"),
     ("csak említés", "We love Budapest and London.", None),
     ("szám a szó végén", "ID1073 Budapest", None),
     ("kisbetűs UK postcode", "london sw1a 2aa", None),
+    ("magában álló négyjegyű szám", "Nyitva 1073 napja, rendelés: 2024", None),
+    ("termékkód", "Cikkszám: HU-1073", None),
+    ("szám kettőspont után, a város után szöveg", "Cikkszám: 1073 Budapest Blend", None),
+    ("évszám a város előtt", "In 2024 London hosted the finals.", None),
+    ("szám a város előtt, cím nélkül", "Over 1500 London businesses trust us.", None),
+    ("termékkód a város előtt", "HU-1073 Budapest Blend, 250 g", None),
+    ("termékkód a város előtt, a szöveg végén", "Rendelés: HU-1073 Budapest", None),
 ]
 
 

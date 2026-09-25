@@ -26,7 +26,6 @@ elszigetelt), amelyeknek egyetlen vezető országuk van:
 
 - legalább 3 a győztest vezeti → high;
 - egy erős jelfajta más országot vezet (ütközés) → low;
-- az og_locale a győztest vezeti → high;
 - 1–2 a győztest vezeti → medium;
 - egy sem → low.
 
@@ -210,8 +209,6 @@ def _confidence(top: str, counts: dict[str, Counter[str]], isolated: set[str]) -
         return "high"
     if any(country != top for country in leaders.values()):
         return "low"
-    if "og_locale" in agreeing:
-        return "high"
     return "medium" if agreeing else "low"
 
 

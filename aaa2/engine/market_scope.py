@@ -2,8 +2,9 @@
 
 Kezdőoldalak: a seed oldal és a hreflang-alternatívái. Rajtuk számít:
 
-- a város (`CITY_TOKENS`) a title-ben, a meta descriptionben és a H1–H3-ban, vagy postai címben
-  a main contentben: `1073 Budapest`, `H-1148 Budapest`, `London SW1A 1AA`, `New York, NY 10001`;
+- a város (`CITY_TOKENS`) a title-ben, a meta descriptionben és a H1–H3-ban, vagy határolt
+  postai címben a main contentben: `1073 Budapest, Dob u. 56`, `Fogarasi út 3, H-1148 Budapest`,
+  `London SW1A 1AA`, `New York, NY 10001`;
 - a nemzetközi jel (`INTL_RE`) a fejrészben, a main contentben és a JSON-LD-ben.
 
 Sitewide: az ország (ccTLD vagy schema-cím, a hívó adja), a schema-cím városa
@@ -40,14 +41,20 @@ INTL_RE = re.compile(
 )
 AREA_SERVED_KEYS = ("areaServed", "serviceArea")
 
-# Irányítószám a város előtt (HU, DE, AT, IT, FR, ES, NL), országjellel vagy anélkül; utána
-# (UK postcode, US állam + ZIP).
-_POSTCODE_BEFORE = r"(?<![\w-])(?:[A-Z]{1,3}-)?\d{4,5}(?:\s?[A-Z]{2})?\s+"
+# Irányítószám a város előtt (HU, AT, DE, FR, IT, ES, NL, CH), postai országjellel vagy anélkül.
+# Határolt címként számít: az irányítószám előtt vessző, pontosvessző vagy sortörés áll, vagy a
+# város után vessző, pontosvessző, pont, sortörés vagy a szöveg vége.
+_POSTCODE = r"(?:(?:H|A|D|F|I|E|NL|CH)-)?\d{4,5}(?:\s?[A-Z]{2})?"
+_ADDRESS_START = r"[,;|\n]\s*"
+_ADDRESS_END = r"(?=\s*(?:[,;|.\n]|$))"
+# Irányítószám a város után: UK postcode, US állam + ZIP.
 _POSTCODE_AFTER = r",?\s+(?:[A-Z]{2}\s+\d{5}(?:-\d{4})?|[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})\b"
 _CITY_IN_HEAD = tuple((city, re.compile(rf"\b{re.escape(city)}\b")) for city in CITY_TOKENS)
 _CITY_IN_ADDRESS = tuple(
     (city, re.compile(
-        rf"{_POSTCODE_BEFORE}(?i:{re.escape(city)})\b|\b(?i:{re.escape(city)}){_POSTCODE_AFTER}"))
+        rf"{_ADDRESS_START}{_POSTCODE}\s+(?i:{re.escape(city)})\b"
+        rf"|(?<![\w-]){_POSTCODE}\s+(?i:{re.escape(city)}){_ADDRESS_END}"
+        rf"|\b(?i:{re.escape(city)}){_POSTCODE_AFTER}"))
     for city in CITY_TOKENS
 )
 
