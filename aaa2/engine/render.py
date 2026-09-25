@@ -4,8 +4,9 @@ Egy oldal renderelése, egy `render_timeout` kereten belül:
 
 1. navigáció `domcontentloaded`-ig; a fő válasz body-ja a nyers HTML, renderelés előtt;
 2. `networkidle` (500 ms hálózati csend), legfeljebb a keret maradékáig;
-3. consent: a `config/consent_texts.txt` sorrendjében az első látható, szövegre pontosan
-   (kis-nagybetű nélkül) egyező gombra kattint; hiba nem szakítja meg a renderelést;
+3. consent: a `config/consent_texts.txt` feliratai, pontos egyezés kis-nagybetű nélkül, három
+   körben (button, link, bármely elem szövege); az első látható egyezés kattint; hiba nem
+   szakítja meg a renderelést, a kattintás okozta navigáció visszalép;
 4. aktiválás: valódi egérmozgás és görgő, hogy a késleltetett scriptek (WP Rocket) is
    elinduljanak, utána egy görgetési kör a lazy betöltőknek; ha az oldalon WP Rocket
    késleltetett script van, a befejező eseményére is vár (legfeljebb 2 s);
@@ -28,7 +29,7 @@ import hashlib
 import re
 import time
 from collections.abc import Awaitable, Callable, Iterable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from functools import partial
 from pathlib import Path
 from typing import Self
@@ -37,6 +38,8 @@ from urllib.parse import urlsplit
 from playwright.async_api import (
     Browser,
     BrowserContext,
+    Frame,
+    Locator,
     Page,
     Playwright,
     Request,
@@ -59,6 +62,7 @@ STABILITY_THRESHOLD = 0.01
 WALL_MAX_WORDS = 50
 ROCKET_EVENT_WAIT_MS = 2000
 CONSENT_CLICK_TIMEOUT_MS = 1500
+CONSENT_ROUNDS = ("button", "link", "text")
 SCROLL_MAX_STEPS = 30
 VIEWPORT = {"width": 1920, "height": 1080}
 
@@ -98,8 +102,10 @@ Upstream = Callable[[Route, Request], Awaitable[None]]
 @dataclass(frozen=True)
 class RenderResult:
     """Egy URL renderelésének eredménye. `status` a fő navigáció HTTP-státusza az
-    átirányítások után; `final_url` az oldal URL-je a render végén; `raw_html` a fő
-    válasz body-ja renderelés előtt; `render_ms` az utolsó kísérlet ideje."""
+    átirányítások után; `redirects` a végső válasz előtti HTTP-átirányítási lépések
+    (státusz, URL) sorrendben; `headers` a végső válasz fejlécei kisbetűs kulcsokkal;
+    `final_url` az oldal URL-je a render végén; `raw_html` a fő válasz body-ja renderelés
+    előtt; `render_ms` az utolsó kísérlet ideje."""
 
     url: str
     status: int | None = None
@@ -109,6 +115,8 @@ class RenderResult:
     error: str | None = None
     render_ms: int = 0
     attempts: int = 1
+    redirects: tuple[tuple[int, str], ...] = ()
+    headers: dict[str, str] = field(default_factory=dict)
 
     @property
     def raw_html_hash(self) -> str | None:
@@ -274,6 +282,7 @@ class Renderer:
                 navigations.append(response)
 
         page.on("response", on_response)
+        page.on("popup", _close_quietly)
         try:
             try:
                 response = await page.goto(
@@ -285,22 +294,22 @@ class Renderer:
                 last = navigations[-1] if navigations else None
                 if last is not None and _non_html(last):
                     return RenderResult(
-                        url, status=last.status, final_url=last.url, error=_non_html(last),
-                        render_ms=_elapsed_ms(started),
+                        url, final_url=last.url, error=_non_html(last),
+                        render_ms=_elapsed_ms(started), **await _response_fields(last),
                     )
                 return RenderResult(url, error=_describe(exc), render_ms=_elapsed_ms(started))
 
-            status = response.status if response is not None else None
+            fields = await _response_fields(response)
             raw_html = await _body(response)
-            if retryable(status):
+            if retryable(fields.get("status")):
                 return RenderResult(
-                    url, status=status, final_url=page.url, raw_html=raw_html,
-                    render_ms=_elapsed_ms(started),
+                    url, final_url=page.url, raw_html=raw_html,
+                    render_ms=_elapsed_ms(started), **fields,
                 )
             if response is not None and (non_html := _non_html(response)):
                 return RenderResult(
-                    url, status=status, final_url=page.url, raw_html=raw_html,
-                    error=non_html, render_ms=_elapsed_ms(started),
+                    url, final_url=page.url, raw_html=raw_html, error=non_html,
+                    render_ms=_elapsed_ms(started), **fields,
                 )
 
             await _wait_network_idle(page, deadline)
@@ -311,12 +320,12 @@ class Renderer:
             text = await _evaluate(page, _BODY_TEXT_JS, default="")
             return RenderResult(
                 url,
-                status=status,
                 final_url=page.url,
                 raw_html=raw_html,
                 rendered_html=rendered_html,
                 error="wall" if is_wall(text, self.wall_phrases) else None,
                 render_ms=_elapsed_ms(started),
+                **fields,
             )
         finally:
             await _close_quietly(page)
@@ -379,21 +388,46 @@ async def _wait_network_idle(page: Page, deadline: float) -> None:
         pass
 
 
-async def _accept_consent(page: Page, texts: Iterable[str]) -> str | None:
-    """Az első látható, egyező consent-gomb felirata, amire kattintott; None, ha nem volt."""
-    for text in texts:
-        name = re.compile(rf"^\s*{re.escape(text)}\s*$", re.IGNORECASE)
-        for frame in page.frames:
-            try:
-                buttons = frame.get_by_role("button", name=name)
-                for index in range(min(await buttons.count(), 5)):
-                    button = buttons.nth(index)
-                    if await button.is_visible():
-                        await button.click(timeout=CONSENT_CLICK_TIMEOUT_MS)
-                        return text
-            except PlaywrightError:
-                continue
+async def _accept_consent(page: Page, texts: Iterable[str]) -> tuple[str, str] | None:
+    """Consent-kattintás három körben, mindegyikben a teljes feliratlistával, a sorrendjében:
+    `button` szerep, `link` szerep, végül bármely elem pontos szövege. Az első látható
+    egyezés kattint, a kattintási hiba a következő jelöltre visz. Ha a kattintás másik
+    oldalra navigált, visszalép. Visszaadja a (kör, felirat) párt, vagy None-t."""
+    patterns = [(text, re.compile(rf"^\s*{re.escape(text)}\s*$", re.IGNORECASE)) for text in texts]
+    for kind in CONSENT_ROUNDS:
+        for text, name in patterns:
+            for frame in page.frames:
+                before = _without_fragment(page.url)
+                if await _click_first_visible(_consent_candidates(frame, kind, name)):
+                    if _without_fragment(page.url) != before:
+                        await _go_back(page)
+                    return kind, text
     return None
+
+
+def _consent_candidates(frame: Frame, kind: str, name: re.Pattern[str]) -> Locator:
+    if kind == "text":
+        return frame.get_by_text(name)
+    return frame.get_by_role(kind, name=name)
+
+
+async def _click_first_visible(candidates: Locator) -> bool:
+    try:
+        for index in range(min(await candidates.count(), 5)):
+            candidate = candidates.nth(index)
+            if await candidate.is_visible():
+                await candidate.click(timeout=CONSENT_CLICK_TIMEOUT_MS)
+                return True
+    except PlaywrightError:
+        pass
+    return False
+
+
+async def _go_back(page: Page) -> None:
+    try:
+        await page.go_back(wait_until="domcontentloaded", timeout=CONSENT_CLICK_TIMEOUT_MS * 2)
+    except PlaywrightError:
+        pass
 
 
 async def _activate(page: Page, deadline: float) -> None:
@@ -438,6 +472,42 @@ async def _content(page: Page) -> str | None:
             except PlaywrightError:
                 pass
     return None
+
+
+async def _response_fields(response: Response | None) -> dict:
+    """A végső válasz státusza, az előtte lévő átirányítási lépések és a fejlécek."""
+    if response is None:
+        return {}
+    return {
+        "status": response.status,
+        "redirects": await _redirect_chain(response),
+        "headers": await _headers(response),
+    }
+
+
+async def _redirect_chain(response: Response) -> tuple[tuple[int, str], ...]:
+    steps = []
+    request = response.request.redirected_from
+    while request is not None:
+        try:
+            previous = await request.response()
+        except PlaywrightError:
+            previous = None
+        if previous is not None:
+            steps.append((previous.status, request.url))
+        request = request.redirected_from
+    return tuple(reversed(steps))
+
+
+async def _headers(response: Response) -> dict[str, str]:
+    try:
+        return {key.lower(): value for key, value in (await response.all_headers()).items()}
+    except PlaywrightError:
+        return {}
+
+
+def _without_fragment(url: str) -> str:
+    return url.split("#", 1)[0]
 
 
 def _non_html(response: Response) -> str | None:

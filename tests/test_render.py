@@ -137,6 +137,10 @@ WALLS = [
     ("hosszú oldal a kifejezéssel", "enable javascript " + "szó " * 60, False),
     ("rendes rövid oldal", "Minden rendben, itt a tartalom.", False),
     ("üres", "", False),
+    ("Cloudflare várakozás", "Just a moment... Checking your browser before accessing kk.coach.", True),
+    ("Cloudflare Turnstile", "kk.coach Verify you are human by completing the action below.", True),
+    ("Cloudflare tiltás", "Attention Required! | Cloudflare Sorry, you have been blocked", True),
+    ("cookie-fal", "Please enable cookies. Error 1020", True),
 ]
 
 
@@ -350,6 +354,74 @@ async def test_consent_skips_hidden_duplicate(make_renderer):
     assert 'data-consent="lathato"' in result.rendered_html
 
 
+# Ikonos link: az akadálymentes neve "Elfogadom", a látható szövege nem, így csak a
+# link-kör találja meg, a szöveg-kör nem.
+CONSENT_LINK_PAGE = f"""<html><body>{CONSENT_SCRIPT}
+<a href="#" aria-label="Elfogadom" onclick="mark('link'); return false;">&#10003;</a>
+</body></html>"""
+
+CONSENT_TEXT_PAGE = f"""<html><body>{CONSENT_SCRIPT}
+<div class="cc-banner"><div class="cc-btn" onclick="mark('div')">Összes elfogadása</div></div>
+</body></html>"""
+
+# Az "Accept all" a lista elején áll, de csak div; az "Elfogadom" később jön, de gomb.
+# A button-kör a teljes listán végigmegy, mielőtt a szöveg-kör indulna.
+CONSENT_ROUND_ORDER_PAGE = f"""<html><body>{CONSENT_SCRIPT}
+<div onclick="mark('div')">Accept all</div>
+<button onclick="mark('gomb')">Elfogadom</button>
+</body></html>"""
+
+CONSENT_NAVIGATING_LINK_PAGE = """<html><body><h1 id="eredeti">Eredeti oldal</h1>
+<a href="/cookie-szabalyzat">Accept all</a>
+</body></html>"""
+
+CONSENT_POPUP_PAGE = f"""<html><body>{CONSENT_SCRIPT}
+<a href="/uj-ablak" target="_blank" onclick="mark('popup')">Elfogadom</a>
+</body></html>"""
+
+
+async def test_consent_link_round(make_renderer):
+    renderer, _ = await make_renderer({"https://kk.test/": CONSENT_LINK_PAGE})
+    result = await renderer.render("https://kk.test/")
+    assert 'data-consent="link"' in result.rendered_html
+
+
+async def test_consent_text_round_any_visible_element(make_renderer):
+    renderer, _ = await make_renderer({"https://kk.test/": CONSENT_TEXT_PAGE})
+    result = await renderer.render("https://kk.test/")
+    assert 'data-consent="div"' in result.rendered_html
+
+
+async def test_consent_rounds_run_over_whole_list(make_renderer):
+    renderer, _ = await make_renderer({"https://kk.test/": CONSENT_ROUND_ORDER_PAGE})
+    result = await renderer.render("https://kk.test/")
+    assert 'data-consent="gomb"' in result.rendered_html
+
+
+async def test_consent_navigation_is_undone(make_renderer):
+    renderer, site = await make_renderer({
+        "https://kk.test/": CONSENT_NAVIGATING_LINK_PAGE,
+        "https://kk.test/cookie-szabalyzat": "<html><body><h1>Szabályzat</h1></body></html>",
+    })
+    result = await renderer.render("https://kk.test/")
+    assert site.hits("https://kk.test/cookie-szabalyzat", "document") == 1
+    assert result.final_url == "https://kk.test/"
+    assert 'id="eredeti"' in result.rendered_html
+
+
+async def test_consent_popup_is_closed(make_renderer):
+    renderer, site = await make_renderer({
+        "https://kk.test/": CONSENT_POPUP_PAGE,
+        "https://kk.test/uj-ablak": "<html><body>felugró</body></html>",
+    })
+    result = await renderer.render("https://kk.test/")
+    await asyncio.sleep(0.3)
+    assert result.final_url == "https://kk.test/"
+    assert 'data-consent="popup"' in result.rendered_html
+    assert site.hits("https://kk.test/uj-ablak", "document") == 1
+    assert [len(context.pages) for context in renderer._browser.contexts] == [0]
+
+
 async def test_consent_click_error_does_not_stop_render(make_renderer):
     renderer, _ = await make_renderer({"https://kk.test/": CONSENT_BLOCKED_PAGE})
     result = await renderer.render("https://kk.test/")
@@ -379,6 +451,17 @@ async def test_wall_page_is_invalid(make_renderer):
     assert (result.status, result.error) == (200, "wall")
 
 
+CHALLENGE_PAGE = """<html><head><title>Just a moment...</title></head><body>
+<h1>Just a moment...</h1><p>Checking your browser before accessing bolt.test.</p>
+</body></html>"""
+
+
+async def test_bot_challenge_page_is_wall(make_renderer):
+    renderer, _ = await make_renderer({"https://bolt.test/": (403, {}, CHALLENGE_PAGE)})
+    result = await renderer.render("https://bolt.test/")
+    assert (result.status, result.error, result.attempts) == (403, "wall", 2)
+
+
 async def test_404_is_rendered_not_retried(make_renderer):
     renderer, site = await make_renderer()
     result = await renderer.render("https://kk.test/nincs/")
@@ -395,8 +478,35 @@ async def test_non_html_response(make_renderer):
     json_result = await renderer.render("https://kk.test/adat.json")
     assert (json_result.status, json_result.error) == (200, "non_html: application/json")
     assert json_result.raw_html == b'{"a": 1}' and json_result.rendered_html is None
+    assert json_result.headers["content-type"] == "application/json"
     pdf_result = await renderer.render("https://kk.test/doc.pdf")
     assert (pdf_result.status, pdf_result.error) == (200, "non_html: application/pdf")
+
+
+async def test_headers_of_final_response(make_renderer):
+    renderer, _ = await make_renderer({
+        "https://kk.test/": (200, {
+            "X-Robots-Tag": "noindex",
+            "Last-Modified": "Wed, 23 Sep 2026 10:00:00 GMT",
+            "ETag": '"abc"',
+            "Cache-Control": "no-cache",
+            "Content-Language": "hu-HU",
+        }, "<html><body>ok</body></html>"),
+    })
+    result = await renderer.render("https://kk.test/")
+    assert result.headers["x-robots-tag"] == "noindex"
+    assert result.headers["last-modified"] == "Wed, 23 Sep 2026 10:00:00 GMT"
+    assert result.headers["etag"] == '"abc"'
+    assert result.headers["cache-control"] == "no-cache"
+    assert result.headers["content-language"] == "hu-HU"
+    assert result.headers["content-type"] == HTML
+    assert result.redirects == ()
+
+
+async def test_error_status_keeps_headers(make_renderer, sleeps):
+    renderer, _ = await make_renderer({"https://kk.test/": (503, {"Retry-After": "120"}, "le")})
+    result = await renderer.render("https://kk.test/")
+    assert (result.status, result.headers["retry-after"]) == (503, "120")
 
 
 async def test_network_error_and_invalid_url_never_raise(make_renderer):
@@ -546,11 +656,23 @@ async def test_browser_is_relaunched_after_crash(make_renderer):
 # ---------------------------------------------------------------------------
 
 
+UJ_HEADERS = {
+    "Content-Type": HTML,
+    "X-Robots-Tag": "noindex, nofollow",
+    "Last-Modified": "Wed, 23 Sep 2026 10:00:00 GMT",
+    "ETag": '"uj-1"',
+    "Cache-Control": "max-age=600",
+    "Content-Language": "hu",
+}
+
+
 @pytest.fixture
 def local_site():
     pages = {
         "/regi": (301, {"Location": "/uj/"}, b""),
-        "/uj/": (200, {"Content-Type": HTML}, b"<html><body><a href='/x/'>x</a></body></html>"),
+        "/lanc": (302, {"Location": "/koztes"}, b""),
+        "/koztes": (301, {"Location": "/uj/"}, b""),
+        "/uj/": (200, UJ_HEADERS, b"<html><body><a href='/x/'>x</a></body></html>"),
         "/torott": (301, {"Location": "/sehol/"}, b""),
     }
 
@@ -582,7 +704,21 @@ async def test_redirect_is_followed_final_url_and_raw_from_target(local_site):
     assert (moved.status, moved.error) == (200, None)
     assert moved.final_url == f"{local_site}/uj/"
     assert moved.raw_html == b"<html><body><a href='/x/'>x</a></body></html>"
+    assert moved.redirects == ((301, f"{local_site}/regi"),)
     assert (broken.status, broken.final_url) == (404, f"{local_site}/sehol/")
+    assert broken.redirects == ((301, f"{local_site}/torott"),)
+
+
+async def test_redirect_chain_in_order_and_final_headers(local_site):
+    async with Renderer(concurrency=1, render_timeout=5.0) as renderer:
+        chained = await renderer.render(f"{local_site}/lanc")
+        direct = await renderer.render(f"{local_site}/uj/")
+    assert (chained.status, chained.final_url) == (200, f"{local_site}/uj/")
+    assert chained.redirects == ((302, f"{local_site}/lanc"), (301, f"{local_site}/koztes"))
+    assert direct.redirects == ()
+    expected = {key.lower(): value for key, value in UJ_HEADERS.items()}
+    assert expected.items() <= chained.headers.items()
+    assert all(key == key.lower() for key in chained.headers)
 
 
 # ---------------------------------------------------------------------------
