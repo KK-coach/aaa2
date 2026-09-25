@@ -5,3 +5,9 @@ enable javascript
 please enable javascript
 nem támogatott böngésző
 böngésződ nem támogatott
+# Cloudflare és más bot-challenge oldalak
+just a moment
+checking your browser
+verify you are human
+attention required
+enable cookies
