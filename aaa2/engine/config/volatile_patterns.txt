@@ -1,0 +1,31 @@
+# Kérésenként változó tokenek a nyers HTML-ben: a stable_hash ezeket törli a hash előtt.
+# Egy sor = egy Python regex, kis-nagybetű nélkül illesztve; a találat kimarad.
+# A '#'-szal kezdődő sor komment. Ami valódi változás, az nem kerül ide: ?ver= az
+# asset-URL-ekben, inline JSON-adat, JSON-LD.
+
+# Cloudflare e-mail-védelem: a kódolt cím és a hozzá tartozó href-token
+\sdata-cfemail=(?:"[0-9a-f]*"|'[0-9a-f]*')
+(?<=/cdn-cgi/l/email-protection)#[0-9a-f]+
+
+# WordPress nonce az URL-ekben (a &amp;-es alakban is)
+(?<=_wpnonce=)[0-9a-f]+
+
+# WordPress inline CSS helyőrző kérésenkénti azonosítóval (uniqid)
+(?<=/\*wp_block_styles_on_demand_placeholder:)[0-9a-f]+
+
+# nonce-attribútum: CSP a script/style tageken, WordPress data-nonce
+\s(?:data-)?nonce=(?:"[^"]*"|'[^']*')
+
+# CSRF-token meta tag
+<meta\b[^>]*\bname=["'](?:csrf-token|_token)["'][^>]*>
+
+# Cache-pluginek kommentjei (WP Rocket, W3 Total Cache, LiteSpeed, WP Super Cache)
+<!--(?:(?!-->)[\s\S])*?WP Rocket(?:(?!-->)[\s\S])*?-->
+<!--(?:(?!-->)[\s\S])*?W3 Total Cache(?:(?!-->)[\s\S])*?-->
+<!--(?:(?!-->)[\s\S])*?LiteSpeed(?:(?!-->)[\s\S])*?-->
+<!--(?:(?!-->)[\s\S])*?generated in [0-9.]+ seconds(?:(?!-->)[\s\S])*?-->
+
+# Időbélyeget vagy futásidőt tartalmazó komment (dátum-idő, másodperc/ms, unix epoch)
+<!--(?:(?!-->)[\s\S])*?\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?:(?!-->)[\s\S])*?-->
+<!--(?:(?!-->)[\s\S])*?\b\d+(?:\.\d+)?\s*(?:seconds|secs|ms|milliseconds)\b(?:(?!-->)[\s\S])*?-->
+<!--(?:(?!-->)[\s\S])*?\b1\d{9}\b(?:(?!-->)[\s\S])*?-->

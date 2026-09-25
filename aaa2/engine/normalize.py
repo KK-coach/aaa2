@@ -161,6 +161,17 @@ def decide_trailing_slash(
     return with_slash > without_slash
 
 
+def slash_alternate(url: str) -> str | None:
+    """Az URL a trailing slash másik alakjával; None a gyökérnél és a fájlnál, ahol a 6. szabály
+    nem ír át."""
+    parts = urlsplit(url)
+    path = parts.path
+    if not path or path == "/" or _is_file(path):
+        return None
+    toggled = path.rstrip("/") if path.endswith("/") else f"{path}/"
+    return urlunsplit((parts.scheme, parts.netloc, toggled, parts.query, parts.fragment))
+
+
 def _unify_www(host: str, seed_host: str) -> str:
     bare = seed_host.removeprefix("www.")
     return seed_host if host in (bare, f"www.{bare}") else host

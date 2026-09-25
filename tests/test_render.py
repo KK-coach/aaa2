@@ -771,3 +771,65 @@ async def test_live_kk_coach_server_rendered_links_survive_render():
     assert (result.status, result.error) == (200, None)
     assert len(raw) > 0
     assert raw <= rendered
+
+
+# ---------------------------------------------------------------------------
+# beragadó frame és biztonsági háló
+# ---------------------------------------------------------------------------
+
+STUCK_FRAME_PAGE = """<html><body><h1>Keret</h1>
+<iframe src="https://kk.test/soha"></iframe>
+<p>tartalom</p></body></html>"""
+
+# A látómezőn kívüli lusta iframe-nek nincs dokumentuma, amíg nem görgetnek oda: a hálózat
+# csendes (networkidle teljesül), de a frame-en a locator-hívás határidő nélkül várna.
+LAZY_FRAME_PAGE = """<html><body><h1>Térkép lent</h1>
+<div style="height:6000px">hosszú</div>
+<iframe loading="lazy" src="https://kk.test/terkep"></iframe></body></html>"""
+
+
+async def test_lazy_frame_without_document_does_not_hang_consent(make_renderer):
+    renderer, _ = await make_renderer({
+        "https://kk.test/": LAZY_FRAME_PAGE,
+        "https://kk.test/terkep": "<html><body>térkép</body></html>",
+    }, render_timeout=5.0)
+    result = await asyncio.wait_for(renderer.render("https://kk.test/"), timeout=60)
+    assert (result.status, result.error) == (200, None)
+    assert result.render_ms < 12_000
+
+
+async def test_pending_frame_does_not_hang_render(make_renderer):
+    release = asyncio.Event()
+
+    async def never(request):
+        await release.wait()
+        return "<html><body>késő</body></html>"
+
+    renderer, _ = await make_renderer(
+        {"https://kk.test/": STUCK_FRAME_PAGE, "https://kk.test/soha": never}, render_timeout=5.0)
+    try:
+        result = await asyncio.wait_for(renderer.render("https://kk.test/"), timeout=30)
+    finally:
+        release.set()
+    assert (result.status, result.error) == (200, None)
+    assert result.render_ms < 15_000
+    await asyncio.sleep(0.1)
+
+
+async def test_hard_timeout_returns_and_replaces_context(make_renderer, monkeypatch):
+    renderer, _ = await make_renderer(
+        {"https://kk.test/": "<html><body>ok</body></html>"}, render_timeout=1.0)
+    original = render_module._accept_consent
+
+    async def stuck(page, texts, deadline):
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(render_module, "_accept_consent", stuck)
+    before = list(renderer._pool._queue)
+    result = await asyncio.wait_for(renderer.render("https://kk.test/"), timeout=30)
+    assert (result.status, result.error, result.attempts) == (None, "hard_timeout", 1)
+    after = list(renderer._pool._queue)
+    assert len(after) == 1 and after[0] is not before[0]
+    monkeypatch.setattr(render_module, "_accept_consent", original)
+    healthy = await asyncio.wait_for(renderer.render("https://kk.test/"), timeout=30)
+    assert (healthy.status, healthy.error) == (200, None)

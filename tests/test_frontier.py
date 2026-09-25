@@ -224,6 +224,7 @@ async def test_discover_from_robots_sitemap():
         found = await discover(client, SEED)
     assert found.https_redirect is True
     assert found.https_redirect_status == 301
+    assert (found.robots_status, found.robots_txt) == (200, ROBOTS)
     assert found.robots is not None and not found.robots.allowed("https://kk.coach/wp-admin/")
     assert list(found.sitemap_urls) == SITEMAP_URLS
 
@@ -236,6 +237,8 @@ async def test_discover_falls_back_to_sitemap_xml():
         https_redirect=False,
         https_redirect_status=404,
         robots=None,
+        robots_status=404,
+        robots_txt=None,
         sitemap_urls=("https://kk.coach/blog/elso/", "https://kk.coach/rolam/"),
     )
 
@@ -252,6 +255,16 @@ async def test_discover_without_robots_still_uses_robots_sitemaps():
         found = await discover(client, SEED, respect_robots=False)
     assert found.robots is None
     assert list(found.sitemap_urls) == SITEMAP_URLS
+
+
+async def test_discover_robots_status_without_text():
+    routes = {"https://kk.coach/robots.txt": 503, "https://kk.coach/sitemap.xml": POST_SITEMAP}
+    async with mock_client(routes) as client:
+        found = await discover(client, SEED)
+    assert (found.robots_status, found.robots_txt, found.robots) == (503, None, None)
+    async with mock_client({"https://kk.coach/robots.txt": httpx.ConnectError("le")}) as client:
+        down = await discover(client, SEED)
+    assert (down.robots_status, down.robots_txt) == (None, None)
 
 
 async def test_discover_robots_follows_redirect():
@@ -511,6 +524,32 @@ def test_rediscovery_leaves_finished_rows_alone():
     rows = {row[0]: row[1:4] for row in queue(con)}
     assert rows[a.url] == (1, PRIORITY["footer"], "done")
     assert rows[b.url] == (1, PRIORITY["footer"], "failed")
+
+
+def test_start_stores_robots_file():
+    con = connect(":memory:")
+    text = "User-agent: *\nDisallow: /x/\n"
+    Frontier.start(con, SEED, Discovery(robots_status=200, robots_txt=text))
+    assert con.execute("SELECT robots_status, robots_txt FROM site").fetchone() == (200, text)
+
+
+def test_claim_marks_redirect_target_done():
+    con = connect(":memory:")
+    discovery = Discovery(robots=Robots.parse("User-agent: *\nDisallow: /tiltott/\n"))
+    frontier = Frontier.start(con, SEED, discovery, _links("/a/", "/b/"), max_pages=3)
+    assert frontier.claim("https://kk.coach/b", depth=1) == "https://kk.coach/b/"
+    assert frontier.claim("https://kk.coach/b/", depth=1) is None
+    assert frontier.claim("https://kk.coach/uj/", depth=2, discovered_from=SEED) == "https://kk.coach/uj/"
+    assert frontier.claim("https://example.com/", depth=1) is None
+    assert frontier.claim("https://kk.coach/tiltott/", depth=1) is None
+    _, a_item = frontier.next_batch(2)
+    assert a_item.url == "https://kk.coach/a/"
+    assert frontier.claim("https://kk.coach/a/", depth=1) is None
+    rows = {row[0]: row[1:4] for row in queue(con)}
+    assert rows["https://kk.coach/b/"][2] == "done"
+    assert rows["https://kk.coach/uj/"] == (2, PRIORITY["body"], "done")
+    assert rows["https://kk.coach/a/"][2] == "queued"
+    assert len(rows) == 4
 
 
 def test_leases_and_status():

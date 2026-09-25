@@ -271,8 +271,25 @@ def test_schema_blocks_split_and_typed():
         ("Organization", 1), ("WebSite", 2), ("Person,Author", 3), ("BreadcrumbList", 4),
         ("FAQPage", 5), ("invalid", 6), ("Event", 7),
     ]
-    assert json.loads(blocks[1].json) == {"@type": "WebSite", "name": "KK"}
+    assert json.loads(blocks[1].json) == {
+        "@context": "https://schema.org", "@type": "WebSite", "name": "KK"}
+    assert json.loads(blocks[4].json) == {"@type": "FAQPage"}
     assert blocks[5].json == '{"@type": "Broken",}'
+
+
+def test_graph_items_inherit_parent_context():
+    html = ld({"@context": "https://schema.org", "@graph": [
+        {"@type": "WebPage", "@id": "#p"},
+        {"@context": {"@vocab": "https://example.com/"}, "@type": "Saját"},
+        {"@graph": [{"@type": "Beágyazott"}]},
+    ]})
+    blocks = schema_blocks(HTMLParser(html))
+    assert [json.loads(b.json) for b in blocks] == [
+        {"@context": "https://schema.org", "@type": "WebPage", "@id": "#p"},
+        {"@context": {"@vocab": "https://example.com/"}, "@type": "Saját"},
+        {"@context": "https://schema.org", "@type": "Beágyazott"},
+    ]
+    assert next(iter(json.loads(blocks[0].json))) == "@context"
 
 
 def test_schema_block_without_type():
