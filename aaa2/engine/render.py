@@ -27,7 +27,6 @@ kísérlet legfeljebb `2 × render_timeout + 10` mp; ha ezt túllépi, `error = 
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import re
 import time
 from collections.abc import Awaitable, Callable, Iterable
@@ -52,6 +51,8 @@ from playwright.async_api import (
 from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
+from aaa2.engine.stable_hash import decode_raw, stable_hash
+
 CONFIG_DIR = Path(__file__).parent / "config"
 CONCURRENCY = 6
 RENDER_TIMEOUT = 15.0
@@ -70,6 +71,14 @@ CLOSE_TIMEOUT_S = 5.0
 CONSENT_ROUNDS = ("button", "link", "text")
 SCROLL_MAX_STEPS = 30
 VIEWPORT = {"width": 1920, "height": 1080}
+# A Chromium navigációs kérésének fejlécei (a UA mellett). Aki ugyanazt az oldalt httpx-szel
+# kéri (hash-próba), ezeket küldje: a CDN-ek egy része csak `text/html`-t elfogadó kérésnél
+# fűz be scriptet, és akkor a két nyers válasz eltérne.
+NAVIGATION_HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,"
+              "image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Upgrade-Insecure-Requests": "1",
+}
 
 _WINDOWS_UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -125,8 +134,9 @@ class RenderResult:
 
     @property
     def raw_html_hash(self) -> str | None:
-        """sha256 a nyers válaszon; ez a skip-alap újrafutásnál."""
-        return hashlib.sha256(self.raw_html).hexdigest() if self.raw_html is not None else None
+        """Stabil hash a nyers válaszon (a kérésenként változó tokenek nélkül); ez a skip-alap
+        újrafutásnál."""
+        return stable_hash(decode_raw(self.raw_html)) if self.raw_html is not None else None
 
 
 def load_config(name: str) -> tuple[str, ...]:

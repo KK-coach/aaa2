@@ -14,8 +14,10 @@ sor állapota (`crawl_queue`, a talált linkek felvétele) együtt, vagy sehogy.
 belül nincs `await`, így egy megszakítás nem hagy félkész oldalt.
 
 Hash-alapú skip: ha az URL-nek van `pages` sora 7 napnál frissebb `fetched_at`-tel, és a nyers
-GET válaszának sha256-ja egyezik a tárolt `raw_html_hash`-sel, a render kimarad és a sor
-érintetlen; a tárolt linkjei kerülnek a sorba.
+GET válaszának stabil hash-e (`stable_hash`: sha256 a kérésenként változó tokenek nélkül)
+egyezik a tárolt `raw_html_hash`-sel, a render kimarad és a sor érintetlen; a tárolt linkjei
+kerülnek a sorba. A seedre is: ha változatlan, a trailing-slash döntés a tárolt DOM linkjeiből
+jön, render nélkül.
 
 Átirányítás: a render követi. Ha a `final_url` normalizált alakja egy másik belső URL, a kért
 URL sora átirányítás-sor (az első lépés státusza, `final_url`, tartalom nélkül), a tartalom a
@@ -32,7 +34,6 @@ jött HTTP-válasz; a `crawl_runs.pages_failed` minden hibás vagy 400 feletti o
 from __future__ import annotations
 
 import asyncio
-import hashlib
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -53,7 +54,14 @@ from aaa2.engine.frontier import (
 )
 from aaa2.engine.normalize import UrlPolicy, is_internal, normalize, slash_alternate
 from aaa2.engine.parse import ParsedPage, parse_page
-from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT, Renderer, RenderResult
+from aaa2.engine.render import (
+    CONCURRENCY,
+    NAVIGATION_HEADERS,
+    RENDER_TIMEOUT,
+    Renderer,
+    RenderResult,
+)
+from aaa2.engine.stable_hash import decode_raw, stable_hash
 
 SKIP_MAX_AGE = timedelta(days=7)
 NORMALIZED_404 = "normalized form 404, original served"
@@ -108,7 +116,7 @@ async def run_crawl(
         async with Renderer(
             concurrency=options.concurrency, render_timeout=options.render_timeout
         ) as renderer, httpx.AsyncClient(
-            headers={"User-Agent": renderer.user_agent}, timeout=HTTP_TIMEOUT
+            headers={"User-Agent": renderer.user_agent, **NAVIGATION_HEADERS}, timeout=HTTP_TIMEOUT
         ) as client:
             summary = await crawl(
                 con, seed_url, options, client=client, renderer=renderer, progress=progress
@@ -184,6 +192,11 @@ class _Run:
         seed = normalize(seed_url, provisional)
         if seed is None:
             raise ValueError(f"nem normalizálható seed URL: {seed_url!r}")
+        candidates = [url for url in (seed, slash_alternate(seed)) if url]
+        stored = self._fresh_row(candidates)
+        if stored is not None and stored[3] is not None and await self._unchanged(seed, stored[1]):
+            await self._start_from_stored(seed_url, discovery, provisional, stored, started)
+            return
         result = await self.renderer.render(seed)
         seed_links: list[tuple[str, str]] = []
         if result.rendered_html and result.error is None:
@@ -199,6 +212,23 @@ class _Run:
         (item,) = self.frontier.next_batch(1)
         error = await self._normalization_404(item.url, result)
         self._store(item, result, error)
+
+    async def _start_from_stored(
+        self, seed_url: str, discovery, provisional: UrlPolicy, stored: tuple, started: datetime
+    ) -> None:
+        """A seed változatlan: a trailing-slash döntés a tárolt DOM linkjeiből jön, render nélkül,
+        a sor a tárolt linkekkel indul."""
+        page_id, _, url, compressed, final_url = stored
+        html = zstandard.ZstdDecompressor().decompress(compressed).decode("utf-8")
+        parsed = parse_page(html, final_url or url, provisional)
+        options = self.options
+        self.frontier = Frontier.start(
+            self.con, seed_url, discovery, [(link.to_url, link.position) for link in parsed.links],
+            max_pages=options.max_pages, include=options.include, exclude=options.exclude,
+        )
+        self.con.execute("UPDATE site SET crawled_at = ?", [started])
+        (item,) = self.frontier.next_batch(1)
+        self._skip(item, page_id)
 
     async def _resume(self) -> None:
         row = self.con.execute("SELECT seed_url FROM site").fetchone()
@@ -246,27 +276,48 @@ class _Run:
         self._store(item, result, error)
 
     async def _try_skip(self, item: QueueItem) -> bool:
-        row = self.con.execute(
-            "SELECT page_id, raw_html_hash, fetched_at FROM pages WHERE url = ?", [item.url]
-        ).fetchone()
-        now = datetime.now(UTC).replace(tzinfo=None)
-        if row is None or row[1] is None or row[2] is None or now - row[2] > SKIP_MAX_AGE:
+        stored = self._fresh_row([item.url])
+        if stored is None or not await self._unchanged(item.url, stored[1]):
             return False
+        self._skip(item, stored[0])
+        return True
+
+    def _fresh_row(self, urls: list[str]) -> tuple | None:
+        """(page_id, raw_html_hash, url, rendered_html, final_url) az első URL-hez, amelynek
+        van 7 napnál frissebb, hash-sel bíró sora; különben None."""
+        now = _now()
+        for url in urls:
+            row = self.con.execute(
+                "SELECT page_id, raw_html_hash, url, rendered_html, final_url, fetched_at "
+                "FROM pages WHERE url = ?", [url],
+            ).fetchone()
+            if row and row[1] is not None and row[5] is not None and now - row[5] <= SKIP_MAX_AGE:
+                return row[:5]
+        return None
+
+    async def _unchanged(self, url: str, stored_hash: str) -> bool:
+        """A nyers GET válasza 400 alatti, és a stabil hash-e egyezik a tárolttal. A kliensnek a
+        böngésző navigációs fejléceit kell küldenie (`NAVIGATION_HEADERS`)."""
         try:
-            response = await self.client.get(item.url, follow_redirects=True)
+            response = await self.client.get(url, follow_redirects=True)
         except httpx.HTTPError:
             return False
-        if response.status_code >= 400 or hashlib.sha256(response.content).hexdigest() != row[1]:
-            return False
+        return (
+            response.status_code < 400
+            and stable_hash(decode_raw(response.content)) == stored_hash
+        )
+
+    def _skip(self, item: QueueItem, page_id: int) -> None:
+        """A sor érintetlen; a tárolt linkjei kerülnek a sorba."""
         links = self.con.execute(
-            "SELECT to_url, position FROM links WHERE from_page_id = ? ORDER BY ordinal", [row[0]]
+            "SELECT to_url, position FROM links WHERE from_page_id = ? ORDER BY ordinal",
+            [page_id],
         ).fetchall()
         with _transaction(self.con):
             self.frontier.add_links(item, links)
             self.frontier.mark_done(item.url)
         self.skipped += 1
         self._report(item.url, None, "skipped")
-        return True
 
     async def _normalization_404(self, url: str, result: RenderResult) -> str | None:
         if result.status != 404 or result.redirects or self.frontier_policy.trailing_slash is None:

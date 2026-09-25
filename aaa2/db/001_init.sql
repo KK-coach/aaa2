@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS pages (
     word_count          INTEGER,
     main_content        VARCHAR,                   -- kinyert főszöveg
     external_link_count INTEGER DEFAULT 0,         -- külső linkek csak számolva
-    raw_html_hash       VARCHAR,                   -- sha256 a nyers válaszon, skip-alap
+    raw_html_hash       VARCHAR,                   -- stabil hash a nyers válaszon (a kérésenként változó tokenek nélkül), skip-alap
     rendered_html       BLOB,                      -- zstd-tömörített Playwright-kimenet
     render_ms           INTEGER,
     fetched_at          TIMESTAMP,

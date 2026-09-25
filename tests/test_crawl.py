@@ -21,9 +21,12 @@ import aaa2.engine.crawl as crawl_module
 from aaa2.cli.main import app
 from aaa2.db.connect import connect
 from aaa2.engine.crawl import NORMALIZED_404, CrawlOptions, crawl
-from aaa2.engine.render import Renderer
+from aaa2.engine.render import NAVIGATION_HEADERS, Renderer
 
 HTML = "text/html; charset=utf-8"
+# Mint egy CDN-befűzés: csak a `text/html`-t elfogadó kérés kapja meg (a böngésző igen, egy
+# alapbeállítású httpx-kérés nem).
+BROWSER_ONLY = "<script>/* csak böngészőnek */</script>".encode()
 
 
 def html(body, head=""):
@@ -96,6 +99,8 @@ class MiniSite:
                     return
                 status, headers, _ = site.pages.get(path, (404, {}, ""))
                 body = site.body(path) if path in site.pages else html("<h1>404</h1>").encode()
+                if path == "/" and "text/html" in self.headers.get("Accept", ""):
+                    body += BROWSER_ONLY
                 self.send_response(status)
                 for key, value in {"Content-Type": HTML, **headers}.items():
                     self.send_header(key, value.replace("{other}", site.other))
@@ -126,7 +131,7 @@ def site():
 @pytest.fixture
 async def tools():
     async with Renderer(concurrency=3, render_timeout=5.0, backoff=0) as renderer, \
-            httpx.AsyncClient(timeout=5.0) as client:
+            httpx.AsyncClient(timeout=5.0, headers=NAVIGATION_HEADERS) as client:
         yield renderer, client
 
 
@@ -181,7 +186,7 @@ async def test_fresh_crawl_of_mini_site(site, tools):
     (hash_, compressed, method) = con.execute(
         "SELECT raw_html_hash, rendered_html, main_content_method FROM pages WHERE url = ?",
         [site.url("/")]).fetchone()
-    assert hash_ == hashlib.sha256(site.body("/")).hexdigest()
+    assert hash_ == hashlib.sha256(site.body("/") + BROWSER_ONLY).hexdigest()
     assert "Kezdőlap" in zstandard.ZstdDecompressor().decompress(compressed).decode()
     assert method == "fallback_body"  # a mini-oldal main-je 100 szó alatti
 
@@ -319,10 +324,10 @@ async def test_hash_skip_leaves_unchanged_rows(site, tools):
 
     summary = await run(con, site, tools)
     second = pages(con)
-    assert summary.pages_skipped == 2
-    for path in ("/a/", "/e/"):
+    assert summary.pages_skipped == 3
+    for path in ("/", "/a/", "/e/"):
         assert second[site.url(path)] == first[site.url(path)]
-    for path in ("/b/", "/f/", "/"):
+    for path in ("/b/", "/f/"):
         assert second[site.url(path)][5] == 2
         assert second[site.url(path)][3] == first[site.url(path)][3]
     assert set(second) == set(first)
@@ -331,6 +336,24 @@ async def test_hash_skip_leaves_unchanged_rows(site, tools):
         "SELECT h.text FROM headings h JOIN pages p USING (page_id) WHERE p.url = ?",
         [site.url("/b/")]).fetchall()
     assert b_headings == [("B",)]
+
+
+async def test_changed_seed_is_rendered_and_volatile_token_is_not_a_change(site, tools):
+    con = connect(":memory:")
+    home = site.pages["/"]
+    site.pages["/"] = (200, {}, home[2].replace(
+        "<main>", "<main><a href='/cdn-cgi/l/email-protection' data-cfemail='0a0b'>x</a>"))
+    await run(con, site, tools)
+    first = pages(con)
+    site.pages["/"] = (200, {}, site.pages["/"][2].replace("data-cfemail='0a0b'", "data-cfemail='7f7e'"))
+    skipped = await run(con, site, tools)
+    assert pages(con)[site.url("/")] == first[site.url("/")]
+    assert skipped.pages_skipped == 5
+
+    site.pages["/"] = (200, {}, site.pages["/"][2].replace("Kezdőlap", "Új kezdőlap"))
+    rendered = await run(con, site, tools)
+    assert pages(con)[site.url("/")][5] == 3
+    assert rendered.pages_skipped == 4
 
 
 # ---------------------------------------------------------------------------
@@ -360,6 +383,10 @@ def test_cli_crawl_status_export(site, tmp_path, monkeypatch):
 
     unknown = runner.invoke(app, ["export", "127.0.0.1", "--table", "pages; DROP TABLE pages"])
     assert unknown.exit_code == 1
+
+    again = runner.invoke(app, ["crawl", site.url("/"), "--concurrency", "2", "--quiet"])
+    assert again.exit_code == 0, again.output
+    assert "5 kihagyva" in again.output  # /, /a/, /b/, /e/, /f/; a seed is
 
     resumed = runner.invoke(app, ["crawl", site.url("/"), "--resume", "--quiet"])
     assert resumed.exit_code == 1
