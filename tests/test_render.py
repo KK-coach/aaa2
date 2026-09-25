@@ -736,25 +736,24 @@ def internal_links(html, base, policy):
 
 
 @pytest.mark.live
-async def test_live_vestino_links_only_after_render():
-    # A vestino.hu https-en egy másik domain tanúsítványát adja (ERR_CERT_COMMON_NAME_INVALID),
-    # http-n 200-zal szolgál ki, átirányítás nélkül.
-    seed = "http://vestino.hu/"
+async def test_live_ngx_bootstrap_links_appear_after_render():
+    seed = "https://valor-software.com/ngx-bootstrap/components"
     async with Renderer(concurrency=1) as renderer:
         result = await renderer.render(seed)
     assert result.raw_html is not None, result.error
-    if (result.final_url or "").endswith("#/deactivation"):
-        pytest.skip("a vestino MicroStore-ja zárva (#/deactivation), nincs mit linkre renderelni")
     policy = UrlPolicy.from_seed(seed)
     raw = internal_links(result.raw_html.decode("utf-8", "replace"), result.final_url, policy)
     rendered = internal_links(result.rendered_html, result.final_url, policy)
+    hash_links = [href for href in links(result.rendered_html) if "#/" in href]
     print(
-        f"\nvestino.hu: status={result.status} error={result.error} final_url={result.final_url} "
-        f"render_ms={result.render_ms} raw={len(raw)} rendered={len(rendered)} belső link"
+        f"\nngx-bootstrap: status={result.status} error={result.error} "
+        f"final_url={result.final_url} render_ms={result.render_ms} raw={len(raw)} "
+        f"rendered={len(rendered)} belső link, hash-link={len(hash_links)}"
     )
     assert (result.status, result.error) == (200, None)
-    assert len(raw) == 0
-    assert len(rendered) > 0
+    assert len(raw) * 5 <= len(rendered)
+    assert len(rendered) >= 30
+    assert hash_links == []
 
 
 @pytest.mark.live

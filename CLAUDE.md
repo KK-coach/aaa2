@@ -24,7 +24,23 @@ Első függőleges szelet, ebben a sorrendben, mindegyik tesztekkel:
 5. `aaa2/engine/crawl.py` — összefűzés, oldalanként egy tranzakció, `crawl_runs` naplózás.
 6. `aaa2/engine/site_profile.py` — célország, nyelvek, nyers tech-jelek a crawl végén.
 
-Kész, ha a három referencia-site (kk.coach, Materia Trattoria, vestino.hu vagy másik microstore.app-bolt) végigmegy, a linkgráf egyezik a Screaming Frog JS-render baseline-nal (egy ülésben felvéve), és a `--resume` egy megszakított crawlt befejez. Stop-feltétel: kezdéstől két hét.
+Kész, ha a három referencia-site (kk.coach, Materia Trattoria, ngx-bootstrap) végigmegy, a linkgráf egyezik a Screaming Frog JS-render baseline-nal (egy ülésben felvéve), és a `--resume` egy megszakított crawlt befejez. Stop-feltétel: kezdéstől két hét.
+
+### Referencia-site-ok
+
+| Site | Seed | Include | Mit fed le |
+| --- | --- | --- | --- |
+| kk.coach | `https://kk.coach/` | — | Astro, kétnyelvű, Zaraz-consent |
+| Materia Trattoria | — | — | WP, consent, részleges JS-linkek |
+| ngx-bootstrap | `https://valor-software.com/ngx-bootstrap/components` | `/ngx-bootstrap/` | tiszta CSR (Angular), valódi path-okkal |
+
+Az ngx-bootstrap mérése (2026-09-25, `Renderer` + `Frontier`, 300-as felső korláttal):
+- **A seeden** 1 belső `<a href>` van a nyers HTML-ben és 53 a renderelt DOM-ban. Hash-link (`#/`) egy sincs.
+- **Az include-dal** a crawl 88 URL-nél magától leállt. Ebből 69 rendben van, 19 pedig 404: ezek a site saját `href="['']"` kötéshibájának célpontjai, valódi törött linkek.
+- **Oldalanként:** a 68 sikeres nem-seed oldal mindegyikén a nyers belső linkek száma legfeljebb a renderelt ötöde. Összesen ez 368 nyers a 3723 renderelthez.
+- **Ne a nyitóoldal legyen a seed:** a `/ngx-bootstrap/` előrenderelt (nyersen és renderelve is 5 link, 319 szó).
+
+A MicroStore-boltok kiestek: a kirakatukban nincs `<a>`, a navigáció JS-kezelőkön megy. A victoria.microstore.app negatív esetként maradt: a render sikeres, 0 belső link, 59 szó. A `tests/test_fixture_sites.py` őrzi, visszajátszva a `tests/fixtures/` alatti felvételből.
 
 ## Stack
 
