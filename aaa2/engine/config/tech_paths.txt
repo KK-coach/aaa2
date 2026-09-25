@@ -1,0 +1,20 @@
+# Jellemző útvonalak a renderelt HTML-ben: minden találat egy `path:<találat>` nyers tech-jel.
+# Egy sor = egy Python regex; a '#'-szal kezdődő sor komment. Osztályozás nincs, az az M4-é.
+
+# WordPress: téma, pluginek, törzs
+/wp-content/themes/[^/"'?#\s]+/
+/wp-content/plugins/[^/"'?#\s]+/
+/wp-includes/
+/wp-json/
+
+# JavaScript-keretrendszerek build-kimenete
+/_next/
+/_nuxt/
+/_astro/
+
+# Shopify, Drupal, Magento, Joomla
+/cdn/shop/
+/sites/default/files/
+/static/version[0-9]+/
+/skin/frontend/
+/media/jui/

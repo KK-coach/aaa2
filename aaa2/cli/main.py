@@ -72,7 +72,7 @@ def crawl(
 def status(
     domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
 ) -> None:
-    """Oldalak státusz szerint, hibák, a sor állapota, az utolsó crawl."""
+    """Oldalak státusz szerint, hibák, a sor állapota, a site-profil, az utolsó crawl."""
     con = _open(domain)
     (pages,) = con.execute("SELECT count(*) FROM pages").fetchone()
     (errors,) = con.execute("SELECT count(*) FROM pages WHERE error IS NOT NULL").fetchone()
@@ -87,6 +87,18 @@ def status(
         f"  sor: {queue.get('queued', 0)} várakozik, {queue.get('done', 0)} kész, "
         f"{queue.get('failed', 0)} hibás"
     )
+    profile = con.execute(
+        "SELECT target_country, languages, page_count, tech_signals FROM site"
+    ).fetchone()
+    if profile:
+        country, languages, page_count, signals = profile
+        typer.echo(
+            f"  profil: célország {country or '—'}, nyelvek {', '.join(languages or []) or '—'}, "
+            f"{page_count or 0} sikeres oldal"
+        )
+        if signals:
+            shown = ", ".join(signals[:8]) + (f" (+{len(signals) - 8})" if len(signals) > 8 else "")
+            typer.echo(f"  tech-jelek: {shown}")
     last = con.execute(
         "SELECT run_id, started_at, finished_at, pages_done, pages_failed, pages_skipped, "
         "pages_per_sec, notes FROM crawl_runs ORDER BY run_id DESC LIMIT 1"

@@ -5,7 +5,8 @@
 1. felmérés (`discover`): https-próba, robots.txt, sitemap;
 2. a seed renderelése; a linkjeiből dől el a trailing slash (`Frontier.start`);
 3. `concurrency` worker dolgozza fel a sort: hash-próba, render, parse, írás;
-4. a végén a linkek `to_page_id`-je, a `site.page_count` és a `crawl_runs` sor lezárása.
+4. a végén a linkek `to_page_id`-je, a site-profil (`site_profile.py`: célország, nyelvek,
+   `page_count`, nyers tech-jelek) és a `crawl_runs` sor lezárása.
 
 `--resume`: a `site` táblában rögzített szabályokkal a várakozó sorokból folytat.
 
@@ -61,6 +62,7 @@ from aaa2.engine.render import (
     Renderer,
     RenderResult,
 )
+from aaa2.engine.site_profile import update_site_profile
 from aaa2.engine.stable_hash import decode_raw, stable_hash
 
 SKIP_MAX_AGE = timedelta(days=7)
@@ -176,7 +178,7 @@ class _Run:
             if not self.options.resume:
                 await self._start(seed_url, started)
             await self._drain()
-            self._finish_links()
+            self._finish()
             finished = True
         finally:
             seconds = asyncio.get_running_loop().time() - clock
@@ -441,14 +443,15 @@ class _Run:
         if self.progress is not None:
             self.progress(url, status, error)
 
-    def _finish_links(self) -> None:
+    def _finish(self) -> None:
+        """A linkek `to_page_id`-je és a site-profil, egy tranzakcióban."""
         with _transaction(self.con):
             self.con.execute(
                 "UPDATE links SET to_page_id = pages.page_id FROM pages "
                 "WHERE links.to_url = pages.url "
                 "AND links.to_page_id IS DISTINCT FROM pages.page_id"
             )
-            self.con.execute("UPDATE site SET page_count = (SELECT count(*) FROM pages)")
+            update_site_profile(self.con)
 
     def _close_run(self, seconds: float, finished: bool) -> CrawlSummary:
         handled = self.done + self.failed

@@ -151,3 +151,38 @@ def save_page(name: str, result) -> Path:
 def load_page(name: str) -> dict | None:
     path = PAGES_DIR / f"{name}.json"
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+
+
+async def record_crawl(name: str, seed: str, options):
+    """Élő crawl, közben minden válasz felvéve; (Recording, kapcsolat, összesítő)."""
+    from aaa2.db.connect import connect
+    from aaa2.engine.crawl import crawl
+    from aaa2.engine.render import NAVIGATION_HEADERS, Renderer
+
+    recording = Recording(name)
+    recording.clear()
+    async with Renderer(concurrency=options.concurrency, upstream=recording.record) as renderer, \
+            httpx.AsyncClient(
+                transport=recording.recording_transport(), timeout=20.0,
+                headers={"User-Agent": renderer.user_agent, **NAVIGATION_HEADERS},
+            ) as client:
+        con = connect(":memory:")
+        summary = await crawl(con, seed, options, client=client, renderer=renderer)
+    recording.save(pages=len(con.execute("SELECT url FROM pages").fetchall()))
+    return recording, con, summary
+
+
+async def replay_crawl(name: str, seed: str, options):
+    """A felvett crawl hálózat nélkül; (Recording, kapcsolat), vagy None, ha nincs felvétel."""
+    from aaa2.db.connect import connect
+    from aaa2.engine.crawl import crawl
+    from aaa2.engine.render import Renderer
+
+    recording = Recording(name)
+    if not recording.exists:
+        return None
+    async with Renderer(concurrency=options.concurrency, upstream=recording.replay) as renderer, \
+            httpx.AsyncClient(transport=recording.replay_transport(), timeout=20.0) as client:
+        con = connect(":memory:")
+        await crawl(con, seed, options, client=client, renderer=renderer)
+    return recording, con
