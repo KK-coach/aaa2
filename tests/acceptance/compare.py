@@ -484,8 +484,8 @@ def _summary(
         run_id, _, done, failed, skipped, rate, started, finished = site.run
         lines.append(
             f"- **aaa crawl #{run_id}:** {done} kész, {failed} hibás, {skipped} kihagyva; "
-            f"{rate or 0:.2f} oldal/mp; indult {started:%Y-%m-%d %H:%M:%S}"
-            + (f", kész {finished:%H:%M:%S}" if finished else "") + ".")
+            f"{rate or 0:.2f} oldal/mp; indult {started:%Y-%m-%d %H:%M:%S} UTC"
+            + (f", kész {finished:%H:%M:%S} UTC" if finished else "") + ".")
     lines.append(
         f"- **aaa hiba%:** render/fetch-hiba {_share(errors, pages)} ({errors}), "
         f"4xx/5xx {_share(http_errors, pages)} ({http_errors}).")
