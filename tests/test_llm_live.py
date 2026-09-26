@@ -48,12 +48,14 @@ def session():
 
 
 def test_configured_models_are_on_the_provider_lists():
-    checks = [c for c in check_models() if c.found is not None]
+    """Kulcs nélküli szolgáltató kimarad; kulccsal a lista-hiba is bukás, nem kihagyás."""
+    checks = [c for c in check_models() if not c.note.startswith("nincs ")]
     if not checks:
         pytest.skip("egyik szolgáltatóhoz sincs kulcs")
     for check in checks:
-        print(f"{check.provider} {check.model}: {'a listán' if check.found else 'NINCS'} "
-              f"({check.note}){'; hasonló: ' + ', '.join(check.similar) if check.similar else ''}")
+        state = {True: "a listán", False: "NINCS", None: "nem ellenőrizhető"}[check.found]
+        print(f"{check.provider} {check.model}: {state} ({check.note})"
+              f"{'; hasonló: ' + ', '.join(check.similar) if check.similar else ''}")
     assert [c.model for c in checks if not c.found] == []
 
 
