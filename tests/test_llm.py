@@ -96,6 +96,8 @@ MODEL_LISTS = {
     "gemini-models": {"models": [{"name": "models/gemini-3.8-flash"},
                                  {"name": "models/gemini-3.8-flash-lite"}]},
 }
+OVERLOADED = {"type": "error", "error": {"code": 503, "type": "overloaded_error",
+                                        "message": "túlterhelt", "status": "UNAVAILABLE"}}
 
 
 class FakeAPI:
@@ -104,6 +106,7 @@ class FakeAPI:
                         "gemini": (200, gemini_reply()),
                         **{k: (200, v) for k, v in MODEL_LISTS.items()}}
         self.requests: list[tuple[str, str, dict]] = []
+        self.busy: dict[str, int] = {}          # útvonalanként ennyi 503 a rendes válasz előtt
         api = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -121,9 +124,13 @@ class FakeAPI:
             def _answer(self, route, body):
                 api.requests.append((route, self.path, body))
                 status, payload = api.replies.get(route, (404, {"error": {"message": "nincs"}}))
+                if api.busy.get(route):
+                    api.busy[route] -= 1
+                    status, payload = 503, OVERLOADED
                 data = json.dumps(payload).encode()
                 self.send_response(status)
                 self.send_header("Content-Type", "application/json")
+                self.send_header("retry-after-ms", "10")
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
                 self.wfile.write(data)
@@ -264,6 +271,26 @@ def test_schema_mismatch_is_still_booked(con, api, env, ledger_path, name, reply
     assert con.execute("SELECT count(*), sum(cost_usd) > 0 FROM llm_calls WHERE call_id = ?",
                        [info.value.call_id]).fetchone() == (1, True)
     assert len(ledger_path.read_text(encoding="utf-8").splitlines()) == 1
+
+
+@pytest.mark.parametrize("name", PROVIDERS)
+def test_overloaded_answer_is_retried(con, api, env, ledger_path, name):
+    api.busy[name] = 1
+    result = clients_for(con, api, env, ledger_path)[name].extract(
+        PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
+    assert result.parsed == EXPECTED
+    assert [route for route, _, _ in api.requests] == [name, name]
+    assert con.execute("SELECT count(*) FROM llm_calls").fetchone() == (1,)
+
+
+def test_retries_give_up_after_three_attempts(con, api, env, ledger_path):
+    api.busy["gemini"] = 3
+    with pytest.raises(LLMError, match="gemini/gemini-3.8-flash: 503"):
+        clients_for(con, api, env, ledger_path)["gemini"].extract(
+            PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
+    assert [route for route, _, _ in api.requests] == ["gemini"] * 3
+    assert con.execute("SELECT count(*) FROM llm_calls").fetchone() == (0,)
+    assert not ledger_path.exists()
 
 
 def test_api_error_writes_no_row(con, api, env, ledger_path):

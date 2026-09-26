@@ -22,6 +22,9 @@ from aaa2.llm.config import ProviderConfig, Usage
 
 # A három SDK API- és kapcsolati hibái (a google-genai a httpx kivételeit továbbengedi).
 API_ERRORS = (anthropic.APIError, openai.APIError, genai_errors.APIError, httpx.HTTPError)
+# Kísérletek száma hívásonként, az első hívással együtt; az SDK-k a 408-at, a 429-et, az 5xx-et
+# és a kapcsolati hibát próbálják újra, exponenciális várakozással.
+RETRY_ATTEMPTS = 3
 
 
 @dataclass(frozen=True)
@@ -34,7 +37,8 @@ class Reply:
 class AnthropicAdapter:
     def __init__(self, config: ProviderConfig, api_key: str, base_url: str | None = None):
         self.config = config
-        self.client = anthropic.Anthropic(api_key=api_key, base_url=base_url)
+        self.client = anthropic.Anthropic(api_key=api_key, base_url=base_url,
+                                          max_retries=RETRY_ATTEMPTS - 1)
 
     def call(self, model: str, schema: type[BaseModel], prompt: str, input: str) -> Reply:
         message = self.client.messages.create(
@@ -62,7 +66,8 @@ class AnthropicAdapter:
 class OpenAIAdapter:
     def __init__(self, config: ProviderConfig, api_key: str, base_url: str | None = None):
         self.config = config
-        self.client = openai.OpenAI(api_key=api_key, base_url=base_url)
+        self.client = openai.OpenAI(api_key=api_key, base_url=base_url,
+                                    max_retries=RETRY_ATTEMPTS - 1)
 
     def call(self, model: str, schema: type[BaseModel], prompt: str, input: str) -> Reply:
         raw = self.client.responses.with_raw_response.parse(
@@ -107,7 +112,8 @@ class OpenAIAdapter:
 class GeminiAdapter:
     def __init__(self, config: ProviderConfig, api_key: str, base_url: str | None = None):
         self.config = config
-        options = types.HttpOptions(base_url=base_url) if base_url else None
+        options = types.HttpOptions(base_url=base_url,
+                                    retry_options=types.HttpRetryOptions(attempts=RETRY_ATTEMPTS))
         self.client = genai.Client(api_key=api_key, vertexai=False, http_options=options)
 
     def call(self, model: str, schema: type[BaseModel], prompt: str, input: str) -> Reply:
