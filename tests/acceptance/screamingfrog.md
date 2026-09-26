@@ -1,15 +1,22 @@
 # Screaming Frog az elfogadáshoz (SF 24.3)
 
-A `run_acceptance.py` az SF CLI-t (`ScreamingFrogSEOSpiderCli.exe --crawl … --headless --config …`) a `tests/acceptance/sf/` alatti konfigurációval indítja. A `.seospiderconfig` fájlt az SF felületén kell elmenteni (File → Configuration → Save As…); a CLI csak betölti.
+A `run_acceptance.py` az SF CLI-t (`ScreamingFrogSEOSpiderCli.exe --crawl … --headless --save-crawl --config …`) a site konfigurációjával indítja. A `.seospiderconfig` Java-szerializált bináris; csak az SF felületén menthető (File → Configuration → Save As…), a CLI csak betölti. A repóban `binary` (`.gitattributes`).
 
-Két fájl kell, mindkettő a repóba:
+Két fájl kell, a `tests/acceptance/` alatt:
 
-- `tests/acceptance/sf/aaa2-acceptance.seospiderconfig`: kk.coach és Materia;
-- `tests/acceptance/sf/aaa2-acceptance-ngx.seospiderconfig`: ugyanez, és az include.
+- `aaa2-acceptance.seospiderconfig`: kk.coach és Materia;
+- `aaa2-acceptance-ngx.seospiderconfig`: ugyanez, és az include.
+
+Ellenőrzés mentés után, helyi próba-site-on (lásd `verify_sf_config.py`):
+
+```
+python -m tests.acceptance.verify_sf_config tests/acceptance/aaa2-acceptance.seospiderconfig
+python -m tests.acceptance.verify_sf_config tests/acceptance/aaa2-acceptance-ngx.seospiderconfig --ngx
+```
 
 ## Beállítások
 
-Az `aaa crawl` alapértelmezéseihez igazítva. Kiindulás: az alapértelmezett konfiguráció (File → Configuration → Clear Default Configuration). A 24-es verzióban a pontok a Configuration menü Crawl Config ablakában vannak.
+Az `aaa crawl` alapértelmezéseihez igazítva. A 24-es verzióban a pontok a Configuration menü Crawl Config ablakában vannak.
 
 1. **Spider → Rendering**
    - Rendering: JavaScript.
@@ -30,29 +37,32 @@ Az `aaa crawl` alapértelmezéseihez igazítva. Kiindulás: az alapértelmezett 
 5. **robots.txt**
    - Respect robots.txt (alapérték; az aaa is tiszteli).
 6. **User-Agent**: egyéni (Custom).
-   - HTTP Request User-Agent: `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36`. Ez az aaa UA-ja a Playwright Chromium 153-mal. Ha a Playwright frissül, a főverzió változik; a futtató a ténylegeset a `run.json`-ba és az `acceptance.md`-be írja, a konfigurációnak ezzel kell egyeznie.
+   - HTTP Request User-Agent: `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36`. Ez az aaa UA-ja a Playwright Chromium 153-mal. Ha a Playwright frissül, a főverzió változik; a `verify_sf_config.py` az aktuálishoz méri.
    - Robots User-Agent: ugyanez. Így csak a `User-agent: *` csoport illeszkedik, mint az aaa-ban.
 7. **Speed**
    - Max Threads: 6 (az aaa `CONCURRENCY`-je).
 8. **Include**, csak az ngx-fájlban
    - `https://valor-software\.com/ngx-bootstrap/.*`
 
-## Tárolási mód (rendszerbeállítás, nem a konfigurációs fájl része)
+## A 2026-09-25-én mentett konfiguráció ellenőrzése
 
-DB módban az SF legalább 4 GB szabad helyet kér a `%USERPROFILE%\.ScreamingFrogSEOSpider` meghajtóján; ennél kevesebbnél el sem indul („You do not have sufficient disk space to run the SEO Spider”). A három site kicsi (legfeljebb 100 URL), ehhez a memória-mód is elég: File → Settings → Storage Mode → Memory Storage.
+A fájl a `C:\Users\donm6\AAA-v2\tests\acceptance\` alá került („SEO Spider Config.seospiderconfig”), onnan másolva `aaa2-acceptance.seospiderconfig` néven. A próba-site-on:
+
+- **rendben:** JS-render, robots.txt, hreflang- és canonical-crawl, a kezdő mappán kívülre is megy;
+- **eltér:**
+  - a UA `Screaming Frog SEO Spider/24.3`, nem az aaa-é;
+  - a nofollow belső linket nem követi;
+  - a sitemapet nem olvassa (a `sitemap.xml`-t le sem kéri);
+- **hiányzik:** az include-os ngx-változat. E nélkül az ngx-crawl az egész valor-software.com-ot bejárná, mert a kezdő mappán kívülre is megy.
+
+## Tárolási mód
+
+DB módban az SF legalább 4 GB szabad helyet kér a `%USERPROFILE%\.ScreamingFrogSEOSpider` meghajtóján; ennél kevesebbnél el sem indul („You do not have sufficient disk space…”). A három site kicsi, a memória-mód is elég: File → Settings → Storage Mode.
 
 ## Futtatás
 
-A CLI-vel, site-onként:
-
 ```
-python -m tests.acceptance.run_acceptance materia --resume-check 5
-python -m tests.acceptance.run_acceptance kk-coach --resume-check 10
-python -m tests.acceptance.run_acceptance ngx --resume-check 20
+python -m tests.acceptance.run_acceptance all --resume-test 5
 ```
 
-Kézzel, ha a CLI nem használható:
-
-1. SF-crawl a felületen ugyanezzel a konfigurációval;
-2. Internal fül, HTML szűrő, Export → `internal_html.csv`;
-3. rögtön utána, egy órán belül: `python -m tests.acceptance.run_acceptance materia --sf-csv <útvonal>`.
+Kézzel, ha a CLI nem használható: SF-crawl a felületen ugyanezzel a konfigurációval; Internal fül, HTML szűrő, Export → `internal_html.csv`; rögtön utána, egy órán belül: `python -m tests.acceptance.run_acceptance materia --sf-csv <útvonal>`.
