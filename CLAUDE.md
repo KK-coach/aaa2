@@ -13,7 +13,7 @@ Sitewide SEO/GEO elemzőmotor. A mag: oldalak × entitások × belső linkek gr�
 - **`legacy/` nem importálható.** Referencia. Darabokat átemelünk, ADK- és dict-lánc-függőség nélkül, a v2 sémára írva.
 - **Tesztek a mérésre, nem a riportra.** Élő site-ot csak az elfogadási teszt hív; a regressziós tesztek a `tests/fixtures/<domain>/` alól szolgálják ki a rögzített válaszokat Playwright `route`-tal.
 
-## M1 — a következő lépés
+## M1 — kész (2026-09-26)
 
 Első függőleges szelet, ebben a sorrendben, mindegyik tesztekkel:
 
@@ -23,8 +23,24 @@ Első függőleges szelet, ebben a sorrendben, mindegyik tesztekkel:
 4. `aaa2/engine/parse.py` — renderelt DOM → `pages`, `links` (pozícióval), `headings`, `schema_blocks`. Main content: `legacy/crawler.py` readability-scoring.
 5. `aaa2/engine/crawl.py` — összefűzés, oldalanként egy tranzakció, `crawl_runs` naplózás.
 6. `aaa2/engine/site_profile.py` — célország (a v1 súlyozott szavazása, sitewide), piaci hatókör, nyelvek, nyers tech-jelek a crawl végén.
+7. `tests/acceptance/` — elfogadás: Screaming Frog és `aaa crawl` egy ülésben, összevetés (`compare.py`), `--resume` élő teszt. A Screaming Frog-konfiguráció tudása: `tests/acceptance/screamingfrog.md`.
 
 Kész, ha a három referencia-site (kk.coach, Materia Trattoria, ngx-bootstrap) végigmegy, a linkgráf egyezik a Screaming Frog JS-render baseline-nal (egy ülésben felvéve), és a `--resume` egy megszakított crawlt befejez. Stop-feltétel: kezdéstől két hét.
+
+### Elfogadás (2026-09-26)
+
+SF 24.3 és `aaa crawl` egy ülésben, site-onként egymás után. A szabály:
+
+- magyarázatlan URL-eltérés 0; az összes eltérés kategóriánként jelentve, küszöb nélkül;
+- a státuszkódok egyeznek;
+- a belső linkek linkszinten, a renderelt DOM-on ±5%-on belül vannak; az SF saját száma csak referencia.
+
+Mindhárom site elfogadva, magyarázatlan eltérés, státusz-eltérés és linkszintű eltérés nélkül:
+
+- **kk.coach:** URL-eltérés 4,8% (2/42; a Cloudflare `/cdn-cgi/` linkje és egy valódi 404, a `/hu/` canonical-ja); 0,87 oldal/mp.
+- **Materia:** 6,7% (1/15; `/cdn-cgi/`); 0,70 oldal/mp. A `--resume` 5 oldal után megszakítva, a megszakítás nélküli adatbázistól 0 eltéréssel fejezte be.
+- **ngx-bootstrap:** 0,0% (0/88); 0,46 oldal/mp.
+- **Tanulság:** az SF alapból mobilként renderel (Googlebot Smartphone, 411 × 731), és mobilon az ngx menüje a DOM-ba sem kerül; az SF-et az aaa-val azonos asztali ablakra (1920 × 1080) kell állítani.
 
 ### Referencia-site-ok
 

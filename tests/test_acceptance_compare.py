@@ -114,7 +114,7 @@ def test_url_differences_are_explained(result):
         ("csak_sf", "https://pelda.hu/sf-noindex/"): "noindex",
         ("csak_aaa", "https://pelda.hu/r/"): "redirect",
         ("csak_aaa", "https://pelda.hu/noidx/"): "noindex",
-        ("csak_aaa", "https://pelda.hu/orphan/"): "sitemap",
+        ("csak_aaa", "https://pelda.hu/orphan/"): "sitemap-only",
         ("csak_aaa", "https://pelda.hu/mystery/"): "?",
         ("csak_aaa", "https://pelda.hu/hibas/"): "render-hiba",
     }
@@ -229,7 +229,7 @@ def test_link_level_comparison(tmp_path):
     ]
     assert ("(`Link Origin: HTML`; az aaa renderelt DOM-jában nincsenek): 2 link 1 oldalon; "
             "célok: https://pelda.hu/regi-menu/×2.") in result.summary
-    assert "- **Belső linkek ±5%, linkszinten (renderelt DOM):** NEM, 2 tűrésen kívüli sor." in (
+    assert "- **Belső linkek ±5%, linkszinten, a renderelt DOM-on:** NEM, 2 tűrésen kívüli sor." in (
         result.summary)
 
 
@@ -243,8 +243,8 @@ def test_raw_only_links_shown_on_outside_rows(tmp_path):
 
 
 def test_sitemap_chain_is_explained(tmp_path):
-    """A csak sitemapből induló láncon (orphan → orphan2) elért oldal "sitemap"; ha egy közös
-    oldal linkel rá, már nem."""
+    """A csak sitemapből induló láncon (orphan → orphan2) elért oldal "sitemap-only"; ha egy
+    közös oldal linkel rá, már nem."""
     con = aaa_db()
     (orphan_id,) = con.execute("SELECT page_id FROM pages WHERE url = 'https://pelda.hu/orphan/'"
                                ).fetchone()
@@ -255,7 +255,7 @@ def test_sitemap_chain_is_explained(tmp_path):
                 "VALUES (?, 'https://pelda.hu/orphan2/', 'body', 1)", [orphan_id])
     rows = read_sf_csv(sf_csv(tmp_path / "i.csv"))
     explained = {r["url"]: r["explanation"] for r in compare(rows, load_site(con)).url_rows}
-    assert explained["https://pelda.hu/orphan2/"] == "sitemap"
+    assert explained["https://pelda.hu/orphan2/"] == "sitemap-only"
     con.execute("INSERT INTO links (from_page_id, to_url, position, ordinal) VALUES "
                 "((SELECT page_id FROM pages WHERE url = 'https://pelda.hu/b/'), "
                 "'https://pelda.hu/orphan2/', 'body', 9)")
@@ -275,23 +275,29 @@ def test_summary(result):
     assert ("- **SF:** 12 HTML-sor, 11 különböző normalizált URL; 2 SF-címet írt át a "
             "normalizálás.") in result.summary
     assert "- **Csak SF:** 5 (hreflang 1, 404 1, noindex 1, ? 1, scope 1)." in result.summary
-    assert ("- **Csak aaa:** 5 (render-hiba 1, ? 1, noindex 1, sitemap 1, redirect 1)."
+    assert ("- **Csak aaa:** 5 (render-hiba 1, ? 1, noindex 1, sitemap-only 1, redirect 1)."
             in result.summary)
-    assert "- **URL-halmaz eltérés:** 62.5% (10 / 16); magyarázatlan: 5." in result.summary
+    assert "- **URL-halmaz eltérés** (küszöb nélkül): 62.5% (10 / 16)." in result.summary
+    assert ("- **Kategóriánként** (mindkét irány): redirect 1, 404 1, noindex 2, robots 0, "
+            "scope 1, normalizálás 2, sitemap-only 1.") in result.summary
+    assert "- **Magyarázatlan:** 4 (? 2, hreflang 1, render-hiba 1)." in result.summary
     assert "- **Státuszkód-eltérés:** 1 közös URL-en." in result.summary
-    assert ("(5 közös, mindkét oldalon 2xx oldal, ±5%), tűrésen kívüli sor: `outlinks` 0, "
-            "`unique_outlinks` 0, `inlinks` 1, `unique_inlinks` 1.") in result.summary
-    assert "- **Belső linkek ±5%, SF-számokból:** NEM, 2 tűrésen kívüli sor." in result.summary
-    assert "linkszinten" not in result.summary
+    assert "- **Belső linkek linkszinten:** nincs adat (`--sf-outlinks`)." in result.summary
+    assert ("- **Referencia: az SF saját számai** (`Internal:HTML`, ±5%), tűrésen kívüli sor: "
+            "`outlinks` 0, `unique_outlinks` 0, `inlinks` 1, `unique_inlinks` 1.") in result.summary
     assert "1.25 oldal/mp" in result.summary
     assert "render/fetch-hiba 9.1% (1)" in result.summary
-    assert "(legfeljebb 2%, minden eltérés magyarázva): NEM teljesül." in result.summary
+    assert "- **URL-halmaz, magyarázatlan eltérés = 0:** NEM, 4 magyarázatlan." in result.summary
     assert "- **Státuszkódok egyeznek:** NEM, 1 eltérés." in result.summary
+    assert ("- **Belső linkek ±5%, linkszinten, a renderelt DOM-on:** nem mérhető, nincs "
+            "linkszintű adat.") in result.summary
+    assert "- **Összesen:** NEM felel meg." in result.summary
     assert not result.passed
 
 
 def test_accepted_explanations_are_the_review_list():
-    assert ACCEPTED == {"redirect", "404", "noindex", "robots", "scope", "normalizálás"}
+    assert ACCEPTED == {"redirect", "404", "noindex", "robots", "scope", "normalizálás",
+                        "sitemap-only"}
 
 
 def matching_pages(count):
@@ -303,21 +309,37 @@ def matching_rows(pages):
     return [(url, 200, "", 0, 0, 0, 0) for url, *_ in pages]
 
 
-@pytest.mark.parametrize(("extra_sf", "passed"), [
-    ([], True),
-    ([("https://pelda.hu/gone/", 404, "Client Error", 1, 1, "", "")], True),
-    ([("https://pelda.hu/gone/", 404, "", 1, 1, "", ""),
-      ("https://pelda.hu/gone2/", 404, "", 1, 1, "", ""),
-      ("https://pelda.hu/gone3/", 404, "", 1, 1, "", "")], False),
-    ([("https://pelda.hu/unknown/", 200, "", 1, 1, 0, 0)], False),
-])
-def test_pass_needs_small_and_explained_difference(tmp_path, extra_sf, passed):
-    """100 közös oldal: 1 magyarázott eltérés (1/101) belefér; 3 magyarázott (3/103) már nem;
-    1 magyarázatlan sosem."""
-    pages = matching_pages(99)
-    rows = matching_rows(pages) + extra_sf
-    result = compare(read_sf_csv(sf_csv(tmp_path / "i.csv", rows)), load_site(aaa_db(pages=pages)))
+GONE = [(f"https://pelda.hu/gone{i}/", 404, "Client Error", 1, 1, "", "") for i in range(3)]
+VERDICTS = [
+    ("azonos halmaz", [], [], True),
+    ("3 magyarázott eltérés 4 oldalon (43%): nincs küszöb", GONE, [], True),
+    ("1 magyarázatlan", [("https://pelda.hu/unknown/", 200, "", 1, 1, 0, 0)], [], False),
+    ("státusz-eltérés", [("https://pelda.hu/p0/", 404, "", 0, 0, "", "")], [], False),
+    ("az SF saját száma tűrésen kívül: csak referencia",
+     [("https://pelda.hu/", 200, "", 0, 0, 10, 3)], [], True),
+    ("linkszinten tűrésen kívül",
+     [], [SfLink("https://pelda.hu/", "https://pelda.hu/p0/", "Rendered HTML")], False),
+]
+
+
+@pytest.mark.parametrize(("rows", "links", "passed"), [v[1:] for v in VERDICTS],
+                         ids=[v[0] for v in VERDICTS])
+def test_acceptance_verdict(tmp_path, rows, links, passed):
+    """Elfogadás: 0 magyarázatlan URL-eltérés (küszöb nélkül), egyező státuszkódok, és a linkek
+    linkszinten, a renderelt DOM-on a tűrésen belül; az SF saját száma nem dönt."""
+    pages = matching_pages(3)
+    sf_rows = [row for row in matching_rows(pages) if row[0] not in {r[0] for r in rows}] + rows
+    result = compare(read_sf_csv(sf_csv(tmp_path / "i.csv", sf_rows)),
+                     load_site(aaa_db(pages=pages)), outlinks=links)
     assert result.passed is passed
+
+
+def test_links_without_link_level_data_do_not_pass(tmp_path):
+    pages = matching_pages(3)
+    result = compare(read_sf_csv(sf_csv(tmp_path / "i.csv", matching_rows(pages))),
+                     load_site(aaa_db(pages=pages)))
+    assert not result.passed
+    assert "nem mérhető, nincs linkszintű adat." in result.summary
 
 
 def test_main_writes_outputs_and_exit_code(tmp_path, capsys):
@@ -338,9 +360,13 @@ def test_main_passes(tmp_path):
     pages = matching_pages(3)
     db = tmp_path / "pelda.hu.duckdb"
     aaa_db(db, pages=pages).close()
+    outlinks = tmp_path / "all_outlinks.csv"
+    outlinks.write_text('"Type","Source","Destination","Link Origin"\n', encoding="utf-8-sig")
     code = main(["--sf-csv", str(sf_csv(tmp_path / "i.csv", matching_rows(pages))),
-                 "--db", str(db), "--out", str(tmp_path / "out")])
+                 "--sf-outlinks", str(outlinks), "--db", str(db), "--out", str(tmp_path / "out")])
     assert code == 0
+    assert "- **Összesen:** ELFOGADVA." in (tmp_path / "out" / "summary.md").read_text(
+        encoding="utf-8")
 
 
 def test_compare_databases(tmp_path):

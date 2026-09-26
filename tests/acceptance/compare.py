@@ -19,15 +19,15 @@ Kimenet a `--out` könyvtárba:
 
 - `url_diff.csv`: az egyik oldalon hiányzó URL-ek magyarázattal, és a `normalizálás` sorok.
   Elfogadott magyarázat: redirect, 404, noindex, robots, scope (nem a seed hostja, vagy az
-  include/exclude kizárja), normalizálás. Minden más magyarázatlan eltérés, a megnevezésével:
-  `http NNN`, nincs válasz, render-hiba, nem HTML, sitemap (csak sitemapből induló láncon
-  érhető el, SF által ismert oldal nem linkel rá), hreflang, canonical (csak hreflang- vagy
+  include/exclude kizárja), normalizálás, sitemap-only (csak sitemapből induló láncon érhető
+  el, SF által ismert oldal nem linkel rá). Minden más magyarázatlan eltérés, a megnevezésével:
+  `http NNN`, nincs válasz, render-hiba, nem HTML, hreflang, canonical (csak hreflang- vagy
   canonical-cél), limit (az aaa elérte a `max_pages`-t), `?`;
 - `status_diff.csv`: a közös URL-ek eltérő státuszkódjai;
 - `link_diff.csv`: a közös, mindkét oldalon 2xx oldalak belső linkjei, ha a tűrésen kívül esnek:
-  az SF `Internal:HTML` számaiból, és ha van `--sf-outlinks`, linkszinten is, a hiányzó és a
-  többlet célokkal (forrásokkal);
-- `summary.md`: szám-összegzés és az elfogadási feltételek.
+  linkszinten (`--sf-outlinks`), a hiányzó és a többlet célokkal (forrásokkal), és referenciának
+  az SF `Internal:HTML` számaiból;
+- `summary.md`: szám-összegzés, az eltérések kategóriánként, és az elfogadási feltételek.
 
 Linkek mindkét oldalon: a seed hostjára mutató, nem a CDN infrastruktúrájára (`/cdn-cgi/`)
 mutató célok, az include/exclude-tól függetlenül; az SF `Outlinks`-a a nem crawlolt belső célt is
@@ -36,8 +36,13 @@ Kimenő: a linksorok száma (`Outlinks`) és a különböző célok száma (`Uni
 linksorok (`Inlinks`) és a különböző forrásoldalak (`Unique Inlinks`), csak olyan forrásból,
 amelyet mindkét oldal crawlolt. Tűrésen kívül: |aaa − SF| > tűrés × SF.
 
-Kilépési kód: 0, ha az URL-halmaz eltérése legfeljebb `--max-diff` (2%) és minden eltérés
-magyarázott; különben 1.
+Elfogadás (kilépési kód 0), ha mind teljesül:
+
+- nincs magyarázatlan URL-eltérés; az összes eltérés kategóriánként jelentve, küszöb nélkül;
+- a közös URL-ek státuszkódja egyezik;
+- a belső linkek linkszinten, a renderelt DOM-on a tűrésen belül vannak. Az SF saját száma
+  (`Internal:HTML`) referencia, a döntésbe nem számít; linkszintű adat nélkül a feltétel nem
+  mérhető, és nem teljesül.
 
     python -m tests.acceptance.compare --sf-csv internal_html.csv \\
         --sf-response-codes response_codes_all.csv --sf-outlinks all_outlinks.csv \\
@@ -61,8 +66,8 @@ from aaa2.engine.frontier import PRIORITY, Robots
 from aaa2.engine.normalize import UrlPolicy, is_infrastructure, is_internal, normalize
 
 TOLERANCE = 0.05
-MAX_DIFF = 0.02
-ACCEPTED = frozenset({"redirect", "404", "noindex", "robots", "scope", "normalizálás"})
+CATEGORIES = ("redirect", "404", "noindex", "robots", "scope", "normalizálás", "sitemap-only")
+ACCEPTED = frozenset(CATEGORIES)
 LINK_METRICS = (
     ("outlinks", "Outlinks"),
     ("unique_outlinks", "Unique Outlinks"),
@@ -233,7 +238,7 @@ def load_site(
 def compare(
     sf_rows: list[SfRow], site: AaaSite, *, response_codes: list[SfRow] | None = None,
     outlinks: list[SfLink] | None = None, tolerance: float = TOLERANCE,
-    max_diff: float = MAX_DIFF, db_bytes: int | None = None,
+    db_bytes: int | None = None,
 ) -> Comparison:
     groups = _group(sf_rows, site.policy)
     representative = {key: _representative(key, rows) for key, rows in groups.items()}
@@ -278,14 +283,18 @@ def compare(
         level_rows, raw_only = _level_link_rows(ok_pages, set(common), outlinks, site, tolerance)
 
     union = len(sf_keys | set(site.pages))
-    differing = len(sf_only) + len(aaa_only)
     unexplained = sum(1 for r in url_rows
                       if r["side"] in ("csak_sf", "csak_aaa") and r["explanation"] not in ACCEPTED)
-    passed = union > 0 and differing / union <= max_diff and unexplained == 0
+    verdict = {
+        "url": union > 0 and unexplained == 0,
+        "status": not status_rows,
+        "links": None if level_rows is None else not level_rows,
+    }
     summary = _summary(
         site, sf_rows, groups, sf_only, aaa_only, url_rows, status_rows, len(ok_pages),
-        count_rows, level_rows, raw_only, tolerance, max_diff, db_bytes, unexplained, passed,
+        count_rows, level_rows, raw_only, tolerance, db_bytes, unexplained, verdict,
     )
+    passed = bool(verdict["url"] and verdict["status"] and verdict["links"] is True)
     return Comparison(url_rows, status_rows, count_rows + (level_rows or []), summary, passed)
 
 
@@ -332,7 +341,7 @@ def explain_aaa_only(
         if "html" not in seen.content_type.lower():
             return f"nem HTML ({seen.content_type or 'ismeretlen típus'})"
     if site.sitemap_rooted(page.url) and not site.link_sources.get(page.url, set()) & sf_keys:
-        return "sitemap"
+        return "sitemap-only"
     return "?"
 
 
@@ -356,7 +365,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--include", help="az aaa crawl include-regexe")
     parser.add_argument("--exclude", help="az aaa crawl exclude-regexe")
     parser.add_argument("--tolerance", type=float, default=TOLERANCE)
-    parser.add_argument("--max-diff", type=float, default=MAX_DIFF)
     parser.add_argument("--quiet", action="store_true", help="az összegzést ne írja ki")
     args = parser.parse_args(argv)
     con = duckdb.connect(str(args.db), read_only=True)
@@ -368,7 +376,7 @@ def main(argv: list[str] | None = None) -> int:
         read_sf_csv(args.sf_csv), site,
         response_codes=read_sf_csv(args.sf_response_codes) if args.sf_response_codes else None,
         outlinks=read_sf_outlinks(args.sf_outlinks) if args.sf_outlinks else None,
-        tolerance=args.tolerance, max_diff=args.max_diff, db_bytes=args.db.stat().st_size,
+        tolerance=args.tolerance, db_bytes=args.db.stat().st_size,
     )
     write_outputs(result, args.out)
     if not args.quiet:
@@ -445,7 +453,7 @@ def _summary(
     aaa_only: list[str], url_rows: list[dict[str, object]], status_rows: list[dict[str, object]],
     link_pages: int, count_rows: list[dict[str, object]],
     level_rows: list[dict[str, object]] | None, raw_only: dict[str, Counter[str]],
-    tolerance: float, max_diff: float, db_bytes: int | None, unexplained: int, passed: bool,
+    tolerance: float, db_bytes: int | None, unexplained: int, verdict: dict[str, bool | None],
 ) -> str:
     union = len(set(groups) | set(site.pages))
     differing = len(sf_only) + len(aaa_only)
@@ -464,22 +472,29 @@ def _summary(
         f"- **Közös:** {len(set(groups) & set(site.pages))}.",
         f"- **Csak SF:** {len(sf_only)}{_reasons(reasons_sf)}.",
         f"- **Csak aaa:** {len(aaa_only)}{_reasons(reasons_aaa)}.",
-        (f"- **URL-halmaz eltérés:** {_share(differing, union)} ({differing} / {union}); "
-         f"magyarázatlan: {unexplained}."),
+        (f"- **URL-halmaz eltérés** (küszöb nélkül): {_share(differing, union)} "
+         f"({differing} / {union})."),
+        (f"- **Kategóriánként** (mindkét irány): "
+         f"{_by_category(reasons_sf + reasons_aaa, normalized)}."),
+        f"- **Magyarázatlan:** {unexplained}{_unexplained(reasons_sf + reasons_aaa)}.",
         f"- **Státuszkód-eltérés:** {len(status_rows)} közös URL-en.",
-        (f"- **Belső linkek, az SF `Internal:HTML` számaiból** ({link_pages} közös, mindkét "
-         f"oldalon 2xx oldal, ±{tolerance:.0%}), tűrésen kívüli sor: {_by_metric(count_rows)}."),
     ]
     if level_rows is not None:
         raw_links = sum(counter.total() for counter in raw_only.values())
         lines += [
-            (f"- **Belső linkek linkszinten** (az SF renderelt hiperlinkjei, `Links:All "
-             f"Outlinks`), tűrésen kívüli sor: {_by_metric(level_rows)}."),
+            (f"- **Belső linkek linkszinten, a renderelt DOM-on** (az SF renderelt hiperlinkjei, "
+             f"`Links:All Outlinks`; {link_pages} közös, mindkét oldalon 2xx oldal, "
+             f"±{tolerance:.0%}), tűrésen kívüli sor: {_by_metric(level_rows)}."),
             (f"- **Csak az SF nyers HTML-jében lévő linkek** (`Link Origin: HTML`; az aaa "
              f"renderelt DOM-jában nincsenek): {raw_links} link {len(raw_only)} oldalon"
              + (f"; célok: {_brief_counter(sum(raw_only.values(), Counter()))}"
                 if raw_links else "") + "."),
         ]
+    else:
+        lines.append("- **Belső linkek linkszinten:** nincs adat (`--sf-outlinks`).")
+    lines.append(
+        f"- **Referencia: az SF saját számai** (`Internal:HTML`, ±{tolerance:.0%}), tűrésen "
+        f"kívüli sor: {_by_metric(count_rows)}.")
     if site.run:
         run_id, _, done, failed, skipped, rate, started, finished = site.run
         lines.append(
@@ -493,20 +508,22 @@ def _summary(
     lines.append(
         f"- **aaa tárhely:** {storage}renderelt HTML (zstd) "
         f"{(site.rendered_bytes / pages / 1024) if pages else 0:.1f} KiB/oldal.")
+    if verdict["links"] is None:
+        links = "nem mérhető, nincs linkszintű adat."
+    else:
+        links = "igen." if verdict["links"] else f"NEM, {len(level_rows or [])} tűrésen kívüli sor."
+    passed = verdict["url"] and verdict["status"] and verdict["links"] is True
     lines += [
         "",
         "### Elfogadás",
         "",
-        (f"- **URL-halmaz** (legfeljebb {max_diff:.0%}, minden eltérés magyarázva): "
-         + ("teljesül." if passed else "NEM teljesül.")),
+        ("- **URL-halmaz, magyarázatlan eltérés = 0:** "
+         + ("igen." if verdict["url"] else f"NEM, {unexplained} magyarázatlan.")),
         ("- **Státuszkódok egyeznek:** "
-         + ("igen." if not status_rows else f"NEM, {len(status_rows)} eltérés.")),
-        (f"- **Belső linkek ±{tolerance:.0%}, SF-számokból:** "
-         + ("igen." if not count_rows else f"NEM, {len(count_rows)} tűrésen kívüli sor.")),
+         + ("igen." if verdict["status"] else f"NEM, {len(status_rows)} eltérés.")),
+        f"- **Belső linkek ±{tolerance:.0%}, linkszinten, a renderelt DOM-on:** {links}",
+        f"- **Összesen:** {'ELFOGADVA' if passed else 'NEM felel meg'}.",
     ]
-    if level_rows is not None:
-        lines.append(f"- **Belső linkek ±{tolerance:.0%}, linkszinten (renderelt DOM):** "
-                     + ("igen." if not level_rows else f"NEM, {len(level_rows)} tűrésen kívüli sor."))
     return "\n".join(lines) + "\n"
 
 
@@ -609,6 +626,18 @@ def _reasons(counter: Counter[str]) -> str:
     if not counter:
         return ""
     return " (" + ", ".join(f"{reason} {n}" for reason, n in counter.most_common()) + ")"
+
+
+def _by_category(reasons: Counter[str], normalized: int) -> str:
+    """Az elfogadott kategóriák, nullával is; a `normalizálás` a normalizálással illesztett
+    SF-címek száma."""
+    counts = Counter(reasons, normalizálás=normalized)
+    return ", ".join(f"{category} {counts[category]}" for category in CATEGORIES)
+
+
+def _unexplained(reasons: Counter[str]) -> str:
+    rest = Counter({reason: n for reason, n in reasons.items() if reason not in ACCEPTED})
+    return _reasons(rest)
 
 
 def _by_metric(rows: list[dict[str, object]]) -> str:
