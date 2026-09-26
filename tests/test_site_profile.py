@@ -11,7 +11,6 @@ from typer.testing import CliRunner
 from aaa2.cli.main import app
 from aaa2.db import connect as connect_module
 from aaa2.db.connect import connect
-from aaa2.engine.crawl import CrawlOptions
 from aaa2.engine.site_profile import (
     build_profile,
     page_tech_signals,
@@ -19,7 +18,7 @@ from aaa2.engine.site_profile import (
     update_site_profile,
 )
 from aaa2.engine.target_country import Candidate
-from tests.recorded import record_crawl, replay_crawl
+from tests.recorded import REFERENCE_SETS, record_crawl
 
 HU_TEXT = "Ez egy magyar szöveg, amely azt mutatja, hogy a weboldal nem angol. " * 4
 EN_TEXT = "This is the page that shows which language the website uses for their content. " * 4
@@ -229,12 +228,7 @@ def test_profile_without_site_row_is_empty():
 # a három rögzített készlet
 # ---------------------------------------------------------------------------
 
-REFERENCE_SETS = {
-    "kk-coach-crawl": ("https://kk.coach/", CrawlOptions(concurrency=4)),
-    "materia-crawl": ("https://materia-tm.com/", CrawlOptions(concurrency=3)),
-    "ngx-bootstrap-crawl": ("https://valor-software.com/ngx-bootstrap/components",
-                            CrawlOptions(concurrency=4, include="/ngx-bootstrap/")),
-}
+# A készletek a tests/recorded.py REFERENCE_SETS-ében.
 # A felvevő route.fetch()-csel követi az átirányítást, így a felvett kk.coach-készletben a 4 régi,
 # 301-es magyar URL is tartalmi oldal: 40 sikeres oldal (élesben 36), és a magyar oldalakból
 # több van, mint az angolokból.
@@ -275,12 +269,10 @@ def site_profile_row(con):
 
 
 @pytest.mark.parametrize("name", list(REFERENCE_SETS))
-async def test_reference_site_profile(name):
-    seed, options = REFERENCE_SETS[name]
-    replayed = await replay_crawl(name, seed, options)
-    if replayed is None:
+def test_reference_site_profile(name, reference_crawl):
+    con = reference_crawl(name)
+    if con is None:
         pytest.skip(f"nincs felvétel: pytest -m live -k record_site_profile ({name})")
-    _, con = replayed
     country, confidence, scope, city, languages, page_count, candidates, signals = (
         site_profile_row(con))
     expected = EXPECTED[name]

@@ -21,7 +21,7 @@ import aaa2.db.connect as connect_module
 from aaa2.cli.main import app
 from aaa2.db.connect import connect
 from aaa2.llm import ledger
-from aaa2.llm.adapters import is_transient
+from aaa2.llm.adapters import describe_error, is_transient
 from aaa2.llm.client import (
     BudgetExceeded,
     LLMError,
@@ -295,16 +295,37 @@ def test_transient_error_is_retried_and_counted(con, api, env, ledger_path, name
     assert result.parsed == EXPECTED
     assert [route for route, _, _ in api.requests] == [name, name]
     assert waits == [1.0]
-    assert con.execute("SELECT attempts FROM llm_calls WHERE call_id = ?",
-                       [result.call_id]).fetchone() == (2,)
-    assert last_entry(ledger_path)["attempts"] == 2
+    attempts, last_error = con.execute("SELECT attempts, last_error FROM llm_calls "
+                                       "WHERE call_id = ?", [result.call_id]).fetchone()
+    assert attempts == 2 and last_error.startswith(f"{status}: ")
+    assert "túlterhelt" in last_error
+    assert (last_entry(ledger_path)["attempts"], last_entry(ledger_path)["last_error"]) == (
+        2, last_error)
 
 
 def test_first_try_is_one_attempt(con, api, env, ledger_path):
     result = clients_for(con, api, env, ledger_path)["openai"].extract(
         PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
-    assert con.execute("SELECT attempts FROM llm_calls WHERE call_id = ?",
-                       [result.call_id]).fetchone() == (1,)
+    assert con.execute("SELECT attempts, last_error FROM llm_calls WHERE call_id = ?",
+                       [result.call_id]).fetchone() == (1, None)
+
+
+def test_last_error_is_the_last_failed_attempt(con, api, env, ledger_path):
+    api.busy["gemini"] = [503, 429]
+    result = clients_for(con, api, env, ledger_path)["gemini"].extract(
+        PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
+    attempts, last_error = con.execute("SELECT attempts, last_error FROM llm_calls "
+                                       "WHERE call_id = ?", [result.call_id]).fetchone()
+    assert attempts == 3 and last_error.startswith("429: ")
+
+
+def test_describe_error():
+    request = httpx.Request("POST", "http://127.0.0.1/")
+    assert describe_error(genai_errors.ServerError(503, {"error": {"message": "túl\nterhelt"}})
+                          ).startswith("503: 503 ")
+    assert describe_error(httpx.ConnectError("elutasítva", request=request)) == (
+        "ConnectError: elutasítva")
+    assert len(describe_error(ValueError("x" * 500))) == len("ValueError: ") + 200
 
 
 def test_backoff_is_exponential_with_jitter(con, api, env, ledger_path):
@@ -451,15 +472,17 @@ def test_status_prints_cumulative_usd_per_model(tmp_path, monkeypatch):
 def test_status_of_a_site_adds_its_own_calls(tmp_path, monkeypatch):
     monkeypatch.setattr(connect_module, "DATA_DIR", tmp_path)
     site = connect(connect_module.db_path("materia-tm.com"))
-    site.execute("INSERT INTO llm_calls (domain, model, cost_usd, purpose, called_at, attempts) "
-                 "VALUES ('entity', 'gemini-3.8-flash', 0.002, 'extract', now(), 1), "
-                 "('entity', 'gemini-3.8-flash', 0.003, 'extract', now(), 3), "
-                 "('entity', 'gpt-6-luna', 0.001, 'extract', now(), 1)")
+    site.execute("INSERT INTO llm_calls (domain, model, cost_usd, purpose, called_at, attempts, "
+                 "last_error) VALUES "
+                 "('entity', 'gemini-3.8-flash', 0.002, 'extract', now(), 1, NULL), "
+                 "('entity', 'gemini-3.8-flash', 0.003, 'extract', now(), 3, '503: UNAVAILABLE'), "
+                 "('entity', 'gemini-3.8-flash', 0.001, 'extract', now(), 2, '429: kvóta'), "
+                 "('entity', 'gpt-6-luna', 0.001, 'extract', now(), 2, NULL)")
     site.close()
     result = CliRunner().invoke(app, ["status", "materia-tm.com"])
     assert result.exit_code == 0, result.output
-    assert ("LLM ezen a site-on: gemini-3.8-flash 2 hívás 0.0050 USD (2 újrapróba), "
-            "gpt-6-luna 1 hívás 0.0010 USD") in result.output.splitlines()[-1]
+    assert ("LLM ezen a site-on: gemini-3.8-flash 3 hívás 0.0060 USD (3 újrapróba: 429, 503), "
+            "gpt-6-luna 1 hívás 0.0010 USD (1 újrapróba)") in result.output.splitlines()[-1]
 
 
 def test_cli_models_exit_code(api, env, monkeypatch):

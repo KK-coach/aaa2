@@ -198,7 +198,7 @@ def schema_blocks(tree: HTMLParser) -> tuple[SchemaBlock, ...]:
         except ValueError:
             blocks.append(SchemaBlock("invalid", raw, len(blocks) + 1))
             continue
-        for item in _schema_items(data):
+        for item in schema_items(data):
             blocks.append(SchemaBlock(
                 _schema_type(item), json.dumps(item, ensure_ascii=False), len(blocks) + 1
             ))
@@ -262,7 +262,7 @@ def _links(tree: HTMLParser, base: str, policy: UrlPolicy) -> tuple[tuple[Link, 
         rel = set((anchor.attributes.get("rel") or "").lower().split())
         links.append(Link(
             to_url=normalized,
-            anchor=_anchor_text(anchor),
+            anchor=anchor_text(anchor),
             position=link_position(anchor),
             nofollow="nofollow" in rel,
             ordinal=len(links) + 1,
@@ -283,7 +283,8 @@ def _headings(tree: HTMLParser) -> tuple[Heading, ...]:
     return tuple(headings)
 
 
-def _anchor_text(anchor: Node) -> str | None:
+def anchor_text(anchor: Node) -> str | None:
+    """A szöveg; ha üres, az első nem üres `img[alt]`; ha az is, az `aria-label`."""
     text = _text(anchor)
     if text:
         return text
@@ -345,13 +346,15 @@ def _split_robots_scope(value: str) -> tuple[str | None, str]:
     return None, value
 
 
-def _schema_items(data: object, context: object = None) -> Iterator[object]:
+def schema_items(data: object, context: object = None) -> Iterator[object]:
+    """A JSON-LD elemei: tömb és `@graph` elemenként; a `@graph` eleme a szülő `@context`-jét
+    kapja, ha nincs sajátja."""
     if isinstance(data, list):
         for item in data:
-            yield from _schema_items(item, context)
+            yield from schema_items(item, context)
     elif isinstance(data, dict) and isinstance(data.get("@graph"), list):
         for item in data["@graph"]:
-            yield from _schema_items(item, data.get("@context", context))
+            yield from schema_items(item, data.get("@context", context))
     elif context is not None and isinstance(data, dict) and "@context" not in data:
         yield {"@context": context, **data}
     else:

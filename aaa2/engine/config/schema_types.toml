@@ -1,0 +1,17 @@
+# Schema.org @type → entities.type (brand | product | service | work | event | person | org |
+# place | tech | concept). Pontos típusnév-egyezés, a schema.org-előtag nélkül; az altípus nem
+# öröklődik, külön sor kell neki. A nem szereplő típus kimarad, az entity_runs.skipped számolja.
+
+Organization = "org"
+LocalBusiness = "org"
+Restaurant = "org"
+Person = "person"
+Product = "product"
+Service = "service"
+Event = "event"
+CreativeWork = "work"
+Article = "work"
+Book = "work"
+Place = "place"
+PostalAddress = "place"
+Brand = "brand"

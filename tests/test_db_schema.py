@@ -11,6 +11,7 @@ from aaa2.llm.schemas import ENTITY_TYPES
 EXPECTED = {
     "site", "crawl_runs", "crawl_queue", "pages", "links", "headings",
     "schema_blocks", "entities", "page_entities", "llm_calls", "rules", "rule_events",
+    "entity_runs",
 }
 
 
