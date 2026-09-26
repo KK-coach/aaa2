@@ -1,4 +1,4 @@
-"""aaa — CLI: crawl, status, entities, models, export."""
+"""aaa — CLI: crawl, status, entities, validate, models, export."""
 from __future__ import annotations
 
 import asyncio
@@ -10,13 +10,14 @@ from typing import Annotated
 
 import typer
 
-from aaa2.db.connect import connect, db_path
+from aaa2.db.connect import connect, db_path, shared_path
 from aaa2.engine.crawl import CrawlOptions, run_crawl
-from aaa2.engine.entities_llm import run_llm
-from aaa2.engine.entities_rules import run_rules
 from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
+from aaa2.entities.llm import run_llm
+from aaa2.entities.rules import run_rules
+from aaa2.entities.validate import KG_DAILY_QUOTA, validate_entities
 from aaa2.llm import ledger
 from aaa2.llm.client import check_models, open_clients
 from aaa2.llm.config import load_config
@@ -184,6 +185,37 @@ def entities(
         "GROUP BY e.type ORDER BY count(DISTINCT e.entity_id) DESC, e.type"
     ).fetchall():
         typer.echo(f"  {kind}: {count} entitás, {rows} sor")
+
+
+@app.command()
+def validate(
+    domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
+    limit: Annotated[int | None, typer.Option(help="legfeljebb ennyi entitás")] = None,
+    wikipedia: Annotated[bool, typer.Option(help="Wikipedia-szócikk keresése")] = True,
+) -> None:
+    """Az entitások validálása: Google Knowledge Graph (öt kategória, a KG-típus összevetése) és
+    Wikipedia-szócikk. A válaszok a site-adatbázisban és a shared.duckdb-ben cache-elve."""
+    con = _open(domain)
+    shared = connect(shared_path())
+    try:
+        run = validate_entities(con, shared, limit=limit, wikipedia=wikipedia)
+    finally:
+        shared.close()
+    kg = "kihagyva (nincs GOOGLE_KG_API_KEY)" if run.kg_skipped else ", ".join(
+        f"{status} {count}" for status, count in sorted(run.statuses.items())) or "—"
+    typer.echo(f"validálás: {run.entities} entitás; KG: {kg}; Wikipedia-szócikk: {run.wikipedia}")
+    typer.echo(f"  típusváltás a KG szerint: {len(run.type_changes)}, KG-típuseltérés jelölve: "
+               f"{run.mismatches}")
+    for name, before, after in run.type_changes:
+        typer.echo(f"    {name}: {before} → {after}")
+    (kg_today,) = con.execute(
+        "SELECT count(*) FROM validation_calls WHERE service = 'kg' AND "
+        "CAST(called_at AS DATE) = current_date").fetchone()
+    typer.echo(
+        f"  API-hívás: KG {run.calls.get('kg', 0)}, Wikipedia {run.calls.get('wikipedia', 0)}; "
+        f"cache: site {run.cache_site}, shared {run.cache_shared}; hiba: "
+        + (", ".join(f"{k} {v}" for k, v in sorted(run.errors.items())) or "0")
+        + f"; KG ma ezen a site-on {kg_today} / napi kvóta {KG_DAILY_QUOTA}")
 
 
 @app.command()
