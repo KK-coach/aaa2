@@ -1,4 +1,4 @@
-"""aaa — CLI. M1-ben: crawl, status, export."""
+"""aaa — CLI: crawl, status, models, export."""
 from __future__ import annotations
 
 import asyncio
@@ -15,12 +15,15 @@ from aaa2.engine.crawl import CrawlOptions, run_crawl
 from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
+from aaa2.llm import ledger
+from aaa2.llm.client import check_models
+from aaa2.llm.config import load_config
 
 app = typer.Typer(no_args_is_help=True, help="AAA v2 — sitewide SEO/GEO elemzőmotor")
 
 EXPORT_TABLES = (
     "pages", "links", "headings", "schema_blocks", "crawl_queue", "crawl_runs", "site",
-    "entities", "page_entities",
+    "entities", "page_entities", "llm_calls",
 )
 
 
@@ -71,9 +74,15 @@ def crawl(
 
 @app.command()
 def status(
-    domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
+    domain: Annotated[
+        str | None, typer.Argument(help="registrable domain vagy egy URL a site-ról")
+    ] = None,
 ) -> None:
-    """Oldalak státusz szerint, hibák, a sor állapota, a site-profil, az utolsó crawl."""
+    """Oldalak státusz szerint, hibák, a sor állapota, a site-profil, az utolsó crawl, és a
+    halmozott LLM-költség modellenként. Domain nélkül csak az LLM-költség."""
+    if domain is None:
+        _llm_spend(None)
+        return
     con = _open(domain)
     (pages,) = con.execute("SELECT count(*) FROM pages").fetchone()
     (errors,) = con.execute("SELECT count(*) FROM pages WHERE error IS NOT NULL").fetchone()
@@ -119,6 +128,26 @@ def status(
             f"  utolsó crawl #{run_id} ({notes}): indult {started:%Y-%m-%d %H:%M}, {state}; "
             f"{done} rendben, {failed} hibás, {skipped} kihagyva, {rate or 0:.2f} oldal/mp"
         )
+    _llm_spend(con)
+
+
+@app.command()
+def models() -> None:
+    """A konfigurált LLM-modellek azonosítói a szolgáltatók modell-listáján (kulcs kell)."""
+    missing = False
+    for check in check_models():
+        if check.found is None:
+            state = f"nem ellenőrizhető ({check.note})"
+        elif check.found:
+            state = f"a listán ({check.note})"
+        else:
+            missing = True
+            state = f"NINCS a listán ({check.note})"
+            if check.similar:
+                state += "; hasonló: " + ", ".join(check.similar)
+        typer.echo(f"{check.provider} {check.model}: {state}")
+    if missing:
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -151,6 +180,38 @@ def export(
     finally:
         if out:
             handle.close()
+
+
+def _llm_spend(con) -> None:
+    """Modellenként a halmozott USD a főkönyvből (minden site), szolgáltatónként a leállási
+    küszöbbel és a kerettel; ha van site-adatbázis, az ott könyvelt hívások is."""
+    config = load_config()
+    spent = ledger.spent_by_model()
+    typer.echo(f"  LLM-költség, minden site ({ledger.default_path()}):")
+    for provider in config.providers.values():
+        total = sum(spent.get(model, 0.0) for model in provider.models)
+        for model in provider.models:
+            active = " (aktív)" if provider.fallback and model == provider.active_model else ""
+            typer.echo(f"    {model}{active}: {spent.get(model, 0.0):.4f} USD")
+        typer.echo(
+            f"    {provider.name} összesen {total:.4f} USD; leállás {provider.stop_usd:.2f} USD "
+            f"felett, keret {provider.budget_usd:.2f} USD"
+            + ("; LEÁLLVA" if total > provider.stop_usd else "")
+        )
+    for model in sorted(set(spent) - {m for p in config.providers.values() for m in p.models}):
+        typer.echo(f"    {model} (nincs a konfigurációban): {spent[model]:.4f} USD")
+    if con is not None:
+        rows = con.execute(
+            "SELECT model, count(*), sum(cost_usd), sum(coalesce(attempts, 1) - 1) FROM llm_calls "
+            "GROUP BY model ORDER BY model"
+        ).fetchall()
+        typer.echo(
+            "  LLM ezen a site-on: "
+            + (", ".join(f"{model} {calls} hívás {usd or 0:.4f} USD"
+                         + (f" ({retries} újrapróba)" if retries else "")
+                         for model, calls, usd, retries in rows)
+               or "nincs hívás")
+        )
 
 
 def _domain(value: str) -> str:
