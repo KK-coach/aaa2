@@ -7,6 +7,8 @@ A próba-site minden kérést naplóz (út, User-Agent), a napló a kimenetre ke
 crawlol: a gyökérből és a `/a/` mappából. Pontok:
 
 - a UA bájtra egyezik az aaa UA-jával (Playwright Chromium, `render.py`);
+- asztali render-ablak, mint az aaa-é: a gyökér JS-e visszaküldi az `innerWidth`-et és az
+  érintős módot (`/viewport?w=…&touch=…`), a várt `w=1920&touch=false`;
 - JS-render: a JS-sel beszúrt link célja (`/js-only/`) crawlolva;
 - robots.txt tisztelve: a tiltott `/private/x` nincs lekérve;
 - nofollow belső link követve: `/nf/` lekérve;
@@ -34,7 +36,8 @@ PAGES = {
     "/": ('<link rel="alternate" hreflang="de" href="/de/"><link rel="canonical" href="/">',
           ('<a href="/a/">A</a> <a href="/b/">B</a> <a href="/private/x">P</a> '
            '<a href="/nf/" rel="nofollow">NF</a> <div id="js"></div>'
-           '<script>document.getElementById("js").innerHTML=\'<a href="/js-only/">JS</a>\''
+           '<script>document.getElementById("js").innerHTML=\'<a href="/js-only/">JS</a>\';'
+           'new Image().src="/viewport?w="+innerWidth+"&touch="+("ontouchstart" in window)'
            '</script>')),
     "/a/": ('<link rel="canonical" href="/canon/">',
             '<a href="/">home</a> <a href="/b/">B</a> <a href="/a/sub/">sub</a>'),
@@ -48,6 +51,7 @@ PAGES = {
     "/canon/": ("", "canonical-cél"),
 }
 NOT_PAGES = ("/robots.txt", "/sitemap.xml")
+DESKTOP_BEACON = "/viewport?w=1920&touch=false"
 
 
 def serve(requests: list[tuple[str, str]]) -> ThreadingHTTPServer:
@@ -131,10 +135,14 @@ def main(argv: list[str] | None = None) -> int:
     root_paths, folder_paths = {p for p, _ in root}, {p for p, _ in folder}
     agents = {agent for _, agent in requests}
     ua_ok = agents == {expected_ua}
-    checks = [(f"UA bájtra = aaa UA ({expected_ua!r})", ua_ok)]
+    beacons = sorted(p for p in root_paths if p.startswith("/viewport"))
+    checks = [
+        (f"UA bájtra = aaa UA ({expected_ua!r})", ua_ok),
+        (f"asztali render-ablak ({DESKTOP_BEACON}; kapott: {beacons})", beacons == [DESKTOP_BEACON]),
+    ]
     if args.ngx:
-        outside = sorted(p for p in folder_paths
-                         if not p.startswith("/a/") and p not in NOT_PAGES)
+        outside = sorted(p for p in folder_paths if not p.startswith(("/a/", "/viewport"))
+                         and p not in NOT_PAGES)
         checks += [
             ("mappán belüli oldal crawlolva (/a/sub/)", "/a/sub/" in folder_paths),
             (f"mappán kívüli oldal nincs lekérve (kívül: {outside})", not outside),

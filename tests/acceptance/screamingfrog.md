@@ -1,20 +1,24 @@
 # Screaming Frog az elfogadáshoz (SF 24.3)
 
-A `run_acceptance.py` az SF CLI-t (`ScreamingFrogSEOSpiderCli.exe --crawl … --headless --save-crawl --config …`) a site konfigurációjával indítja. A `.seospiderconfig` Java-szerializált bináris; csak az SF felületén menthető (File → Configuration → Save As…), a CLI csak betölti. A repóban `binary` (`.gitattributes`).
+A `run_acceptance.py` az SF CLI-t (`ScreamingFrogSEOSpiderCli.exe --crawl … --headless --save-crawl --config …`) a site konfigurációjával indítja. A `.seospiderconfig` Java-szerializált bináris; csak az SF felületén menthető (File → Configuration → Save As…), a CLI csak betölti, egyes beállításai kapcsolóval nem írhatók felül. A repóban `binary` (`.gitattributes`).
 
-Két fájl, a `tests/acceptance/` alatt:
+Három fájl, a `tests/acceptance/` alatt:
 
-- **`aaa2-acceptance.seospiderconfig`:** a GUI-ból mentett; kk.coach és Materia.
-- **`aaa2-acceptance-ngx.seospiderconfig`:** a `make_ngx_config.py` generálja a közösből, a futtató indulás előtt is.
-  - Az SF CLI-nek nincs include-kapcsolója. A fájlban az include-lista (`SpiderInternalURLConfig.mInternalRegexes`) elemének beírása a szerializáció belső hivatkozásait eltolná.
-  - Ezért két logikai mezőt állít hamisra: `SpiderInternalURLConfig.mCrawlOutsideStartFolder` és `SpiderCrawlConfig.mCheckLinksOutsideFolder`.
+- **`aaa2-acceptance.seospiderconfig`:** a GUI-ból mentett, változatlanul.
+- **`aaa2-acceptance-desktop.seospiderconfig`:** kk.coach és Materia.
+  - A mentett konfiguráció asztali render-ablakkal: 1920 × 1080, nem mobil, nem érintős, mint az aaa renderelője.
+  - A mentettben az SF alapértéke maradt, a Googlebot Smartphone (411 × 731, mobil, érintős). Így az ngx dokumentáció komponens-menüje a DOM-ba sem kerül: a seeden 2 belső linket lát 53 helyett.
+- **`aaa2-acceptance-ngx.seospiderconfig`:** az asztali, és a crawl a kezdő mappán belül marad.
+  - Két mező hamisra állítva: `SpiderInternalURLConfig.mCrawlOutsideStartFolder` és `SpiderCrawlConfig.mCheckLinksOutsideFolder`.
   - Az ngx seedjének kezdő mappája `/ngx-bootstrap/`, így a crawl ugyanarra szűkül, mint az aaa `--include /ngx-bootstrap/`-ja.
-  - A fájl pontosan ebben a két bájtban tér el a közöstől.
+  - Az SF CLI-nek nincs include-kapcsolója. A fájl include-listájába (`mInternalRegexes`) elemet írni a szerializáció belső hivatkozásait eltolná.
 
-Ellenőrzés mentés után, helyi próba-site-on, kérésnaplóval (`verify_sf_config.py`):
+A két utóbbit a `sf_configs.py` képzi a mentettből; a futtató indulás előtt is. Csak fix méretű primitív mezőket ír át (6, illetve 8 bájt), a szerializáció szerkezete nem változik.
+
+Ellenőrzés helyi próba-site-on, kérésnaplóval (`verify_sf_config.py`):
 
 ```
-python -m tests.acceptance.verify_sf_config tests/acceptance/aaa2-acceptance.seospiderconfig
+python -m tests.acceptance.verify_sf_config tests/acceptance/aaa2-acceptance-desktop.seospiderconfig
 python -m tests.acceptance.verify_sf_config tests/acceptance/aaa2-acceptance-ngx.seospiderconfig --ngx
 ```
 
@@ -24,7 +28,7 @@ Az `aaa crawl` alapértelmezéseihez igazítva. A 24-es verzióban a pontok a Co
 
 1. **Spider → Rendering**
    - Rendering: JavaScript.
-   - Window Size: egyéni, 1920 × 1080 (az aaa nézetmérete).
+   - Window Size: egyéni, 1920 × 1080, nem mobil (az aaa nézetmérete). Ha a GUI-ban így mentik, a desktop-változat azonos lesz a mentettel.
    - AJAX Timeout: 5 mp (alapérték).
 2. **Spider → Crawl**
    - Crawl Outside of Start Folder: be. Az aaa nem szűkít mappára; az ngx-változat szűkít (lásd fent).
@@ -48,14 +52,13 @@ Az `aaa crawl` alapértelmezéseihez igazítva. A 24-es verzióban a pontok a Co
 
 ## Ellenőrzések
 
-- **2026-09-25-én mentett változat:**
-  - a UA `Screaming Frog SEO Spider/24.3` volt;
-  - a nofollow linket nem követte;
-  - a sitemapet nem olvasta.
-- **2026-09-26-án újramentett változat** (`C:\Users\donm6\AAA-v2\tests\acceptance\SEO Spider Config.seospiderconfig`, 38 422 bájt): a `verify_sf_config.py` mind a 8 pontja rendben, a UA bájtra egyezik.
-- **Az ngx-változat** (`--ngx`): a `/a/`-ból indítva csak a `/a/`, `/a/sub/`, `/robots.txt` és `/sitemap.xml` kérés ment ki.
-  - Csak az első mező átírásával még lekérte a mappán kívüli linkeket (`/`, `/b/`, `/canon/`).
-  - Ezt a második mező zárja.
+- **2026-09-25-én mentett változat:** eltért a UA (`Screaming Frog SEO Spider/24.3`), nem követte a nofollow linket, nem olvasta a sitemapet.
+- **2026-09-26-án újramentett változat** (`C:\Users\donm6\AAA-v2\tests\acceptance\SEO Spider Config.seospiderconfig`, 38 422 bájt):
+  - a UA bájtra egyezik; sitemap, nofollow, a mappán kívüli URL, a JS-render, a robots.txt, a hreflang és a canonical rendben;
+  - a render-ablak mobil (a próba-site `innerWidth` = 980, érintős);
+  - a mezőkből kiolvasva még: `mAlwaysFollowRedirects` = hamis, `mMaxThreads` = 5.
+- **A desktop-változat:** mind a 9 pont rendben (`innerWidth` = 1920, nem érintős).
+- **Az ngx-változat** (`--ngx`): asztali nézet. A `/a/`-ból indítva csak a `/a/`, `/a/sub/`, `/robots.txt` és `/sitemap.xml` kérés ment ki.
 
 ## Tárolási mód
 

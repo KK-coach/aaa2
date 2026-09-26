@@ -7,8 +7,9 @@
 A site-ok egymás után futnak. Site-onként: előbb az SF CLI (`--headless --save-crawl
 --config … --export-tabs "Internal:HTML,Response Codes:All"`), a vége után azonnal az
 `aaa crawl` egy friss adatbázisba; a kettő nem osztozik a gépen, az oldal/mp tiszta mérés. Utána
-a `compare.py`. Az ngx-konfigurációt indulás előtt a közösből generálja
-(`make_ngx_config.py`). A fülneveket futás előtt a
+a `compare.py`. A futtatási SF-konfigurációkat indulás előtt a GUI-ból mentettből
+képzi (`sf_configs.py`: asztali render-ablak; az ngx-nél a kezdő mappán belül). A fülneveket
+futás előtt a
 telepített SF `--help export-tabs` és `--help bulk-export` listájából ellenőrzi, mert elírt
 névnél az export csendben elmarad. A `Links:All Outlinks` bulk export a linkszintű összevetéshez
 kell.
@@ -47,7 +48,7 @@ import duckdb
 from aaa2.db.connect import db_path
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import Renderer
-from tests.acceptance import compare, make_ngx_config
+from tests.acceptance import compare, sf_configs
 
 ACCEPTANCE_DIR = Path(__file__).parent
 OUT_DIR = ACCEPTANCE_DIR / "out"
@@ -68,8 +69,8 @@ class Site:
 
 
 SITES = {
-    "kk-coach": Site("https://kk.coach/", None, "aaa2-acceptance.seospiderconfig"),
-    "materia": Site("https://materia-tm.com/", None, "aaa2-acceptance.seospiderconfig"),
+    "kk-coach": Site("https://kk.coach/", None, "aaa2-acceptance-desktop.seospiderconfig"),
+    "materia": Site("https://materia-tm.com/", None, "aaa2-acceptance-desktop.seospiderconfig"),
     "ngx": Site("https://valor-software.com/ngx-bootstrap/components", "/ngx-bootstrap/",
                 "aaa2-acceptance-ngx.seospiderconfig"),
 }
@@ -90,8 +91,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sf_cli = None
     if args.sf_csv is None:
-        if "ngx" in names:
-            make_ngx_config.main()
+        sf_configs.main()
         sf_cli = find_sf_cli()
         if sf_cli is None:
             print("Nincs SF CLI; futtasd kézzel (screamingfrog.md), és add meg: --sf-csv")
