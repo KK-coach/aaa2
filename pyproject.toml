@@ -12,6 +12,10 @@ dependencies = [
     "pydantic>=2.8",
     "zstandard>=0.23",
     "tldextract>=5.3",
+    "anthropic>=1.8",
+    "openai>=3.19",
+    "google-genai>=2.25",
+    "python-dotenv>=1.2",
 ]
 
 [project.optional-dependencies]
@@ -30,12 +34,13 @@ include = ["aaa2*"]
 [tool.setuptools.package-data]
 "aaa2.db" = ["*.sql"]
 "aaa2.engine.config" = ["*.txt"]
+"aaa2.llm" = ["*.toml"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-m 'not live'"
-markers = ["live: élő site-ot hív; csak kézzel, `pytest -m live`"]
+markers = ["live: élő site-ot vagy fizetős LLM-API-t hív; csak kézzel, `pytest -m live`"]
 
 [tool.ruff]
 line-length = 100

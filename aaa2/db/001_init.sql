@@ -135,7 +135,7 @@ CREATE INDEX IF NOT EXISTS idx_schema_page ON schema_blocks(page_id);
 CREATE TABLE IF NOT EXISTS entities (
     entity_id       INTEGER PRIMARY KEY DEFAULT nextval('seq_entity_id'),
     name            VARCHAR NOT NULL,              -- kanonikus név
-    type            VARCHAR,                       -- brand | product | person | org | place | tech | concept
+    type            VARCHAR,                       -- 005: tíz érték, CHECK; lásd ott
     aliases         VARCHAR[],
     kg_status       VARCHAR DEFAULT 'unchecked',   -- high | medium | stub | ambiguous | no_match | unchecked
     kg_id           VARCHAR,                       -- Google KG id
