@@ -669,12 +669,15 @@ def _name(value: object) -> str | None:
 
 
 def _existing_entities(con: duckdb.DuckDBPyConnection) -> dict[tuple[str, str], int]:
+    """(kulcs, típus) → entitás; a KG által átállított entitás a régi típusával is."""
     found: dict[tuple[str, str], int] = {}
-    for entity_id, name, kind, aliases in con.execute(
-        "SELECT entity_id, name, type, aliases FROM entities ORDER BY entity_id"
+    for entity_id, name, kind, aliases, previous in con.execute(
+        "SELECT entity_id, name, type, aliases, type_changed_from FROM entities "
+        "ORDER BY entity_id"
     ).fetchall():
         for form in [name, *(aliases or [])]:
-            found.setdefault((alias_key(form), kind), entity_id)
+            for each in (kind, previous) if previous else (kind,):
+                found.setdefault((alias_key(form), each), entity_id)
     return found
 
 
