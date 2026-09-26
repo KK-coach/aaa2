@@ -4,8 +4,8 @@
 --   brand → Brand, product → Product, service → Service, work → CreativeWork,
 --   event → Event, person → Person, org → Organization, place → Place,
 --   tech → SoftwareApplication, concept → DefinedTerm.
--- entities.lang: a kanonikus név nyelve (BCP 47 elsődleges címke, pl. "hu"); a site elsődleges
---   nyelve.
+-- entities.lang: a kanonikus név nyelve (BCP 47 elsődleges címke, pl. "hu"): azoknak az
+--   oldalaknak a leggyakoribb nyelve, ahol a kanonikus alak előfordul.
 -- page_entities.llm_call_id: az a hívás, amelyik a sort adta (source = 'llm'); a párhuzamos
 --   modellteszt ezen választja szét a modellek sorait. Szabályból jött sornál NULL.
 -- llm_calls.attempts: hány API-kérés ment ki a hívásért (1 = nem kellett újrapróba); a

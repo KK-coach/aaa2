@@ -172,6 +172,21 @@ async def record_crawl(name: str, seed: str, options):
     return recording, con, summary
 
 
+def _reference_sets() -> dict:
+    from aaa2.engine.crawl import CrawlOptions
+
+    return {
+        "kk-coach-crawl": ("https://kk.coach/", CrawlOptions(concurrency=4)),
+        "materia-crawl": ("https://materia-tm.com/", CrawlOptions(concurrency=3)),
+        "ngx-bootstrap-crawl": ("https://valor-software.com/ngx-bootstrap/components",
+                                CrawlOptions(concurrency=4, include="/ngx-bootstrap/")),
+    }
+
+
+# A három referencia-készlet: felvétel neve → (seed, crawl-beállítás).
+REFERENCE_SETS = _reference_sets()
+
+
 async def replay_crawl(name: str, seed: str, options):
     """A felvett crawl hálózat nélkül; (Recording, kapcsolat), vagy None, ha nincs felvétel."""
     from aaa2.db.connect import connect

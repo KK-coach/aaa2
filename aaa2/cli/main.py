@@ -1,4 +1,4 @@
-"""aaa — CLI: crawl, status, models, export."""
+"""aaa — CLI: crawl, status, entities, models, export."""
 from __future__ import annotations
 
 import asyncio
@@ -12,6 +12,7 @@ import typer
 
 from aaa2.db.connect import connect, db_path
 from aaa2.engine.crawl import CrawlOptions, run_crawl
+from aaa2.engine.entities_rules import run_rules
 from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
@@ -23,7 +24,7 @@ app = typer.Typer(no_args_is_help=True, help="AAA v2 — sitewide SEO/GEO elemz�
 
 EXPORT_TABLES = (
     "pages", "links", "headings", "schema_blocks", "crawl_queue", "crawl_runs", "site",
-    "entities", "page_entities", "llm_calls",
+    "entities", "page_entities", "llm_calls", "entity_runs",
 )
 
 
@@ -128,7 +129,36 @@ def status(
             f"  utolsó crawl #{run_id} ({notes}): indult {started:%Y-%m-%d %H:%M}, {state}; "
             f"{done} rendben, {failed} hibás, {skipped} kihagyva, {rate or 0:.2f} oldal/mp"
         )
+    entity_run = con.execute(
+        "SELECT run_id, method, finished_at, pages, pages_with_entities, entities, row_count, "
+        "llm_calls, by_position FROM entity_runs ORDER BY run_id DESC LIMIT 1"
+    ).fetchone()
+    if entity_run:
+        typer.echo("  " + _entity_run_line(*entity_run))
     _llm_spend(con)
+
+
+@app.command()
+def entities(
+    domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
+) -> None:
+    """Determinisztikus entitás-kör LLM nélkül: JSON-LD, a site brand-neve a title-ben és a
+    H1-ben, legalább 3 oldalon azonos anchorok."""
+    con = _open(domain)
+    run = run_rules(con)
+    typer.echo(_entity_run_line(run.run_id, "rules", None, run.pages, run.pages_with_entities,
+                                run.entities, run.rows, 0, json.dumps(run.by_position)))
+    for kind, count, rows in con.execute(
+        "SELECT e.type, count(DISTINCT e.entity_id), count(*) FROM entities e "
+        "JOIN page_entities pe USING (entity_id) WHERE pe.source IN ('schema', 'rule') "
+        "GROUP BY e.type ORDER BY count(DISTINCT e.entity_id) DESC, e.type"
+    ).fetchall():
+        typer.echo(f"  {kind}: {count} entitás, {rows} sor")
+    for reason, value in run.skipped.items():
+        shown = (", ".join(f"{k} {v}" for k, v in list(value.items())[:8])
+                 if isinstance(value, dict) else ", ".join(value) if isinstance(value, list)
+                 else value)
+        typer.echo(f"  kimaradt, {reason}: {shown}")
 
 
 @app.command()
@@ -182,6 +212,16 @@ def export(
             handle.close()
 
 
+def _entity_run_line(run_id, method, finished, pages, pages_with, entity_count, rows, llm_calls,
+                     by_position) -> str:
+    counts = sorted(json.loads(by_position or "{}").items())
+    positions = ", ".join(f"{k} {v}" for k, v in counts)
+    when = f", {finished:%Y-%m-%d %H:%M}" if finished else ""
+    return (f"entitás-futás #{run_id} ({method}{when}): {entity_count} entitás "
+            f"{pages_with}/{pages} oldalról, {rows} sor ({positions or '—'}), "
+            f"LLM-hívás {llm_calls}")
+
+
 def _llm_spend(con) -> None:
     """Modellenként a halmozott USD a főkönyvből (minden site), szolgáltatónként a leállási
     küszöbbel és a kerettel; ha van site-adatbázis, az ott könyvelt hívások is."""
@@ -202,14 +242,17 @@ def _llm_spend(con) -> None:
         typer.echo(f"    {model} (nincs a konfigurációban): {spent[model]:.4f} USD")
     if con is not None:
         rows = con.execute(
-            "SELECT model, count(*), sum(cost_usd), sum(coalesce(attempts, 1) - 1) FROM llm_calls "
-            "GROUP BY model ORDER BY model"
+            "SELECT model, count(*), sum(cost_usd), sum(coalesce(attempts, 1) - 1), "
+            "array_to_string(list_sort(list(DISTINCT split_part(last_error, ':', 1)) "
+            "FILTER (WHERE last_error IS NOT NULL)), ', ') "
+            "FROM llm_calls GROUP BY model ORDER BY model"
         ).fetchall()
         typer.echo(
             "  LLM ezen a site-on: "
             + (", ".join(f"{model} {calls} hívás {usd or 0:.4f} USD"
-                         + (f" ({retries} újrapróba)" if retries else "")
-                         for model, calls, usd, retries in rows)
+                         + (f" ({retries} újrapróba" + (f": {codes})" if codes else ")")
+                            if retries else "")
+                         for model, calls, usd, retries, codes in rows)
                or "nincs hívás")
         )
 

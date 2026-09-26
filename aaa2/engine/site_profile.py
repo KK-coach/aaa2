@@ -165,11 +165,39 @@ def tech_path_patterns() -> tuple[re.Pattern[str], ...]:
     return tuple(re.compile(line) for line in lines if line.strip() and not line.startswith("#"))
 
 
+def home_urls(con: duckdb.DuckDBPyConnection) -> set[str]:
+    """A kezdőoldalak URL-jei: a seed oldal (az átirányításait követve) és a hreflang-
+    alternatívái, ha sikeresek."""
+    site = con.execute("SELECT seed_url FROM site").fetchone()
+    if site is None:
+        return set()
+    rows = con.execute(
+        "SELECT page_id, url, NULL, NULL, lang, hreflang, NULL, NULL FROM pages "
+        "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL"
+    ).fetchall()
+    return {row[1] for row in _home_rows(con, site[0], {row[1]: row for row in rows})}
+
+
 def _home_pages(
     con: duckdb.DuckDBPyConnection, seed_url: str, successful: dict[str, tuple],
     schema: dict[int, list[object]],
 ) -> list[ScopePage]:
     """A seed oldal (az átirányításait követve) és a hreflang-alternatívái, ha sikeresek."""
+    rows = _home_rows(con, seed_url, successful)
+    headings = _headings(con, [row[0] for row in rows])
+    return [
+        ScopePage(
+            head_text=" ".join([title or "", description or "", *headings.get(page_id, [])]),
+            main_content=main_content or "",
+            schema_items=tuple(schema.get(page_id, ())),
+        )
+        for page_id, _, title, description, _, _, main_content, _ in rows
+    ]
+
+
+def _home_rows(
+    con: duckdb.DuckDBPyConnection, seed_url: str, successful: dict[str, tuple],
+) -> list[tuple]:
     https_redirect, trailing_slash = con.execute(
         "SELECT https_redirect, trailing_slash FROM site").fetchone()
     policy = UrlPolicy.from_seed(
@@ -199,15 +227,7 @@ def _home_pages(
         alternate = find(normalize(pair.split("|", 1)[-1], policy))
         if alternate is not None and alternate not in rows:
             rows.append(alternate)
-    headings = _headings(con, [row[0] for row in rows])
-    return [
-        ScopePage(
-            head_text=" ".join([title or "", description or "", *headings.get(page_id, [])]),
-            main_content=main_content or "",
-            schema_items=tuple(schema.get(page_id, ())),
-        )
-        for page_id, _, title, description, _, _, main_content, _ in rows
-    ]
+    return rows
 
 
 def _headings(con: duckdb.DuckDBPyConnection, page_ids: list[int]) -> dict[int, list[str]]:

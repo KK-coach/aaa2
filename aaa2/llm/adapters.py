@@ -30,10 +30,22 @@ def is_transient(exc: BaseException) -> bool:
     """Újrapróbálható: 408, 429, 5xx (az Anthropic túlterheltsége 529), vagy kapcsolati hiba."""
     if isinstance(exc, CONNECTION_ERRORS):
         return True
+    status = _status(exc)
+    return isinstance(status, int) and (status in (408, 429) or status >= 500)
+
+
+def describe_error(exc: BaseException, limit: int = 200) -> str:
+    """`"<HTTP-kód vagy kivételnév>: <üzenet>"`, az üzenet egy sorban, legfeljebb `limit` jel."""
+    status = _status(exc)
+    message = " ".join(str(exc).split())[:limit]
+    return f"{status if isinstance(status, int) else type(exc).__name__}: {message}"
+
+
+def _status(exc: BaseException) -> int | None:
     status = getattr(exc, "status_code", None)
     if status is None and isinstance(exc, genai_errors.APIError):
         status = exc.code
-    return isinstance(status, int) and (status in (408, 429) or status >= 500)
+    return status
 
 
 @dataclass(frozen=True)
