@@ -107,6 +107,7 @@ def test_external_links_only_counted():
       <a href="tel:+3630">telefon</a>
       <a href="javascript:void(0)">js</a>
       <a href="ftp://kk.coach/x">ftp</a>
+      <a href="/cdn-cgi/l/email-protection#1a2b3c">[email&#160;protected]</a>
       <a href="/belso/">belső</a>
     """)
     assert parsed.external_link_count == 3

@@ -18,7 +18,8 @@ Normalizálási szabályok, ebben a sorrendben (a 8. a path-on a 6. előtt fut):
 Ezen felül csak szintaktikai azonosság: üres path helyett `/`, az alapértelmezett port eldobva.
 A query kódolása érintetlen marad.
 
-Belső az az URL, amelynek a registrable domainje a seedé, és nem kizárt aldomainen van.
+Belső az az URL, amelynek a registrable domainje a seedé, nem kizárt aldomainen van, és nem a
+CDN saját útvonala (`/cdn-cgi/`): az a proxy infrastruktúrája, nem a site tartalma.
 """
 from __future__ import annotations
 
@@ -32,6 +33,7 @@ from urllib.parse import unquote_plus, urlsplit, urlunsplit
 import tldextract
 
 EXCLUDED_SUBDOMAINS = ("cdn", "static", "img")
+INFRASTRUCTURE_PATHS = ("/cdn-cgi/",)
 TRAILING_SLASH_SAMPLE = 50
 
 _DEFAULT_PORTS = {"http": 80, "https": 443}
@@ -99,10 +101,13 @@ def public_suffix(host: str) -> str:
 
 
 def is_internal(url: str, policy: UrlPolicy) -> bool:
-    """Abszolút http(s) URL a seed registrable domainjén, nem kizárt aldomainen."""
+    """Abszolút http(s) URL a seed registrable domainjén, nem kizárt aldomainen, nem a CDN
+    infrastruktúra-útvonalán."""
     parts = urlsplit(url.strip())
     host = parts.hostname
     if parts.scheme.lower() not in _DEFAULT_PORTS or not host:
+        return False
+    if is_infrastructure(url):
         return False
     domain = policy.domain
     if registrable_domain(host) != domain:
@@ -110,6 +115,11 @@ def is_internal(url: str, policy: UrlPolicy) -> bool:
     if host in (policy.seed_host, domain):
         return True
     return host.split(".", 1)[0] not in policy.excluded_subdomains
+
+
+def is_infrastructure(url: str) -> bool:
+    """A CDN vagy proxy saját útvonala a site hostján (`/cdn-cgi/`), nem a site tartalma."""
+    return urlsplit(url.strip()).path.startswith(INFRASTRUCTURE_PATHS)
 
 
 def normalize(url: str, policy: UrlPolicy) -> str | None:

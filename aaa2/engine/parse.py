@@ -12,7 +12,8 @@ Tiszta függvény, adatbázist nem ír; az oldalankénti tranzakció a crawl dol
   landmark-ős (`nav`, `aside`, `role`, valamint `header` / `footer`, ha nem sectioning
   elemen belül áll: article, aside, main, nav, section); landmark nélkül az ősök class- és
   id-tokenjei (a body és a html kivételével); különben body. `nofollow` a `rel`-ből. A `<noscript>` és `<template>`
-  tartalma kimarad. A külső http(s) link csak számolva van.
+  tartalma kimarad. A külső http(s) link csak számolva van; a CDN infrastruktúra-útvonalára
+  (`/cdn-cgi/`, pl. a Cloudflare e-mail-védelme) mutató link se nem belső, se nem külső.
 - `schema_blocks`: minden `application/ld+json`; tömb és `@graph` elemenként, `@type`-pal
   (több típus vesszővel); a `@graph` eleme megkapja a szülő `@context`-jét, ha nincs sajátja;
   hibás JSON `type = 'invalid'`, nyers szöveggel.
@@ -33,7 +34,7 @@ from urllib.parse import urljoin, urlsplit
 from selectolax.parser import HTMLParser, Node
 
 from aaa2.engine.language import detect_language
-from aaa2.engine.normalize import UrlPolicy, is_internal, normalize
+from aaa2.engine.normalize import UrlPolicy, is_infrastructure, is_internal, normalize
 
 MIN_MAIN_CONTENT_WORDS = 100
 HEADING_TAGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
@@ -249,6 +250,8 @@ def _links(tree: HTMLParser, base: str, policy: UrlPolicy) -> tuple[tuple[Link, 
             continue
         target = urljoin(base, href)
         if urlsplit(target).scheme.lower() not in ("http", "https"):
+            continue
+        if is_infrastructure(target):
             continue
         if not is_internal(target, policy):
             external += 1
