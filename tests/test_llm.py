@@ -2,13 +2,18 @@
 API drótformátumában válaszol, és minden kérést rögzít. A kliensek a valódi SDK-kon át hívják.
 """
 import json
+import random
 import threading
 from dataclasses import replace
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+import anthropic
 import duckdb
+import httpx
+import openai
 import pytest
+from google.genai import errors as genai_errors
 from pydantic import BaseModel
 from typer.testing import CliRunner
 
@@ -16,9 +21,11 @@ import aaa2.db.connect as connect_module
 from aaa2.cli.main import app
 from aaa2.db.connect import connect
 from aaa2.llm import ledger
+from aaa2.llm.adapters import is_transient
 from aaa2.llm.client import (
     BudgetExceeded,
     LLMError,
+    Retry,
     SchemaMismatch,
     api_key,
     check_models,
@@ -106,7 +113,7 @@ class FakeAPI:
                         "gemini": (200, gemini_reply()),
                         **{k: (200, v) for k, v in MODEL_LISTS.items()}}
         self.requests: list[tuple[str, str, dict]] = []
-        self.busy: dict[str, int] = {}          # útvonalanként ennyi 503 a rendes válasz előtt
+        self.busy: dict[str, list[int]] = {}    # útvonalanként ezek a hibakódok a rendes válasz előtt
         api = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -125,12 +132,10 @@ class FakeAPI:
                 api.requests.append((route, self.path, body))
                 status, payload = api.replies.get(route, (404, {"error": {"message": "nincs"}}))
                 if api.busy.get(route):
-                    api.busy[route] -= 1
-                    status, payload = 503, OVERLOADED
+                    status, payload = api.busy[route].pop(0), OVERLOADED
                 data = json.dumps(payload).encode()
                 self.send_response(status)
                 self.send_header("Content-Type", "application/json")
-                self.send_header("retry-after-ms", "10")
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
                 self.wfile.write(data)
@@ -169,10 +174,15 @@ def con():
     return connect(":memory:")
 
 
-def clients_for(con, api, env, ledger_path, clock=lambda: NOON):
+def clients_for(con, api, env, ledger_path, clock=lambda: NOON, retry=None):
     clients, _ = open_clients(con, env_file=env, ledger_path=ledger_path,
-                              base_urls=dict.fromkeys(PROVIDERS, api.base), clock=clock)
+                              base_urls=dict.fromkeys(PROVIDERS, api.base), clock=clock,
+                              retry=retry or Retry(sleep=lambda _: None))
     return clients
+
+
+def last_entry(path):
+    return json.loads(path.read_text(encoding="utf-8").splitlines()[-1])
 
 
 def test_requests_use_native_structured_output(con, api, env, ledger_path):
@@ -229,6 +239,8 @@ def test_extract_books_the_call(con, api, env, ledger_path, name, model, tokens_
     (entry,) = [json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines()]
     assert (entry["provider"], entry["model"], entry["call_id"]) == (name, model, result.call_id)
     assert entry["cost_usd"] == pytest.approx(cost)
+    raw_in = {"anthropic": "input_tokens", "openai": "input_tokens", "gemini": "prompt_token_count"}
+    assert entry["usage"][raw_in[name]] == {"anthropic": 1000, "openai": 2000, "gemini": 3000}[name]
 
 
 def test_anthropic_cache_tokens_are_input_at_their_own_price(con, api, env, ledger_path):
@@ -273,32 +285,73 @@ def test_schema_mismatch_is_still_booked(con, api, env, ledger_path, name, reply
     assert len(ledger_path.read_text(encoding="utf-8").splitlines()) == 1
 
 
-@pytest.mark.parametrize("name", PROVIDERS)
-def test_overloaded_answer_is_retried(con, api, env, ledger_path, name):
-    api.busy[name] = 1
-    result = clients_for(con, api, env, ledger_path)[name].extract(
-        PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
+@pytest.mark.parametrize(("name", "status"), [("anthropic", 529), ("openai", 429),
+                                            ("gemini", 503), ("gemini", 408)])
+def test_transient_error_is_retried_and_counted(con, api, env, ledger_path, name, status):
+    api.busy[name] = [status]
+    waits = []
+    result = clients_for(con, api, env, ledger_path, retry=Retry(sleep=waits.append, jitter=0))[
+        name].extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
     assert result.parsed == EXPECTED
     assert [route for route, _, _ in api.requests] == [name, name]
-    assert con.execute("SELECT count(*) FROM llm_calls").fetchone() == (1,)
+    assert waits == [1.0]
+    assert con.execute("SELECT attempts FROM llm_calls WHERE call_id = ?",
+                       [result.call_id]).fetchone() == (2,)
+    assert last_entry(ledger_path)["attempts"] == 2
 
 
-def test_retries_give_up_after_three_attempts(con, api, env, ledger_path):
-    api.busy["gemini"] = 3
-    with pytest.raises(LLMError, match="gemini/gemini-3.8-flash: 503"):
-        clients_for(con, api, env, ledger_path)["gemini"].extract(
-            PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
-    assert [route for route, _, _ in api.requests] == ["gemini"] * 3
+def test_first_try_is_one_attempt(con, api, env, ledger_path):
+    result = clients_for(con, api, env, ledger_path)["openai"].extract(
+        PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
+    assert con.execute("SELECT attempts FROM llm_calls WHERE call_id = ?",
+                       [result.call_id]).fetchone() == (1,)
+
+
+def test_backoff_is_exponential_with_jitter(con, api, env, ledger_path):
+    api.busy["gemini"] = [503, 503, 503]
+    waits = []
+    retry = Retry(sleep=waits.append, rng=random.Random(20260926))
+    result = clients_for(con, api, env, ledger_path, retry=retry)["gemini"].extract(
+        PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
+    factors = [wait / base for wait, base in zip(waits, (1.0, 3.0, 9.0), strict=True)]
+    assert all(0.75 <= factor <= 1.25 for factor in factors)
+    assert len({round(factor, 6) for factor in factors}) == 3
+    assert con.execute("SELECT attempts FROM llm_calls WHERE call_id = ?",
+                       [result.call_id]).fetchone() == (4,)
+
+
+def test_retries_give_up_after_four_attempts(con, api, env, ledger_path):
+    api.busy["gemini"] = [503] * 4
+    waits = []
+    with pytest.raises(LLMError, match="gemini/gemini-3.8-flash: 4 kísérlet után: 503"):
+        clients_for(con, api, env, ledger_path, retry=Retry(sleep=waits.append, jitter=0))[
+            "gemini"].extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
+    assert [route for route, _, _ in api.requests] == ["gemini"] * 4
+    assert waits == [1.0, 3.0, 9.0]
     assert con.execute("SELECT count(*) FROM llm_calls").fetchone() == (0,)
     assert not ledger_path.exists()
+
+
+def test_transient_classification():
+    request = httpx.Request("POST", "http://127.0.0.1/")
+    assert is_transient(anthropic.APIConnectionError(request=request))
+    assert is_transient(openai.APIConnectionError(request=request))
+    assert is_transient(httpx.ConnectError("elutasítva", request=request))
+    assert is_transient(genai_errors.ServerError(503, {"error": {"message": "túlterhelt"}}))
+    assert is_transient(genai_errors.ClientError(429, {"error": {"message": "kvóta"}}))
+    assert not is_transient(genai_errors.ClientError(400, {"error": {"message": "rossz"}}))
+    assert not is_transient(ValueError("nem API-hiba"))
 
 
 def test_api_error_writes_no_row(con, api, env, ledger_path):
     api.replies["anthropic"] = (400, {"type": "error", "error": {"type": "invalid_request_error",
                                                                  "message": "rossz kérés"}})
-    with pytest.raises(LLMError, match="anthropic/claude-opus-5-5"):
-        clients_for(con, api, env, ledger_path)["anthropic"].extract(
-            PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
+    waits = []
+    with pytest.raises(LLMError, match="anthropic/claude-opus-5-5: Error code: 400"):
+        clients_for(con, api, env, ledger_path, retry=Retry(sleep=waits.append))[
+            "anthropic"].extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
+    assert [route for route, _, _ in api.requests] == ["anthropic"]
+    assert waits == []
     assert con.execute("SELECT count(*) FROM llm_calls").fetchone() == (0,)
     assert not ledger_path.exists()
 
@@ -398,13 +451,15 @@ def test_status_prints_cumulative_usd_per_model(tmp_path, monkeypatch):
 def test_status_of_a_site_adds_its_own_calls(tmp_path, monkeypatch):
     monkeypatch.setattr(connect_module, "DATA_DIR", tmp_path)
     site = connect(connect_module.db_path("materia-tm.com"))
-    site.execute("INSERT INTO llm_calls (domain, model, cost_usd, purpose, called_at) VALUES "
-                 "('entity', 'gemini-3.8-flash', 0.002, 'extract', now()), "
-                 "('entity', 'gemini-3.8-flash', 0.003, 'extract', now())")
+    site.execute("INSERT INTO llm_calls (domain, model, cost_usd, purpose, called_at, attempts) "
+                 "VALUES ('entity', 'gemini-3.8-flash', 0.002, 'extract', now(), 1), "
+                 "('entity', 'gemini-3.8-flash', 0.003, 'extract', now(), 3), "
+                 "('entity', 'gpt-6-luna', 0.001, 'extract', now(), 1)")
     site.close()
     result = CliRunner().invoke(app, ["status", "materia-tm.com"])
     assert result.exit_code == 0, result.output
-    assert "LLM ezen a site-on: gemini-3.8-flash 2 hívás 0.0050 USD" in result.output
+    assert ("LLM ezen a site-on: gemini-3.8-flash 2 hívás 0.0050 USD (2 újrapróba), "
+            "gpt-6-luna 1 hívás 0.0010 USD") in result.output.splitlines()[-1]
 
 
 def test_cli_models_exit_code(api, env, monkeypatch):

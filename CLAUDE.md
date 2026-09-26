@@ -70,7 +70,7 @@ A MicroStore-boltok kiestek: a kirakatukban nincs `<a>`, a navigáció JS-kezel�
 
 ## M2 — folyamatban
 
-1. `aaa2/llm/` — modellfüggetlen kliens: `extract(schema, prompt, input) → parsed + call_id`. Három adapter az API-k natív strukturált kimenetével (Anthropic `claude-opus-5-5`, OpenAI `gpt-6-luna` / fallback `gpt-5.6-terra`, Gemini `gemini-3.8-flash` `low` thinkinggel). Modellek, dátumozott árak, keretek és leállási küszöbök: `aaa2/llm/models.toml`. Minden hívás `llm_calls`-sort és főkönyvsort (`data/llm_ledger.jsonl`, minden site) ír; a keret-őr a főkönyvből számol. `aaa status` modellenkénti költség, `aaa models` a modell-listán. A 005-ös migráció: `entities.type` tíz értéke, `entities.lang`, `page_entities.llm_call_id`. Élő próba: `pytest -m live -s tests/test_llm_live.py` (kulcsok a `.env`-ben).
+1. `aaa2/llm/` — modellfüggetlen kliens: `extract(schema, prompt, input) → parsed + call_id`. Három adapter az API-k natív strukturált kimenetével (Anthropic `claude-opus-5-5`, OpenAI `gpt-6-luna` / fallback `gpt-5.6-terra`, Gemini `gemini-3.8-flash` `low` thinkinggel). Modellek, dátumozott árak, keretek és leállási küszöbök: `aaa2/llm/models.toml`. Minden hívás `llm_calls`-sort és főkönyvsort (`data/llm_ledger.jsonl`, minden site, a nyers usage-mezőkkel) ír; a keret-őr a főkönyvből számol. Átmeneti hibánál (408, 429, 5xx, kapcsolat) legfeljebb 3 újrapróba ≈ 1, 3, 9 mp várakozással (±25% jitter); a kísérletek száma az `llm_calls.attempts`-ben. `aaa status` modellenkénti költség, `aaa models` a modell-listán. A 005-ös migráció: `entities.type` tíz értéke, `entities.lang`, `page_entities.llm_call_id`. Élő próba: `pytest -m live -s tests/test_llm_live.py` (kulcsok a `.env`-ben).
 
 ## Stack
 

@@ -53,7 +53,7 @@ def test_entity_type_is_one_of_the_ten():
 
 def test_migration_005_keeps_existing_rows(tmp_path):
     """Egy 004-es állapotú adatbázis entitás- és oldal-entitás sorai átkerülnek; az új oszlopok
-    NULL-ok, és az azonosító-szekvencia onnan folytatódik."""
+    NULL-ok, az azonosító-szekvencia onnan folytatódik, a régi hívássor 1 kísérletet kap."""
     import aaa2.db.connect as connect_module
     path = tmp_path / "x.hu.duckdb"
     con = duckdb.connect(str(path))
@@ -64,6 +64,8 @@ def test_migration_005_keeps_existing_rows(tmp_path):
     con.execute("INSERT INTO entities (name, type, aliases) VALUES ('Materia', 'brand', ['MTM'])")
     con.execute("INSERT INTO page_entities (page_id, entity_id, position, evidence, source) "
                 "VALUES (1, 1, 'title', 'Materia', 'rule')")
+    con.execute("INSERT INTO llm_calls (domain, model, purpose, called_at) "
+                "VALUES ('entity', 'gemini-3.8-flash', 'extract', now())")
     con.close()
     con = connect(path)
     assert con.execute("SELECT entity_id, name, lang, type, aliases FROM entities").fetchall() == [
@@ -72,6 +74,7 @@ def test_migration_005_keeps_existing_rows(tmp_path):
         ("Materia", "rule", None)]
     con.execute("INSERT INTO entities (name, type) VALUES ('Budapest', 'place')")
     assert con.execute("SELECT max(entity_id) FROM entities").fetchone() == (2,)
+    assert con.execute("SELECT call_id, attempts FROM llm_calls").fetchall() == [(1, 1)]
 
 
 KILLED_WRITER = """

@@ -23,7 +23,7 @@ app = typer.Typer(no_args_is_help=True, help="AAA v2 — sitewide SEO/GEO elemz�
 
 EXPORT_TABLES = (
     "pages", "links", "headings", "schema_blocks", "crawl_queue", "crawl_runs", "site",
-    "entities", "page_entities",
+    "entities", "page_entities", "llm_calls",
 )
 
 
@@ -202,11 +202,14 @@ def _llm_spend(con) -> None:
         typer.echo(f"    {model} (nincs a konfigurációban): {spent[model]:.4f} USD")
     if con is not None:
         rows = con.execute(
-            "SELECT model, count(*), sum(cost_usd) FROM llm_calls GROUP BY model ORDER BY model"
+            "SELECT model, count(*), sum(cost_usd), sum(coalesce(attempts, 1) - 1) FROM llm_calls "
+            "GROUP BY model ORDER BY model"
         ).fetchall()
         typer.echo(
             "  LLM ezen a site-on: "
-            + (", ".join(f"{model} {calls} hívás {usd or 0:.4f} USD" for model, calls, usd in rows)
+            + (", ".join(f"{model} {calls} hívás {usd or 0:.4f} USD"
+                         + (f" ({retries} újrapróba)" if retries else "")
+                         for model, calls, usd, retries in rows)
                or "nincs hívás")
         )
 

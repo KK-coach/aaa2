@@ -1,4 +1,5 @@
--- Entitás-típusok, a kanonikus név nyelve, és az LLM-eredetű entitássor hívása.
+-- Entitás-típusok, a kanonikus név nyelve, az LLM-eredetű entitássor hívása, és az LLM-hívás
+-- kísérleteinek száma.
 -- entities.type: pontosan tíz érték, mindegyiknek van Schema.org-megfelelője:
 --   brand → Brand, product → Product, service → Service, work → CreativeWork,
 --   event → Event, person → Person, org → Organization, place → Place,
@@ -7,9 +8,13 @@
 --   nyelve.
 -- page_entities.llm_call_id: az a hívás, amelyik a sort adta (source = 'llm'); a párhuzamos
 --   modellteszt ezen választja szét a modellek sorait. Szabályból jött sornál NULL.
+-- llm_calls.attempts: hány API-kérés ment ki a hívásért (1 = nem kellett újrapróba); a
+--   latency_ms a sikeres kísérleté.
 --
 -- A DuckDB ALTER-rel nem ad CHECK- és idegenkulcs-megszorítást, és idegenkulcsos táblát nem
 -- nevez át: mindkét tábla adata átmeneti táblába kerül, a tábla újra létrejön, az adat vissza.
+
+ALTER TABLE llm_calls ADD COLUMN IF NOT EXISTS attempts INTEGER DEFAULT 1;
 
 CREATE TABLE _entities_004 AS SELECT * FROM entities;
 DROP TABLE entities;

@@ -1,5 +1,6 @@
 """Szolgáltatónkénti adapterek: a kérés az API natív strukturált kimenetével megy, a válaszból a
-JSON-szöveg és a díjosztályonkénti tokenszám jön vissza. A sémára validálás a kliensben van.
+JSON-szöveg, a díjosztályonkénti tokenszám és a szolgáltató nyers usage-mezői jönnek vissza. A
+sémára validálás és az újrapróba a kliensben van; az SDK-k maguk nem próbálnak újra.
 
 - Anthropic: Messages API, `output_config.format` = json_schema (`anthropic.transform_schema`).
 - OpenAI: Responses API, `text_format` = a Pydantic-osztály; a tokenek és a szöveg a nyers
@@ -8,7 +9,7 @@ JSON-szöveg és a díjosztályonkénti tokenszám jön vissza. A sémára valid
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import anthropic
 import httpx
@@ -22,9 +23,17 @@ from aaa2.llm.config import ProviderConfig, Usage
 
 # A három SDK API- és kapcsolati hibái (a google-genai a httpx kivételeit továbbengedi).
 API_ERRORS = (anthropic.APIError, openai.APIError, genai_errors.APIError, httpx.HTTPError)
-# Kísérletek száma hívásonként, az első hívással együtt; az SDK-k a 408-at, a 429-et, az 5xx-et
-# és a kapcsolati hibát próbálják újra, exponenciális várakozással.
-RETRY_ATTEMPTS = 3
+CONNECTION_ERRORS = (anthropic.APIConnectionError, openai.APIConnectionError, httpx.TransportError)
+
+
+def is_transient(exc: BaseException) -> bool:
+    """Újrapróbálható: 408, 429, 5xx (az Anthropic túlterheltsége 529), vagy kapcsolati hiba."""
+    if isinstance(exc, CONNECTION_ERRORS):
+        return True
+    status = getattr(exc, "status_code", None)
+    if status is None and isinstance(exc, genai_errors.APIError):
+        status = exc.code
+    return isinstance(status, int) and (status in (408, 429) or status >= 500)
 
 
 @dataclass(frozen=True)
@@ -32,13 +41,13 @@ class Reply:
     text: str | None                 # a JSON-kimenet; None, ha a modell nem adott szöveget
     usage: Usage
     stop: str | None = None          # a leállás oka, ha nem a rendes vég (csonka, visszautasítás)
+    raw_usage: dict = field(default_factory=dict)   # a szolgáltató usage-mezői, ahogy jöttek
 
 
 class AnthropicAdapter:
     def __init__(self, config: ProviderConfig, api_key: str, base_url: str | None = None):
         self.config = config
-        self.client = anthropic.Anthropic(api_key=api_key, base_url=base_url,
-                                          max_retries=RETRY_ATTEMPTS - 1)
+        self.client = anthropic.Anthropic(api_key=api_key, base_url=base_url, max_retries=0)
 
     def call(self, model: str, schema: type[BaseModel], prompt: str, input: str) -> Reply:
         message = self.client.messages.create(
@@ -57,6 +66,7 @@ class AnthropicAdapter:
                         cached_input=usage.cache_read_input_tokens or 0,
                         cache_write=usage.cache_creation_input_tokens or 0),
             stop=None if message.stop_reason == "end_turn" else message.stop_reason,
+            raw_usage=usage.model_dump(mode="json", exclude_none=True),
         )
 
     def list_models(self) -> list[str]:
@@ -66,8 +76,7 @@ class AnthropicAdapter:
 class OpenAIAdapter:
     def __init__(self, config: ProviderConfig, api_key: str, base_url: str | None = None):
         self.config = config
-        self.client = openai.OpenAI(api_key=api_key, base_url=base_url,
-                                    max_retries=RETRY_ATTEMPTS - 1)
+        self.client = openai.OpenAI(api_key=api_key, base_url=base_url, max_retries=0)
 
     def call(self, model: str, schema: type[BaseModel], prompt: str, input: str) -> Reply:
         raw = self.client.responses.with_raw_response.parse(
@@ -103,6 +112,7 @@ class OpenAIAdapter:
             usage=Usage(input=max(usage["input_tokens"] - cached - written, 0),
                         output=usage["output_tokens"], cached_input=cached, cache_write=written),
             stop=stop,
+            raw_usage=usage,
         )
 
     def list_models(self) -> list[str]:
@@ -112,8 +122,7 @@ class OpenAIAdapter:
 class GeminiAdapter:
     def __init__(self, config: ProviderConfig, api_key: str, base_url: str | None = None):
         self.config = config
-        options = types.HttpOptions(base_url=base_url,
-                                    retry_options=types.HttpRetryOptions(attempts=RETRY_ATTEMPTS))
+        options = types.HttpOptions(base_url=base_url) if base_url else None
         self.client = genai.Client(api_key=api_key, vertexai=False, http_options=options)
 
     def call(self, model: str, schema: type[BaseModel], prompt: str, input: str) -> Reply:
@@ -142,6 +151,7 @@ class GeminiAdapter:
                 output=(meta.candidates_token_count or 0) + (meta.thoughts_token_count or 0),
                 cached_input=cached),
             stop=None if finish == types.FinishReason.STOP else str(finish),
+            raw_usage=meta.model_dump(mode="json", exclude_none=True),
         )
 
     def list_models(self) -> list[str]:

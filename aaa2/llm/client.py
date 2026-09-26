@@ -2,15 +2,18 @@
 
 Minden visszaérkezett válasz — a sémának nem megfelelő is — sort ír a site-adatbázis
 `llm_calls` táblájába és a főkönyvbe (ledger.py). Hívás előtt a keret-őr a főkönyvből összesíti
-a szolgáltató modelljeinek költségét; a leállási küszöb fölött nem hív. A kulcsok a környezetből
-vagy a `.env`-ből jönnek; kulcs nélkül a szolgáltató kimarad, nem hiba.
+a szolgáltató modelljeinek költségét; a leállási küszöb fölött nem hív. Átmeneti hibánál (408,
+429, 5xx, kapcsolat) exponenciális várakozással és jitterrel újrapróbál; a kísérletek száma az
+`llm_calls.attempts`-be kerül. A kulcsok a környezetből vagy a `.env`-ből jönnek; kulcs nélkül a
+szolgáltató kimarad, nem hiba.
 """
 from __future__ import annotations
 
 import os
+import random
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
@@ -20,7 +23,7 @@ from dotenv import dotenv_values
 from pydantic import BaseModel, ValidationError
 
 from aaa2.llm import ledger
-from aaa2.llm.adapters import ADAPTERS, API_ERRORS, Reply
+from aaa2.llm.adapters import ADAPTERS, API_ERRORS, Reply, is_transient
 from aaa2.llm.config import LLMConfig, ProviderConfig, load_config
 
 ENV_PATH = Path(".env")
@@ -56,16 +59,31 @@ class Extraction[T: BaseModel]:
     call_id: int
 
 
+@dataclass(frozen=True)
+class Retry:
+    """Az n. újrapróba előtt `delays[n] × U(1 − jitter, 1 + jitter)` másodperc várakozás; a
+    kísérletek száma legfeljebb 1 + len(delays)."""
+
+    delays: tuple[float, ...] = (1.0, 3.0, 9.0)
+    jitter: float = 0.25
+    sleep: Callable[[float], None] = time.sleep
+    rng: random.Random = field(default_factory=random.Random)
+
+    def wait(self, retry: int) -> None:
+        self.sleep(self.delays[retry] * self.rng.uniform(1 - self.jitter, 1 + self.jitter))
+
+
 class LLMClient:
     def __init__(self, con: duckdb.DuckDBPyConnection, adapter: Adapter, config: LLMConfig,
                  ledger_path: Path | None = None,
-                 clock: Callable[[], datetime] | None = None):
+                 clock: Callable[[], datetime] | None = None, retry: Retry | None = None):
         self.con = con
         self.adapter = adapter
         self.config = config
         self.provider = adapter.config
         self.ledger_path = ledger_path
         self.clock = clock or _now
+        self.retry = retry or Retry()
 
     @property
     def model(self) -> str:
@@ -86,24 +104,21 @@ class LLMClient:
             raise BudgetExceeded(
                 f"{self.provider.name}: {spent:.4f} USD a {self.provider.stop_usd} USD leállási "
                 f"küszöb fölött (keret {self.provider.budget_usd} USD)")
-        started = time.perf_counter()
-        try:
-            reply = self.adapter.call(self.model, schema, prompt, input)
-        except API_ERRORS as exc:
-            raise LLMError(f"{self.provider.name}/{self.model}: {exc}") from exc
-        latency_ms = round((time.perf_counter() - started) * 1000)
+        reply, attempts, latency_ms = self._call(schema, prompt, input)
         cost = price.cost_usd(reply.usage)
         (call_id,) = self.con.execute(
             "INSERT INTO llm_calls (domain, page_id, model, tokens_in, tokens_out, cost_usd, "
-            "purpose, latency_ms, called_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING call_id",
+            "purpose, latency_ms, called_at, attempts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "RETURNING call_id",
             [domain, page_id, self.model, reply.usage.tokens_in, reply.usage.output, cost, purpose,
-             latency_ms, called_at],
+             latency_ms, called_at, attempts],
         ).fetchone()
         ledger.append({
             "called_at": called_at.isoformat(), "provider": self.provider.name,
             "model": self.model, "cost_usd": cost, "tokens_in": reply.usage.tokens_in,
-            "tokens_out": reply.usage.output, "domain": domain, "purpose": purpose,
-            "db": _database_path(self.con), "call_id": call_id,
+            "tokens_out": reply.usage.output, "attempts": attempts, "domain": domain,
+            "purpose": purpose, "db": _database_path(self.con), "call_id": call_id,
+            "usage": reply.raw_usage,
         }, self.ledger_path)
         try:
             parsed = schema.model_validate_json(reply.text or "")
@@ -115,6 +130,22 @@ class LLMClient:
                 f"{'.'.join(map(str, first['loc'])) or 'gyökér'}: {first['msg']}",
                 call_id) from exc
         return Extraction(parsed=parsed, call_id=call_id)
+
+    def _call(self, schema: type[BaseModel], prompt: str, input: str) -> tuple[Reply, int, int]:
+        """A válasz, a kísérletek száma és a sikeres kísérlet késleltetése (ms)."""
+        attempt = 0
+        while True:
+            attempt += 1
+            started = time.perf_counter()
+            try:
+                reply = self.adapter.call(self.model, schema, prompt, input)
+            except API_ERRORS as exc:
+                if attempt > len(self.retry.delays) or not is_transient(exc):
+                    tries = f"{attempt} kísérlet után: " if attempt > 1 else ""
+                    raise LLMError(f"{self.provider.name}/{self.model}: {tries}{exc}") from exc
+                self.retry.wait(attempt - 1)
+                continue
+            return reply, attempt, round((time.perf_counter() - started) * 1000)
 
 
 def api_key(name: str, env_file: Path = ENV_PATH) -> str | None:
@@ -128,7 +159,7 @@ def api_key(name: str, env_file: Path = ENV_PATH) -> str | None:
 def open_clients(con: duckdb.DuckDBPyConnection, *, config: LLMConfig | None = None,
                  env_file: Path = ENV_PATH, ledger_path: Path | None = None,
                  base_urls: dict[str, str] | None = None,
-                 clock: Callable[[], datetime] | None = None,
+                 clock: Callable[[], datetime] | None = None, retry: Retry | None = None,
                  ) -> tuple[dict[str, LLMClient], dict[str, str]]:
     """A kulccsal rendelkező szolgáltatók kliensei, és a kimaradtak az okukkal."""
     config = config or load_config()
@@ -139,7 +170,7 @@ def open_clients(con: duckdb.DuckDBPyConnection, *, config: LLMConfig | None = N
             skipped[name] = f"nincs {provider.key_env}"
             continue
         adapter = ADAPTERS[name](provider, key, (base_urls or {}).get(name))
-        clients[name] = LLMClient(con, adapter, config, ledger_path, clock)
+        clients[name] = LLMClient(con, adapter, config, ledger_path, clock, retry)
     return clients, skipped
 
 
