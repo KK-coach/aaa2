@@ -19,7 +19,8 @@ Csak a sikeres (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalakból dolgo
   (kulcs szerint). Ha a kulcs egy talált entitásé, ahhoz kerül; különben concept-jelölt, ha
   egyetlen célra mutat (két vagy több célra: navigációs, kimarad). position = anchor, source =
   rule. Kimarad a betű nélküli, a legfeljebb 2 jelű és a csupa nagybetűs római szám anchor, az
-  oldalra önmagára, a kezdőoldalra (`site_profile.home_urls`) és a más nyelvű oldalra mutató link.
+  oldalra önmagára, a kezdőoldalra (`site_profile.home_urls`), a nem crawlolt oldalra (a cél nincs
+  a `pages`-ben) és a más nyelvű oldalra mutató link.
 - alias: a név kulcsa (`alias_key`) kisbetűs, ékezet és kötőjel nélküli; egy kulcs és típus egy
   entitás, a többi írásmód az `aliases`-ben.
 - kanonikus név: a legerősebb forrás (schema > title / H1 > anchor) alakjai közül az ékezetes,
@@ -32,7 +33,8 @@ Csak a sikeres (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalakból dolgo
   előfordul; ha ilyen nincs, az entitás összes oldaláé; ha az sincs, a site első nyelve.
 
 Újrafuttatható: a futás a korábbi schema- és rule-sorokat cseréli; a (kulcs, típus) szerint
-azonos entitás az azonosítóját megtartja, a más forrású sorok és entitásaik megmaradnak.
+azonos entitás az azonosítóját megtartja (a source az erősebb lesz: schema > rule > llm), a más
+forrású sorok és entitásaik megmaradnak.
 """
 from __future__ import annotations
 
@@ -70,6 +72,9 @@ ATTACH_ORDER = ("org", "brand", "person", "product", "service", "event", "work",
                 "tech", "concept")
 
 _SKIPPED_ANCESTORS = frozenset({"noscript", "template"})
+_NON_BODY_TEXT = frozenset({"script", "style", "noscript", "template", "head"})
+# Az entitás forrása: kisebb az erősebb; újrafuttatáskor az erősebb marad.
+SOURCE_STRENGTH = {"schema": 0, "rule": 1, "llm": 2}
 _BLOCK_TAGS = frozenset({
     "p", "li", "td", "th", "dd", "dt", "figcaption", "blockquote", "address", "caption",
     "h1", "h2", "h3", "h4", "h5", "h6",
@@ -133,6 +138,11 @@ def trivial_anchor(anchor: str) -> str | None:
     if anchor.strip().isupper() and _ROMAN.fullmatch(key):
         return "anchor_roman_numeral"
     return None
+
+
+def stronger_source(current: str | None, new: str) -> str:
+    """A két forrás közül az erősebb (schema > rule > llm); ismeretlen forrás a leggyengébb."""
+    return min((current or new, new), key=lambda s: SOURCE_STRENGTH.get(s, len(SOURCE_STRENGTH)))
 
 
 def _normalized(text: str) -> Iterator[tuple[str, int]]:
@@ -338,10 +348,12 @@ def run_rules(con: duckdb.DuckDBPyConnection,
                     [name, lang, candidate.type, aliases, candidate.source, started],
                 ).fetchone()
             else:
+                (current,) = con.execute("SELECT source FROM entities WHERE entity_id = ?",
+                                         [entity_id]).fetchone()
                 con.execute(
                     "UPDATE entities SET aliases = list_distinct(list_concat(coalesce(aliases, "
-                    "[]), ?)), lang = coalesce(lang, ?) WHERE entity_id = ?",
-                    [aliases, lang, entity_id],
+                    "[]), ?)), lang = coalesce(lang, ?), source = ? WHERE entity_id = ?",
+                    [aliases, lang, stronger_source(current, candidate.source), entity_id],
                 )
             entity_ids.add(entity_id)
             for mention in candidate.mentions:
@@ -525,6 +537,8 @@ def _anchors(con, page_ids, dom, candidates, skipped) -> None:
                 reason = "anchor_self_link"
             elif to_url in homes:
                 reason = "anchor_to_home"
+            elif to_id is None:
+                reason = "anchor_uncrawled_target"
             elif to_lang and from_lang and _primary(to_lang) != _primary(from_lang):
                 reason = "anchor_language_switch"
         if reason:
@@ -597,6 +611,25 @@ def _page_dom(html: str) -> _PageDom:
                 items = 1
             schema_sections.extend([section] * items)
     return _PageDom(site_names, anchors, schema_sections)
+
+
+def section_texts(html: str) -> list[tuple[int, str]]:
+    """A body szövege szakaszonként: (section_ordinal, szöveg). A szakaszhatár a headingek
+    sorrendje, a headings táblával azonosan számolva; a script, style, noscript, template és a
+    `<head>` szövege kimarad."""
+    tree = HTMLParser(html or "")
+    parts: dict[int, list[str]] = defaultdict(list)
+    section = 0
+    root = tree.root
+    for node in root.traverse(include_text=True) if root is not None else ():
+        if node.tag in HEADING_TAGS:
+            if not _skipped(node):
+                section += 1
+        elif node.tag == "-text" and not any(
+                ancestor.tag in _NON_BODY_TEXT for ancestor in _ancestors(node)):
+            parts[section].append(node.text(deep=False) or "")
+    return [(number, _WHITESPACE.sub(" ", " ".join(texts)).strip())
+            for number, texts in sorted(parts.items())]
 
 
 def _block_text(node: Node) -> str:

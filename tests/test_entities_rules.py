@@ -33,6 +33,11 @@ def html(title, body, head="", lang="hu"):
             f"<body>{body}</body></html>")
 
 
+def stub(*paths, lang="hu"):
+    """Csupasz céloldalak, hogy a rájuk mutató link crawlolt célra mutasson."""
+    return {path: html(path, "", lang=lang) for path in paths}
+
+
 def ld(data):
     return f"<script type='application/ld+json'>{json.dumps(data, ensure_ascii=False)}</script>"
 
@@ -47,9 +52,10 @@ def site(pages, languages=("hu",)):
         url = normalize(SEED.rstrip("/") + path, POLICY)
         parsed = parse_page(page_html, url, POLICY)
         (page_id,) = con.execute(
-            "INSERT INTO pages (url, status, title, h1, lang, rendered_html) "
-            "VALUES (?, 200, ?, ?, ?, ?) RETURNING page_id",
-            [url, parsed.title, parsed.h1, parsed.lang, compressor.compress(page_html.encode())],
+            "INSERT INTO pages (url, status, title, h1, lang, main_content, rendered_html) "
+            "VALUES (?, 200, ?, ?, ?, ?, ?) RETURNING page_id",
+            [url, parsed.title, parsed.h1, parsed.lang, parsed.main_content,
+             compressor.compress(page_html.encode())],
         ).fetchone()
         for h in parsed.headings:
             con.execute("INSERT INTO headings VALUES (?, ?, ?, ?)",
@@ -248,6 +254,7 @@ def test_person_names_in_either_order_are_one_person():
              "/1/": html("P1", "", head=ld({"@type": "Person", "name": "Kiss Krisztián"}))}
     pages.update({f"/{i}/": html(f"P{i}", "<p><a href='/szerzo/'>Krisztian Kiss</a></p>",
                                  lang="en") for i in range(2, 5)})
+    pages.update(stub("/szerzo/", lang="en"))
     con = site(pages)
     run_rules(con)
     assert con.execute("SELECT type, name, aliases, lang FROM entities").fetchall() == [
@@ -271,8 +278,8 @@ def test_other_name_orders_stay_apart(first, second, kind):
 
 def test_anchor_goes_to_the_org_before_a_same_named_brand():
     head = ld([{"@type": "Organization", "name": "Példa"}, {"@type": "Brand", "name": "Példa"}])
-    con = site({f"/{i}/": html(f"P{i}", "<a href='/rolunk/'>Példa</a>", head=head)
-                for i in range(3)})
+    con = site({**{f"/{i}/": html(f"P{i}", "<a href='/rolunk/'>Példa</a>", head=head)
+                   for i in range(3)}, **stub("/rolunk/")})
     run_rules(con)
     assert con.execute("SELECT e.type, pe.position, count(*) FROM page_entities pe "
                        "JOIN entities e USING (entity_id) GROUP BY ALL ORDER BY ALL").fetchall() == [
@@ -288,6 +295,7 @@ def test_navigational_home_short_and_roman_anchors_drop_out():
                                 f"<a href='/anna-{i % 2}/'>Kiss Anna</a>",
                      head=ld({"@type": "Person", "name": "Kiss Anna"}) if i == 1 else "")
         for i in range(1, 4)})
+    pages.update(stub("/cikk-0/", "/cikk-1/", "/x/", "/y/", "/z/", "/anna-0/", "/anna-1/"))
     con = site(pages)
     run = run_rules(con)
     assert con.execute("SELECT type, name FROM entities ORDER BY type").fetchall() == [
@@ -297,6 +305,17 @@ def test_navigational_home_short_and_roman_anchors_drop_out():
                        ).fetchone() == (3,)
     assert (run.skipped["anchor_texts_navigational"], run.skipped["anchor_to_home"],
             run.skipped["anchor_short"], run.skipped["anchor_roman_numeral"]) == (1, 3, 3, 3)
+
+
+def test_anchor_to_an_uncrawled_target_drops_out():
+    """Ugyanaz az anchor 3 oldalon: nem crawlolt célra kiesik, crawlolt célra concept."""
+    pages = {f"/{i}/": html(f"P{i}", "<a href='/demo/'>Kattints ide</a>"
+                            "<a href='/program/'>Programok</a>") for i in range(3)}
+    con = site({**pages, **stub("/program/")})
+    run = run_rules(con)
+    assert con.execute("SELECT type, name FROM entities").fetchall() == [
+        ("concept", "Programok")]
+    assert run.skipped["anchor_uncrawled_target"] == 3
 
 
 @pytest.mark.parametrize(("anchor", "reason"), [
@@ -313,7 +332,7 @@ def test_section_ordinals_match_the_headings_table():
     """A noscript-beli heading nem számít, ahogy a headings táblában sem."""
     body = ("<h1>Egy</h1><noscript><h2>Rejtett</h2></noscript><h2>Kettő</h2>"
             "<p><a href='/x/'>Közös</a></p>")
-    con = site({f"/{i}/": html(f"P{i}", body) for i in range(3)})
+    con = site({**{f"/{i}/": html(f"P{i}", body) for i in range(3)}, **stub("/x/")})
     run_rules(con)
     assert con.execute(
         "SELECT DISTINCT pe.section_ordinal, h.text FROM page_entities pe JOIN headings h "
@@ -338,6 +357,7 @@ def test_anchor_candidates_with_structural_filters():
         "/szolgaltatasok/": html("Szolgáltatások", nav()),
         "/anna/": html("Anna", nav()),
         "/en/": html("English", "<a href='/'>Magyar</a>", lang="en"),
+        **stub("/ritka/"),
     }
     con = site(pages)
     run = run_rules(con)
@@ -373,7 +393,7 @@ def test_canonical_name_comes_from_the_creating_source():
                             "<div><a href='/rolunk/'><img src='l.png' alt='Logó'></a></div>",
                             head=ld({"@type": "Person", "name": "Kiss Anna"}) if i == 0 else "")
              for i in range(3)}
-    con = site(pages)
+    con = site({**pages, **stub("/anna/", "/rolunk/")})
     run_rules(con)
     assert con.execute("SELECT type, name, aliases FROM entities ORDER BY type").fetchall() == [
         ("concept", "Logó", []), ("person", "Kiss Anna", ["KISS ANNA"])]
@@ -384,7 +404,7 @@ def test_canonical_name_comes_from_the_creating_source():
 
 def test_rerun_drops_vanished_candidates():
     pages = {f"/{i}/": html(f"P{i}", "<a href='/x/'>Közös</a>") for i in range(3)}
-    con = site(pages)
+    con = site({**pages, **stub("/x/")})
     run_rules(con)
     assert con.execute("SELECT name FROM entities").fetchall() == [("Közös",)]
     con.execute("DELETE FROM links WHERE from_page_id = 3")
@@ -417,10 +437,10 @@ def test_rerun_keeps_ids_and_foreign_rows():
 
 
 def test_lang_is_the_majority_of_the_entity_pages():
-    # A cél nincs crawlolva, a nyelve ismeretlen: a link nem nyelvváltó.
+    # A cél nyelve ismeretlen (üres html[lang], szöveg nélkül): a link nem nyelvváltó.
     pages = {f"/{i}/": html(f"P{i}", "<a href='/x/'>Közös</a>", lang="en" if i < 3 else "hu-HU")
              for i in range(4)}
-    con = site(pages, languages=("hu",))
+    con = site({**pages, **stub("/x/", lang="")}, languages=("hu",))
     run_rules(con)
     assert con.execute("SELECT name, lang FROM entities").fetchall() == [("Közös", "en")]
 
@@ -433,13 +453,13 @@ def test_cli_entities_and_status(tmp_path, monkeypatch):
     con.close()
     result = CliRunner().invoke(app, ["entities", "pelda.hu"])
     assert result.exit_code == 0, result.output
-    # A nem crawlolt /en/ nyelve ismeretlen, így az "English" is jelölt.
-    assert result.output.splitlines()[:3] == [
-        ("entitás-futás #1 (rules): 3 entitás 3/3 oldalról, 9 sor (anchor 6, title 3), "
-         "LLM-hívás 0"),
-        "  concept: 2 entitás, 6 sor",
-        "  brand: 1 entitás, 3 sor",
-    ]
+    # A /szolgaltatasok/ és az /en/ nincs crawlolva: a rájuk mutató anchorok kiesnek.
+    lines = result.output.splitlines()
+    assert lines[0].startswith("entitás-futás #1 (rules, ")
+    assert lines[0].endswith("): 1 entitás 3/3 oldalról, 3 sor (title 3), LLM-hívás 0")
+    assert lines[-1] == "  brand: 1 entitás, 3 sor"
+    assert {"  kimaradt, anchor_self_link: 3", "  kimaradt, anchor_uncrawled_target: 6"} <= set(
+        lines)
     status = CliRunner().invoke(app, ["status", "pelda.hu"])
     assert "  entitás-futás #1 (rules, " in status.output
 
@@ -489,15 +509,15 @@ EXPECTED = {
     },
     # Nincs JSON-LD; a title minden oldalon "Angular Bootstrap". Az "Examples", az "API" és az
     # "Overview" 17 célra, az "ngx-bootstrap" 19 célra mutat: navigációs; a "components" a
-    # kezdőoldalra. A megmaradt 14 concept a komponens-demók linkje, mind a nem crawlolt
-    # /ngx-bootstrap-ra mutat.
+    # kezdőoldalra. A komponens-demók linkjei ("Previous", "Start 🏁") a nem crawlolt
+    # /ngx-bootstrap-ra mutatnak (256 előfordulás): concept nem marad.
     "ngx-bootstrap-crawl": {
-        "run": (69, 69, 15, 125, {"anchor": 56, "title": 69}),
-        "entities": {("brand", "Angular Bootstrap"), ("concept", "Previous"),
-                     ("concept", "Start 🏁")},
+        "run": (69, 69, 1, 69, {"title": 69}),
+        "entities": {("brand", "Angular Bootstrap")},
         "absent": {("concept", "ngx-bootstrap"), ("concept", "Examples"), ("concept", "API"),
-                   ("concept", "components")},
+                   ("concept", "components"), ("concept", "Previous"), ("concept", "Start 🏁")},
         "aliases": {},
+        "uncrawled": 256,
     },
 }
 
@@ -516,6 +536,8 @@ def test_reference_entities(reference, name):
         assert con.execute("SELECT aliases FROM entities WHERE name = ?", [entity]
                            ).fetchone() == (aliases,)
     assert con.execute("SELECT llm_calls FROM entity_runs").fetchall() == [(0,)]
+    # kk.coach és Materia: egyetlen nem crawlolt célra mutató anchor sincs.
+    assert run.skipped.get("anchor_uncrawled_target", 0) == EXPECTED[name].get("uncrawled", 0)
     if name != "kk-coach-crawl":
         assert con.execute("SELECT count(*) FROM page_entities WHERE source = 'schema'"
                            ).fetchone() == (0,)
