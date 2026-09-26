@@ -75,6 +75,8 @@ A MicroStore-boltok kiestek: a kirakatukban nincs `<a>`, a navigáció JS-kezel�
 
 **A kanonikus név forrás-prioritása:** schema > title / H1 > anchor; azonos szinten az ékezetes alak nyer, azon belül a gyakoribb. Az `entities.lang` azoknak az oldalaknak a nyelve, ahol a kanonikus alak előfordul.
 
+3. `aaa2/engine/entities_llm.py` — LLM-kör (`aaa entities <domain> --llm [--provider gemini] [--limit N]`): oldalanként egy hívás a title-re, a headingekre és a main contentre. A prompt állandó, a tíz típus definíciójával; entitáslista sosem kerül bele (teszt őrzi). Fabrikáció-szűrő kódban: az evidence whitespace-normalizálva, kis-nagybetű-érzéketlenül benne kell legyen a main contentben, egy headingben vagy a title-ben, különben eldobva és számolva (`llm_calls.fabricated_count`, `entity_runs.fabricated`); 3–15 szó. Összevonás a szabály-entitásokkal kulcs és alias szerint (person-nél a névsorrend is), a meglévő entitás típusa és forrása marad. A 007-es migráció: `llm_calls.fabricated_count`, `entity_runs.model`, `cost_usd`, `fabricated`. Fejlesztés és teszt Gemini 3.8 Flash-sel; a modellek párhuzamos futása az M2/5.
+
 ## Stack
 
 Python 3.12, asyncio, Playwright (Chromium), selectolax, DuckDB, Typer, pydantic, zstandard, pytest; az LLM-hez anthropic, openai, google-genai, python-dotenv. `pip install -e ".[dev]"`, `playwright install chromium`, `pytest`, `aaa --help`.

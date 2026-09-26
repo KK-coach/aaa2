@@ -47,9 +47,10 @@ def site(pages, languages=("hu",)):
         url = normalize(SEED.rstrip("/") + path, POLICY)
         parsed = parse_page(page_html, url, POLICY)
         (page_id,) = con.execute(
-            "INSERT INTO pages (url, status, title, h1, lang, rendered_html) "
-            "VALUES (?, 200, ?, ?, ?, ?) RETURNING page_id",
-            [url, parsed.title, parsed.h1, parsed.lang, compressor.compress(page_html.encode())],
+            "INSERT INTO pages (url, status, title, h1, lang, main_content, rendered_html) "
+            "VALUES (?, 200, ?, ?, ?, ?, ?) RETURNING page_id",
+            [url, parsed.title, parsed.h1, parsed.lang, parsed.main_content,
+             compressor.compress(page_html.encode())],
         ).fetchone()
         for h in parsed.headings:
             con.execute("INSERT INTO headings VALUES (?, ?, ?, ?)",
@@ -434,12 +435,11 @@ def test_cli_entities_and_status(tmp_path, monkeypatch):
     result = CliRunner().invoke(app, ["entities", "pelda.hu"])
     assert result.exit_code == 0, result.output
     # A nem crawlolt /en/ nyelve ismeretlen, így az "English" is jelölt.
-    assert result.output.splitlines()[:3] == [
-        ("entitás-futás #1 (rules): 3 entitás 3/3 oldalról, 9 sor (anchor 6, title 3), "
-         "LLM-hívás 0"),
-        "  concept: 2 entitás, 6 sor",
-        "  brand: 1 entitás, 3 sor",
-    ]
+    lines = result.output.splitlines()
+    assert lines[0].startswith("entitás-futás #1 (rules, ")
+    assert lines[0].endswith("): 3 entitás 3/3 oldalról, 9 sor (anchor 6, title 3), LLM-hívás 0")
+    assert lines[-2:] == ["  concept: 2 entitás, 6 sor", "  brand: 1 entitás, 3 sor"]
+    assert "  kimaradt, anchor_self_link: 3" in lines
     status = CliRunner().invoke(app, ["status", "pelda.hu"])
     assert "  entitás-futás #1 (rules, " in status.output
 
