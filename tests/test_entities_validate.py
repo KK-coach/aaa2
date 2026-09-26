@@ -70,8 +70,8 @@ def wiki_body(title, lang="en", disambiguation=False):
      "ambiguous"),
     # A típusban egyező találat előnyt élvez: a Movie nem számít bele.
     ([kg_item("Budapest", ["City", "Thing"]), kg_item("Budapest", ["Movie", "Thing"])], "stub"),
-    # Egyik sem egyező típusú: mindkettő számít.
-    ([kg_item("Budapest", ["Book"]), kg_item("Budapest", ["Movie", "Thing"])], "ambiguous"),
+    # Egyik sem egyező típusú: nincs név- és típus-egyezés.
+    ([kg_item("Budapest", ["Book"]), kg_item("Budapest", ["Movie", "Thing"])], "no_match"),
     ([kg_item("Budapesti Kávé", ["Corporation"], "Company")], "no_match"),
     ([], "no_match"),
 ])
@@ -97,11 +97,25 @@ def test_multilingual_values_are_read():
     assert (match.status, match.kg_type, match.name) == ("medium", "place", "Duna")
 
 
-def test_type_consistent_match_is_preferred_over_a_higher_score():
-    body = kg_body(kg_item("Mercury", ["Planet", "Thing"], "Planet", score=900),
-                   kg_item("Mercury", ["Corporation", "Organization"], "Company", score=10))
-    assert classify_kg(body, {"mercury"}, {"org"}, MAPPING).kg_type == "org"
-    assert classify_kg(body, {"mercury"}, {"person"}, MAPPING).score == 900
+def test_only_type_consistent_matches_count():
+    """A státusz csak név- és típus-egyezésből jön; más típusú találatnál no_match, a típusa
+    a kg_type-ba kerül (a legjobb pontszámú leképezhetőé)."""
+    body = kg_body(kg_item("Mercury", ["Planet", "Thing"], "Planet", "…", score=900),
+                   kg_item("Mercury", ["Corporation", "Organization"], "Company", score=10),
+                   kg_item("Mercury", ["Person"], "Singer", score=50))
+    assert (classify_kg(body, {"mercury"}, {"org"}, MAPPING).status,
+            classify_kg(body, {"mercury"}, {"org"}, MAPPING).score) == ("medium", 10)
+    other = classify_kg(body, {"mercury"}, {"event"}, MAPPING)
+    assert (other.status, other.kg_type, other.kg_id) == ("no_match", "person", None)
+
+
+def test_thing_only_match_counts_for_a_concept_only():
+    body = kg_body(kg_item("Execution", ["Thing"], article="Capital punishment is…"))
+    concept = classify_kg(body, {"execution"}, {"concept"}, MAPPING)
+    service = classify_kg(body, {"execution"}, {"service"}, MAPPING)
+    assert (concept.status, concept.kg_type) == ("high", None)
+    assert (service.status, service.kg_type) == ("no_match", None)
+    assert decide_type("service", None, service) == ("service", None, False)
 
 
 @pytest.mark.parametrize(("types", "ours"), [
@@ -128,6 +142,8 @@ def test_kg_type_mapping(types, ours):
     ("org", "tech", KGMatch("high", kg_type="org"), ("org", None, False)),
     ("org", None, KGMatch("high", kg_type=None), ("org", None, False)),
     ("org", None, KGMatch("no_match"), ("org", None, False)),
+    ("org", None, KGMatch("no_match", kg_type="event"), ("org", None, True)),
+    ("concept", "tech", KGMatch("no_match", kg_type="tech"), ("concept", None, True)),
     ("org", None, None, ("org", None, False)),
 ])
 def test_type_changes_only_to_the_suggestion_on_a_recognized_match(current, suggested, kg,
@@ -249,13 +265,13 @@ def test_validation_writes_kg_and_wikipedia_fields(env):
          "https://hu.wikipedia.org/wiki/Budapest"),
         ("BigQuery", "tech", "concept", "medium", "kg:/m/bq", "tech", False,
          "https://en.wikipedia.org/wiki/BigQuery"),
-        ("Példa Kft.", "org", None, "medium", rows[2][4], "person", True, None),
+        ("Példa Kft.", "org", None, "no_match", None, "person", True, None),
         ("Ismeretlen", "concept", None, "no_match", None, None, False, None),
     ]
     assert all(r[8] == NOON for r in rows)
     assert result.type_changes == [("BigQuery", "concept", "tech")]
     assert (result.mismatches, result.wikipedia, result.statuses) == (
-        1, 2, {"high": 1, "medium": 2, "no_match": 1})
+        1, 2, {"high": 1, "medium": 1, "no_match": 2})
     # hu entitás: KG egyszer (hu, en), Wikipedia hu, majd en, ha a hu nem talált
     assert apis.services() == ["kg", "hu", "kg", "en", "kg", "hu", "en", "kg", "hu", "en"]
     kg_request = apis.requests[0]

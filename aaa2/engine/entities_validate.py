@@ -1,14 +1,15 @@
 """Entitás-validálás: Google Knowledge Graph Search API és Wikipedia, minden entitásra.
 
-- KG: a `legacy/kg_validate.py` ötkategóriás osztályozója. Név-egyezés: az `alias_key` szerint,
-  pontosan (nincs fuzzy), a névre vagy egy aliasra. A név szerint egyező találatok közül előbb
-  azok számítanak, amelyeknek a típusa (`config/kg_types.toml` szerint leképezve) az entitás
-  típusa vagy a `type_suggested`; ha ilyen nincs, az összes.
+- KG: a `legacy/kg_validate.py` ötkategóriás osztályozója, név és típus szerint. Név-egyezés:
+  az `alias_key` szerint, pontosan (nincs fuzzy), a névre vagy egy aliasra. Típus-egyezés: a
+  találat típusa (`config/kg_types.toml` szerint leképezve) az entitás típusa vagy a
+  `type_suggested`; conceptnél a csak "Thing" típusú találat is.
   - high: van `detailedDescription` (Wikipedia-alapú leírás); medium: csak `description`;
-    stub: egyetlen egyező találat leírás nélkül; ambiguous: több; no_match: nincs egyező név.
-  - A KG-típus és az entitás típusa: ha eltér, és a KG-típus = `type_suggested`, a találat
-    high / medium, a típus átáll (`type_changed_from` a régi); ez az egyetlen út a típusváltásra.
-    Más eltérés csak jelölés: `kg_type_mismatch`.
+    stub: egyetlen név- és típus-egyezés leírás nélkül; ambiguous: több; no_match: nincs.
+  - Más típusú, azonos nevű találat nem ad státuszt (no_match), a típusa a `kg_type`-ba kerül,
+    és `kg_type_mismatch` jelöli.
+  - Ha a KG-típus = `type_suggested`, és a találat high / medium, a típus átáll
+    (`type_changed_from` a régi); ez az egyetlen út a típusváltásra. Más eltérés csak jelölés.
   - A kérés nyelvei: az entitás nyelve és az angol. Kulcs nélkül a KG kimarad, nem hiba; API-hiba
     esetén a `kg_status` marad (a hiba nem bizonyítéka a hiánynak).
 - Wikipedia: a keresés top-1 találata az entitás nyelvén, majd angolul; csak akkor, ha a cím a
@@ -89,9 +90,13 @@ def classify_kg(body: dict, name_keys: set[str], prefer: set[str],
             continue
         types = [str(t) for t in _as_list(result.get("@type")) if t]
         matches.append((item.get("resultScore") or 0.0, result, types, kg_type_of(types, mapping)))
-    if not matches:
-        return KGMatch("no_match")
-    pool = [m for m in matches if m[3] in prefer] or matches
+    pool = [m for m in matches
+            if m[3] in prefer or (m[3] is None and "concept" in prefer)]
+    if not pool:
+        typed = sorted((m for m in matches if m[3] is not None), key=lambda m: m[0],
+                       reverse=True)
+        return KGMatch("no_match", types=tuple(typed[0][2]) if typed else (),
+                       kg_type=typed[0][3] if typed else None)
     pool.sort(key=lambda m: m[0], reverse=True)
     score, result, types, kg_type = pool[0]
     if any(_values(d.get("articleBody")) for d in _dicts(result.get("detailedDescription"))):
@@ -107,7 +112,7 @@ def classify_kg(body: dict, name_keys: set[str], prefer: set[str],
 def decide_type(current: str, suggested: str | None, kg: KGMatch | None
                 ) -> tuple[str, str | None, bool]:
     """(új típus, a régi típus, ha átállt, eltérés-jelölés)."""
-    if kg is None or kg.status == "no_match" or kg.kg_type is None or kg.kg_type == current:
+    if kg is None or kg.kg_type is None or kg.kg_type == current:
         return current, None, False
     if kg.kg_type == suggested and kg.status in RECOGNIZED:
         return kg.kg_type, current, False
