@@ -241,6 +241,50 @@ def test_repeated_entity_on_a_page_is_one_row_with_a_count(tmp_path):
         ("A pörkölést Kiss Anna vezeti", 2)]
 
 
+def gadget_site():
+    """3 oldal azonos "Kávégép" anchorral egy crawlolt célra: szabályból jött concept."""
+    pages = {f"/{i}/": html(f"P{i}", "<p>A <a href='/gep/'>Kávégép</a> használata egyszerű "
+                            "minden reggel</p>") for i in range(3)}
+    return site({**pages, **stub("/gep/")})
+
+
+def gadget(kind):
+    return {"entities": [entity("Kávégép", kind, "A Kávégép használata egyszerű")]}
+
+
+def test_llm_type_is_a_vote_not_a_change(tmp_path):
+    """A szabályból jött concept, amit az LLM háromszor tech-nek mond, concept marad;
+    type_votes = {"tech": 3}, type_suggested = tech."""
+    con = gadget_site()
+    run_rules(con)
+    client, _ = client_for(con, [gadget("tech")] * 3, tmp_path)
+    run_llm(con, client)
+    assert con.execute("SELECT type, source, type_votes, type_suggested FROM entities").fetchall(
+    ) == [("concept", "rule", '{"tech": 3}', "tech")]
+
+
+def test_votes_accumulate_and_a_tie_keeps_the_current_type(tmp_path):
+    con = gadget_site()
+    run_rules(con)
+    client, _ = client_for(con, [gadget("tech"), gadget("concept"), {"entities": []}]
+                           + [gadget("product")] * 3, tmp_path)
+    run_llm(con, client)
+    assert con.execute("SELECT type_votes, type_suggested FROM entities").fetchone() == (
+        '{"concept": 1, "tech": 1}', "concept")
+    run_llm(con, client)
+    assert con.execute("SELECT type, type_votes, type_suggested FROM entities").fetchone() == (
+        "concept", '{"concept": 1, "product": 3, "tech": 1}', "product")
+
+
+def test_new_llm_entity_votes_for_its_own_type(tmp_path):
+    con = one_page()
+    client, _ = client_for(con, [{"entities": [
+        entity("Kiss Anna", "person", "A pörkölést Kiss Anna vezeti")]}], tmp_path)
+    run_llm(con, client)
+    assert con.execute("SELECT type, type_votes, type_suggested FROM entities").fetchone() == (
+        "person", '{"person": 1}', "person")
+
+
 def test_same_llm_entity_on_two_pages_is_one_entity(tmp_path):
     pages = {f"/{i}/": html(f"P{i}", "<p>A Budapest Coffee Fest idén is lesz</p>")
              for i in range(2)}

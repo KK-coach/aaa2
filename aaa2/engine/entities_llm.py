@@ -16,6 +16,9 @@
   sorrendje → a meglévő entitás; több közül az azonos típusú, azon belül az erősebb forrású
   (schema > rule > llm). A meglévő entitás típusa és forrása nem változik, az LLM eltérő alakja
   alias lesz. Új név: új entitás, source = llm, az LLM típusával, az oldal nyelvével.
+- Típusjavaslat: minden elfogadott sor egy szavazat az LLM típusára (`entities.type_votes`,
+  futásról futásra halmozódva); `type_suggested` a legtöbb szavazatot kapott típus, holtversenyben
+  a jelenlegi. A típust ez nem írja át.
 - Újrafuttatható: a feldolgozott oldal korábbi llm-sorai ugyanattól a modelltől törlődnek, a sor
   nélkül maradt llm-entitás is.
 - `entity_runs`: method = llm, a modell, a vizsgált oldalak, a hívások és a költségük, a sorok, a
@@ -39,7 +42,7 @@ from aaa2.engine.entities_rules import (
     section_texts,
 )
 from aaa2.llm.client import BudgetExceeded, LLMClient, LLMError, SchemaMismatch
-from aaa2.llm.schemas import ExtractedEntity, PageExtraction
+from aaa2.llm.schemas import ENTITY_TYPES, ExtractedEntity, PageExtraction
 
 MAX_INPUT_CHARS = 80_000
 MIN_EVIDENCE_WORDS = 3
@@ -179,6 +182,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *, limit: int | N
                     continue
                 position, section = _locate(entity, title, page_headings, sections)
                 entity_id = index.resolve(con, entity, _primary(lang), started)
+                index.vote(entity_id, entity.type)
                 row = page_rows.get((entity_id, position))
                 if row is None:
                     page_rows[(entity_id, position)] = [
@@ -196,6 +200,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *, limit: int | N
                 entity_ids.add(row[1])
             con.execute("UPDATE llm_calls SET fabricated_count = ? WHERE call_id = ?",
                         [page_fabricated, result.call_id])
+            index.write_votes(con)
             con.commit()
         except Exception:
             con.rollback()
@@ -241,15 +246,36 @@ def _locate(entity: ExtractedEntity, title: str | None,
 
 class _EntityIndex:
     """A meglévő entitások kulcs (név és aliasok) szerint, person-nél a kéttokenes név
-    token-halmaza szerint is."""
+    token-halmaza szerint is; és a típus-szavazataik."""
 
     def __init__(self, con: duckdb.DuckDBPyConnection):
         self.by_key: dict[str, list[tuple[int, str, str]]] = defaultdict(list)
         self.by_tokens: dict[frozenset[str], list[tuple[int, str, str]]] = defaultdict(list)
-        for entity_id, name, kind, source, aliases in con.execute(
-            "SELECT entity_id, name, type, source, aliases FROM entities ORDER BY entity_id"
+        self.types: dict[int, str] = {}
+        self.votes: dict[int, Counter[str]] = defaultdict(Counter)
+        self.voted: set[int] = set()
+        for entity_id, name, kind, source, aliases, votes in con.execute(
+            "SELECT entity_id, name, type, source, aliases, type_votes FROM entities "
+            "ORDER BY entity_id"
         ).fetchall():
             self._add(entity_id, kind, source, [name, *(aliases or [])])
+            self.votes[entity_id].update(json.loads(votes) if votes else {})
+
+    def vote(self, entity_id: int, kind: str) -> None:
+        self.votes[entity_id][kind] += 1
+        self.voted.add(entity_id)
+
+    def write_votes(self, con: duckdb.DuckDBPyConnection) -> None:
+        """A szavazott entitások `type_votes`-a és `type_suggested`-je; a típus marad."""
+        for entity_id in sorted(self.voted):
+            votes = self.votes[entity_id]
+            current = self.types[entity_id]
+            suggested = max(votes, key=lambda t: (votes[t], t == current,
+                                                  -ENTITY_TYPES.index(t)))
+            con.execute("UPDATE entities SET type_votes = ?, type_suggested = ? "
+                        "WHERE entity_id = ?",
+                        [json.dumps(dict(sorted(votes.items()))), suggested, entity_id])
+        self.voted.clear()
 
     def resolve(self, con: duckdb.DuckDBPyConnection, entity: ExtractedEntity,
                 lang: str | None, created_at: datetime) -> int:
@@ -284,6 +310,7 @@ class _EntityIndex:
                                         ATTACH_ORDER.index(m[1])))
 
     def _add(self, entity_id: int, kind: str, source: str, forms: list[str]) -> None:
+        self.types[entity_id] = kind
         entry = (entity_id, kind, source)
         for form in forms:
             key = alias_key(form)
