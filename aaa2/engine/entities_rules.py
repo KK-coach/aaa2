@@ -19,7 +19,8 @@ Csak a sikeres (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalakból dolgo
   (kulcs szerint). Ha a kulcs egy talált entitásé, ahhoz kerül; különben concept-jelölt, ha
   egyetlen célra mutat (két vagy több célra: navigációs, kimarad). position = anchor, source =
   rule. Kimarad a betű nélküli, a legfeljebb 2 jelű és a csupa nagybetűs római szám anchor, az
-  oldalra önmagára, a kezdőoldalra (`site_profile.home_urls`) és a más nyelvű oldalra mutató link.
+  oldalra önmagára, a kezdőoldalra (`site_profile.home_urls`), a nem crawlolt oldalra (a cél nincs
+  a `pages`-ben) és a más nyelvű oldalra mutató link.
 - alias: a név kulcsa (`alias_key`) kisbetűs, ékezet és kötőjel nélküli; egy kulcs és típus egy
   entitás, a többi írásmód az `aliases`-ben.
 - kanonikus név: a legerősebb forrás (schema > title / H1 > anchor) alakjai közül az ékezetes,
@@ -536,6 +537,8 @@ def _anchors(con, page_ids, dom, candidates, skipped) -> None:
                 reason = "anchor_self_link"
             elif to_url in homes:
                 reason = "anchor_to_home"
+            elif to_id is None:
+                reason = "anchor_uncrawled_target"
             elif to_lang and from_lang and _primary(to_lang) != _primary(from_lang):
                 reason = "anchor_language_switch"
         if reason:

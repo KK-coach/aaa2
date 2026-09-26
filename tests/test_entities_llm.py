@@ -25,7 +25,7 @@ from aaa2.llm.adapters import Reply, genai_errors
 from aaa2.llm.client import LLMClient, Retry, open_clients
 from aaa2.llm.config import Usage, load_config
 from aaa2.llm.schemas import ENTITY_TYPES, ExtractedEntity
-from tests.test_entities_rules import html, ld, site
+from tests.test_entities_rules import html, ld, site, stub
 
 NOON = datetime(2026, 9, 26, 12, 0, tzinfo=UTC).replace(tzinfo=None)
 CONFIG = load_config()
@@ -256,7 +256,7 @@ def test_same_llm_entity_on_two_pages_is_one_entity(tmp_path):
 def test_rule_rerun_upgrades_an_llm_entity_to_rule(tmp_path):
     pages = {f"/{i}/": html(f"P{i}", "<p>Lásd a <a href='/fest/'>Budapest Coffee Fest</a> "
                             "programját</p>") for i in range(3)}
-    con = site(pages)
+    con = site({**pages, **stub("/fest/")})
     reply = {"entities": [entity("Budapest Coffee Fest", "concept",
                                  "Lásd a Budapest Coffee Fest programját")]}
     client, _ = client_for(con, [reply] * 3, tmp_path)
