@@ -172,6 +172,7 @@ def test_market_scope_reads_home_pages_only():
     con = site_db("pelda.com", "https://pelda.com/", [seed, hu_home, menu])
     profile = build_profile(con)
     assert (profile.market_scope, profile.market_scope_city) == ("local", "Budapest")
+    assert profile.home_urls == ("https://pelda.com/", "https://pelda.com/hu/")
 
 
 def test_market_scope_follows_seed_redirect():
@@ -181,7 +182,9 @@ def test_market_scope_follows_seed_redirect():
         page("https://pelda.com/en/", lang="en",
              headings=[(4, "Offices in London"), (3, "Plumber in Dublin")]),
     ])
-    assert build_profile(con).market_scope_city == "Dublin"
+    profile = build_profile(con)
+    assert profile.market_scope_city == "Dublin"
+    assert profile.home_urls == ("https://pelda.com/en/",)
 
 
 def test_update_site_profile_writes_site_row():
@@ -191,11 +194,12 @@ def test_update_site_profile_writes_site_row():
     update_site_profile(con)
     row = con.execute(
         "SELECT target_country, target_country_confidence, target_country_candidates, "
-        "market_scope, market_scope_city, languages, page_count, tech_signals FROM site"
+        "market_scope, market_scope_city, languages, page_count, tech_signals, home_urls "
+        "FROM site"
     ).fetchone()
     assert row[:2] == ("GB", "medium")
     assert json.loads(row[2]) == [{"country": "GB", "score": 1.0, "signals": ["tld"]}]
-    assert row[3:] == ("country_specific", None, ["en"], 1, [])
+    assert row[3:] == ("country_specific", None, ["en"], 1, [], ["https://x.co.uk/"])
 
 
 def test_update_without_country_writes_empty_candidates():
@@ -241,6 +245,7 @@ EXPECTED = {
         "candidates": ["HU", "US"],
         "signals": {"path:/wp-content/themes/generatepress/", "path:/wp-includes/",
                     "script:static.cloudflareinsights.com"},
+        "home": ["https://kk.coach/", "https://kk.coach/hu/"],
     },
     # A +36-os telefon a kezdőoldalakon; az adatkezelési tájékoztató +1-es és +39-es
     # adatfeldolgozói és az /it/ ág csak jelöltek. A cím a kezdőoldal main contentjében:
@@ -251,12 +256,15 @@ EXPECTED = {
         "signals": {"generator:WordPress 7.1.2",
                     "path:/wp-content/plugins/sitepress-multilingual-cms/",
                     "path:/wp-content/themes/Divi/", "script:cdn-cookieyes.com"},
+        "home": ["https://materia-tm.com/", "https://materia-tm.com/hu/",
+                 "https://materia-tm.com/it/"],
     },
     # Nincs országjel; a "Global styling" az alert-oldal szakaszcíme, nem piaci állítás.
     "ngx-bootstrap-crawl": {
         "profile": (None, None, "not_country_specific", None, ("en",), 69),
         "candidates": [],
         "signals": {"dom:ng-version=22.0.2"},
+        "home": ["https://valor-software.com/ngx-bootstrap/components"],
     },
 }
 
@@ -264,7 +272,7 @@ EXPECTED = {
 def site_profile_row(con):
     return con.execute(
         "SELECT target_country, target_country_confidence, market_scope, market_scope_city, "
-        "languages, page_count, target_country_candidates, tech_signals FROM site"
+        "languages, page_count, target_country_candidates, tech_signals, home_urls FROM site"
     ).fetchone()
 
 
@@ -273,12 +281,13 @@ def test_reference_site_profile(name, reference_crawl):
     con = reference_crawl(name)
     if con is None:
         pytest.skip(f"nincs felvétel: pytest -m live -k record_site_profile ({name})")
-    country, confidence, scope, city, languages, page_count, candidates, signals = (
+    country, confidence, scope, city, languages, page_count, candidates, signals, home = (
         site_profile_row(con))
     expected = EXPECTED[name]
     assert (country, confidence, scope, city, tuple(languages), page_count) == expected["profile"]
     assert [c["country"] for c in json.loads(candidates)] == expected["candidates"]
     assert expected["signals"] <= set(signals)
+    assert home == expected["home"]
 
 
 @pytest.mark.live

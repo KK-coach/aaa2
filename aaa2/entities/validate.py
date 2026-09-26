@@ -35,7 +35,7 @@ from urllib.parse import quote
 import duckdb
 import httpx
 
-from aaa2.engine.entities_rules import alias_key
+from aaa2.entities.rules import alias_key
 from aaa2.llm.client import ENV_PATH, Retry, api_key
 from aaa2.llm.schemas import ENTITY_TYPES
 

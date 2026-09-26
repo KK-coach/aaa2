@@ -19,7 +19,7 @@ Csak a sikeres (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalakból dolgo
   (kulcs szerint). Ha a kulcs egy talált entitásé, ahhoz kerül; különben concept-jelölt, ha
   egyetlen célra mutat (két vagy több célra: navigációs, kimarad). position = anchor, source =
   rule. Kimarad a betű nélküli, a legfeljebb 2 jelű és a csupa nagybetűs római szám anchor, az
-  oldalra önmagára, a kezdőoldalra (`site_profile.home_urls`), a nem crawlolt oldalra (a cél nincs
+  oldalra önmagára, a kezdőoldalra (`site.home_urls`), a nem crawlolt oldalra (a cél nincs
   a `pages`-ben) és a más nyelvű oldalra mutató link.
 - alias: a név kulcsa (`alias_key`) kisbetűs, ékezet és kötőjel nélküli; egy kulcs és típus egy
   entitás, a többi írásmód az `aliases`-ben.
@@ -53,11 +53,12 @@ import duckdb
 import zstandard
 from selectolax.parser import HTMLParser, Node
 
-from aaa2.engine.parse import HEADING_TAGS, anchor_text, schema_items
-from aaa2.engine.site_profile import home_urls
+from aaa2.engine.parse import anchor_text, schema_items
 from aaa2.llm.schemas import ENTITY_TYPES
 
 SCHEMA_TYPES_FILE = Path(__file__).parent / "config" / "schema_types.toml"
+# Ugyanaz, mint a parse-é (a headings tábla számolása); tests/test_boundaries.py őrzi.
+HEADING_TAGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
 MIN_ANCHOR_PAGES = 3
 MIN_TITLE_PAGES = 3
 MIN_TITLE_SHARE = 0.25
@@ -519,7 +520,7 @@ def _attach(target: Candidate, mentions: list[Mention]) -> None:
 
 
 def _anchors(con, page_ids, dom, candidates, skipped) -> None:
-    homes = home_urls(con)
+    homes = _home_urls(con)
     reasons: Counter[str] = Counter()
     occurrences: dict[str, dict[int, Counter[str]]] = defaultdict(lambda: defaultdict(Counter))
     targets: dict[str, set[str]] = defaultdict(set)
@@ -565,6 +566,14 @@ def _anchors(con, page_ids, dom, candidates, skipped) -> None:
             target.mentions.append(Mention(page_id, "anchor", evidence, context, section,
                                            "rule", sum(forms.values())))
     skipped.update(dict(reasons))
+
+
+def _home_urls(con: duckdb.DuckDBPyConnection) -> set[str]:
+    """A `site.home_urls` (a site-profil írja); ha a crawl ennél régebbi, a seed URL."""
+    row = con.execute("SELECT home_urls, seed_url FROM site").fetchone()
+    if row is None:
+        return set()
+    return set(row[0]) if row[0] is not None else {row[1]}
 
 
 def _language(candidate: Candidate, name: str, page_lang: dict[int, str | None]) -> str | None:

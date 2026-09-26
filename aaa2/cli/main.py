@@ -12,12 +12,12 @@ import typer
 
 from aaa2.db.connect import connect, db_path, shared_path
 from aaa2.engine.crawl import CrawlOptions, run_crawl
-from aaa2.engine.entities_llm import run_llm
-from aaa2.engine.entities_rules import run_rules
-from aaa2.engine.entities_validate import KG_DAILY_QUOTA, validate_entities
 from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
+from aaa2.entities.llm import run_llm
+from aaa2.entities.rules import run_rules
+from aaa2.entities.validate import KG_DAILY_QUOTA, validate_entities
 from aaa2.llm import ledger
 from aaa2.llm.client import check_models, open_clients
 from aaa2.llm.config import load_config

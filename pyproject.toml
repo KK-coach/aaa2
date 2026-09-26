@@ -33,7 +33,8 @@ include = ["aaa2*"]
 
 [tool.setuptools.package-data]
 "aaa2.db" = ["*.sql"]
-"aaa2.engine.config" = ["*.txt", "*.toml"]
+"aaa2.engine.config" = ["*.txt"]
+"aaa2.entities.config" = ["*.toml"]
 "aaa2.llm" = ["*.toml"]
 
 [tool.pytest.ini_options]

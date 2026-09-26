@@ -1,4 +1,4 @@
-"""Entitás-validálás (aaa2/engine/entities_validate.py): a KG-osztályozó, a típusdöntés, a
+"""Entitás-validálás (aaa2/entities/validate.py): a KG-osztályozó, a típusdöntés, a
 Wikipedia-egyezés, a cache, a napló és az újrapróba hálózat nélkül; a három készlet rögzített
 KG- és Wikipedia-válaszokkal (felvétel: `pytest -m live -k record_validation`)."""
 import json
@@ -13,8 +13,8 @@ import aaa2.cli.main as cli
 import aaa2.db.connect as connect_module
 from aaa2.cli.main import app
 from aaa2.db.connect import connect, db_path
-from aaa2.engine.entities_rules import run_rules
-from aaa2.engine.entities_validate import (
+from aaa2.entities.rules import run_rules
+from aaa2.entities.validate import (
     KG_TYPES_FILE,
     WIKI_MIN_INTERVAL,
     KGMatch,
