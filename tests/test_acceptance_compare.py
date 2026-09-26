@@ -129,6 +129,14 @@ def test_robots_explains_only_sf_url(tmp_path):
             "explanation": "robots", "note": ""} in result.url_rows
 
 
+def test_include_does_not_filter_link_counts(tmp_path):
+    """Az SF `Outlinks`-a a nem crawlolt belső célt is számolja: az include (itt `/a/`) mellett is
+    minden, a seed hostjára mutató link számít; a seed 5 kimenője így egyezik."""
+    result = compare(read_sf_csv(sf_csv(tmp_path / "i.csv")), load_site(aaa_db(), include="/a/"))
+    assert not [r for r in result.link_rows
+                if r["url"] == "https://pelda.hu/" and r["metric"] == "outlinks"]
+
+
 def test_cdn_infrastructure_is_scope(tmp_path):
     """A Cloudflare e-mail-védelme (`/cdn-cgi/`) nem a site része: csak SF-ben szerepelhet."""
     rows = [*SF_ROWS, ("https://pelda.hu/cdn-cgi/l/email-protection", 404, "", 3, 3, "", "")]

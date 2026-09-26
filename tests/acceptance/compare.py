@@ -29,7 +29,9 @@ Kimenet a `--out` könyvtárba:
   többlet célokkal (forrásokkal);
 - `summary.md`: szám-összegzés és az elfogadási feltételek.
 
-Linkek az aaa-oldalon: csak a seed hostjára mutató, az include/exclude által átengedett célok.
+Linkek mindkét oldalon: a seed hostjára mutató, nem a CDN infrastruktúrájára (`/cdn-cgi/`)
+mutató célok, az include/exclude-tól függetlenül; az SF `Outlinks`-a a nem crawlolt belső célt is
+számolja.
 Kimenő: a linksorok száma (`Outlinks`) és a különböző célok száma (`Unique Outlinks`). Bejövő: a
 linksorok (`Inlinks`) és a különböző forrásoldalak (`Unique Inlinks`), csak olyan forrásból,
 amelyet mindkét oldal crawlolt. Tűrésen kívül: |aaa − SF| > tűrés × SF.
@@ -122,8 +124,13 @@ class AaaSite:
     run: tuple | None
     rendered_bytes: int
 
+    def internal_link(self, url: str) -> bool:
+        """Az SF belső linkje: a seed hostjára mutat, és nem a CDN infrastruktúrája. Az
+        include/exclude a linkszámot nem szűri; az SF a nem crawlolt belső célt is számolja."""
+        return (urlsplit(url).hostname or "") == self.policy.seed_host and not is_infrastructure(url)
+
     def in_sf_scope(self, url: str) -> bool:
-        if (urlsplit(url).hostname or "") != self.policy.seed_host or is_infrastructure(url):
+        if not self.internal_link(url):
             return False
         if self.exclude and self.exclude.search(url):
             return False
@@ -211,7 +218,7 @@ def load_site(
         "WHERE p.status BETWEEN 200 AND 299 AND p.error IS NULL ORDER BY l.from_page_id, l.ordinal"
     ).fetchall():
         site.link_sources[to_url].add(from_url)
-        if site.in_sf_scope(to_url):
+        if site.internal_link(to_url):
             site.outlinks[from_url].append(to_url)
     site.run = con.execute(
         "SELECT run_id, max_pages, pages_done, pages_failed, pages_skipped, pages_per_sec, "
@@ -405,7 +412,7 @@ def _level_link_rows(
             continue
         source = normalize(link.source, site.policy)
         target = normalize(link.destination, site.policy)
-        if source is None or target is None or not site.in_sf_scope(target):
+        if source is None or target is None or not site.internal_link(target):
             continue
         out, into = (sf_out, sf_in) if link.rendered else (raw_out, raw_in)
         out[source][target] += 1
