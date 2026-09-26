@@ -13,10 +13,12 @@ from aaa2.engine.entities_rules import (
     SCHEMA_TYPES_FILE,
     alias_key,
     find_name,
+    is_abbreviation,
     load_schema_types,
     run_rules,
     site_title_names,
     title_endings,
+    trivial_anchor,
 )
 from aaa2.engine.normalize import UrlPolicy, normalize
 from aaa2.engine.parse import parse_page
@@ -188,17 +190,123 @@ def test_brand_from_titles_and_h1():
         ("https://pelda.hu/2/", "title", "Példa Kft.", "Oldal 2 | Példa Kft.", 0),
         ("https://pelda.hu/3/", "title", "Példa Kft.", "Oldal 3 | Példa Kft.", 0),
     ]
-    assert run.skipped["brand_not_in_title_or_h1"] == ["Példa Portál"]
+    assert run.skipped["site_name_not_in_title_or_h1"] == ["Példa Portál"]
 
 
-def test_same_brand_from_two_sources_gives_one_row_per_page():
+def test_site_name_of_an_org_writes_its_title_rows_to_the_org():
+    """Ugyanaz a név org-ként (schema) és site-névként (og:site_name, title) egy org entitás; a
+    title-sorok oldalanként egyszer."""
     head = (ld({"@type": "Organization", "name": "Példa Kft."})
             + "<meta property='og:site_name' content='példa kft.'>")
     con = site({f"/{i}/": html(f"Oldal {i} | Példa Kft.", "", head=head) for i in range(3)})
     run_rules(con)
-    assert con.execute("SELECT count(*), count(DISTINCT page_id) FROM page_entities pe "
-                       "JOIN entities e USING (entity_id) WHERE e.type = 'brand'").fetchone() == (
-        3, 3)
+    assert con.execute(
+        "SELECT e.type, e.name, pe.position, count(*), count(DISTINCT pe.page_id) "
+        "FROM page_entities pe JOIN entities e USING (entity_id) GROUP BY ALL ORDER BY ALL"
+    ).fetchall() == [("org", "Példa Kft.", "schema", 3, 3), ("org", "Példa Kft.", "title", 3, 3)]
+
+
+def test_short_site_name_is_an_alias_of_the_org_when_it_abbreviates_it():
+    titles = [f"A{i} | Példa Kft." for i in range(4)] + [f"B{i} - PK" for i in range(3)]
+    pages = {f"/{i}/": html(title, "", head=ld({"@type": "Organization", "name": "Példa Kft."}))
+             for i, title in enumerate(titles)}
+    con = site(pages)
+    run_rules(con)
+    assert con.execute("SELECT type, name, aliases FROM entities").fetchall() == [
+        ("org", "Példa Kft.", ["PK"])]
+    assert con.execute("SELECT evidence, count(*) FROM page_entities WHERE position = 'title' "
+                       "GROUP BY ALL ORDER BY ALL").fetchall() == [("PK", 3), ("Példa Kft.", 4)]
+
+
+@pytest.mark.parametrize(("short", "org", "abbreviation"), [
+    ("kk", "kk.coach", True),
+    ("pk", "pelda kft.", True),
+    ("mtm", "materia trattoria moderna", True),
+    ("xyz", "pelda kft.", False),
+    ("kp", "pelda kft.", False),
+    ("pelda", "pelda kft.", False),
+])
+def test_is_abbreviation(short, org, abbreviation):
+    assert is_abbreviation(short, org) is abbreviation
+
+
+def test_short_site_name_that_is_no_abbreviation_stays_a_brand():
+    titles = [f"A{i} | Példa Kft." for i in range(4)] + [f"B{i} - XYZ" for i in range(3)]
+    pages = {f"/{i}/": html(title, "", head=ld({"@type": "Organization", "name": "Példa Kft."}))
+             for i, title in enumerate(titles)}
+    con = site(pages)
+    run_rules(con)
+    assert con.execute("SELECT type, name, aliases FROM entities ORDER BY type").fetchall() == [
+        ("brand", "XYZ", []), ("org", "Példa Kft.", [])]
+
+
+def test_person_names_in_either_order_are_one_person():
+    """Kéttokenes név azonos token-halmazzal egy person; kanonikus a schema ékezetes alakja, a
+    nyelve azoké az oldalaké, ahol ez az alak áll."""
+    pages = {"/0/": html("P0", "", head=ld({"@type": "Person", "name": "Krisztian Kiss"}),
+                         lang="en"),
+             "/1/": html("P1", "", head=ld({"@type": "Person", "name": "Kiss Krisztián"}))}
+    pages.update({f"/{i}/": html(f"P{i}", "<p><a href='/szerzo/'>Krisztian Kiss</a></p>",
+                                 lang="en") for i in range(2, 5)})
+    con = site(pages)
+    run_rules(con)
+    assert con.execute("SELECT type, name, aliases, lang FROM entities").fetchall() == [
+        ("person", "Kiss Krisztián", ["Krisztian Kiss"], "hu")]
+    assert con.execute("SELECT count(*) FROM page_entities").fetchone() == (5,)
+
+
+@pytest.mark.parametrize(("first", "second", "kind"), [
+    ("Kiss Anna Mária", "Anna Kiss Mária", "Person"),
+    ("Alfa Béta", "Béta Alfa", "Organization"),
+])
+def test_other_name_orders_stay_apart(first, second, kind):
+    pages = {"/0/": html("P0", "", head=ld({"@type": kind, "name": first})),
+             "/1/": html("P1", "", head=ld({"@type": kind, "name": second}))}
+    con = site(pages)
+    run_rules(con)
+    assert con.execute("SELECT count(*) FROM entities").fetchone() == (2,)
+    assert con.execute("SELECT entity_id, count(*) FROM page_entities GROUP BY ALL "
+                       "ORDER BY ALL").fetchall() == [(1, 1), (2, 1)]
+
+
+def test_anchor_goes_to_the_org_before_a_same_named_brand():
+    head = ld([{"@type": "Organization", "name": "Példa"}, {"@type": "Brand", "name": "Példa"}])
+    con = site({f"/{i}/": html(f"P{i}", "<a href='/rolunk/'>Példa</a>", head=head)
+                for i in range(3)})
+    run_rules(con)
+    assert con.execute("SELECT e.type, pe.position, count(*) FROM page_entities pe "
+                       "JOIN entities e USING (entity_id) GROUP BY ALL ORDER BY ALL").fetchall() == [
+        ("brand", "schema", 3), ("org", "anchor", 3), ("org", "schema", 3)]
+
+
+def test_navigational_home_short_and_roman_anchors_drop_out():
+    pages = {"/": html("Kezdőlap", "")}
+    pages.update({
+        f"/{i}/": html(f"P{i}", f"<p><a href='/cikk-{i % 2}/'>Tovább</a></p>"
+                                "<a href='/'>Kezdőlap</a><a href='/x/'>AB</a>"
+                                "<a href='/y/'>VII</a><a href='/z/'>Mix</a>"
+                                f"<a href='/anna-{i % 2}/'>Kiss Anna</a>",
+                     head=ld({"@type": "Person", "name": "Kiss Anna"}) if i == 1 else "")
+        for i in range(1, 4)})
+    con = site(pages)
+    run = run_rules(con)
+    assert con.execute("SELECT type, name FROM entities ORDER BY type").fetchall() == [
+        ("concept", "Mix"), ("person", "Kiss Anna")]
+    assert con.execute("SELECT count(*) FROM page_entities WHERE position = 'anchor' AND "
+                       "entity_id = (SELECT entity_id FROM entities WHERE type = 'person')"
+                       ).fetchone() == (3,)
+    assert (run.skipped["anchor_texts_navigational"], run.skipped["anchor_to_home"],
+            run.skipped["anchor_short"], run.skipped["anchor_roman_numeral"]) == (1, 3, 3, 3)
+
+
+@pytest.mark.parametrize(("anchor", "reason"), [
+    ("#", "anchor_without_letter"), ("2", "anchor_without_letter"), ("1.01", "anchor_without_letter"),
+    ("KK", "anchor_short"), ("é", "anchor_short"), ("VII", "anchor_roman_numeral"),
+    ("MIX", "anchor_roman_numeral"), ("Mix", None), ("vii", None), ("I (page 1)", None),
+    ("Next »", None),
+])
+def test_trivial_anchor(anchor, reason):
+    assert trivial_anchor(anchor) == reason
 
 
 def test_section_ordinals_match_the_headings_table():
@@ -251,7 +359,9 @@ def test_anchor_candidates_with_structural_filters():
         ["KISS ANNA", "kiss anna"],)
     # 5 oldalon az "Ugrás a tartalomra", és a /szolgaltatasok/ saját linkje.
     assert run.skipped["anchor_self_link"] == 5 + 1
-    assert run.skipped["anchor_language_switch"] == 5 + 1
+    # Az "English" 5 magyar oldalon; az angol oldal "Magyar" linkje a kezdőoldalra mutat.
+    assert run.skipped["anchor_language_switch"] == 5
+    assert run.skipped["anchor_to_home"] == 1
     assert run.skipped["anchor_without_letter"] == 5
     assert run.skipped["anchor_texts_under_min_pages"] == 1
 
@@ -260,7 +370,7 @@ def test_canonical_name_comes_from_the_creating_source():
     """A schema alakja a kanonikus név akkor is, ha az anchorok más alakja gyakoribb; a képes
     link contextje az anchor maga."""
     pages = {f"/{i}/": html(f"P{i}", "<p><a href='/anna/'>KISS ANNA</a></p>"
-                            "<div><a href='/'><img src='l.png' alt='Logó'></a></div>",
+                            "<div><a href='/rolunk/'><img src='l.png' alt='Logó'></a></div>",
                             head=ld({"@type": "Person", "name": "Kiss Anna"}) if i == 0 else "")
              for i in range(3)}
     con = site(pages)
@@ -355,26 +465,39 @@ def reference(reference_crawl):
 
 
 EXPECTED = {
-    # Schema: Organization kk.coach, két Person (a keleti és a nyugati névsorrend két entitás),
-    # szolgáltatások; brand a title-ből: kk.coach (az og:site_name és a title "Kk.coach"
-    # alakja) és KK (a " - KK" végződés 18 oldalon).
+    # Schema: Organization kk.coach, szolgáltatások, egy Person (a "Krisztian Kiss" és a "Kiss
+    # Krisztián" egy). A site neve (og:site_name, a title "Kk.coach" alakja) és a " - KK"
+    # végződés az org-hoz kerül; brand nincs.
     "kk-coach-crawl": {
-        "run": (40, 40, 82, 676, {"anchor": 522, "schema": 117, "title": 37}),
-        "entities": {("org", "kk.coach"), ("person", "Krisztian Kiss"),
-                     ("person", "Kiss Krisztián"), ("brand", "kk.coach"), ("brand", "KK"),
-                     ("place", "Worldwide"), ("service", "SEO")},
+        "run": (40, 40, 75, 594, {"anchor": 440, "schema": 117, "title": 37}),
+        "entities": {("org", "kk.coach"), ("person", "Kiss Krisztián"), ("place", "Worldwide"),
+                     ("service", "SEO")},
+        "absent": {("brand", "kk.coach"), ("brand", "KK"), ("person", "Krisztian Kiss"),
+                   ("concept", "Home"), ("concept", "Főoldal"), ("concept", "Read more")},
+        "aliases": {"kk.coach": ["KK", "Kk.coach"], "Kiss Krisztián": ["Kiss Krisztian",
+                                                                     "Krisztian Kiss"]},
     },
-    # Nincs JSON-LD a felvételben: a brand a title-ből jön, a többi anchor-jelölt.
+    # A site-on nincs JSON-LD (élőben is): a brand a title-ből jön. A "Home" és a "Főoldal" a
+    # kezdőoldalakra mutat; a "Menu" két célra (/menu/, /it/menu/): navigációs.
     "materia-crawl": {
-        "run": (14, 14, 9, 63, {"anchor": 49, "title": 14}),
-        "entities": {("brand", "Materia - Trattoria Moderna"), ("concept", "Menu"),
-                     ("concept", "Borlap"), ("concept", "Carta Vini"), ("concept", "GDPR")},
+        "run": (14, 14, 6, 33, {"anchor": 19, "title": 14}),
+        "entities": {("brand", "Materia - Trattoria Moderna"), ("concept", "Borlap"),
+                     ("concept", "Carta Vini"), ("concept", "GDPR"), ("concept", "Wine List"),
+                     ("concept", "Étlap")},
+        "absent": {("concept", "Menu"), ("concept", "Home"), ("concept", "Főoldal")},
+        "aliases": {},
     },
-    # Nincs JSON-LD; a title minden oldalon "Angular Bootstrap".
+    # Nincs JSON-LD; a title minden oldalon "Angular Bootstrap". Az "Examples", az "API" és az
+    # "Overview" 17 célra, az "ngx-bootstrap" 19 célra mutat: navigációs; a "components" a
+    # kezdőoldalra. A megmaradt 14 concept a komponens-demók linkje, mind a nem crawlolt
+    # /ngx-bootstrap-ra mutat.
     "ngx-bootstrap-crawl": {
-        "run": (69, 69, 41, 565, {"anchor": 496, "title": 69}),
-        "entities": {("brand", "Angular Bootstrap"), ("concept", "ngx-bootstrap"),
-                     ("concept", "Examples")},
+        "run": (69, 69, 15, 125, {"anchor": 56, "title": 69}),
+        "entities": {("brand", "Angular Bootstrap"), ("concept", "Previous"),
+                     ("concept", "Start 🏁")},
+        "absent": {("concept", "ngx-bootstrap"), ("concept", "Examples"), ("concept", "API"),
+                   ("concept", "components")},
+        "aliases": {},
     },
 }
 
@@ -388,6 +511,10 @@ def test_reference_entities(reference, name):
         EXPECTED[name]["run"])
     names = set(con.execute("SELECT type, name FROM entities").fetchall())
     assert EXPECTED[name]["entities"] <= names
+    assert not EXPECTED[name]["absent"] & names
+    for entity, aliases in EXPECTED[name]["aliases"].items():
+        assert con.execute("SELECT aliases FROM entities WHERE name = ?", [entity]
+                           ).fetchone() == (aliases,)
     assert con.execute("SELECT llm_calls FROM entity_runs").fetchall() == [(0,)]
     if name != "kk-coach-crawl":
         assert con.execute("SELECT count(*) FROM page_entities WHERE source = 'schema'"

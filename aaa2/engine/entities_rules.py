@@ -6,24 +6,30 @@ Csak a sikeres (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalakból dolgo
 - schema: a JSON-LD blokkok minden `@type`-os csomópontja, a beágyazottak is, ha a típusa a
   `config/schema_types.toml` leképezésében szerepel és van szöveges `name`-je → entitás a
   leképezett típussal; position = schema, evidence = a `name` értéke, source = schema.
-- brand: a site nevei → brand entitás, source = rule. A nevek: a leggyakoribb org-típusú
-  schema-név, a leggyakoribb `og:site_name`, és a title-ök ismétlődő végződései (legalább
-  `MIN_TITLE_PAGES` oldalon és a title-ös oldalak `MIN_TITLE_SHARE` részén; ami egy elfogadott
-  név végszelete, vagy egy elfogadott névre végződik, kimarad). Sor ott, ahol a név a title-ben
-  vagy az első H1-ben áll: position = title / h1, evidence = a szó szerinti részlet.
+- személynév: két `person`, ha mindkettő kéttokenes és a token-halmazuk azonos (a kulcs szerint,
+  tehát ékezet-érzéketlenül), egy entitás ("Kiss Krisztián" = "Krisztian Kiss").
+- a site neve: a leggyakoribb org-típusú schema-név, a leggyakoribb `og:site_name`, és a title-ök
+  ismétlődő végződései (legalább `MIN_TITLE_PAGES` oldalon és a title-ös oldalak
+  `MIN_TITLE_SHARE` részén; ami egy elfogadott név végszelete, vagy egy elfogadott névre végződik,
+  kimarad). Ha a név kulcsa egy talált org-é, az org kapja a sorait; ha legfeljebb
+  `SHORT_NAME_CHARS` jelű, és a jelei sorrendben benne vannak egy ilyen org nevében ("KK" a
+  "kk.coach"-ban), az org aliasa; különben brand. Sor ott, ahol a név a title-ben vagy az első
+  H1-ben áll: position = title / h1, evidence = a szó szerinti részlet, source = rule.
 - anchor: a belső linkek anchorja, ha legalább `MIN_ANCHOR_PAGES` különböző oldalon azonos
-  (kulcs szerint). Ha a kulcs egy már talált entitásé, ahhoz kerül, különben concept-jelölt;
-  position = anchor, source = rule. Kimarad a betű nélküli anchor, az oldalra önmagára mutató
-  link és a más nyelvű oldalra mutató link (nyelvváltó).
+  (kulcs szerint). Ha a kulcs egy talált entitásé, ahhoz kerül; különben concept-jelölt, ha
+  egyetlen célra mutat (két vagy több célra: navigációs, kimarad). position = anchor, source =
+  rule. Kimarad a betű nélküli, a legfeljebb 2 jelű és a csupa nagybetűs római szám anchor, az
+  oldalra önmagára, a kezdőoldalra (`site_profile.home_urls`) és a más nyelvű oldalra mutató link.
 - alias: a név kulcsa (`alias_key`) kisbetűs, ékezet és kötőjel nélküli; egy kulcs és típus egy
   entitás, a többi írásmód az `aliases`-ben.
+- kanonikus név: a legerősebb forrás (schema > title / H1 > anchor) alakjai közül az ékezetes,
+  azon belül a leggyakoribb; a csak title-ből jött brandnél az elsőbbségi sor első neve.
 - context: anchornál az oldalon az első ilyen anchor legközelebbi blokk-ősének szövege (ha üres,
   mint a képes linknél, az anchor maga), schemánál a csomópont JSON-ja, title-nél és H1-nél a
-  teljes szöveg. A kanonikus név a brandnél az elsőbbségi sor első neve, máshol a létrehozó
-  forrás (schema, anchor) leggyakoribb alakja. section_ordinal: az elem előtti utolsó heading `headings.ordinal`-ja;
-  0, ha nincs előtte heading (a `<head>` is ez); a H1 sora a saját ordinalja.
-- lang: az entitás sorainak oldalain a leggyakoribb elsődleges nyelvi címke; ha nincs, a site
-  első nyelve.
+  teljes szöveg. section_ordinal: az elem előtti utolsó heading `headings.ordinal`-ja; 0, ha
+  nincs előtte heading (a `<head>` is ez); a H1 sora a saját ordinalja.
+- lang: azoknak az oldalaknak a leggyakoribb elsődleges nyelvi címkéje, ahol a kanonikus alak
+  előfordul; ha ilyen nincs, az entitás összes oldaláé; ha az sincs, a site első nyelve.
 
 Újrafuttatható: a futás a korábbi schema- és rule-sorokat cseréli; a (kulcs, típus) szerint
 azonos entitás az azonosítóját megtartja, a más forrású sorok és entitásaik megmaradnak.
@@ -46,16 +52,21 @@ import zstandard
 from selectolax.parser import HTMLParser, Node
 
 from aaa2.engine.parse import HEADING_TAGS, anchor_text, schema_items
+from aaa2.engine.site_profile import home_urls
 from aaa2.llm.schemas import ENTITY_TYPES
 
 SCHEMA_TYPES_FILE = Path(__file__).parent / "config" / "schema_types.toml"
 MIN_ANCHOR_PAGES = 3
 MIN_TITLE_PAGES = 3
 MIN_TITLE_SHARE = 0.25
+SHORT_NAME_CHARS = 4
+MAX_TRIVIAL_ANCHOR_CHARS = 2
 CONTEXT_CHARS = 500
 TITLE_SEPARATORS = (" | ", " - ", " – ", " — ", " · ", " :: ", " » ", " • ")
+# A forrás erőssége a kanonikus névhez: kisebb az erősebb.
+SOURCE_RANK = {"schema": 0, "title": 1, "h1": 1, "anchor": 2}
 # Egy anchor ehhez a típushoz kerül elsőnek, ha a kulcsa több talált entitásé is.
-ATTACH_ORDER = ("brand", "org", "person", "product", "service", "event", "work", "place",
+ATTACH_ORDER = ("org", "brand", "person", "product", "service", "event", "work", "place",
                 "tech", "concept")
 
 _SKIPPED_ANCESTORS = frozenset({"noscript", "template"})
@@ -66,6 +77,7 @@ _BLOCK_TAGS = frozenset({
 _DASHES = frozenset("-‐‑‒–—―−")
 _TRAILING_SEPARATORS = re.compile(r"[\s|\-–—·:»•]+$")
 _WHITESPACE = re.compile(r"\s+")
+_ROMAN = re.compile(r"(?=[ivxlcdm]+$)m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})")
 # Egy szó belsejében álló írásjel ("kk.coach", "a_b"): a határvizsgálat ezeken nem ugrik át.
 _INNER_PUNCTUATION = frozenset("._@/&+'")
 
@@ -98,6 +110,31 @@ def find_name(text: str, key: str) -> tuple[int, int] | None:
     return None
 
 
+def is_abbreviation(short_key: str, name_key: str) -> bool:
+    """Legfeljebb `SHORT_NAME_CHARS` betű vagy szám, és sorrendben benne vannak a névben."""
+    if not _short_name(short_key):
+        return False
+    rest = iter(c for c in name_key if c.isalnum())
+    return all(char in rest for char in short_key if char.isalnum())
+
+
+def _short_name(key: str) -> bool:
+    return 0 < sum(char.isalnum() for char in key) <= SHORT_NAME_CHARS
+
+
+def trivial_anchor(anchor: str) -> str | None:
+    """A kimaradás oka, ha az anchor nem lehet entitás-jelölt: betű nélküli, a kulcsa legfeljebb
+    `MAX_TRIVIAL_ANCHOR_CHARS` jelű, vagy csupa nagybetűs római szám ("VII"; a "Mix" nem)."""
+    key = alias_key(anchor)
+    if not any(char.isalpha() for char in key):
+        return "anchor_without_letter"
+    if len(key) <= MAX_TRIVIAL_ANCHOR_CHARS:
+        return "anchor_short"
+    if anchor.strip().isupper() and _ROMAN.fullmatch(key):
+        return "anchor_roman_numeral"
+    return None
+
+
 def _normalized(text: str) -> Iterator[tuple[str, int]]:
     """(normalizált darab, eredeti index) karakterenként; az egymás utáni szóközök egy
     szóközzé, a kezdő szóköz elhagyva."""
@@ -124,6 +161,10 @@ def _boundary(text: str, position: int, step: int) -> bool:
     beyond = position + step
     return not (char in _INNER_PUNCTUATION and 0 <= beyond < len(text)
                 and text[beyond].isalnum())
+
+
+def _accented(text: str) -> bool:
+    return any(unicodedata.combining(c) for c in unicodedata.normalize("NFKD", text))
 
 
 # ---------------------------------------------------------------------------
@@ -201,15 +242,29 @@ class Mention:
 class Candidate:
     type: str
     source: str
-    names: list[str] = field(default_factory=list)      # kanonikus-jelöltek elsőbbségi sorban
-    primary: Counter[str] = field(default_factory=Counter)   # a létrehozó forrás alakjai
-    forms: Counter[str] = field(default_factory=Counter)     # minden talált alak
+    names: list[str] = field(default_factory=list)      # a site-név elsőbbségi sora (brand)
+    forms: Counter[str] = field(default_factory=Counter)
+    ranks: dict[str, int] = field(default_factory=dict)  # alak → a legerősebb forrása
     mentions: list[Mention] = field(default_factory=list)
 
+    def add_form(self, form: str, position: str, count: int = 1) -> None:
+        self.forms[form] += count
+        rank = SOURCE_RANK[position]
+        self.ranks[form] = min(rank, self.ranks.get(form, rank))
+
+    def absorb(self, other: Candidate) -> None:
+        for form, count in other.forms.items():
+            self.forms[form] += count
+            self.ranks[form] = min(other.ranks[form], self.ranks.get(form, other.ranks[form]))
+        self.mentions.extend(other.mentions)
+
     def canonical(self) -> str:
-        if self.names:
+        if self.type == "brand" and self.names:
             return self.names[0]
-        return (self.primary or self.forms).most_common(1)[0][0]
+        best = min(self.ranks.values())
+        order = list(self.ranks)
+        return max((form for form, rank in self.ranks.items() if rank == best),
+                   key=lambda f: (_accented(f), self.forms[f], -order.index(f)))
 
 
 @dataclass(frozen=True)
@@ -249,11 +304,17 @@ def run_rules(con: duckdb.DuckDBPyConnection,
     candidates: dict[tuple[str, str], Candidate] = {}
 
     _schema(con, page_ids, dom, mapping, candidates, skipped)
-    _brands(con, pages, dom, candidates, skipped)
+    _merge_person_names(candidates)
+    _site_names(con, pages, dom, candidates, skipped)
     _anchors(con, page_ids, dom, candidates, skipped)
 
     site_languages = (con.execute("SELECT languages FROM site").fetchone() or [None])[0] or []
     fallback_lang = _primary(site_languages[0]) if site_languages else None
+    keys_of: dict[int, list[tuple[str, str]]] = defaultdict(list)
+    unique: dict[int, Candidate] = {}
+    for pair, candidate in candidates.items():
+        keys_of[id(candidate)].append(pair)
+        unique.setdefault(id(candidate), candidate)
     con.begin()
     try:
         con.execute("DELETE FROM page_entities WHERE source IN ('schema', 'rule')")
@@ -262,20 +323,19 @@ def run_rules(con: duckdb.DuckDBPyConnection,
         by_position: Counter[str] = Counter()
         entity_ids: set[int] = set()
         pages_with: set[int] = set()
-        for (key, kind), candidate in candidates.items():
+        for ident, candidate in unique.items():
             if not candidate.mentions:
                 continue
             name = candidate.canonical()
             aliases = sorted({form for form in candidate.forms if form != name})
-            langs = Counter(page_lang[m.page_id] for m in candidate.mentions
-                            if page_lang.get(m.page_id))
-            lang = langs.most_common(1)[0][0] if langs else fallback_lang
-            entity_id = existing.get((key, kind))
+            lang = _language(candidate, name, page_lang) or fallback_lang
+            entity_id = next((existing[pair] for pair in keys_of[ident] if pair in existing),
+                             None)
             if entity_id is None:
                 (entity_id,) = con.execute(
                     "INSERT INTO entities (name, lang, type, aliases, source, created_at) "
                     "VALUES (?, ?, ?, ?, ?, ?) RETURNING entity_id",
-                    [name, lang, kind, aliases, candidate.source, started],
+                    [name, lang, candidate.type, aliases, candidate.source, started],
                 ).fetchone()
             else:
                 con.execute(
@@ -345,9 +405,7 @@ def _schema(con, page_ids, dom, mapping, candidates, skipped) -> None:
                 continue
             key = alias_key(name)
             candidate = candidates.setdefault((key, kind), Candidate(kind, "schema"))
-            form = html_lib.unescape(name).strip()
-            candidate.primary[form] += 1
-            candidate.forms[form] += 1
+            candidate.add_form(html_lib.unescape(name).strip(), "schema")
             mention = per_page.get((page_id, key, kind))
             if mention is None:
                 context = json.dumps(node, ensure_ascii=False, separators=(",", ":"))
@@ -362,52 +420,97 @@ def _schema(con, page_ids, dom, mapping, candidates, skipped) -> None:
         skipped["schema_without_name"] = dict(nameless.most_common())
 
 
-def _brands(con, pages, dom, candidates, skipped) -> None:
-    org_names: Counter[str] = Counter()
+def _merge_person_names(candidates) -> None:
+    """Két kéttokenes person azonos token-halmazzal egy entitás; a második kulcsa is az
+    elsőre mutat."""
+    groups: dict[frozenset[str], list[tuple[str, Candidate]]] = defaultdict(list)
     for (key, kind), candidate in candidates.items():
-        if kind == "org":
-            org_names[candidate.forms.most_common(1)[0][0]] = len(
-                {m.page_id for m in candidate.mentions})
-    site_names = Counter(name for page in dom.values() for name in set(page.site_names))
+        tokens = key.split()
+        if kind == "person" and len(tokens) == 2:
+            groups[frozenset(tokens)].append((key, candidate))
+    for members in groups.values():
+        _, keep = members[0]
+        for key, other in members[1:]:
+            keep.absorb(other)
+            candidates[(key, "person")] = keep
+
+
+def _site_names(con, pages, dom, candidates, skipped) -> None:
+    orgs = {key: candidate for (key, kind), candidate in candidates.items() if kind == "org"}
+    org_pages = Counter({candidate.canonical(): len({m.page_id for m in candidate.mentions})
+                         for candidate in orgs.values()})
+    og_names = Counter(name for page in dom.values() for name in set(page.site_names))
     titles = [title for _, _, title, _, _, _ in pages if title]
-    names = ([org_names.most_common(1)[0][0]] if org_names else []) \
-        + ([site_names.most_common(1)[0][0]] if site_names else []) \
+    names = ([org_pages.most_common(1)[0][0]] if org_pages else []) \
+        + ([og_names.most_common(1)[0][0]] if og_names else []) \
         + site_title_names(titles)
     h1_ordinals = dict(con.execute(
         "SELECT page_id, min(ordinal) FROM headings WHERE level = 1 GROUP BY page_id"
     ).fetchall())
-    without_rows = []
+
+    def mentions_of(key: str) -> list[Mention]:
+        found = []
+        for page_id, _, title, h1, _, _ in pages:
+            for position, text, section in (("title", title, 0),
+                                            ("h1", h1, h1_ordinals.get(page_id, 0))):
+                span = find_name(text or "", key)
+                if span:
+                    found.append(Mention(page_id, position, text[span[0]:span[1]], text,
+                                         section, "rule"))
+        return found
+
+    site_orgs: list[tuple[str, Candidate]] = []
+    short: list[tuple[str, str]] = []
+    without_rows: list[str] = []
     done: set[str] = set()
     for name in names:
         key = alias_key(name)
         if key in done:
             continue
         done.add(key)
-        candidate = candidates.get((key, "brand")) or Candidate("brand", "rule")
-        candidate.names.append(name)
-        candidate.forms[name] += 1
-        found_any = False
-        for page_id, _, title, h1, _, _ in pages:
-            for position, text, section in (("title", title, 0),
-                                            ("h1", h1, h1_ordinals.get(page_id, 0))):
-                found = find_name(text or "", key)
-                if found:
-                    found_any = True
-                    evidence = text[found[0]:found[1]]
-                    candidate.forms[evidence] += 1
-                    candidate.mentions.append(
-                        Mention(page_id, position, evidence, text, section, "rule"))
-        if found_any or (key, "brand") in candidates:
-            candidates[(key, "brand")] = candidate
-        if not found_any:
+        if key in orgs:
+            site_orgs.append((key, orgs[key]))
+            target = orgs[key]
+        elif _short_name(key):
+            short.append((key, name))
+            continue
+        else:
+            target = candidates.get((key, "brand")) or Candidate("brand", "rule")
+            target.names.append(name)
+            target.add_form(name, "title")
+        found = mentions_of(key)
+        _attach(target, found)
+        if found and target.type == "brand":
+            candidates[(key, "brand")] = target
+        if not found:
+            without_rows.append(name)
+    for key, name in short:
+        org = next((org for org_key, org in site_orgs if is_abbreviation(key, org_key)), None)
+        target = org or candidates.get((key, "brand")) or Candidate("brand", "rule", [name])
+        found = mentions_of(key)
+        _attach(target, found)
+        if org is not None:
+            candidates[(key, "org")] = org
+        elif found:
+            target.add_form(name, "title")
+            candidates[(key, "brand")] = target
+        if not found:
             without_rows.append(name)
     if without_rows:
-        skipped["brand_not_in_title_or_h1"] = without_rows
+        skipped["site_name_not_in_title_or_h1"] = without_rows
+
+
+def _attach(target: Candidate, mentions: list[Mention]) -> None:
+    for mention in mentions:
+        target.add_form(mention.evidence, mention.position)
+        target.mentions.append(mention)
 
 
 def _anchors(con, page_ids, dom, candidates, skipped) -> None:
+    homes = home_urls(con)
     reasons: Counter[str] = Counter()
     occurrences: dict[str, dict[int, Counter[str]]] = defaultdict(lambda: defaultdict(Counter))
+    targets: dict[str, set[str]] = defaultdict(set)
     for from_id, anchor, to_url, to_id, from_url, from_lang, to_lang in con.execute(
         "SELECT l.from_page_id, l.anchor, l.to_url, l.to_page_id, p.url, p.lang, t.lang "
         "FROM links l JOIN pages p ON p.page_id = l.from_page_id "
@@ -416,34 +519,48 @@ def _anchors(con, page_ids, dom, candidates, skipped) -> None:
         "ORDER BY l.from_page_id, l.ordinal", [page_ids],
     ).fetchall():
         key = alias_key(anchor)
-        if not any(char.isalpha() for char in key):
-            reasons["anchor_without_letter"] += 1
-        elif to_id == from_id or to_url == from_url:
-            reasons["anchor_self_link"] += 1
-        elif to_lang and from_lang and _primary(to_lang) != _primary(from_lang):
-            reasons["anchor_language_switch"] += 1
-        else:
-            occurrences[key][from_id][anchor] += 1
-    rare = 0
+        reason = trivial_anchor(anchor)
+        if reason is None:
+            if to_id == from_id or to_url == from_url:
+                reason = "anchor_self_link"
+            elif to_url in homes:
+                reason = "anchor_to_home"
+            elif to_lang and from_lang and _primary(to_lang) != _primary(from_lang):
+                reason = "anchor_language_switch"
+        if reason:
+            reasons[reason] += 1
+            continue
+        occurrences[key][from_id][anchor] += 1
+        targets[key].add(to_url)
     for key, by_page in occurrences.items():
         if len(by_page) < MIN_ANCHOR_PAGES:
-            rare += 1
+            reasons["anchor_texts_under_min_pages"] += 1
             continue
         target = next((candidates[(key, kind)] for kind in ATTACH_ORDER
                        if (key, kind) in candidates and kind != "concept"), None)
         if target is None:
+            if len(targets[key]) > 1:
+                reasons["anchor_texts_navigational"] += 1
+                continue
             target = candidates.setdefault((key, "concept"), Candidate("concept", "rule"))
         for page_id, forms in by_page.items():
             evidence = forms.most_common(1)[0][0]
             context, section = dom[page_id].anchors.get(evidence, (evidence, 0))
-            target.forms.update(forms)
-            if target.type == "concept":
-                target.primary.update(forms)
+            for form, count in forms.items():
+                target.add_form(form, "anchor", count)
             target.mentions.append(Mention(page_id, "anchor", evidence, context, section,
                                            "rule", sum(forms.values())))
-    if rare:
-        reasons["anchor_texts_under_min_pages"] = rare
     skipped.update(dict(reasons))
+
+
+def _language(candidate: Candidate, name: str, page_lang: dict[int, str | None]) -> str | None:
+    canonical_pages = [m.page_id for m in candidate.mentions
+                       if html_lib.unescape(m.evidence).strip() == name]
+    for page_ids in (canonical_pages, [m.page_id for m in candidate.mentions]):
+        langs = Counter(page_lang[p] for p in page_ids if page_lang.get(p))
+        if langs:
+            return langs.most_common(1)[0][0]
+    return None
 
 
 # ---------------------------------------------------------------------------
