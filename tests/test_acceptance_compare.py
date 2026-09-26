@@ -129,6 +129,15 @@ def test_robots_explains_only_sf_url(tmp_path):
             "explanation": "robots", "note": ""} in result.url_rows
 
 
+def test_cdn_infrastructure_is_scope(tmp_path):
+    """A Cloudflare e-mail-védelme (`/cdn-cgi/`) nem a site része: csak SF-ben szerepelhet."""
+    rows = [*SF_ROWS, ("https://pelda.hu/cdn-cgi/l/email-protection", 404, "", 3, 3, "", "")]
+    result = compare(read_sf_csv(sf_csv(tmp_path / "i.csv", rows)), load_site(aaa_db()))
+    row = next(r for r in result.url_rows if "cdn-cgi" in str(r["url"]) and r["side"] == "csak_sf")
+    assert (row["url"], row["explanation"]) == ("https://pelda.hu/cdn-cgi/l/email-protection",
+                                                "scope")
+
+
 def test_discovery_notes(tmp_path):
     """Csak SF: melyik linktípusból és honnan ismeri az SF; csak aaa: honnan ismeri az aaa."""
     links = [
@@ -191,15 +200,17 @@ def link(source, destination, origin="HTML & Rendered HTML"):
 
 SF_LINKS = [
     link("/", "/a/"), link("/", "/a/"), link("/", "/b/"), link("/", "/r/", "Rendered HTML"),
-    link("/", "/noidx/"), link("/", "/cdn-cgi/l/email-protection", "HTML"),
+    link("/", "/noidx/"), link("/", "/regi-menu/", "HTML"), link("/", "/regi-menu/", "HTML"),
     link("/", "/cdn-cgi/l/email-protection", "HTML"),
+    link("/", "/cdn-cgi/l/email-protection", "HTML & Rendered HTML"),
     link("/a/", "/"), link("/a/", "/b/"), link("/b/", "/"), link("/b/", "/c/"),
 ]
 
 
 def test_link_level_comparison(tmp_path):
     """Linkszinten a renderelt SF-linkek számítanak: a /b/-n az SF egy /c/-re mutató linkkel
-    többet lát; a seed két csak nyers HTML-ben lévő linkje külön oszlopba kerül."""
+    többet lát; a seed két csak nyers HTML-ben lévő linkje külön oszlopba kerül; a
+    `/cdn-cgi/` linkek egyik oldalon sem számítanak."""
     result = compare(read_sf_csv(sf_csv(tmp_path / "i.csv")), load_site(aaa_db()),
                      outlinks=SF_LINKS)
     level = [r for r in result.link_rows if r["basis"] == "linkszint"]
@@ -209,7 +220,7 @@ def test_link_level_comparison(tmp_path):
         ("https://pelda.hu/b/", "unique_outlinks", 2, 1, "https://pelda.hu/c/×1", ""),
     ]
     assert ("(`Link Origin: HTML`; az aaa renderelt DOM-jában nincsenek): 2 link 1 oldalon; "
-            "célok: https://pelda.hu/cdn-cgi/l/email-protection/×2.") in result.summary
+            "célok: https://pelda.hu/regi-menu/×2.") in result.summary
     assert "- **Belső linkek ±5%, linkszinten (renderelt DOM):** NEM, 2 tűrésen kívüli sor." in (
         result.summary)
 

@@ -3,19 +3,19 @@
     python -m tests.acceptance.verify_sf_config tests/acceptance/aaa2-acceptance.seospiderconfig
     python -m tests.acceptance.verify_sf_config tests/acceptance/aaa2-acceptance-ngx.seospiderconfig --ngx
 
-A próba-site minden kérést naplóz (út, User-Agent). Az SF kétszer crawlol: a gyökérből és a
-`/a/` mappából. Pontok:
+A próba-site minden kérést naplóz (út, User-Agent), a napló a kimenetre kerül. Az SF kétszer
+crawlol: a gyökérből és a `/a/` mappából. Pontok:
 
-- a UA egyezik az aaa UA-jával (Playwright Chromium);
+- a UA bájtra egyezik az aaa UA-jával (Playwright Chromium, `render.py`);
 - JS-render: a JS-sel beszúrt link célja (`/js-only/`) crawlolva;
 - robots.txt tisztelve: a tiltott `/private/x` nincs lekérve;
 - nofollow belső link követve: `/nf/` lekérve;
-- sitemap a robots.txt-ből: a csak sitemapben szereplő `/orphan/` crawlolva;
+- sitemap a robots.txt-ből: a `sitemap.xml` lekérve, a csak benne szereplő `/orphan/` crawlolva;
 - hreflang- és canonical-cél crawlolva: `/de/`, `/canon/`;
 - a kezdő mappán kívülre is megy: a `/a/`-ból indítva a `/b/` crawlolva.
 
-`--ngx`: az include-os konfiguráció ellenőrzése; a próba-site egyik URL-je sem illeszkedik a
-`/ngx-bootstrap/` include-ra, így a seeden kívül semmit nem szabad crawlolnia.
+`--ngx`: a kezdő mappára szűkített konfiguráció. A `/a/`-ból indítva a mappán belüli `/a/sub/`
+crawlolva, a mappán kívüli oldal (`/`, `/b/`, …) nincs lekérve; a robots.txt és a sitemap igen.
 """
 from __future__ import annotations
 
@@ -36,7 +36,9 @@ PAGES = {
            '<a href="/nf/" rel="nofollow">NF</a> <div id="js"></div>'
            '<script>document.getElementById("js").innerHTML=\'<a href="/js-only/">JS</a>\''
            '</script>')),
-    "/a/": ('<link rel="canonical" href="/canon/">', '<a href="/">home</a> <a href="/b/">B</a>'),
+    "/a/": ('<link rel="canonical" href="/canon/">',
+            '<a href="/">home</a> <a href="/b/">B</a> <a href="/a/sub/">sub</a>'),
+    "/a/sub/": ("", '<a href="/a/">A</a>'),
     "/b/": ("", '<a href="/">home</a>'),
     "/nf/": ("", "nofollow cél"),
     "/private/x": ("", "tiltott"),
@@ -45,6 +47,7 @@ PAGES = {
     "/de/": ("", "hreflang-cél"),
     "/canon/": ("", "canonical-cél"),
 }
+NOT_PAGES = ("/robots.txt", "/sitemap.xml")
 
 
 def serve(requests: list[tuple[str, str]]) -> ThreadingHTTPServer:
@@ -94,10 +97,20 @@ def crawl(sf_cli: Path, config: Path, url: str, out: Path) -> int:
     return completed.returncode
 
 
+def print_log(title: str, requests: list[tuple[str, str]]) -> None:
+    print(f"kérésnapló, {title}:")
+    seen: list[tuple[str, str]] = []
+    for request in requests:
+        if request not in seen:
+            seen.append(request)
+    for path, agent in seen:
+        print(f"  {path}  |  {agent}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("config", type=Path)
-    parser.add_argument("--ngx", action="store_true", help="az include-os konfiguráció")
+    parser.add_argument("--ngx", action="store_true", help="a kezdő mappára szűkített konfiguráció")
     args = parser.parse_args(argv)
     sf_cli = find_sf_cli()
     if sf_cli is None or not args.config.exists():
@@ -109,27 +122,37 @@ def main(argv: list[str] | None = None) -> int:
     base = f"http://127.0.0.1:{server.server_port}"
     with tempfile.TemporaryDirectory() as tmp:
         root_exit = crawl(sf_cli, args.config, f"{base}/", Path(tmp) / "root")
-        paths_root = {path for path, _ in requests}
-        requests_root = len(requests)
+        root = list(requests)
         folder_exit = crawl(sf_cli, args.config, f"{base}/a/", Path(tmp) / "folder")
-        paths_folder = {path for path, _ in requests[requests_root:]}
+        folder = requests[len(root):]
     server.shutdown()
-    agents = sorted({agent for path, agent in requests if path != "/robots.txt"})
-    pages = {path for path in paths_root if path in PAGES}
+    print_log(f"crawl a gyökérből ({base}/)", root)
+    print_log(f"crawl a /a/ mappából ({base}/a/)", folder)
+    root_paths, folder_paths = {p for p, _ in root}, {p for p, _ in folder}
+    agents = {agent for _, agent in requests}
+    ua_ok = agents == {expected_ua}
+    checks = [(f"UA bájtra = aaa UA ({expected_ua!r})", ua_ok)]
     if args.ngx:
-        checks = [("a seeden kívül semmit nem crawlol (include)", pages <= {"/"})]
-    else:
-        checks = [
-            ("JS-render (/js-only/)", "/js-only/" in paths_root),
-            ("robots.txt tisztelve (/private/x nincs lekérve)", "/private/x" not in paths_root),
-            ("nofollow belső link követve (/nf/)", "/nf/" in paths_root),
-            ("sitemap a robots.txt-ből (/orphan/)", "/orphan/" in paths_root),
-            ("hreflang-cél crawlolva (/de/)", "/de/" in paths_root),
-            ("canonical-cél crawlolva (/canon/)", "/canon/" in paths_root),
-            ("a kezdő mappán kívülre is megy (/a/-ból a /b/)", "/b/" in paths_folder),
+        outside = sorted(p for p in folder_paths
+                         if not p.startswith("/a/") and p not in NOT_PAGES)
+        checks += [
+            ("mappán belüli oldal crawlolva (/a/sub/)", "/a/sub/" in folder_paths),
+            (f"mappán kívüli oldal nincs lekérve (kívül: {outside})", not outside),
         ]
-    checks.insert(0, (f"UA = aaa UA ({expected_ua})", agents == [expected_ua]))
-    print(f"SF kilépési kódok: {root_exit}, {folder_exit}; kapott UA: {agents}")
+    else:
+        checks += [
+            ("JS-render (/js-only/)", "/js-only/" in root_paths),
+            ("robots.txt tisztelve (/private/x nincs lekérve)", "/private/x" not in root_paths),
+            ("nofollow belső link követve (/nf/)", "/nf/" in root_paths),
+            ("sitemap: /sitemap.xml lekérve, /orphan/ crawlolva",
+             "/sitemap.xml" in root_paths and "/orphan/" in root_paths),
+            ("hreflang-cél crawlolva (/de/)", "/de/" in root_paths),
+            ("canonical-cél crawlolva (/canon/)", "/canon/" in root_paths),
+            ("a kezdő mappán kívülre is megy (/a/-ból a /b/)", "/b/" in folder_paths),
+        ]
+    if not ua_ok:
+        checks.append((f"kapott UA: {sorted(agents)!r}", False))
+    print(f"SF kilépési kódok: {root_exit}, {folder_exit}")
     for label, ok in checks:
         print(f"  {'rendben' if ok else 'ELTÉR '}  {label}")
     return 0 if root_exit == 0 and folder_exit == 0 and all(ok for _, ok in checks) else 1

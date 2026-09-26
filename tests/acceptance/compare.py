@@ -56,7 +56,7 @@ from urllib.parse import urlsplit
 import duckdb
 
 from aaa2.engine.frontier import PRIORITY, Robots
-from aaa2.engine.normalize import UrlPolicy, is_internal, normalize
+from aaa2.engine.normalize import UrlPolicy, is_infrastructure, is_internal, normalize
 
 TOLERANCE = 0.05
 MAX_DIFF = 0.02
@@ -123,7 +123,7 @@ class AaaSite:
     rendered_bytes: int
 
     def in_sf_scope(self, url: str) -> bool:
-        if (urlsplit(url).hostname or "") != self.policy.seed_host:
+        if (urlsplit(url).hostname or "") != self.policy.seed_host or is_infrastructure(url):
             return False
         if self.exclude and self.exclude.search(url):
             return False
@@ -283,6 +283,9 @@ def compare(
 
 
 def explain_sf_only(row: SfRow, key: str, site: AaaSite) -> str:
+    """Az aaa scope-ján kívüli URL "scope", a státuszától függetlenül: az aaa le sem kéri."""
+    if not is_internal(key, site.policy) or not site.in_sf_scope(key):
+        return "scope"
     status_reason = _status_reason(row.status)
     if status_reason:
         return status_reason
@@ -290,8 +293,6 @@ def explain_sf_only(row: SfRow, key: str, site: AaaSite) -> str:
         return "noindex"
     if site.robots and not site.robots.allowed(key):
         return "robots"
-    if not is_internal(key, site.policy) or not site.in_sf_scope(key):
-        return "scope"
     if key in site.hreflang_targets:
         return "hreflang"
     if key in site.canonical_targets:

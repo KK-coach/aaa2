@@ -1,12 +1,14 @@
-"""Elfogadási futás: Screaming Frog és aaa crawl ugyanabban a percben, majd összevetés.
+"""Elfogadási futás: Screaming Frog, rögtön utána aaa crawl, majd összevetés.
 
     python -m tests.acceptance.run_acceptance all --resume-test 5
     python -m tests.acceptance.run_acceptance materia --resume-test 5
     python -m tests.acceptance.run_acceptance kk-coach --sf-csv kezi/internal_html.csv
 
-A site-ok egymás után futnak. Site-onként: előbb az SF CLI indul (`--headless --save-crawl
---config … --export-tabs "Internal:HTML,Response Codes:All"`), rögtön utána az `aaa crawl` egy
-friss adatbázisba; a kettő párhuzamosan fut. Utána a `compare.py`. A fülneveket futás előtt a
+A site-ok egymás után futnak. Site-onként: előbb az SF CLI (`--headless --save-crawl
+--config … --export-tabs "Internal:HTML,Response Codes:All"`), a vége után azonnal az
+`aaa crawl` egy friss adatbázisba; a kettő nem osztozik a gépen, az oldal/mp tiszta mérés. Utána
+a `compare.py`. Az ngx-konfigurációt indulás előtt a közösből generálja
+(`make_ngx_config.py`). A fülneveket futás előtt a
 telepített SF `--help export-tabs` és `--help bulk-export` listájából ellenőrzi, mert elírt
 névnél az export csendben elmarad. A `Links:All Outlinks` bulk export a linkszintű összevetéshez
 kell.
@@ -18,9 +20,10 @@ Futáskönyvtár: `tests/acceptance/out/<site>-<időbélyeg>/` (gitignore):
 - `sf.log`, `aaa.log`, `run.json` (parancsok, időpontok, kilépési kódok, az aaa UA-ja és
   commitja), a `compare.py` kimenete, és az `acceptance.md` a jegybe és a PR-be.
 
-`--resume-test N`: egy második, friss aaa crawl N kész oldal után leáll (a folyamat kilövése,
-lezárás és checkpoint nélkül), majd a `--resume` befejezi. Az így kapott adatbázist mezőre
-összeveti a megszakítás nélküli futáséval (`resume_diff.csv`).
+`--resume-test N`: a `--resume-on` site-okon (alapból a Materián) egy második, friss aaa crawl
+N kész oldal után leáll (a folyamat kilövése, lezárás és checkpoint nélkül), majd a `--resume`
+befejezi. Az így kapott adatbázist mezőre összeveti a megszakítás nélküli futáséval
+(`resume_diff.csv`).
 
 Kilépési kód: 0, ha minden site összevetése és `--resume` tesztje rendben van.
 """
@@ -44,7 +47,7 @@ import duckdb
 from aaa2.db.connect import db_path
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import Renderer
-from tests.acceptance import compare
+from tests.acceptance import compare, make_ngx_config
 
 ACCEPTANCE_DIR = Path(__file__).parent
 OUT_DIR = ACCEPTANCE_DIR / "out"
@@ -78,6 +81,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--sf-csv", type=Path, help="kézi SF internal_html.csv (egy site-hoz)")
     parser.add_argument("--resume-test", type=int, metavar="N",
                         help="második crawl, N kész oldal után kilőve, majd --resume")
+    parser.add_argument("--resume-on", nargs="+", default=["materia"], choices=sorted(SITES),
+                        help="a --resume-test site-jai (alapból: materia)")
     args = parser.parse_args(argv)
     names = sorted(SITES) if "all" in args.sites else args.sites
     if args.sf_csv and len(names) > 1:
@@ -85,6 +90,8 @@ def main(argv: list[str] | None = None) -> int:
 
     sf_cli = None
     if args.sf_csv is None:
+        if "ngx" in names:
+            make_ngx_config.main()
         sf_cli = find_sf_cli()
         if sf_cli is None:
             print("Nincs SF CLI; futtasd kézzel (screamingfrog.md), és add meg: --sf-csv")
@@ -100,7 +107,8 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
     user_agent = asyncio.run(aaa_user_agent())
-    results = [run_site(name, sf_cli, args.sf_csv, args.resume_test, user_agent)
+    results = [run_site(name, sf_cli, args.sf_csv,
+                        args.resume_test if name in args.resume_on else None, user_agent)
                for name in names]
     print("\n".join(f"{name}: {'rendben' if ok else 'NEM felel meg'} ({run_dir})"
                     for name, ok, run_dir in results))
@@ -128,23 +136,20 @@ def run_site(name: str, sf_cli: Path | None, sf_csv: Path | None, resume_pages: 
     }
     print(f"\n=== {name}: {site.seed}", flush=True)
 
-    sf_proc = sf_log = None
     if sf_cmd:
-        sf_log = (run_dir / "sf.log").open("w", encoding="utf-8")
-        record["sf_started"] = now()
-        sf_proc = subprocess.Popen(sf_cmd, stdout=sf_log, stderr=subprocess.STDOUT)
-    with (run_dir / "aaa.log").open("w", encoding="utf-8") as aaa_log:
-        record["aaa_started"] = now()
-        aaa_proc = subprocess.Popen(aaa_cmd, cwd=aaa_dir, stdout=aaa_log, stderr=subprocess.STDOUT)
-        record["aaa_exit"] = aaa_proc.wait()
-        record["aaa_finished"] = now()
-    if sf_proc:
-        record["sf_exit"] = sf_proc.wait()
-        record["sf_finished"] = now()
-        sf_log.close()
+        with (run_dir / "sf.log").open("w", encoding="utf-8") as sf_log:
+            record["sf_started"] = now()
+            record["sf_exit"] = subprocess.run(sf_cmd, stdout=sf_log, stderr=subprocess.STDOUT,
+                                               check=False).returncode
+            record["sf_finished"] = now()
     else:
         shutil.copyfile(sf_csv, sf_dir / "internal_html.csv")
         record["sf_csv"] = str(sf_csv)
+    with (run_dir / "aaa.log").open("w", encoding="utf-8") as aaa_log:
+        record["aaa_started"] = now()
+        record["aaa_exit"] = subprocess.run(aaa_cmd, cwd=aaa_dir, stdout=aaa_log,
+                                            stderr=subprocess.STDOUT, check=False).returncode
+        record["aaa_finished"] = now()
 
     db = aaa_dir / db_path(UrlPolicy.from_seed(site.seed).domain)
     internal_html = sf_dir / SF_EXPORT_FILES["Internal:HTML"]
@@ -275,7 +280,10 @@ def aaa_crawl_command(site: Site, *, quiet: bool = True) -> list[str]:
 def acceptance_report(record: dict, summary: str) -> str:
     lines = [summary.rstrip(), "", "### Futás", ""]
     if record.get("sf_started"):
-        lines.append(f"- **SF indult:** {record['sf_started']}, kész {record.get('sf_finished')}.")
+        gap = (datetime.fromisoformat(record["aaa_started"])
+               - datetime.fromisoformat(record["sf_finished"])).total_seconds()
+        lines.append(f"- **SF indult:** {record['sf_started']}, kész {record.get('sf_finished')}; "
+                     f"az aaa {gap:.0f} mp-cel utána indult.")
     else:
         lines.append(f"- **SF:** kézi export ({record.get('sf_csv')}).")
     lines += [
