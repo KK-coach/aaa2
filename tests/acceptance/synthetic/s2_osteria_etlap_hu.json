@@ -318,11 +318,11 @@
         "surface_forms": [
           {
             "block": "b4",
-            "text": "bivaly mozzarellával"
+            "text": "Mozzarella di Bufala Campana D.O.P."
           },
           {
             "block": "b4",
-            "text": "Mozzarella di Bufala Campana D.O.P."
+            "text": "bivaly mozzarellával"
           }
         ],
         "difficulty": "easy"
@@ -427,7 +427,11 @@
           }
         ],
         "difficulty": "easy",
-        "note": "tésztafajta"
+        "note": "tésztafajta",
+        "acceptable_subtypes": [
+          "ingredient",
+          "dish"
+        ]
       },
       {
         "canonical": "'nduja",
@@ -502,10 +506,11 @@
         "surface_forms": [
           {
             "block": "b12",
-            "text": "brontei pisztácia"
+            "text": "brontei pisztáciakrémmel"
           }
         ],
-        "difficulty": "hard"
+        "difficulty": "hard",
+        "note": "a teljes szóalak a pisztáciakrémmel; a kanonikus a Pistacchio di Bronte, a krém nem része a névnek"
       },
       {
         "canonical": "sgroppino",
@@ -518,7 +523,11 @@
             "text": "Sgroppino"
           }
         ],
-        "difficulty": "easy"
+        "difficulty": "easy",
+        "acceptable_subtypes": [
+          "dish",
+          "drink"
+        ]
       },
       {
         "canonical": "Franciacorta",
@@ -706,9 +715,11 @@
     "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
     "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
     "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
-    "example_code": "csak példakódban deklarált azonosító (osztály, változó, selector) nem entitás; dokumentált API-tag (input, output) opcionális",
+    "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
     "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
-    "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes"
+    "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
+    "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
+    "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes"
   },
   "subtype_vocabulary": {
     "service": [
@@ -728,7 +739,6 @@
     ],
     "tech": [
       "software",
-      "platform",
       "library",
       "framework",
       "language",
@@ -781,5 +791,76 @@
       "other"
     ],
     "person": []
+  },
+  "subtype_glossary": {
+    "service": {
+      "audit": "felmérés, átvilágítás",
+      "implementation": "beállítás, kiépítés, bevezetés",
+      "consulting": "tanácsadás",
+      "reporting": "riport, dashboard",
+      "training": "képzés, workshop",
+      "other": "egyéb"
+    },
+    "org": {
+      "company": "cég",
+      "restaurant": "étterem, vendéglátóhely",
+      "institution": "intézmény, szervezet",
+      "team": "csapat",
+      "other": "egyéb"
+    },
+    "tech": {
+      "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+      "library": "programkönyvtár",
+      "framework": "keretrendszer",
+      "language": "programozási nyelv",
+      "package": "telepíthető csomag (npm, pip)",
+      "component": "egy könyvtár konkrét komponense",
+      "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+      "api": "programozói interfész, amit szolgáltatásként hívnak",
+      "standard": "műszaki szabvány, specifikáció",
+      "feature": "egy szoftver funkciója",
+      "other": "egyéb"
+    },
+    "product": {
+      "dish": "étel vagy desszert az étlapon",
+      "ingredient": "alapanyag, tésztafajta",
+      "wine": "bor",
+      "drink": "ital, koktél",
+      "physical_good": "egyéb fizikai áru",
+      "other": "egyéb"
+    },
+    "concept": {
+      "method": "módszer, keretrendszer, eljárás",
+      "discipline": "szakterület",
+      "metric": "mérhető mennyiség, mutató",
+      "ui_pattern": "általános felületi minta",
+      "license": "licenc",
+      "designation": "eredetvédelmi vagy minőségi jelölés",
+      "other": "egyéb"
+    },
+    "place": {
+      "city": "város",
+      "region": "régió, tartomány",
+      "country": "ország",
+      "venue": "helyszín, épület",
+      "other": "egyéb"
+    },
+    "work": {
+      "article": "cikk",
+      "case_study": "esettanulmány",
+      "book": "könyv",
+      "course": "tanfolyam",
+      "other": "egyéb"
+    },
+    "event": {
+      "conference": "konferencia",
+      "webinar": "webinár",
+      "festival": "fesztivál",
+      "other": "egyéb"
+    },
+    "brand": {
+      "other": "egyéb"
+    },
+    "person": {}
   }
 }

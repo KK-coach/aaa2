@@ -6,11 +6,18 @@ from typing import get_args
 import pytest
 
 import tests.acceptance.synthetic_eval as se
-from aaa2.entities.blocks import BLOCK_PROMPT, block_input, block_text, check_surface
+from aaa2.entities.blocks import (
+    BLOCK_PROMPT,
+    BLOCK_PROMPT_WITH_KIND,
+    block_input,
+    block_prompt,
+    block_text,
+    check_surface,
+)
 from aaa2.llm.adapters import Reply
 from aaa2.llm.client import LLMClient, Retry
 from aaa2.llm.config import Usage, load_config
-from aaa2.llm.schemas import SUBTYPE_VOCABULARY, BlockEntity, Subtype
+from aaa2.llm.schemas import SUBTYPE_GLOSSARY, SUBTYPE_VOCABULARY, BlockEntity, Subtype
 
 CONFIG = load_config()
 PAGES = {page["page_id"]: page for page in se.load_pages()}
@@ -34,30 +41,25 @@ def test_the_three_pages():
         "s3_atlas_tabs_en": (15, 20)}
 
 
-# A referencia egyetlen szöveg szerinti alakja, amely nem teljes szóalak: a blokkban
-# „brontei pisztáciakrémmel” áll, így a szóhatáros ellenőrzésen nem megy át.
-NOT_A_FULL_WORD = {("s2_osteria_etlap_hu", "Pistacchio di Bronte", "brontei pisztácia")}
-
-
 @pytest.mark.parametrize("page_id", list(PAGES))
 def test_the_reference_itself_scores_full(page_id):
-    """A referencia szöveg szerinti alakjai szóhatárral a megadott blokkban állnak (egy ismert
-    kivétellel); a tökéletes kimenet 100%."""
+    """A referencia szöveg szerinti alakjai szóhatárral a megadott blokkban állnak; a tökéletes
+    kimenet 100%, a megnevezett és a fogalom recall is."""
     s = se.score_page(PAGES[page_id], gold_as_output(PAGES[page_id]))
-    known = {(name, text) for pid, name, text in NOT_A_FULL_WORD if pid == page_id}
-    assert {(name, text) for name, text, _ in s.fabricated} == known
-    # az ismert kivétel tétele (egyetlen alakja kiesik) hiányként számít
-    full = s.required - len(known)
-    assert (s.found, s.good, s.wrong, s.type_right) == (full, full, 0, full)
-    assert [name for name, _, _ in s.missed] == [name for name, _ in known]
+    assert (s.found, s.good, s.wrong, s.type_right, s.fabricated) == (
+        s.required, s.required, 0, s.required, [])
+    assert (s.named_found, s.concepts_found) == (s.named, s.concepts)
+    assert s.named + s.concepts == s.required
     assert (s.subtype_right, s.block_right, s.primary_found) == (
         s.subtype_total, s.block_total, s.primary_total)
 
 
-def test_subtype_vocabulary_is_the_references():
+def test_subtype_vocabulary_and_glossary_are_the_references():
     for page in PAGES.values():
         assert {k: tuple(v) for k, v in page["subtype_vocabulary"].items()} == SUBTYPE_VOCABULARY
+        assert page["subtype_glossary"] == SUBTYPE_GLOSSARY
     assert set(get_args(Subtype)) == {v for values in SUBTYPE_VOCABULARY.values() for v in values}
+    assert "platform" not in SUBTYPE_VOCABULARY["tech"]
 
 
 def test_block_prompt_v2():
@@ -71,15 +73,37 @@ def test_block_prompt_v2():
                    "A brand inside an official product name does not yield a separate entity",
                    "full word form exactly as it stands in the block, with its suffixes",
                    "call-to-action text on its own is not an entity",
-                   "declared only in example code", "named after its origin",
-                   "tech: software, platform, library"):
+                   ("Identifiers declared in example code (classes, variables, selectors) are "
+                    "not entities; packages, libraries and APIs that the code imports or uses are."),
+                   "named after its origin",
+                   "\u201ca Stripe fizetési oldala\u201d \u2192 Stripe",
+                   "\u201cShopify-integráció\u201d \u2192 Shopify",
+                   "\u201cParmigiano Reggiano-krém\u201d \u2192 Parmigiano Reggiano",
+                   ("The site's own name is a primary entity only if the page is about the "
+                    "organization itself"),
+                   ("- tech: software (szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás); "
+                    "library (programkönyvtár);")):
         assert phrase in BLOCK_PROMPT
-    for gone in ("generic noun mentioned once", "3 to 15", "heading path"):
+    for gone in ("generic noun mentioned once", "3 to 15", "heading path",
+                 "declared only in example code"):
         assert gone not in BLOCK_PROMPT
     for page in PAGES.values():            # ismert entitás és tesztoldal-példa nem kerül bele
         names = [e["canonical"] for e in page["gold"]["entities"] + page["gold"]["optional"]]
         names += [s["text"] for e in page["gold"]["entities"] for s in e["surface_forms"]]
         assert [n for n in names if len(n) > 4 and n in BLOCK_PROMPT] == []
+
+
+def test_variant_b_names_the_block_kind():
+    assert BLOCK_PROMPT_WITH_KIND.replace(
+        "each starts with its id and its kind in square brackets on its own line (for example "
+        "[b3 heading], [b7 code], [b9 cta]), followed by the block text; block_id is the id alone",
+        "each starts with its id in square brackets on its own line, followed by the block text"
+    ) == BLOCK_PROMPT
+    text = block_input(S1["site_description"], S1["blocks"], with_kind=True)
+    assert text.split("\n\n")[1:3] == ["[b0 title]\nMérési rendszer kiépítése – Lumen Growth",
+                                        "[b1 heading]\nMérési rendszer kiépítése"]
+    assert "[b15 cta]\nKérj ajánlatot" in text
+    assert block_prompt(True) == BLOCK_PROMPT_WITH_KIND and block_prompt() == BLOCK_PROMPT
 
 
 def test_block_input_puts_headings_in_order_without_heading_path():
@@ -164,9 +188,9 @@ def test_report_lists_the_errors_per_page():
         mention("b15", "Kérj ajánlatot", "Kérj ajánlatot", "concept"),
         mention("b6", "Apple", "Apple", "tech")]}, (0.0005, 100, 50))
     text = se.report_markdown("gpt-6-luna", [score])
-    assert ("| s1_lumen_meres_hu | 3.7% (1/27) | 4.0% (1/25) | 0.0% (0/2) | 50.0% (1/2) | "
-            "0.0% (0/1) | 0.0% (0/1) | 100.0% (1/1) | 0/1 | 0 | 1 / 0 | 0.00050 | 100 / 50 |"
-            ) in text
+    assert ("| s1_lumen_meres_hu | 3.7% (1/27) | 5.3% (1/19) | 0.0% (0/8) | 4.0% (1/25) | "
+            "0.0% (0/2) | 50.0% (1/2) | 0.0% (0/1) | 0.0% (0/1) | 100.0% (1/1) | 0/1 | 0 | "
+            "1 / 0 | 0.00050 | 100 / 50 |") in text
     assert "- **Hibás típus (1):** Apple: org → tech" in text
     assert "- **Téves találat, negatív (1):** Kérj ajánlatot (= „Kérj ajánlatot”)" in text
     assert "Debrecen (place, hard)" in text

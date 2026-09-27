@@ -11,23 +11,43 @@ EntityType = Literal[
 ]
 ENTITY_TYPES: tuple[str, ...] = get_args(EntityType)
 
-# Típusonként a zárt altípus-lista (személynél nincs altípus).
-SUBTYPE_VOCABULARY: dict[str, tuple[str, ...]] = {
-    "service": ("audit", "implementation", "consulting", "reporting", "training", "other"),
-    "org": ("company", "restaurant", "institution", "team", "other"),
-    "tech": ("software", "platform", "library", "framework", "language", "package", "component",
-             "api_symbol", "api", "standard", "feature", "other"),
-    "product": ("dish", "ingredient", "wine", "drink", "physical_good", "other"),
-    "concept": ("method", "discipline", "metric", "ui_pattern", "license", "designation", "other"),
-    "place": ("city", "region", "country", "venue", "other"),
-    "work": ("article", "case_study", "book", "course", "other"),
-    "event": ("conference", "webinar", "festival", "other"),
-    "brand": ("other",),
-    "person": (),
+# Típusonként a zárt altípus-lista és a magyarázata (személynél nincs altípus).
+SUBTYPE_GLOSSARY: dict[str, dict[str, str]] = {
+    "service": {"audit": "felmérés, átvilágítás",
+                "implementation": "beállítás, kiépítés, bevezetés",
+                "consulting": "tanácsadás", "reporting": "riport, dashboard",
+                "training": "képzés, workshop", "other": "egyéb"},
+    "org": {"company": "cég", "restaurant": "étterem, vendéglátóhely",
+            "institution": "intézmény, szervezet", "team": "csapat", "other": "egyéb"},
+    "tech": {"software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+             "library": "programkönyvtár", "framework": "keretrendszer",
+             "language": "programozási nyelv", "package": "telepíthető csomag (npm, pip)",
+             "component": "egy könyvtár konkrét komponense",
+             "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+             "api": "programozói interfész, amit szolgáltatásként hívnak",
+             "standard": "műszaki szabvány, specifikáció", "feature": "egy szoftver funkciója",
+             "other": "egyéb"},
+    "product": {"dish": "étel vagy desszert az étlapon", "ingredient": "alapanyag, tésztafajta",
+                "wine": "bor", "drink": "ital, koktél", "physical_good": "egyéb fizikai áru",
+                "other": "egyéb"},
+    "concept": {"method": "módszer, keretrendszer, eljárás", "discipline": "szakterület",
+                "metric": "mérhető mennyiség, mutató", "ui_pattern": "általános felületi minta",
+                "license": "licenc", "designation": "eredetvédelmi vagy minőségi jelölés",
+                "other": "egyéb"},
+    "place": {"city": "város", "region": "régió, tartomány", "country": "ország",
+              "venue": "helyszín, épület", "other": "egyéb"},
+    "work": {"article": "cikk", "case_study": "esettanulmány", "book": "könyv",
+             "course": "tanfolyam", "other": "egyéb"},
+    "event": {"conference": "konferencia", "webinar": "webinár", "festival": "fesztivál",
+              "other": "egyéb"},
+    "brand": {"other": "egyéb"},
+    "person": {},
 }
+SUBTYPE_VOCABULARY: dict[str, tuple[str, ...]] = {
+    kind: tuple(values) for kind, values in SUBTYPE_GLOSSARY.items()}
 Subtype = Literal[
     "audit", "implementation", "consulting", "reporting", "training", "company", "restaurant",
-    "institution", "team", "software", "platform", "library", "framework", "language", "package",
+    "institution", "team", "software", "library", "framework", "language", "package",
     "component", "api_symbol", "api", "standard", "feature", "dish", "ingredient", "wine", "drink",
     "physical_good", "method", "discipline", "metric", "ui_pattern", "license", "designation",
     "city", "region", "country", "venue", "article", "case_study", "book", "course",

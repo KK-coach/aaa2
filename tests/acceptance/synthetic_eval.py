@@ -35,7 +35,7 @@ from pathlib import Path
 import duckdb
 
 from aaa2.db.connect import DATA_DIR, connect
-from aaa2.entities.blocks import BLOCK_PROMPT, block_input, check_surface
+from aaa2.entities.blocks import block_input, block_prompt, check_surface
 from aaa2.entities.rules import alias_key
 from aaa2.llm.client import LLMError, SchemaMismatch, open_clients
 from aaa2.llm.config import load_config
@@ -59,7 +59,9 @@ def output_path(data_dir: Path, page_id: str, model: str, tag: str = "") -> Path
     return data_dir / "synthetic" / f"{page_id}.{model}{'.' + tag if tag else ''}.json"
 
 
-def run(model: str, data_dir: Path, pages: list[dict], tag: str = "") -> None:
+def run(model: str, data_dir: Path, pages: list[dict], tag: str = "",
+        with_kind: bool = False) -> None:
+    """`with_kind`: a bemenet a blokktípust is megadja az azonosító mellett (3b)."""
     provider = load_config().provider_of(model)
     if provider is None:
         raise SystemExit(f"a {model} nincs a konfigurált modellek között")
@@ -70,7 +72,7 @@ def run(model: str, data_dir: Path, pages: list[dict], tag: str = "") -> None:
         if provider not in clients:
             raise SystemExit(f"{model}: {skipped.get(provider)}")
         for page in pages:
-            record = call(clients[provider], page)
+            record = call(clients[provider], page, with_kind)
             output_path(data_dir, page["page_id"], model, tag).write_text(
                 json.dumps(record, ensure_ascii=False, indent=1), encoding="utf-8")
             print(f"{page['page_id']}: {model}: "
@@ -80,12 +82,13 @@ def run(model: str, data_dir: Path, pages: list[dict], tag: str = "") -> None:
         con.close()
 
 
-def call(client, page: dict) -> dict:
-    record = {"page_id": page["page_id"], "model": client.model, "call_id": None,
-              "primary_entities": None, "entities": None, "error": None}
-    text = block_input(page["site_description"], page["blocks"])
+def call(client, page: dict, with_kind: bool = False) -> dict:
+    record = {"page_id": page["page_id"], "model": client.model, "with_kind": with_kind,
+              "call_id": None, "primary_entities": None, "entities": None, "error": None}
+    text = block_input(page["site_description"], page["blocks"], with_kind)
     try:
-        result = client.extract(BlockExtraction, BLOCK_PROMPT, text, domain="entity")
+        result = client.extract(BlockExtraction, block_prompt(with_kind), text,
+                                domain="entity")
     except SchemaMismatch as exc:
         record.update(call_id=exc.call_id, error=f"schema_mismatch: {exc}"[:500])
         return record
@@ -111,13 +114,17 @@ class Item:
     keys: frozenset[str]
     blocks: frozenset[str]
     types: frozenset[str] = frozenset()      # a helyes típusok: `acceptable_types`, vagy a típus
+    subtypes: frozenset[str] = frozenset()   # a helyes altípusok: `acceptable_subtypes`, vagy az
+                                             # altípus
 
 
 def _items(entries: list[dict]) -> list[Item]:
     return [Item(e["canonical"], e.get("type"), e.get("subtype"), e.get("difficulty"),
                  frozenset(alias_key(n) for n in [e["canonical"], *e.get("aliases", [])]),
                  frozenset(s["block"] for s in e.get("surface_forms", [])),
-                 frozenset(e.get("acceptable_types") or [e.get("type")]))
+                 frozenset(e.get("acceptable_types") or [e.get("type")]),
+                 frozenset(alias_key(s) for s in e.get("acceptable_subtypes")
+                           or ([e["subtype"]] if e.get("subtype") else [])))
             for e in entries]
 
 
@@ -141,6 +148,10 @@ class PageScore:
     required: int = 0
     found: int = 0
     by_difficulty: dict = field(default_factory=dict)       # nehézség → [talált, összes]
+    named: int = 0                                          # nem concept típusú kötelező
+    named_found: int = 0
+    concepts: int = 0                                       # concept típusú kötelező
+    concepts_found: int = 0
     good: int = 0
     wrong: int = 0
     neutral: int = 0
@@ -213,11 +224,16 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
     for item in required:
         tally = score.by_difficulty.setdefault(item.difficulty or "?", [0, 0])
         tally[1] += 1
+        concept = item.type == "concept"
+        score.concepts += concept
+        score.named += not concept
         group = hits.get(item)
         if group is None:
             score.missed.append((item.canonical, item.difficulty, item.type))
             continue
         score.found += 1
+        score.concepts_found += concept
+        score.named_found += not concept
         tally[0] += 1
         if group.type in item.types:
             score.type_right += 1
@@ -225,7 +241,7 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
             score.wrong_types.append((item.canonical, item.type, group.type))
         if item.subtype:
             score.subtype_total += 1
-            if alias_key(group.subtype or "") == alias_key(item.subtype):
+            if alias_key(group.subtype or "") in item.subtypes:
                 score.subtype_right += 1
             else:
                 score.wrong_subtypes.append((item.canonical, item.subtype, group.subtype))
@@ -253,28 +269,18 @@ def _pct(part: int, whole: int) -> str:
     return f"{part / whole * 100:.1f}% ({part}/{whole})" if whole else "—"
 
 
-def report_markdown(model: str, scores: list[PageScore]) -> str:
-    lines = [f"# Mesterséges oldalak: `{model}`, blokkos prompt v2, egész oldal", "",
-             ("Pontozás a nyers kimenetből. Találat: a kanonikus név vagy a szöveg szerinti alak "
-              "kulcsa (kis-nagybetű, ékezet, kötőjel nélkül) egyezik a referencia kanonikus "
-              "nevével vagy egy aliasával. Precizitás: negatív és referencián kívüli találat "
-              "hiba, opcionális semleges."), "",
-             ("| oldal | recall | recall: easy | recall: hard | precizitás | típus | altípus | "
-              "forrásblokk | primary | kitalált | hiba (neg. / kívüli) | USD | token be / ki |"),
-             "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
-    total = PageScore("összesen")
+SUMMED = ("required", "found", "named", "named_found", "concepts", "concepts_found", "good",
+          "wrong", "type_right", "subtype_right", "subtype_total", "block_right", "block_total",
+          "primary_found", "primary_total", "tokens_in", "tokens_out")
+HEADER = ("| {first} | recall | megnevezett | fogalom | easy | hard | precizitás | típus | "
+          "altípus | forrásblokk | primary | kitalált | hiba (neg. / kívüli) | USD | token be / ki |")
+RULE = "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"
+
+
+def total_of(scores: list[PageScore], label: str = "összesen") -> PageScore:
+    total = PageScore(label)
     for s in scores:
-        easy, hard = s.by_difficulty.get("easy", [0, 0]), s.by_difficulty.get("hard", [0, 0])
-        lines.append(
-            f"| {s.page_id} | {_pct(s.found, s.required)} | {_pct(*easy)} | {_pct(*hard)} | "
-            f"{_pct(s.good, s.precision_total)} | {_pct(s.type_right, s.found)} | "
-            f"{_pct(s.subtype_right, s.subtype_total)} | {_pct(s.block_right, s.block_total)} | "
-            f"{s.primary_found}/{s.primary_total} | {len(s.fabricated)} | "
-            f"{len(s.negatives_hit)} / {len(s.unlisted)} | {s.cost_usd:.5f} | "
-            f"{s.tokens_in} / {s.tokens_out} |")
-        for name in ("required", "found", "good", "wrong", "type_right", "subtype_right",
-                     "subtype_total", "block_right", "block_total", "primary_found",
-                     "primary_total", "tokens_in", "tokens_out"):
+        for name in SUMMED:
             setattr(total, name, getattr(total, name) + getattr(s, name))
         total.cost_usd += s.cost_usd
         total.fabricated += s.fabricated
@@ -284,18 +290,42 @@ def report_markdown(model: str, scores: list[PageScore]) -> str:
             tally = total.by_difficulty.setdefault(level, [0, 0])
             tally[0] += found
             tally[1] += all_
+    return total
+
+
+def table_row(label: str, s: PageScore) -> str:
+    easy, hard = s.by_difficulty.get("easy", [0, 0]), s.by_difficulty.get("hard", [0, 0])
+    return (f"| {label} | {_pct(s.found, s.required)} | {_pct(s.named_found, s.named)} | "
+            f"{_pct(s.concepts_found, s.concepts)} | {_pct(*easy)} | {_pct(*hard)} | "
+            f"{_pct(s.good, s.precision_total)} | {_pct(s.type_right, s.found)} | "
+            f"{_pct(s.subtype_right, s.subtype_total)} | {_pct(s.block_right, s.block_total)} | "
+            f"{s.primary_found}/{s.primary_total} | {len(s.fabricated)} | "
+            f"{len(s.negatives_hit)} / {len(s.unlisted)} | {s.cost_usd:.5f} | "
+            f"{s.tokens_in} / {s.tokens_out} |")
+
+
+def comparison_markdown(rows: list[tuple[str, list[PageScore]]]) -> str:
+    """Több kör vagy változat összesítve, egymás alatt; alatta oldalanként is."""
+    lines = [HEADER.format(first="kör"), RULE]
+    lines += [table_row(f"**{label}**", total_of(scores)) for label, scores in rows]
+    for page_id in [s.page_id for s in rows[0][1]]:
+        lines += ["", f"### {page_id}", "", HEADER.format(first="kör"), RULE]
+        lines += [table_row(label, s) for label, scores in rows for s in scores
+                  if s.page_id == page_id]
+    return "\n".join(lines) + "\n"
+
+
+def report_markdown(model: str, scores: list[PageScore]) -> str:
+    lines = [f"# Mesterséges oldalak: `{model}`, blokkos prompt, egész oldal", "",
+             ("Pontozás a nyers kimenetből. Találat: a kanonikus név vagy a szöveg szerinti alak "
+              "kulcsa (kis-nagybetű, ékezet, kötőjel nélkül) egyezik a referencia kanonikus "
+              "nevével vagy egy aliasával. Megnevezett: a nem concept típusú kötelező tétel; "
+              "fogalom: a concept típusú. Precizitás: negatív és referencián kívüli találat hiba, "
+              "opcionális semleges."), "",
+             HEADER.format(first="oldal"), RULE]
+    lines += [table_row(s.page_id, s) for s in scores]
     if len(scores) > 1:
-        easy = total.by_difficulty.get("easy", [0, 0])
-        hard = total.by_difficulty.get("hard", [0, 0])
-        lines.append(
-            f"| **összesen** | {_pct(total.found, total.required)} | {_pct(*easy)} | "
-            f"{_pct(*hard)} | {_pct(total.good, total.precision_total)} | "
-            f"{_pct(total.type_right, total.found)} | "
-            f"{_pct(total.subtype_right, total.subtype_total)} | "
-            f"{_pct(total.block_right, total.block_total)} | "
-            f"{total.primary_found}/{total.primary_total} | {len(total.fabricated)} | "
-            f"{len(total.negatives_hit)} / {len(total.unlisted)} | {total.cost_usd:.5f} | "
-            f"{total.tokens_in} / {total.tokens_out} |")
+        lines.append(table_row("**összesen**", total_of(scores)))
     for s in scores:
         lines += ["", f"## {s.page_id}", "", f"Említés a kimenetben: {s.mentions}.", ""]
         lines.append(f"- **Kihagyott kötelező ({len(s.missed)}):** " + (", ".join(
@@ -344,12 +374,14 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("command", choices=["run", "report"])
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--tag", default="", help="a kör címkéje (r1, r2, …)")
+    parser.add_argument("--variant", choices=["a", "b"], default="a",
+                        help="b: a blokktípus is a bemenetben ([b12 code])")
     parser.add_argument("--data-dir", type=Path, default=DATA_DIR / "compare")
     parser.add_argument("--out", type=Path, default=OUT_DIR)
     args = parser.parse_args(argv)
     pages = load_pages()
     if args.command == "run":
-        run(args.model, args.data_dir, pages, args.tag)
+        run(args.model, args.data_dir, pages, args.tag, with_kind=args.variant == "b")
     args.out.mkdir(parents=True, exist_ok=True)
     out = args.out / f"{args.model}{'-' + args.tag if args.tag else ''}-report.md"
     out.write_text(report_markdown(args.model, measure(args.model, args.data_dir, pages,
