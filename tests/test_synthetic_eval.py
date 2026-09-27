@@ -180,7 +180,7 @@ def test_score_page_classifies_every_output():
     assert s.fabricated == [("Google Analytics 4", "Google Analytics", "b2"), ("GA4", "GA4", "b99")]
     assert (s.primary_found, s.primary_total, s.extra_primary) == (0, 1, ["Lumen Growth"])
     assert (s.cost_usd, s.tokens_in, s.tokens_out, s.mentions) == (0.0012, 3000, 800, 9)
-    assert ("Debrecen", "hard", "place") in s.missed
+    assert ("Debrecen", "hard", "place", "felismerési") in s.missed
 
 
 def test_report_lists_the_errors_per_page():
@@ -193,7 +193,7 @@ def test_report_lists_the_errors_per_page():
             "1 / 0 | 0.00050 | 100 / 50 |") in text
     assert "- **Hibás típus (1):** Apple: org → tech" in text
     assert "- **Téves találat, negatív (1):** Kérj ajánlatot (= „Kérj ajánlatot”)" in text
-    assert "Debrecen (place, hard)" in text
+    assert "Debrecen (place, hard, felismerési)" in text
 
 
 class Scripted:
@@ -221,3 +221,80 @@ def test_call_sends_the_block_input_and_keeps_the_raw_output(tmp_path):
         "gpt-6-luna", ["Mérési rendszer kiépítése"], 37)
     bad = se.call(client, S1)
     assert bad["call_id"] is not None and bad["error"].startswith("schema_mismatch: ")
+
+
+S2 = PAGES["s2_osteria_etlap_hu"]
+
+
+def test_recognition_and_naming_are_separate():
+    """Felismerés: átfedő szöveg szerinti alak ugyanabban a blokkban; elnevezés: az átfedő
+    említés kanonikus neve a referencia neve vagy aliasa."""
+    output = {"primary_entities": [], "entities": [
+        # az egész listasor egy entitás: a paccheri, a 'nduja és a Tropea-hagyma felismert,
+        # de rosszul elnevezett
+        mention("b9", "Paccheri 'nduja krémmel és édes Tropea-hagymával",
+                "Paccheri 'nduja krémmel", "product", "dish"),
+        # a krém a névhez tapad: felismert, rossz név
+        mention("b12", "brontei pisztáciakrémmel", "brontei pisztáciakrém", "product",
+                "ingredient"),
+        mention("b12", "Cannolo", "cannolo", "product", "dish"),          # felismert, jó név
+        mention("b2", "Szicíliából", "Szicília", "place", "region"),       # felismert, jó név
+    ]}
+    s = se.score_page(S2, output)
+    assert (s.recognized_named, s.well_named_named) == (6, 2)
+    reasons = {name: why for name, _, _, why in s.missed}
+    assert reasons["paccheri"] == reasons["'nduja"] == reasons["Tropea-hagyma"] == "elnevezési"
+    assert reasons["Pistacchio di Bronte"] == "elnevezési"
+    assert reasons["caprese"] == "felismerési"
+    assert (s.found, s.good_named, s.wrong_named) == (2, 2, 2)
+
+
+def test_empty_primary_reference_wants_an_empty_list():
+    assert se.score_page(S2, {"primary_entities": [], "entities": []}).primary_found == 1
+    s = se.score_page(S2, {"primary_entities": ["Osteria Lucia"], "entities": []})
+    assert (s.primary_found, s.primary_total, s.extra_primary) == (0, 1, ["Osteria Lucia"])
+
+
+def test_consensus_union_and_majority():
+    runs = [
+        {"page_id": "x", "primary_entities": ["A"], "entities": [
+            mention("b1", "A", "A", "tech"), mention("b2", "B", "B", "tech")]},
+        {"page_id": "x", "primary_entities": ["A", "C"], "entities": [
+            mention("b1", "A", "a", "tech"), mention("b3", "C", "C", "tech")]},
+        {"page_id": "x", "primary_entities": [], "entities": None, "error": "call_error: x"},
+        {"page_id": "x", "primary_entities": ["A"], "entities": [
+            mention("b2", "B", "B", "tech")]},
+    ]
+    union = se.consensus(runs, majority=False)
+    majority = se.consensus(runs, majority=True)          # 3 sikeres futás: legalább 2
+    assert [e["canonical_name"] for e in union["entities"]] == ["A", "B", "a", "C", "B"]
+    assert [e["canonical_name"] for e in majority["entities"]] == ["A", "B", "a", "B"]
+    assert (union["primary_entities"], majority["primary_entities"]) == (["A", "C"], ["A"])
+
+
+def test_round_row_averages_runs_and_shows_the_spread():
+    perfect = [se.score_page(page, gold_as_output(page), (0.001, 1000, 100))
+               for page in PAGES.values()]
+    empty = [se.score_page(page, {"primary_entities": [], "entities": []}, (0.001, 1000, 100))
+             for page in PAGES.values()]
+    row = se.round_row("3a", [perfect, empty])
+    assert row.startswith("| 3a | 50.0 ± 70.7 · 50.0 ± 70.7 · 50.0 ± 70.7 | 100.0 · 100.0 · 100.0 "
+                          "| 50.0 ± 70.7 · ")
+    assert row.endswith("| 3/3 / 1/3 | 0 | 0.00300 | 3000 / 300 |")
+    single = se.round_row("egy", [perfect])
+    assert single.startswith("| egy | 100.0 · 100.0 · 100.0 | 100.0 · 100.0 · 100.0 | ")
+
+
+def test_misses_list_counts_runs_and_reasons():
+    runs = [[se.score_page(S2, {"primary_entities": [], "entities": [
+        mention("b12", "brontei pisztáciakrémmel", "brontei pisztáciakrém", "product")]})]
+        for _ in range(2)]
+    runs.append([se.score_page(S2, gold_as_output(S2))])
+    majority = [se.score_page(S2, se.consensus(
+        [gold_as_output(S2), gold_as_output(S2), {"page_id": "x", "entities": []}],
+        majority=True))]
+    text = "\n".join(se.misses_markdown("3a", runs, majority))
+    assert ("  - Pistacchio di Bronte (product): 2/3 futásból kimaradt (2× elnevezési); "
+            "többségben: megvan") in text
+    assert "  - caprese (product): 2/3 futásból kimaradt (2× felismerési); többségben: megvan" \
+        in text

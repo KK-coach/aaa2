@@ -541,6 +541,21 @@
         "difficulty": "easy",
         "namespace": "@atlas-ui/tabs",
         "note": "dokumentált input/output"
+      },
+      {
+        "canonical": "type",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "type"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@atlas-ui/tabs",
+        "note": "dokumentált input, mint a vertical és a justified"
       }
     ],
     "negatives": [

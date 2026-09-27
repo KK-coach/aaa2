@@ -223,9 +223,7 @@
     }
   ],
   "gold": {
-    "primary_entities": [
-      "Osteria Lucia"
-    ],
+    "primary_entities": [],
     "entities": [
       {
         "canonical": "Osteria Lucia",
@@ -706,7 +704,8 @@
       {
         "text": "Olívaolajunkat"
       }
-    ]
+    ],
+    "primary_note": "étlapoldal: a site neve a szabály szerint nem főtéma, az 'étlap' köznév nem entitás; a helyes válasz üres lista"
   },
   "rules": {
     "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",

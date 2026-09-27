@@ -112,13 +112,19 @@ def block_input(site_description: str, blocks: Sequence[Mapping],
     return "\n\n".join(parts)
 
 
+def surface_spans(surface: str, block: Mapping) -> list[tuple[int, int]]:
+    """A `surface` szóhatáros előfordulásai (kezdet, vég) a blokk normalizált szövegében
+    (whitespace és kis-nagybetű nélkül; táblázatsornál a cellák, majd a sor szövege). Szóhatár:
+    előtte és utána nem állhat Unicode-betű."""
+    needle = normalize_text(surface)
+    if not needle:
+        return []
+    pattern = rf"(?<![^\W\d_]){re.escape(needle)}(?![^\W\d_])"
+    return [m.span() for m in re.finditer(pattern, _searchable(block))]
+
+
 def check_surface(entity: BlockEntity, blocks: Mapping[str, Mapping]) -> bool:
-    """A `surface_form` szerepel-e a megadott blokk szövegében szóhatárral: előtte és utána nem
-    állhat betű (Unicode-betű; whitespace és kis-nagybetű nélkül; táblázatsornál a cellákban
-    vagy a sor szövegében); ismeretlen blokknál nem."""
+    """A `surface_form` szerepel-e a megadott blokk szövegében szóhatárral (`surface_spans`);
+    ismeretlen blokknál nem."""
     block = blocks.get(entity.block_id)
-    surface = normalize_text(entity.surface_form)
-    if not block or not surface:
-        return False
-    pattern = rf"(?<![^\W\d_]){re.escape(surface)}(?![^\W\d_])"
-    return re.search(pattern, _searchable(block)) is not None
+    return bool(block) and bool(surface_spans(entity.surface_form, block))

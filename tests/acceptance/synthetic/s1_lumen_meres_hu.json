@@ -684,6 +684,23 @@
           }
         ],
         "difficulty": "easy"
+      },
+      {
+        "canonical": "adblocker",
+        "type": "concept",
+        "subtype": "other",
+        "aliases": [
+          "ad blocker",
+          "reklámblokkoló"
+        ],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "adblockerek"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "szoftverkategória; a definíció szerint lehet fogalom, ezért opcionális"
       }
     ],
     "negatives": [
@@ -710,9 +727,6 @@
       },
       {
         "text": "döntés"
-      },
-      {
-        "text": "adblockerek"
       },
       {
         "text": "böngészőből"
