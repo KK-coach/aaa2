@@ -1,6 +1,7 @@
 """A blokkos prompt v2 (aaa2/entities/blocks.py) és a mesterséges oldalak pontozása
 (tests/acceptance/synthetic_eval.py), hálózat nélkül."""
 import json
+from typing import get_args
 
 import pytest
 
@@ -9,7 +10,7 @@ from aaa2.entities.blocks import BLOCK_PROMPT, block_input, block_text, check_su
 from aaa2.llm.adapters import Reply
 from aaa2.llm.client import LLMClient, Retry
 from aaa2.llm.config import Usage, load_config
-from aaa2.llm.schemas import BlockEntity
+from aaa2.llm.schemas import SUBTYPE_VOCABULARY, BlockEntity, Subtype
 
 CONFIG = load_config()
 PAGES = {page["page_id"]: page for page in se.load_pages()}
@@ -33,14 +34,30 @@ def test_the_three_pages():
         "s3_atlas_tabs_en": (15, 20)}
 
 
+# A referencia egyetlen szöveg szerinti alakja, amely nem teljes szóalak: a blokkban
+# „brontei pisztáciakrémmel” áll, így a szóhatáros ellenőrzésen nem megy át.
+NOT_A_FULL_WORD = {("s2_osteria_etlap_hu", "Pistacchio di Bronte", "brontei pisztácia")}
+
+
 @pytest.mark.parametrize("page_id", list(PAGES))
 def test_the_reference_itself_scores_full(page_id):
-    """A referencia szöveg szerinti alakjai a megadott blokkban állnak; a tökéletes kimenet 100%."""
+    """A referencia szöveg szerinti alakjai szóhatárral a megadott blokkban állnak (egy ismert
+    kivétellel); a tökéletes kimenet 100%."""
     s = se.score_page(PAGES[page_id], gold_as_output(PAGES[page_id]))
-    assert (s.found, s.good, s.wrong, s.type_right, s.fabricated) == (
-        s.required, s.required, 0, s.required, [])
+    known = {(name, text) for pid, name, text in NOT_A_FULL_WORD if pid == page_id}
+    assert {(name, text) for name, text, _ in s.fabricated} == known
+    # az ismert kivétel tétele (egyetlen alakja kiesik) hiányként számít
+    full = s.required - len(known)
+    assert (s.found, s.good, s.wrong, s.type_right) == (full, full, 0, full)
+    assert [name for name, _, _ in s.missed] == [name for name, _ in known]
     assert (s.subtype_right, s.block_right, s.primary_found) == (
         s.subtype_total, s.block_total, s.primary_total)
+
+
+def test_subtype_vocabulary_is_the_references():
+    for page in PAGES.values():
+        assert {k: tuple(v) for k, v in page["subtype_vocabulary"].items()} == SUBTYPE_VOCABULARY
+    assert set(get_args(Subtype)) == {v for values in SUBTYPE_VOCABULARY.values() for v in values}
 
 
 def test_block_prompt_v2():
@@ -49,23 +66,58 @@ def test_block_prompt_v2():
         "services, and definable professional concepts. A single mention is enough. Generic "
         "nouns on their own are not entities.")
     for phrase in ("block_id", "surface_form", "canonical_name", "subtype", "at most 10 words",
-                   "primary_entities", "compound name yields a separate entity only if"):
+                   "primary_entities", "shortest full name", "possessive construction",
+                   "A general noun does not stick to a name",
+                   "A brand inside an official product name does not yield a separate entity",
+                   "full word form exactly as it stands in the block, with its suffixes",
+                   "call-to-action text on its own is not an entity",
+                   "declared only in example code", "named after its origin",
+                   "tech: software, platform, library"):
         assert phrase in BLOCK_PROMPT
-    for gone in ("generic noun mentioned once", "3 to 15"):
+    for gone in ("generic noun mentioned once", "3 to 15", "heading path"):
         assert gone not in BLOCK_PROMPT
-    for page in PAGES.values():                           # ismert entitás nem kerül a promptba
-        assert all(e["canonical"] not in BLOCK_PROMPT for e in page["gold"]["entities"]
-                   if len(e["canonical"]) > 4)
+    for page in PAGES.values():            # ismert entitás és tesztoldal-példa nem kerül bele
+        names = [e["canonical"] for e in page["gold"]["entities"] + page["gold"]["optional"]]
+        names += [s["text"] for e in page["gold"]["entities"] for s in e["surface_forms"]]
+        assert [n for n in names if len(n) > 4 and n in BLOCK_PROMPT] == []
 
 
-def test_block_input_lists_the_blocks_with_id_and_heading_path():
-    text = block_input(S1["site_description"], S1["blocks"][:4])
+def test_block_input_puts_headings_in_order_without_heading_path():
+    text = block_input(S1["site_description"], S1["blocks"][:5])
     assert text.split("\n\n") == [
         S1["site_description"],
         "[b0]\nMérési rendszer kiépítése – Lumen Growth",
-        "[b1] Mérési rendszer kiépítése\nMérési rendszer kiépítése",
-        "[b2] Mérési rendszer kiépítése\n" + S1["blocks"][2]["text"],
-        "[b3] Mérési rendszer kiépítése › Mikor van szükséged rá?\nMikor van szükséged rá?"]
+        "[b1]\nMérési rendszer kiépítése",
+        "[b2]\n" + S1["blocks"][2]["text"],
+        "[b3]\nMikor van szükséged rá?",
+        "[b4]\n" + S1["blocks"][4]["text"]]
+    assert "›" not in block_input(S1["site_description"], S1["blocks"])
+    assert S1["blocks"][4]["heading_path"] == ["Mérési rendszer kiépítése",
+                                               "Mikor van szükséged rá?"]
+
+
+@pytest.mark.parametrize(("block", "surface", "found"), [
+    ("b7", "TabsModule", True),
+    ("b7", "Tabs", False),                  # a TabsModule része: szóhatáron nem
+    ("b2", "WAI-ARIA", True),
+    ("b2", "Tabs pattern", True),
+    ("b4", "@atlas-ui/tabs", True),
+    ("b4", "tabs", True),                   # a „/” nem betű: szóhatár
+    ("b5", "Angular 17", True),
+    ("b5", "Angula", False),
+])
+def test_surface_is_searched_with_word_boundaries(block, surface, found):
+    blocks = {b["id"]: b for b in PAGES["s3_atlas_tabs_en"]["blocks"]}
+    assert check_surface(BlockEntity(**mention(block, surface, surface, "tech")), blocks) is found
+
+
+def test_hungarian_word_boundaries_use_unicode_letters():
+    blocks = {b["id"]: b for b in S1["blocks"]}
+    assert check_surface(BlockEntity(**mention("b10", "Looker Studióban", "Looker Studio",
+                                               "tech")), blocks)
+    assert not check_surface(BlockEntity(**mention("b10", "Looker Studió", "Looker Studio",
+                                                   "tech")), blocks)     # „-ban” betű követi
+    assert check_surface(BlockEntity(**mention("b8", "GA4-", "GA4", "tech")), blocks)
 
 
 def test_table_row_carries_the_column_headers():

@@ -1,12 +1,13 @@
 """Egységteszt mesterséges oldalakon: a blokkos prompt v2 egy modellel, oldalanként egy hívás,
 pontozás a referencialista ellen a nyers kimenetből.
 
-    python -m tests.acceptance.synthetic_eval run [--model gpt-6-luna]
-    python -m tests.acceptance.synthetic_eval report [--model gpt-6-luna]
+    python -m tests.acceptance.synthetic_eval run [--model gpt-6-luna] [--tag r2]
+    python -m tests.acceptance.synthetic_eval report [--model gpt-6-luna] [--tag r2]
 
 A tesztoldalak: `tests/acceptance/synthetic/*.json` (blokkok, site-leírás, referencialista:
 kötelező, opcionális, negatív). A bemenet a JSON blokkjaiból jön (`blocks.block_input`). A nyers
-kimenet `data/compare/synthetic/<oldal>.<modell>.json`; a hívások a
+kimenet `data/compare/synthetic/<oldal>.<modell>[.<címke>].json` (a `--tag` a kört
+különbözteti meg); a hívások a
 `data/compare/synthetic.duckdb` `llm_calls`-ába és a főkönyvbe kerülnek. A pontozás nem ír
 entitástárba, és nem használja az összevonási szabályokat.
 
@@ -54,11 +55,11 @@ def load_pages(pages_dir: Path = PAGES_DIR) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-def output_path(data_dir: Path, page_id: str, model: str) -> Path:
-    return data_dir / "synthetic" / f"{page_id}.{model}.json"
+def output_path(data_dir: Path, page_id: str, model: str, tag: str = "") -> Path:
+    return data_dir / "synthetic" / f"{page_id}.{model}{'.' + tag if tag else ''}.json"
 
 
-def run(model: str, data_dir: Path, pages: list[dict]) -> None:
+def run(model: str, data_dir: Path, pages: list[dict], tag: str = "") -> None:
     provider = load_config().provider_of(model)
     if provider is None:
         raise SystemExit(f"a {model} nincs a konfigurált modellek között")
@@ -70,7 +71,7 @@ def run(model: str, data_dir: Path, pages: list[dict]) -> None:
             raise SystemExit(f"{model}: {skipped.get(provider)}")
         for page in pages:
             record = call(clients[provider], page)
-            output_path(data_dir, page["page_id"], model).write_text(
+            output_path(data_dir, page["page_id"], model, tag).write_text(
                 json.dumps(record, ensure_ascii=False, indent=1), encoding="utf-8")
             print(f"{page['page_id']}: {model}: "
                   + (record["error"] or f"{len(record['entities'])} említés, "
@@ -109,12 +110,14 @@ class Item:
     difficulty: str | None
     keys: frozenset[str]
     blocks: frozenset[str]
+    types: frozenset[str] = frozenset()      # a helyes típusok: `acceptable_types`, vagy a típus
 
 
 def _items(entries: list[dict]) -> list[Item]:
     return [Item(e["canonical"], e.get("type"), e.get("subtype"), e.get("difficulty"),
                  frozenset(alias_key(n) for n in [e["canonical"], *e.get("aliases", [])]),
-                 frozenset(s["block"] for s in e.get("surface_forms", [])))
+                 frozenset(s["block"] for s in e.get("surface_forms", [])),
+                 frozenset(e.get("acceptable_types") or [e.get("type")]))
             for e in entries]
 
 
@@ -178,7 +181,7 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
                                                              call_row[1] or 0, call_row[2] or 0)
     groups: dict[str, Group] = {}
     for raw in record.get("entities") or []:
-        entity = BlockEntity(**raw)
+        entity = BlockEntity.model_construct(**raw)          # validálás nélkül: a régi kör is
         score.mentions += 1
         if not check_surface(entity, blocks):
             score.fabricated.append((entity.canonical_name, entity.surface_form, entity.block_id))
@@ -216,7 +219,7 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
             continue
         score.found += 1
         tally[0] += 1
-        if group.type == item.type:
+        if group.type in item.types:
             score.type_right += 1
         else:
             score.wrong_types.append((item.canonical, item.type, group.type))
@@ -315,13 +318,14 @@ def report_markdown(model: str, scores: list[PageScore]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def measure(model: str, data_dir: Path, pages: list[dict]) -> list[PageScore]:
+def measure(model: str, data_dir: Path, pages: list[dict], tag: str = ""
+            ) -> list[PageScore]:
     scores = []
     db = data_dir / "synthetic.duckdb"
     con = duckdb.connect(str(db), read_only=True) if db.exists() else None
     try:
         for page in pages:
-            path = output_path(data_dir, page["page_id"], model)
+            path = output_path(data_dir, page["page_id"], model, tag)
             if not path.exists():
                 continue
             record = json.loads(path.read_text(encoding="utf-8"))
@@ -339,15 +343,17 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("command", choices=["run", "report"])
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--tag", default="", help="a kör címkéje (r1, r2, …)")
     parser.add_argument("--data-dir", type=Path, default=DATA_DIR / "compare")
     parser.add_argument("--out", type=Path, default=OUT_DIR)
     args = parser.parse_args(argv)
     pages = load_pages()
     if args.command == "run":
-        run(args.model, args.data_dir, pages)
+        run(args.model, args.data_dir, pages, args.tag)
     args.out.mkdir(parents=True, exist_ok=True)
-    out = args.out / f"{args.model}-report.md"
-    out.write_text(report_markdown(args.model, measure(args.model, args.data_dir, pages)),
+    out = args.out / f"{args.model}{'-' + args.tag if args.tag else ''}-report.md"
+    out.write_text(report_markdown(args.model, measure(args.model, args.data_dir, pages,
+                                                       args.tag)),
                    encoding="utf-8")
     print(out)
 

@@ -1,44 +1,62 @@
 """Blokkformátumú LLM-kinyerés (prompt v2): a bemenet egy site-leíró sor, utána az oldal blokkjai
-azonosítóval és heading-útvonallal; a kimenet említésenként blokk-azonosító, a szöveg szerinti
-alak, a kanonikus név, típus, altípus és egy rövid leírás, továbbá a `primary_entities` lista.
+a dokumentum sorrendjében (a headingek is saját blokként), azonosítóval; a kimenet
+említésenként blokk-azonosító, a szöveg szerinti alak, a kanonikus név, típus, altípus (zárt
+lista) és egy rövid leírás, továbbá a `primary_entities` lista.
 
 - A blokkok most a mesterséges tesztoldalak JSON-jából jönnek (id, kind, heading_path, text;
-  táblázatnál cellák oszlopfejléccel); a valódi oldalak blokk-parsere külön feladat.
-- A prompt állandó; ismert entitás (a site vagy más kör találata) nem kerül bele.
-- Ellenőrzés: a `surface_form` (whitespace-normalizálva, kis-nagybetű-érzéketlenül) szerepel-e a
-  megadott blokk szövegében; ami nem, az kitalált (`check_surface`).
+  táblázatnál cellák oszlopfejléccel); a valódi oldalak blokk-parsere külön feladat. A
+  `heading_path` a blokkban marad (a kód használja), a bemenetbe nem kerül.
+- A prompt állandó; ismert entitás (a site vagy más kör találata) nem kerül bele, és a példái
+  nem a tesztoldalakról valók.
+- Ellenőrzés: a `surface_form` (whitespace-normalizálva, kis-nagybetű-érzéketlenül) szóhatárral
+  szerepel-e a megadott blokk szövegében; ami nem, az kitalált (`check_surface`).
 """
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping, Sequence
 
 from aaa2.entities.llm import TYPE_DEFINITIONS, normalize_text
-from aaa2.llm.schemas import BlockEntity
-
-HEADING_SEPARATOR = " › "
+from aaa2.llm.schemas import SUBTYPE_VOCABULARY, BlockEntity
 
 BLOCK_PROMPT = (
     "Extract every entity the page is about or mentions: named things, offered products or "
     "services, and definable professional concepts. A single mention is enough. Generic nouns "
     "on their own are not entities.\n"
     "The input starts with one line describing the website; it is not page text. Then come the "
-    "page blocks: each starts with its id in square brackets and its heading path, followed by "
-    "the block text.\n"
+    "page blocks in document order, headings included: each starts with its id in square "
+    "brackets on its own line, followed by the block text.\n\n"
+    "Rules:\n"
+    "- List each entity separately, under its shortest full name. In a possessive construction "
+    "list both the owner and the thing owned: in “a Stripe fizetési oldala” Stripe and "
+    "its payment page are two entities.\n"
+    "- A general noun does not stick to a name: “Shopify-integráció” mentions the "
+    "entity Shopify.\n"
+    "- A brand inside an official product name does not yield a separate entity: "
+    "“Adobe Photoshop” is one entity.\n"
+    "- surface_form is the full word form exactly as it stands in the block, with its suffixes "
+    "(“Shopify-integrációval”).\n"
+    "- Button, menu and call-to-action text on its own is not an entity; a name inside it is.\n"
+    "- An identifier declared only in example code (a class, a variable, a selector) is not an "
+    "entity.\n"
+    "- For a product named after its origin, the product is the entity: “pármai sonka” "
+    "is a product; the place is an entity only where the text refers to the place itself.\n"
+    "- The titles of this site's own pages are not works.\n"
+    "- Return nothing that is not on the page.\n\n"
     "Return:\n"
     "- primary_entities: the canonical names of the entities the page is mainly about (the list "
     "may be empty);\n"
     "- entities: one item for each block in which an entity is mentioned, with:\n"
     "  - block_id: the id of that block;\n"
-    "  - surface_form: the mention exactly as written in that block, inflected form included;\n"
+    "  - surface_form: as defined above;\n"
     "  - canonical_name: the entity's base name, uninflected and in full form, not translated;\n"
     "  - type: one of the types defined below;\n"
-    "  - subtype: a more specific kind (for example software, company, method, dish, city), or "
-    "null;\n"
-    "  - description: what the entity is in this text, at most 10 words.\n"
-    "A compound name yields a separate entity only if the text also refers to that part on its "
-    "own. The titles of this site's own pages are not works. Return nothing that is not on the "
-    "page.\n\n"
+    "  - subtype: one value from the subtype list of that type (null for a person);\n"
+    "  - description: what the entity is in this text, at most 10 words.\n\n"
     "Types:\n" + "\n".join(f"- {kind}: {text}" for kind, text in TYPE_DEFINITIONS.items())
+    + "\n\nSubtypes by type:\n"
+    + "\n".join(f"- {kind}: {', '.join(values) if values else 'none (null)'}"
+                for kind, values in SUBTYPE_VOCABULARY.items())
 )
 
 
@@ -57,18 +75,20 @@ def _searchable(block: Mapping) -> str:
 
 
 def block_input(site_description: str, blocks: Sequence[Mapping]) -> str:
-    """A hívás bemenete: a site-leíró sor, utána blokkonként `[id] heading-útvonal` és a
-    szöveg, üres sorral elválasztva."""
+    """A hívás bemenete: a site-leíró sor, utána blokkonként az `[id]` sor és a szöveg, üres
+    sorral elválasztva, a dokumentum sorrendjében; heading-útvonal nélkül."""
     parts = [site_description.strip()]
-    for block in blocks:
-        path = HEADING_SEPARATOR.join(block.get("heading_path") or [])
-        parts.append(f"[{block['id']}] {path}".rstrip() + "\n" + block_text(block))
+    parts += [f"[{block['id']}]\n{block_text(block)}" for block in blocks]
     return "\n\n".join(parts)
 
 
 def check_surface(entity: BlockEntity, blocks: Mapping[str, Mapping]) -> bool:
-    """A `surface_form` szerepel-e a megadott blokk szövegében (whitespace, kis-nagybetű
-    nélkül; táblázatsornál a cellákban vagy a sor szövegében); ismeretlen blokknál nem."""
+    """A `surface_form` szerepel-e a megadott blokk szövegében szóhatárral: előtte és utána nem
+    állhat betű (Unicode-betű; whitespace és kis-nagybetű nélkül; táblázatsornál a cellákban
+    vagy a sor szövegében); ismeretlen blokknál nem."""
     block = blocks.get(entity.block_id)
     surface = normalize_text(entity.surface_form)
-    return bool(block) and bool(surface) and surface in _searchable(block)
+    if not block or not surface:
+        return False
+    pattern = rf"(?<![^\W\d_]){re.escape(surface)}(?![^\W\d_])"
+    return re.search(pattern, _searchable(block)) is not None

@@ -481,6 +481,66 @@
         "difficulty": "easy",
         "namespace": "@atlas-ui/tabs",
         "note": "template-elem"
+      },
+      {
+        "canonical": "selectTab",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "selectTab"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@atlas-ui/tabs",
+        "note": "dokumentált input/output"
+      },
+      {
+        "canonical": "deselect",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "deselect"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@atlas-ui/tabs",
+        "note": "dokumentált input/output"
+      },
+      {
+        "canonical": "vertical",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "vertical"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@atlas-ui/tabs",
+        "note": "dokumentált input/output"
+      },
+      {
+        "canonical": "justified",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "justified"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@atlas-ui/tabs",
+        "note": "dokumentált input/output"
       }
     ],
     "negatives": [
@@ -492,18 +552,6 @@
       },
       {
         "text": "demo-tabs"
-      },
-      {
-        "text": "vertical"
-      },
-      {
-        "text": "justified"
-      },
-      {
-        "text": "selectTab"
-      },
-      {
-        "text": "deselect"
       },
       {
         "text": "Overview"
@@ -522,7 +570,84 @@
   "rules": {
     "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
     "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
-    "compound": "összetett névből (Meta Conversions API, San Marzano paradicsom) csak akkor lesz külön entitás, ha a szöveg önállóan is rá utal",
-    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány"
+    "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
+    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
+    "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
+    "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
+    "example_code": "csak példakódban deklarált azonosító (osztály, változó, selector) nem entitás; dokumentált API-tag (input, output) opcionális",
+    "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
+    "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes"
+  },
+  "subtype_vocabulary": {
+    "service": [
+      "audit",
+      "implementation",
+      "consulting",
+      "reporting",
+      "training",
+      "other"
+    ],
+    "org": [
+      "company",
+      "restaurant",
+      "institution",
+      "team",
+      "other"
+    ],
+    "tech": [
+      "software",
+      "platform",
+      "library",
+      "framework",
+      "language",
+      "package",
+      "component",
+      "api_symbol",
+      "api",
+      "standard",
+      "feature",
+      "other"
+    ],
+    "product": [
+      "dish",
+      "ingredient",
+      "wine",
+      "drink",
+      "physical_good",
+      "other"
+    ],
+    "concept": [
+      "method",
+      "discipline",
+      "metric",
+      "ui_pattern",
+      "license",
+      "designation",
+      "other"
+    ],
+    "place": [
+      "city",
+      "region",
+      "country",
+      "venue",
+      "other"
+    ],
+    "work": [
+      "article",
+      "case_study",
+      "book",
+      "course",
+      "other"
+    ],
+    "event": [
+      "conference",
+      "webinar",
+      "festival",
+      "other"
+    ],
+    "brand": [
+      "other"
+    ],
+    "person": []
   }
 }

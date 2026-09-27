@@ -11,6 +11,29 @@ EntityType = Literal[
 ]
 ENTITY_TYPES: tuple[str, ...] = get_args(EntityType)
 
+# Típusonként a zárt altípus-lista (személynél nincs altípus).
+SUBTYPE_VOCABULARY: dict[str, tuple[str, ...]] = {
+    "service": ("audit", "implementation", "consulting", "reporting", "training", "other"),
+    "org": ("company", "restaurant", "institution", "team", "other"),
+    "tech": ("software", "platform", "library", "framework", "language", "package", "component",
+             "api_symbol", "api", "standard", "feature", "other"),
+    "product": ("dish", "ingredient", "wine", "drink", "physical_good", "other"),
+    "concept": ("method", "discipline", "metric", "ui_pattern", "license", "designation", "other"),
+    "place": ("city", "region", "country", "venue", "other"),
+    "work": ("article", "case_study", "book", "course", "other"),
+    "event": ("conference", "webinar", "festival", "other"),
+    "brand": ("other",),
+    "person": (),
+}
+Subtype = Literal[
+    "audit", "implementation", "consulting", "reporting", "training", "company", "restaurant",
+    "institution", "team", "software", "platform", "library", "framework", "language", "package",
+    "component", "api_symbol", "api", "standard", "feature", "dish", "ingredient", "wine", "drink",
+    "physical_good", "method", "discipline", "metric", "ui_pattern", "license", "designation",
+    "city", "region", "country", "venue", "article", "case_study", "book", "course",
+    "conference", "webinar", "festival", "other",
+]
+
 
 class ExtractedEntity(BaseModel):
     name: str = Field(description="Canonical name, written as on the page, not translated.")
@@ -38,8 +61,8 @@ class BlockEntity(BaseModel):
     canonical_name: str = Field(description="The entity's base name: uninflected, in full form, "
                                             "not translated.")
     type: EntityType
-    subtype: str | None = Field(description="A more specific kind, e.g. software, company, "
-                                            "method, dish, city; null if none fits.")
+    subtype: Subtype | None = Field(description="One value from the subtype list of the "
+                                                "entity's type; null for a person.")
     description: str = Field(description="What the entity is in this text, at most 10 words.")
 
 
