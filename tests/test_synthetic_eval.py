@@ -442,3 +442,14 @@ def test_modifier_concept_rule_and_its_example_is_not_on_the_pages():
     for page in EVERY_PAGE.values():
         text = "\n".join(block_text(b) for b in page["blocks"]).casefold()
         assert "hidegen sajtol" not in text, page["page_id"]
+
+
+def test_real_development_pages_load_from_the_annotation_templates():
+    real = se.load_pages(page_set="development-real")
+    assert [page["page_id"] for page in real] == [
+        "kk_coach_meres_hu", "materia_etlap_hu", "ngx_accordion_en"]
+    for page in real:
+        assert page["set"] == "development-real"
+        assert all(block["id"].startswith("b") for block in page["blocks"])
+        assert set(page["gold"]) == {"primary_entities", "entities", "optional", "negatives"}
+    assert len(se.load_pages(page_set="all")) == len(EVERY_PAGE)

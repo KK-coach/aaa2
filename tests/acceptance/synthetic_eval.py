@@ -7,7 +7,9 @@ pontozás a referencialista ellen a nyers kimenetből.
 
 A tesztoldalak: `tests/acceptance/synthetic/*.json` (blokkok, site-leírás, referencialista:
 kötelező, opcionális, negatív). A `set` mező szerint fejlesztési (a mező nélküli oldalak, s1–s3)
-vagy általánosítási (`generalization`, s4–s6); a `--set` választ közülük (alapból fejlesztési). A bemenet a JSON blokkjaiból jön (`blocks.block_input`). A nyers
+vagy általánosítási (`generalization`, s4–s6); a `--set` választ közülük (alapból fejlesztési).
+A valódi fejlesztési oldalak (`--set development-real`) a `tests/acceptance/dev_pages/` alól
+jönnek, ugyanebben a formátumban (`tests/acceptance/annotation.py`). A bemenet a JSON blokkjaiból jön (`blocks.block_input`). A nyers
 kimenet `data/compare/synthetic/<oldal>.<modell>[.<címke>].json` (a `--tag` a kört
 különbözteti meg); a hívások a
 `data/compare/synthetic.duckdb` `llm_calls`-ába és a főkönyvbe kerülnek. A pontozás nem ír
@@ -63,6 +65,7 @@ from aaa2.llm.config import load_config
 from aaa2.llm.schemas import BlockEntity, BlockExtraction
 
 PAGES_DIR = Path(__file__).parent / "synthetic"
+DEV_PAGES_DIR = Path(__file__).parent / "dev_pages"
 OUT_DIR = Path(__file__).parent / "out" / "synthetic"
 TARGETS = (                     # (mérték, küszöb): AAAV2-42, M2 spec B
     ("felismerés/megnevezett", 0.95), ("felismerés/fogalom", 0.90), ("precizitás", 0.90),
@@ -71,11 +74,14 @@ TARGETS = (                     # (mérték, küszöb): AAAV2-42, M2 spec B
 
 
 DEVELOPMENT = "development"
-SETS = (DEVELOPMENT, "generalization", "all")
+REAL = "development-real"
+SETS = (DEVELOPMENT, "generalization", REAL, "all")
 
 
-def load_pages(pages_dir: Path = PAGES_DIR, page_set: str = DEVELOPMENT) -> list[dict]:
-    """A `page_set` oldalai (`all`: mind); a `set` mező nélküli oldal fejlesztési."""
+def load_pages(pages_dir: Path | None = None, page_set: str = DEVELOPMENT) -> list[dict]:
+    """A `page_set` oldalai (`all`: a mesterségesek mind); a `set` mező nélküli oldal
+    fejlesztési. A valódi fejlesztési oldalak (`development-real`) a `dev_pages/` alól."""
+    pages_dir = pages_dir or (DEV_PAGES_DIR if page_set == REAL else PAGES_DIR)
     pages = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(pages_dir.glob("*.json"))]
     return [page for page in pages
             if page_set == "all" or page.get("set", DEVELOPMENT) == page_set]
