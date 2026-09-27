@@ -165,9 +165,12 @@ def output_path(data_dir: Path, slug: str, model: str, mode: str) -> Path:
     return data_dir / "gold" / f"{slug}.{model}.{mode}.jsonl"
 
 
-def run(models: list[tuple[str, str]], modes: list[str], data_dir: Path) -> None:
+def run(models: list[tuple[str, str]], modes: list[str], data_dir: Path,
+        require_gold: bool = True) -> None:
+    """`require_gold=False`: a hívások a gold-listák előtt is futnak (a nyers kimenet nem függ
+    tőlük); a pontozás a listák után, hálózat nélkül."""
     missing = [slug for slug, _, _ in GOLD_PAGES if not gold_path(slug).exists()]
-    if missing:
+    if missing and require_gold:
         raise SystemExit(f"a futás a referencialistára vár; hiányzik: {missing}")
     (data_dir / "gold").mkdir(parents=True, exist_ok=True)
     for slug, name, url in GOLD_PAGES:
@@ -353,6 +356,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("command", choices=["run", "report"])
     parser.add_argument("--models", default=",".join(model for _, model in MODELS))
     parser.add_argument("--modes", default=",".join(MODES))
+    parser.add_argument("--without-gold", action="store_true",
+                        help="a hívások a gold-listák előtt (a pontozás később)")
     parser.add_argument("--data-dir", type=Path, default=DATA_DIR / "compare")
     parser.add_argument("--out", type=Path, default=OUT_DIR / "gold-report.md")
     args = parser.parse_args(argv)
@@ -363,7 +368,8 @@ def main(argv: list[str] | None = None) -> None:
     if unknown or set(modes) - set(MODES):
         parser.error(f"ismeretlen modell vagy mód: {unknown or modes}")
     if args.command == "run":
-        run([by_name[m] for m in wanted], modes, args.data_dir)
+        run([by_name[m] for m in wanted], modes, args.data_dir,
+            require_gold=not args.without_gold)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(report_markdown(measure(args.data_dir)), encoding="utf-8")
     print(args.out)
