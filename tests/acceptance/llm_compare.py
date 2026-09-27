@@ -41,7 +41,7 @@ from pathlib import Path
 import duckdb
 
 from aaa2.db.connect import DATA_DIR, connect, shared_path
-from aaa2.entities.llm import check_evidence, normalize_text, run_llm
+from aaa2.entities.llm import check_evidence, name_in_evidence, normalize_text, run_llm
 from aaa2.entities.rules import alias_key, run_rules
 from aaa2.entities.validate import RECOGNIZED, validate_entities
 from aaa2.llm.client import LLMError, SchemaMismatch, open_clients
@@ -229,7 +229,7 @@ class ModelStats:
     provider: str
     model: str = ""
     pages: int = 0                  # a minta oldalai, amelyekre hívás indult
-    # (készlet, page_id) → [visszaadott sor, fabrikált, 3–15 szón kívüli evidence]; csak a
+    # (készlet, page_id) → [visszaadott sor, fabrikált, az idézetben nincs a név]; csak a
     # séma szerinti kimenettel rendelkező oldalak
     per_page: dict = field(default_factory=dict)
     fabricated_logged: int = 0      # llm_calls.fabricated_count összege (ellenőrzés)
@@ -295,7 +295,7 @@ def collect(con: duckdb.DuckDBPyConnection, name: str, records: list[dict],
             reason = check_evidence(_Entity(entity), sources)
             counts[0] += 1
             counts[1] += reason == "fabricated"
-            counts[2] += reason == "evidence_length"
+            counts[2] += not name_in_evidence(_Entity(entity))
     for cost, tokens_in, tokens_out, latency, attempts, last_error, fabricated in con.execute(
         "SELECT cost_usd, tokens_in, tokens_out, latency_ms, attempts, last_error, "
         "fabricated_count FROM llm_calls WHERE list_contains(?, call_id)", [call_ids],
@@ -317,9 +317,10 @@ def collect(con: duckdb.DuckDBPyConnection, name: str, records: list[dict],
 
 
 class _Entity:
-    """A JSONL-sor az `ExtractedEntity` helyett (`check_evidence` csak az evidence-et olvassa)."""
+    """A JSONL-sor az `ExtractedEntity` helyett (a név és az evidence elég a méréshez)."""
 
     def __init__(self, data: dict):
+        self.name = data.get("name") or ""
         self.evidence = data.get("evidence") or ""
 
 
@@ -371,7 +372,7 @@ def report_markdown(stats: dict[str, ModelStats]) -> str:
         row("visszaadott sor", [str(c[0]) for c in counts])
         row("**fabrikáció**", [f"**{_pct(s.fabrication_rate(pages))}** ({c[1]})"
                                for s, c in zip(models, counts, strict=True)])
-        row("3–15 szón kívüli evidence", [str(c[2]) for c in counts])
+        row("az idézetben nincs a név (csak mérés)", [str(c[2]) for c in counts])
         row("(oldal, entitás) pár", [str(len(s.pairs_on(pages))) for s in models])
         row("entitás", [str(len(s.entities_on(pages))) for s in models])
         row("KG high + medium", [f"{_pct(s.kg_rate(pages))} ({len(s.recognized_on(pages))})"

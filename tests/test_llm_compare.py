@@ -40,7 +40,8 @@ def recorder(con, provider, replies, tmp_path):
 
 
 def entity(name, kind, evidence):
-    return {"name": name, "type": kind, "evidence": evidence, "context": evidence}
+    return {"name": name, "type": kind, "description": "leírás", "evidence": evidence,
+            "context": evidence}
 
 
 PAGES = {
@@ -60,10 +61,10 @@ def three_models(tmp_path):
     con = site(PAGES)
     run_rules(con)
     replies = {
-        "gemini": [{"entities": [CAFE, ANNA]}, {"entities": [FEST, FAKE]}],
+        "gemini": [{"primary_entity": "x", "entities": [CAFE, ANNA]}, {"primary_entity": "x", "entities": [FEST, FAKE]}],
         "openai": [genai_errors.ServerError(503, {"error": {"message": "túlterhelt"}}),
-                   {"entities": [CAFE]}, {"entities": [FEST]}],
-        "anthropic": [{"entities": [CAFE, ANNA]}, {"entities": "nem lista"}],
+                   {"primary_entity": "x", "entities": [CAFE]}, {"primary_entity": "x", "entities": [FEST]}],
+        "anthropic": [{"primary_entity": "x", "entities": [CAFE, ANNA]}, {"primary_entity": "x", "entities": "nem lista"}],
     }
     records = {}
     for provider, answers in replies.items():
@@ -192,7 +193,7 @@ def test_missing_only_calls_just_the_pages_without_output(tmp_path, monkeypatch)
                         lambda con, shared: type("V", (), {"statuses": {}, "navigational": 0,
                                                            "errors": {}})())
     answers = [[genai_errors.ServerError(503, {"error": {"message": "x"}})] * 4
-               + [{"entities": [FEST]}], [{"entities": [FEST]}]]
+               + [{"primary_entity": "x", "entities": [FEST]}], [{"primary_entity": "x", "entities": [FEST]}]]
 
     def clients(con):
         return {"gemini": LLMClient(con, Scripted("gemini", answers.pop(0)), CONFIG,

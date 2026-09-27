@@ -5,13 +5,18 @@
   determinisztikus kör találatai sosem kerülnek bele. A bemenet (`page_input`) csak a title, a
   headingek és a main content (`MAX_INPUT_CHARS`-nál levágva), címke nélkül, üres sorral
   elválasztva.
-- Séma: `PageExtraction` (kanonikus név, típus, evidence, context).
+- Bemenet első bekezdése: egy mondat a site-ról (`site_line`: a domain és a kezdőoldal
+  title-je); nem oldalszöveg, az evidence nem jöhet belőle.
+- Séma: `PageExtraction`: `primary_entity` (amiről az oldal szól, lehet köznév), és
+  entitásonként név, típus, `description` (mi ez az entitás ebben a szövegben), evidence,
+  context. A `primary_entity` és a `description` most nem tárolódik; a mérés a nyers kimenetből
+  olvassa.
 - Szűrés kódban: az evidence és a context elejéről és végéről leválik a szerkezeti címke
   (`strip_label`: `TITLE:`, `H1:`…`H6:`, `HEADINGS:`, `TEXT:`, a korábbi bemenet-formátumé).
   Az evidence-nek szó szerint (whitespace-normalizálva, kis-nagybetű-
   érzéketlenül) benne kell lennie a main contentben, egy headingben vagy a title-ben; ha nincs,
   fabrikált: eldobva, és az `llm_calls.fabricated_count`, az `entity_runs.fabricated` számolja.
-  A benne lévő, de nem 3–15 szavas evidence is kimarad (`evidence_length`).
+  Hosszkorlát nincs. Hogy az evidence tartalmazza-e a nevet (`name_in_evidence`), csak mérés.
 - position: title, ha az evidence a title-ben áll; h1 / heading, ha egy headingben; különben body.
   section_ordinal: a heading ordinalja; bodynál a context (ha nincs meg, az evidence) szakasza a
   renderelt DOM-ban (`rules.section_texts`), különben 0.
@@ -49,33 +54,37 @@ from aaa2.llm.client import BudgetExceeded, LLMClient, LLMError, SchemaMismatch
 from aaa2.llm.schemas import ENTITY_TYPES, ExtractedEntity, PageExtraction
 
 MAX_INPUT_CHARS = 80_000
-MIN_EVIDENCE_WORDS = 3
-MAX_EVIDENCE_WORDS = 15
 CONTEXT_CHARS = 500
 
 TYPE_DEFINITIONS = {
-    "brand": "a brand or trade name under which products or services are offered",
-    "product": "a specific product or product line",
+    "brand": "a brand or trade name that is not itself a company",
+    "product": ("goods: a product or product line, a food, a dish, a drink, a wine, a "
+                "protected-origin ingredient"),
     "service": "a service offered to customers",
     "work": "a creative work: article, book, report, course, case study, publication",
     "event": "an event held at a given time: conference, festival, workshop, webinar",
     "person": "a named individual",
-    "org": "a company, institution, association or team",
+    "org": "a company, institution, association or team; a company is org, not brand",
     "place": "a geographic place or venue: country, city, district, street, building",
-    "tech": "software, a platform, a programming tool or a technical standard",
-    "concept": "a named idea, method or discipline the text is about",
+    "tech": ("software, a platform, a digital tool or service tool, a programming library or "
+             "framework, a technical standard"),
+    "concept": "an idea, method, discipline or topic",
 }
 PROMPT = (
-    "Extract the named entities mentioned in the web page below. Use only the page text.\n"
-    "For each entity return:\n"
-    "- name: the canonical name as written on the page, in its full form, not translated;\n"
-    "- type: one of the types defined below;\n"
-    "- evidence: a verbatim quote of 3 to 15 consecutive words, copied exactly from the page, "
-    "that mentions the entity;\n"
-    "- context: the paragraph or list item that contains the evidence, copied from the page.\n"
-    "A keyword or search phrase is not an entity. A generic noun mentioned once is not a "
-    "concept. Return nothing that is not on the page; return an empty list if the page names "
-    "no entity.\n\n"
+    "List every entity the web page below is about or mentions: named things and concepts. "
+    "Use only the page text. The first paragraph of the input names the website the page "
+    "belongs to; it is not page text.\n"
+    "Return:\n"
+    "- primary_entity: the entity the page is mainly about, as written on the page (it may be "
+    "a common noun); list it among the entities too;\n"
+    "- entities, each with:\n"
+    "  - name: the canonical name as written on the page, in its full form, not translated;\n"
+    "  - type: one of the types defined below;\n"
+    "  - description: what this entity is in this text, in one short sentence;\n"
+    "  - evidence: a quote copied verbatim from the page that contains the name;\n"
+    "  - context: the paragraph or list item that contains the evidence, copied from the page.\n"
+    "A keyword or search phrase is not an entity. The titles of this site's own pages are not "
+    "works. Return nothing that is not on the page.\n\n"
     "Types:\n" + "\n".join(f"- {kind}: {text}" for kind, text in TYPE_DEFINITIONS.items())
 )
 
@@ -96,14 +105,29 @@ class LLMRun:
 
 
 def page_input(title: str | None, headings: list[tuple[int, str]],
-               main_content: str | None) -> tuple[str, bool]:
-    """A hívás bemenete: title, headingek, main content, címke nélkül, üres sorral elválasztva
-    (a modell ne lásson szerkezeti tokent, amit az idézetbe másolhat); és hogy le kellett-e
-    vágni a main contentet."""
+               main_content: str | None, site: str | None = None) -> tuple[str, bool]:
+    """A hívás bemenete: a site-ról szóló mondat (`site_line`), a title, a headingek és a main
+    content, címke nélkül, üres sorral elválasztva (a modell ne lásson szerkezeti tokent, amit az
+    idézetbe másolhat); és hogy le kellett-e vágni a main contentet."""
     text = main_content or ""
-    parts = [title or "", *(heading for _, heading in headings if heading),
-             text[:MAX_INPUT_CHARS]]
+    parts = [*([site] if site else []), title or "",
+             *(heading for _, heading in headings if heading), text[:MAX_INPUT_CHARS]]
     return "\n\n".join(parts), len(text) > MAX_INPUT_CHARS
+
+
+def site_line(con: duckdb.DuckDBPyConnection) -> str | None:
+    """Egy mondat a site-ról: a domain és a kezdőoldal title-je (`site.home_urls` első eleme; ha
+    az oszlop NULL, a seed URL), ha van."""
+    row = con.execute("SELECT domain, home_urls, seed_url FROM site").fetchone()
+    if row is None:
+        return None
+    domain, homes, seed = row
+    home = seed if homes is None else (homes[0] if homes else None)
+    title = con.execute("SELECT title FROM pages WHERE url = ?", [home]).fetchone() if home \
+        else None
+    title = " ".join((title[0] or "").split()) if title else ""
+    return (f"This page belongs to the website {domain}, whose home page is titled "
+            f"“{title}”." if title else f"This page belongs to the website {domain}.")
 
 
 # A korábbi bemenet-formátum szerkezeti címkéi (a felvett kimenetekben előfordulnak).
@@ -123,14 +147,18 @@ def normalize_text(text: str | None) -> str:
 
 
 def check_evidence(entity: ExtractedEntity, sources: list[str]) -> str | None:
-    """A kimaradás oka, vagy None: `fabricated`, ha az evidence (a címke-előtag nélkül) nincs
-    benne egyik (már normalizált) forrásban sem; `evidence_length`, ha nem 3–15 szavas."""
+    """`fabricated`, ha az evidence (a címke nélkül) nincs benne szó szerint egyik (már
+    normalizált) forrásban sem; különben None. Hosszkorlát nincs."""
     evidence = normalize_text(strip_label(entity.evidence))
     if not evidence or not any(evidence in source for source in sources):
         return "fabricated"
-    if not MIN_EVIDENCE_WORDS <= len(evidence.split()) <= MAX_EVIDENCE_WORDS:
-        return "evidence_length"
     return None
+
+
+def name_in_evidence(entity: ExtractedEntity) -> bool:
+    """Az evidence tartalmazza-e a nevet (whitespace, kis-nagybetű és ékezet nélkül); csak mérés,
+    nem szűrő."""
+    return alias_key(entity.name) in alias_key(strip_label(entity.evidence))
 
 
 def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *, limit: int | None = None,
@@ -158,6 +186,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *, limit: int | N
     ).fetchall():
         headings[page_id].append((level, text or "", ordinal))
     index = _EntityIndex(con)
+    site = site_line(con)
     decompressor = zstandard.ZstdDecompressor()
     skipped: Counter[str] = Counter()
     by_position: Counter[str] = Counter()
@@ -168,7 +197,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *, limit: int | N
     for number, (page_id, title, lang, main_content, blob) in enumerate(pages):
         page_headings = headings.get(page_id, [])
         text, truncated = page_input(title, [(level, h) for level, h, _ in page_headings],
-                                     main_content)
+                                     main_content, site)
         skipped["truncated_input"] += truncated
         done += 1
         try:
@@ -202,9 +231,6 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *, limit: int | N
                 reason = check_evidence(entity, sources)
                 if reason == "fabricated":
                     page_fabricated += 1
-                    continue
-                if reason:
-                    skipped[reason] += 1
                     continue
                 position, section = _locate(entity, title, page_headings, sections)
                 entity_id = index.resolve(con, entity, _primary(lang), started)
