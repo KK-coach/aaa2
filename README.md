@@ -7,11 +7,12 @@ A terv és a döntések a projektindítóban vannak (Claude-dokumentum, AAA v2 p
 ## Rétegek
 
 - `aaa2/engine/` — crawl motor: Playwright-render mindenre, parser, site-profil. Csak a DuckDB-be ír.
+- `aaa2/entities/` — entitás-réteg: szabály-kör, LLM-kör, KG- és Wikipedia-validálás. A motor tábláiból olvas, az entitás-táblákat tölti; a motorból csak a `parse` két segédfüggvényét importálja, a motor semmit innen.
 - `aaa2/resolver/` — szabály-vagy-LLM osztályozó, szabály-életciklussal (M4).
 - `aaa2/functions/` — gráf, site-profil, entity gap. Csak SQL a DuckDB-n.
 - `aaa2/llm/` — modellfüggetlen LLM-kliens, sémák, költségkönyvelés (`llm_calls` tábla).
 - `aaa2/db/` — séma (`001_init.sql`), kapcsolat, migrációk.
-- `aaa2/cli/` — Typer parancsok: `aaa crawl`, `aaa status`, `aaa export`.
+- `aaa2/cli/` — Typer parancsok: `aaa crawl`, `aaa entities`, `aaa validate`, `aaa status`, `aaa models`, `aaa export`.
 - `legacy/` — a v1 (`aaa-dev`) átvehető részei, csak referenciának. Nem importáljuk; darabokat emelünk át, amikor az adott modul odaér.
 - `tests/fixtures/` — rögzített renderelt válaszok a három referencia-site-ról (gitignore-olva, lokálisan felvéve).
 - `data/` — `<domain>.duckdb` és `shared.duckdb` (gitignore-olva).

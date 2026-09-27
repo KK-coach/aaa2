@@ -4,7 +4,8 @@ Csak a sikeres (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalakból dolgo
 
 - Célország: `target_country.py`, országjelek minden oldalról, súlyozott szavazás.
 - Piaci hatókör: `market_scope.py`; kezdőoldalak a seed oldal (átirányítás után) és a
-  hreflang-alternatívái.
+  hreflang-alternatívái. A kezdőoldalak URL-jei a `site.home_urls`-ba is (az entitás-réteg
+  onnan olvassa).
 - `languages`: a `pages.lang` elsődleges nyelvi címkéi (`html[lang]`, különben a `language.py`
   detekciója) oldalszám szerint csökkenő sorrendben; utánuk azok, amelyek csak hreflangban
   szerepelnek, az `x-default` nélkül. A nyelvből nem lesz ország, és az országból sem nyelv.
@@ -60,6 +61,7 @@ class SiteProfile:
     languages: tuple[str, ...]
     page_count: int
     tech_signals: tuple[str, ...]
+    home_urls: tuple[str, ...] = ()
 
 
 EMPTY_PROFILE = SiteProfile(None, None, (), None, None, (), 0, ())
@@ -71,11 +73,11 @@ def update_site_profile(con: duckdb.DuckDBPyConnection) -> SiteProfile:
     con.execute(
         "UPDATE site SET target_country = ?, target_country_confidence = ?, "
         "target_country_candidates = ?, market_scope = ?, market_scope_city = ?, "
-        "languages = ?, page_count = ?, tech_signals = ?",
+        "languages = ?, page_count = ?, tech_signals = ?, home_urls = ?",
         [profile.target_country, profile.target_country_confidence,
          json.dumps([candidate.as_dict() for candidate in profile.target_country_candidates]),
          profile.market_scope, profile.market_scope_city, list(profile.languages),
-         profile.page_count, list(profile.tech_signals)],
+         profile.page_count, list(profile.tech_signals), list(profile.home_urls)],
     )
     return profile
 
@@ -112,7 +114,8 @@ def build_profile(con: duckdb.DuckDBPyConnection) -> SiteProfile:
     target = vote(tld, country_signals)
     declared_country = tld or leader(Counter(
         country for page in country_signals for country in page.get("schema", ())))
-    home = _home_pages(con, seed_url, {row[1]: row for row in rows}, schema)
+    home_rows = _home_rows(con, seed_url, {row[1]: row for row in rows})
+    home = _home_pages(con, home_rows, schema)
     scope = market_scope(home, [item for items in schema.values() for item in items],
                          declared_country)
     return SiteProfile(
@@ -125,6 +128,7 @@ def build_profile(con: duckdb.DuckDBPyConnection) -> SiteProfile:
         page_count=len(rows),
         tech_signals=tuple(signal for signal, _ in sorted(
             tech.items(), key=lambda item: (-item[1], item[0]))),
+        home_urls=tuple(row[1] for row in home_rows),
     )
 
 
@@ -165,25 +169,9 @@ def tech_path_patterns() -> tuple[re.Pattern[str], ...]:
     return tuple(re.compile(line) for line in lines if line.strip() and not line.startswith("#"))
 
 
-def home_urls(con: duckdb.DuckDBPyConnection) -> set[str]:
-    """A kezdőoldalak URL-jei: a seed oldal (az átirányításait követve) és a hreflang-
-    alternatívái, ha sikeresek."""
-    site = con.execute("SELECT seed_url FROM site").fetchone()
-    if site is None:
-        return set()
-    rows = con.execute(
-        "SELECT page_id, url, NULL, NULL, lang, hreflang, NULL, NULL FROM pages "
-        "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL"
-    ).fetchall()
-    return {row[1] for row in _home_rows(con, site[0], {row[1]: row for row in rows})}
-
-
 def _home_pages(
-    con: duckdb.DuckDBPyConnection, seed_url: str, successful: dict[str, tuple],
-    schema: dict[int, list[object]],
+    con: duckdb.DuckDBPyConnection, rows: list[tuple], schema: dict[int, list[object]],
 ) -> list[ScopePage]:
-    """A seed oldal (az átirányításait követve) és a hreflang-alternatívái, ha sikeresek."""
-    rows = _home_rows(con, seed_url, successful)
     headings = _headings(con, [row[0] for row in rows])
     return [
         ScopePage(
@@ -198,6 +186,7 @@ def _home_pages(
 def _home_rows(
     con: duckdb.DuckDBPyConnection, seed_url: str, successful: dict[str, tuple],
 ) -> list[tuple]:
+    """A seed oldal (az átirányításait követve) és a hreflang-alternatívái, ha sikeresek."""
     https_redirect, trailing_slash = con.execute(
         "SELECT https_redirect, trailing_slash FROM site").fetchone()
     policy = UrlPolicy.from_seed(

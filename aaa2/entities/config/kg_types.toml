@@ -1,0 +1,33 @@
+# A Google Knowledge Graph @type-jai → entities.type, elsőbbségi sorrendben: a találat típusa az
+# első sor, amelyiknek a KG-típusa a találat típusai között van. A "Thing" nem ad típust; ami itt
+# nem szerepel, az sem. Bővíthető.
+
+types = [
+    ["Person", "person"],
+    ["Event", "event"],
+    ["SoftwareApplication", "tech"],
+    ["Brand", "brand"],
+    ["Corporation", "org"],
+    ["Organization", "org"],
+    ["EducationalOrganization", "org"],
+    ["GovernmentOrganization", "org"],
+    ["SportsTeam", "org"],
+    ["LocalBusiness", "org"],
+    ["City", "place"],
+    ["Country", "place"],
+    ["AdministrativeArea", "place"],
+    ["TouristAttraction", "place"],
+    ["Place", "place"],
+    ["Product", "product"],
+    ["Service", "service"],
+    ["Book", "work"],
+    ["BookSeries", "work"],
+    ["Movie", "work"],
+    ["MovieSeries", "work"],
+    ["TVSeries", "work"],
+    ["MusicAlbum", "work"],
+    ["MusicRecording", "work"],
+    ["Periodical", "work"],
+    ["WebSite", "work"],
+    ["CreativeWork", "work"],
+]

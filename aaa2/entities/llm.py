@@ -11,7 +11,7 @@
   A benne lévő, de nem 3–15 szavas evidence is kimarad (`evidence_length`).
 - position: title, ha az evidence a title-ben áll; h1 / heading, ha egy headingben; különben body.
   section_ordinal: a heading ordinalja; bodynál a context (ha nincs meg, az evidence) szakasza a
-  renderelt DOM-ban (`entities_rules.section_texts`), különben 0.
+  renderelt DOM-ban (`rules.section_texts`), különben 0.
 - Összevonás: azonos kulcsú (`alias_key`) név vagy alias, person-nél a kéttokenes név mindkét
   sorrendje → a meglévő entitás; több közül az azonos típusú, azon belül az erősebb forrású
   (schema > rule > llm). A meglévő entitás típusa és forrása nem változik, az LLM eltérő alakja
@@ -35,7 +35,7 @@ from datetime import UTC, datetime
 import duckdb
 import zstandard
 
-from aaa2.engine.entities_rules import (
+from aaa2.entities.rules import (
     ATTACH_ORDER,
     SOURCE_STRENGTH,
     alias_key,

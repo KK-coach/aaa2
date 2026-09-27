@@ -1,4 +1,4 @@
-"""Az LLM-es entitás-kör (aaa2/engine/entities_llm.py) előre adott válaszokkal: a prompt, a
+"""Az LLM-es entitás-kör (aaa2/entities/llm.py) előre adott válaszokkal: a prompt, a
 fabrikáció-szűrő, az összevonás és a mérőszámok. A hívások a valódi LLM-kliensen mennek át
 (llm_calls, főkönyv), csak az adapter hamis."""
 import json
@@ -10,7 +10,7 @@ from typer.testing import CliRunner
 import aaa2.db.connect as connect_module
 from aaa2.cli.main import app
 from aaa2.db.connect import connect, db_path
-from aaa2.engine.entities_llm import (
+from aaa2.entities.llm import (
     MAX_INPUT_CHARS,
     PROMPT,
     TYPE_DEFINITIONS,
@@ -19,7 +19,7 @@ from aaa2.engine.entities_llm import (
     page_input,
     run_llm,
 )
-from aaa2.engine.entities_rules import run_rules
+from aaa2.entities.rules import run_rules
 from aaa2.llm import ledger
 from aaa2.llm.adapters import Reply, genai_errors
 from aaa2.llm.client import LLMClient, Retry, open_clients

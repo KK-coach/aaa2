@@ -1,4 +1,4 @@
-"""A determinisztikus entitás-kör (aaa2/engine/entities_rules.py): szintetikus oldalakon a
+"""A determinisztikus entitás-kör (aaa2/entities/rules.py): szintetikus oldalakon a
 szabályok, a három rögzített készleten a mért eredmény."""
 import json
 
@@ -9,7 +9,9 @@ from typer.testing import CliRunner
 import aaa2.db.connect as connect_module
 from aaa2.cli.main import app
 from aaa2.db.connect import connect
-from aaa2.engine.entities_rules import (
+from aaa2.engine.normalize import UrlPolicy, normalize
+from aaa2.engine.parse import parse_page
+from aaa2.entities.rules import (
     SCHEMA_TYPES_FILE,
     alias_key,
     find_name,
@@ -20,8 +22,6 @@ from aaa2.engine.entities_rules import (
     title_endings,
     trivial_anchor,
 )
-from aaa2.engine.normalize import UrlPolicy, normalize
-from aaa2.engine.parse import parse_page
 from aaa2.llm.schemas import ENTITY_TYPES
 
 SEED = "https://pelda.hu/"
@@ -43,7 +43,8 @@ def ld(data):
 
 
 def site(pages, languages=("hu",)):
-    """Oldalak a crawl sémájában: pages, headings, links (to_page_id-vel), schema_blocks."""
+    """Oldalak a crawl sémájában: pages, headings, links (to_page_id-vel), schema_blocks; a
+    `site.home_urls` a seed oldal, ha az is az oldalak között van (ahogy a site-profil írja)."""
     con = connect(":memory:")
     con.execute("INSERT INTO site (domain, seed_url, languages) VALUES ('pelda.hu', ?, ?)",
                 [SEED, list(languages)])
@@ -70,6 +71,10 @@ def site(pages, languages=("hu",)):
                         [page_id, block.type, block.json, block.ordinal])
     con.execute("UPDATE links SET to_page_id = pages.page_id FROM pages "
                 "WHERE links.to_url = pages.url")
+    seed = normalize(SEED, POLICY)
+    con.execute("UPDATE site SET home_urls = ?",
+                [[seed] if con.execute("SELECT 1 FROM pages WHERE url = ?", [seed]).fetchone()
+                 else []])
     return con
 
 
