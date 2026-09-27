@@ -1,0 +1,65 @@
+# materia_etlap_hu
+
+- URL: https://materia-tm.com/hu/etlap/
+- nyelv: hu-HU
+- site: This page belongs to the website materia-tm.com, whose home page is titled “Materia - Trattoria Moderna |”.
+- blokkok (content régió): 56
+
+Blokkonként: azonosító, típus, heading-útvonal, szöveg (táblázatsornál a cellák az oszlopfejléccel).
+
+- **b0** `title`: Étlap | Materia - Trattoria Moderna
+- **b10** `heading`: Étlap
+- **b11** `heading`: Előételek
+- **b12** `heading`: Borjúfelsál rózsája tonhal krémmel
+- **b13** `heading`: 4.000,-
+- **b14** `heading`: PREMIUM válogatás calabriai fekete sertés D.O.P. húskülönlegességeiből és calabriai D.O.P. sajtokból
+- **b15** `heading`: 7.000,-
+- **b16** `heading`: Szicíliai vörös tonhal tatár avokádókrémmel, citromzesttel és édes-savanyú Tropea-hagymával
+- **b17** `heading`: 4.500,-
+- **b18** `heading`: Paradicsomfondü szicíliai vörös garnélával, stracciatellával, zöldalma-zesttel és Masitto extra szűz olívaolajjal
+- **b19** `heading`: 4.500,-
+- **b20** `heading`: Caprese D.O.P. bivalymozzarellával, ökörszív-paradicsommal, bazsalikommal és Masitto extra szűz olívaolajjal
+- **b21** `heading`: 3.500,-
+- **b22** `heading`: Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.
+- **b23** `heading`: Kézzel készített pappardelle feketekagylóval, vadédesköménnyel, cannellini babkrémen
+- **b24** `heading`: 5.500,-
+- **b25** `heading`: Spaghettone szicíliai vörös garnéla tatár, friss újhagymával, vadédesköménnyel és citromzesttel
+- **b26** `heading`: 7.500,-
+- **b27** `heading`: Spaghettone alla carbonara Nebrodi-guancialéval és Pecorino Romano D.O.P. sajttal
+- **b28** `heading`: 6.000,-
+- **b29** `heading`: Candele alla Norma San Marzano paradicsomszósszal, padlizsánnal, bazsalikommal és szicíliai ricotta salatával
+- **b30** `heading`: 5.500,-
+- **b31** `heading`: Kézzel készített gnocchi Caciocavallo Silano D.O.P. fondüvel és ‘Nduja di Spilinga D.O.P. krémmel (a Séf kézjegye)
+- **b32** `heading`: 7.000,-
+- **b33** `heading`: Főételek
+- **b34** `heading`: Vörösmárnafilé mediterrán fűszernövényekkel, Pecorino Romano D.O.P. sajttal, konfitált koktélparadicsommal és marinált cukkinivel
+- **b35** `heading`: 7.500,-
+- **b36** `heading`: Ördöghalfalatok cseresznyeparadicsommal, olívabogyóval és oregánóval
+- **b37** `heading`: 8.000,-
+- **b38** `heading`: Baccalà édespaprika-krémen, konfitált paradicsommal és friss mentucciával
+- **b39** `heading`: 7.000,-
+- **b40** `heading`: Scottona marhahúsgolyók San Marzano paradicsomszósszal, Pecorino Romano D.O.P. sajttal és Masitto extra szűz olívaolajja
+- **b41** `heading`: 6.000,-
+- **b42** `heading`: Chianina Toscana ribeye toszkán vörösbor-redukcióval és rozmaringos sült burgonyával
+- **b43** `heading`: 14.000,-
+- **b44** `heading`: Köretek
+- **b45** `heading`: Sütőben sült burgonya, friss rozmaring
+- **b46** `heading`: 2.500,-
+- **b47** `heading`: Szezonális grillezett zöldségek
+- **b48** `heading`: 3.000,-
+- **b49** `heading`: Szezonális saláta
+- **b50** `heading`: 2.500,-
+- **b51** `heading`: Desszert
+- **b52** `heading`: Pan brioche brontei pisztáciafagylalttal
+- **b53** `heading`: 3.500,-
+- **b54** `heading`: Hagyományos tiramisù
+- **b55** `heading`: 3.000,-
+- **b56** `heading`: Saját készítésű friss gyümölcssorbet
+- **b57** `heading`: 2.500,-
+- **b58** `heading`: Sgroppino (Belvedere , Franciacorta és citromsorbet)
+- **b59** `heading`: 4.000,-
+- **b60** `heading`: Chef:
+- **b61** `heading`: Gianfranco Brusco
+- **b62** `heading`: Order Online
+- **b63** `other` (Étlap › Order Online): Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec sed finibus nisi, sed dictum eros. Quisque aliquet velit sit amet sem interdum faucibus. In feugiat aliquet mollis etiam tincidunt ligula.
+- **b64** `other` (Étlap › Order Online): Order Now

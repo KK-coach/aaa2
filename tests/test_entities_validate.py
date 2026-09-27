@@ -235,11 +235,19 @@ def entities_db(rows):
 
 
 def add_rows(con, name, *positions):
-    """Egy-egy page_entities sor a megadott pozíciókkal (külön oldalakon)."""
+    """Egy-egy szabályos említés a megadott pozíciókkal (külön oldalakon); a blokk csak
+    azonosító, a schemának nincs blokkja."""
     for page_id, position in enumerate(positions, start=100):
-        con.execute("INSERT INTO page_entities (page_id, entity_id, position, evidence, source) "
-                    "SELECT ?, entity_id, ?, name, 'rule' FROM entities WHERE name = ?",
-                    [page_id, position, name])
+        schema = position == "schema"
+        (mention_id,) = con.execute(
+            "INSERT INTO page_entities (page_id, entity_id, block_id, char_start, char_end, "
+            "surface_form, position) SELECT ?, entity_id, CASE WHEN ? THEN NULL ELSE "
+            "(SELECT coalesce(max(block_id), 0) + 1 FROM page_entities) END, ?, length(name), "
+            "name, ? FROM entities WHERE name = ? RETURNING mention_id",
+            [page_id, schema, None if schema else 0, position, name]
+        ).fetchone()
+        con.execute("INSERT INTO mention_sources (mention_id, source, run_id) "
+                    "VALUES (?, 'rule', 0)", [mention_id])
 
 
 def run(con, shared, apis, env, sleeps=None, **kwargs):

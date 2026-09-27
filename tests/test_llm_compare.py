@@ -1,16 +1,18 @@
-"""A párhuzamos modellteszt (tests/acceptance/llm_compare.py): a minta, a rögzítő kliens, a mérés
-és a két Markdown-kimenet, hálózat nélkül, három szkriptelt modellel."""
+"""A párhuzamos modellteszt (tests/acceptance/llm_compare.py): a minta, a mérés és a két
+Markdown-kimenet, hálózat nélkül, három szkriptelt modellel. Az 1. kör állapotát (a nyers
+kimenet és a `page_entities_v1` sorai) a `legacy_round` állítja elő a v1 prompttal."""
 import json
 from datetime import UTC, datetime
 
 import pytest
 
 import tests.acceptance.llm_compare as compare
-from aaa2.entities.llm import run_llm
-from aaa2.entities.rules import run_rules
+from aaa2.entities.llm import PROMPT, check_evidence, normalize_text, page_input
+from aaa2.entities.rules import alias_key, run_rules
 from aaa2.llm.adapters import Reply, genai_errors
-from aaa2.llm.client import LLMClient, Retry
+from aaa2.llm.client import LLMClient, LLMError, Retry, SchemaMismatch
 from aaa2.llm.config import Usage, load_config
+from aaa2.llm.schemas import PageExtraction
 from tests.test_entities_rules import html, site
 
 NOON = datetime(2026, 9, 26, 12, 0, tzinfo=UTC).replace(tzinfo=None)
@@ -33,10 +35,46 @@ class Scripted:
                      usage=Usage(input=1000, output=200))
 
 
-def recorder(con, provider, replies, tmp_path):
+def legacy_round(con, provider, replies, tmp_path):
+    """Az 1. kör egy modellje: oldalanként egy v1 hívás; a nyers kimenet rekordként, az
+    elfogadott (nem fabrikált) sorok a `page_entities_v1`-be, kulcs szerint közös entitással."""
     client = LLMClient(con, Scripted(provider, replies), CONFIG, tmp_path / "ledger.jsonl",
                        lambda: NOON, Retry(sleep=lambda _: None))
-    return compare.Recorder(client, provider)
+    records = []
+    for page_id, title, main_content in con.execute(
+            "SELECT page_id, title, main_content FROM pages ORDER BY page_id").fetchall():
+        record = {"provider": provider, "model": client.model, "page_id": page_id,
+                  "call_id": None, "entities": None, "error": None}
+        records.append(record)
+        try:
+            result = client.extract(PageExtraction, PROMPT, page_input(title, [], main_content)[0],
+                                    domain="entity", page_id=page_id)
+        except SchemaMismatch as exc:
+            record.update(call_id=exc.call_id, error=f"schema_mismatch: {exc}"[:500])
+            continue
+        except LLMError as exc:
+            record.update(error=f"call_error: {exc}"[:500])
+            continue
+        record.update(call_id=result.call_id,
+                      entities=[e.model_dump() for e in result.parsed.entities])
+        sources = [normalize_text(main_content), normalize_text(title)]
+        fabricated = 0
+        for entity in result.parsed.entities:
+            if check_evidence(entity, sources):
+                fabricated += 1
+                continue
+            found = [i for i, name in con.execute("SELECT entity_id, name FROM entities"
+                                                  ).fetchall()
+                     if alias_key(name) == alias_key(entity.name)]
+            entity_id = found[0] if found else con.execute(
+                "INSERT INTO entities (name, type, source) VALUES (?, ?, 'llm') "
+                "RETURNING entity_id", [entity.name, entity.type]).fetchone()[0]
+            con.execute("INSERT INTO page_entities_v1 (page_id, entity_id, position, evidence, "
+                        "source, llm_call_id) VALUES (?, ?, 'body', ?, 'llm', ?)",
+                        [page_id, entity_id, entity.evidence, result.call_id])
+        con.execute("UPDATE llm_calls SET fabricated_count = ? WHERE call_id = ?",
+                    [fabricated, result.call_id])
+    return records
 
 
 def entity(name, kind, evidence):
@@ -66,11 +104,8 @@ def three_models(tmp_path):
                    {"primary_entity": "x", "entities": [CAFE]}, {"primary_entity": "x", "entities": [FEST]}],
         "anthropic": [{"primary_entity": "x", "entities": [CAFE, ANNA]}, {"primary_entity": "x", "entities": "nem lista"}],
     }
-    records = {}
-    for provider, answers in replies.items():
-        rec = recorder(con, provider, answers, tmp_path)
-        run_llm(con, rec)
-        records[provider] = rec.records
+    records = {provider: legacy_round(con, provider, answers, tmp_path)
+               for provider, answers in replies.items()}
     con.execute("UPDATE entities SET kg_status = 'high' WHERE name = 'Budapest Coffee Fest'")
     return con, records
 
@@ -103,20 +138,6 @@ def test_missing_sample_url_stops(monkeypatch):
     monkeypatch.setitem(compare.SAMPLE, "x", [("https://nincs.hu/", "home")])
     with pytest.raises(SystemExit, match="nincs.hu"):
         compare.sample_page_ids(con, "x")
-
-
-def test_recorder_keeps_raw_output_and_errors(tmp_path):
-    con, records = three_models(tmp_path)
-    gemini, anthropic = records["gemini"], records["anthropic"]
-    assert [len(r["entities"]) for r in gemini] == [2, 2]
-    assert gemini[1]["entities"][1]["name"] == "Kitalált Kft."        # a fabrikált is megvan
-    assert anthropic[1]["entities"] is None and anthropic[1]["call_id"] is not None
-    assert anthropic[1]["error"].startswith("schema_mismatch: ")
-    failing = recorder(con, "gemini", [genai_errors.ClientError(400, {"error": {"message": "x"}})],
-                       tmp_path)
-    run_llm(con, failing, limit=1)
-    assert failing.records[0]["call_id"] is None
-    assert failing.records[0]["error"].startswith("call_error: ")
 
 
 def test_measure_per_model(tmp_path):
@@ -174,41 +195,6 @@ def test_report_markdown(tmp_path):
     assert "A költség mért adat, nem döntési feltétel." in text
     assert "- OpenAI: 503: 503 None." in text
     assert text.count("  - home: ") == 6
-
-
-def test_missing_only_calls_just_the_pages_without_output(tmp_path, monkeypatch):
-    memory = site(PAGES)
-    run_rules(memory)
-    path = tmp_path / "set.duckdb"
-    memory.execute(f"ATTACH '{path.as_posix()}' AS disk")
-    memory.execute("COPY FROM DATABASE memory TO disk")
-    memory.execute("DETACH disk")
-    memory.close()
-    urls = [url for (url,) in compare.connect(path).execute(
-        "SELECT url FROM pages ORDER BY url").fetchall()]
-    monkeypatch.setattr(compare, "SAMPLE", {"set": [(url, "home") for url in urls]})
-    monkeypatch.setattr(compare, "prepare", lambda name, data_dir: path)
-    monkeypatch.setattr(compare, "shared_path", lambda: tmp_path / "shared.duckdb")
-    monkeypatch.setattr(compare, "validate_entities",
-                        lambda con, shared: type("V", (), {"statuses": {}, "navigational": 0,
-                                                           "errors": {}})())
-    answers = [[genai_errors.ServerError(503, {"error": {"message": "x"}})] * 4
-               + [{"primary_entity": "x", "entities": [FEST]}], [{"primary_entity": "x", "entities": [FEST]}]]
-
-    def clients(con):
-        return {"gemini": LLMClient(con, Scripted("gemini", answers.pop(0)), CONFIG,
-                                    tmp_path / "ledger.jsonl", lambda: NOON,
-                                    Retry(sleep=lambda _: None))}, {}
-
-    monkeypatch.setattr(compare, "open_clients", clients)
-    compare.run(["gemini"], tmp_path)                    # /a/: 4 × 503 → hiba; /b/: kimenet
-    first = compare.read_jsonl(tmp_path / "set.gemini.jsonl")
-    assert [r["entities"] is None for r in first] == [True, False]
-    compare.run(["gemini"], tmp_path, missing_only=True)
-    second = compare.read_jsonl(tmp_path / "set.gemini.jsonl")
-    assert [(r["page_id"], r["entities"] is None) for r in second] == [
-        (first[1]["page_id"], False), (first[0]["page_id"], False)]
-    assert answers == []                                 # a második futás egy hívás
 
 
 def test_spotcheck_puts_the_three_outputs_side_by_side(tmp_path, monkeypatch):

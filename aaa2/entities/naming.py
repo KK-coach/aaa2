@@ -98,7 +98,8 @@ def apply_naming(record: Mapping, mentions: Sequence[tuple[int, dict]], result: 
     return out, missing
 
 
-def name_record(client, record: Mapping, blocks: Mapping[str, Mapping]) -> dict:
+def name_record(client, record: Mapping, blocks: Mapping[str, Mapping],
+                page_id: int | None = None) -> dict:
     """Az első kör rekordja az elnevezési hívással. A kimenet rekordja az első körét követi
     (`entities`, `primary_entities`), mellette `naming_model`, `naming_call_id`, `call_ids` (a
     kinyerés és az
@@ -112,7 +113,7 @@ def name_record(client, record: Mapping, blocks: Mapping[str, Mapping]) -> dict:
         return out
     try:
         result = client.extract(NamingResult, NAMING_PROMPT, naming_input(blocks, mentions),
-                                domain="entity", purpose="naming")
+                                domain="entity", purpose="naming", page_id=page_id)
     except SchemaMismatch as exc:
         out.update(naming_call_id=exc.call_id, naming_error=f"schema_mismatch: {exc}"[:500])
         out["call_ids"].append(exc.call_id)

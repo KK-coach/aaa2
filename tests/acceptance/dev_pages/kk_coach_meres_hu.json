@@ -1,0 +1,2064 @@
+{
+ "page_id": "kk_coach_meres_hu",
+ "set": "development-real",
+ "url": "https://kk.coach/hu/megoldasok/meres/",
+ "lang": "hu-HU",
+ "site_description": "This page belongs to the website kk.coach, whose home page is titled “SEO & AI-Driven Organic Growth Consultant | Kk.coach”.",
+ "blocks": [
+  {
+   "id": "b0",
+   "kind": "title",
+   "heading_path": [],
+   "text": "Mérés és Adatarchitektúra, Növekedési Döntésekhez"
+  },
+  {
+   "id": "b1",
+   "kind": "other",
+   "heading_path": [],
+   "text": "Kilépés a tartalomba"
+  },
+  {
+   "id": "b14",
+   "kind": "paragraph",
+   "heading_path": [],
+   "text": "— Megoldások — 1. réteg"
+  },
+  {
+   "id": "b15",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás."
+   ],
+   "text": "Mérés nélküli marketing nem más, mint találgatás."
+  },
+  {
+   "id": "b16",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás."
+   ],
+   "text": "GA4 beállítás, szerveroldali adatkövetés, attribúciós modellezés és adatarchitektúra — hogy az elemzési rendszered valódi döntéstámogató eszköz legyen, ne csak egy kimutatáshalmaz, amit végül senki sem használ."
+  },
+  {
+   "id": "b17",
+   "kind": "other",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás."
+   ],
+   "text": "Nézd meg, Hogy dolgozom"
+  },
+  {
+   "id": "b18",
+   "kind": "other",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás."
+   ],
+   "text": "GA4 beállítás Szerver oldali mérés Attribution Modeling BigQuery Looker Studio Google tag manager"
+  },
+  {
+   "id": "b19",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás."
+   ],
+   "text": "Ha a mérés elromlik"
+  },
+  {
+   "id": "b20",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A konverziók nem a megfelelő csatornákhoz vannak kötve."
+   ],
+   "text": "A konverziók nem a megfelelő csatornákhoz vannak kötve."
+  },
+  {
+   "id": "b21",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A konverziók nem a megfelelő csatornákhoz vannak kötve."
+   ],
+   "text": "A GA4 last-click-et mutat. A valóság multi-touch. A büdzséd rossz adatok alapján van tervezve."
+  },
+  {
+   "id": "b22",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Szerver oldali jelek elvesznek"
+   ],
+   "text": "Szerver oldali jelek elvesznek"
+  },
+  {
+   "id": "b23",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Szerver oldali jelek elvesznek"
+   ],
+   "text": "Adblockerek, iOS adatvédelmi változások és cookie-korlátozások csendben elviszik a konverziós adatok 20–40%-át."
+  },
+  {
+   "id": "b24",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A dashboardok vitát szülnek"
+   ],
+   "text": "A dashboardok vitát szülnek"
+  },
+  {
+   "id": "b25",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A dashboardok vitát szülnek"
+   ],
+   "text": "Minden csatorna jól mutat önmagában. Senki nem tud megegyezni abban, mi hajtja tényleg a bevételt."
+  },
+  {
+   "id": "b26",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az SEO-hatás láthatatlan"
+   ],
+   "text": "Az SEO-hatás láthatatlan"
+  },
+  {
+   "id": "b27",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az SEO-hatás láthatatlan"
+   ],
+   "text": "Az organikus forgalom támogatása alulértékelt marad. A SEO-ra fordított költséget nehéz házon belül megvédeni, ha nincs mögötte megbízható adat."
+  },
+  {
+   "id": "b28",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az SEO-hatás láthatatlan"
+   ],
+   "text": "kk"
+  },
+  {
+   "id": "b29",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az SEO-hatás láthatatlan"
+   ],
+   "text": "— Az alapprobléma"
+  },
+  {
+   "id": "b30",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert."
+   ],
+   "text": "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert."
+  },
+  {
+   "id": "b31",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert."
+   ],
+   "text": "A GA4 telepítve van. A Search Console csatlakoztatva. Van dashboard. De amikor az a kérdés, hogy „melyik csatorna hoz tényleg bevételt?” — csend lesz a szobában."
+  },
+  {
+   "id": "b32",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert."
+   ],
+   "text": "Ez nem adatprobléma. Ez strukturális probléma. Az architektúra nélküli adat csak zaj. A döntési logika nélküli dashboard drága dekoráció."
+  },
+  {
+   "id": "b33",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert."
+   ],
+   "text": "A mérési architektúra azt jelenti, hogy megtervezzük, hogyan folyik, kapcsolódik és informál az adat — mielőtt bárki ránnézne egy grafikonra."
+  },
+  {
+   "id": "b34",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert."
+   ],
+   "text": "Tünet 01"
+  },
+  {
+   "id": "b35",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "GA4-esemény van, de nem jelent semmit"
+   ],
+   "text": "GA4-esemény van, de nem jelent semmit"
+  },
+  {
+   "id": "b36",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "GA4-esemény van, de nem jelent semmit"
+   ],
+   "text": "A mérés megvan, de nincs mögötte egységes rendszer. Minden event máshogy van elnevezve, a tölcsér szakaszai pedig láthatatlanok."
+  },
+  {
+   "id": "b37",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "GA4-esemény van, de nem jelent semmit"
+   ],
+   "text": "Tünet 02"
+  },
+  {
+   "id": "b38",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "Az attribúció örökös vita tárgya"
+   ],
+   "text": "Az attribúció örökös vita tárgya"
+  },
+  {
+   "id": "b39",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "Az attribúció örökös vita tárgya"
+   ],
+   "text": "A fizetett oldal szerint a konverzió az ő érdeme, a SEO szerint pedig ő készítette elő. Mivel ezt egyik oldal sem tudja tisztán bizonyítani, a költségvetési vita állandóan újraindul."
+  },
+  {
+   "id": "b40",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "Az attribúció örökös vita tárgya"
+   ],
+   "text": "Tünet 03"
+  },
+  {
+   "id": "b41",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "Szerver oldali adatok hiányoznak"
+   ],
+   "text": "Szerver oldali adatok hiányoznak"
+  },
+  {
+   "id": "b42",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "Szerver oldali adatok hiányoznak"
+   ],
+   "text": "A böngészőalapú mérés a blokkolók és az adatvédelmi korlátozások miatt a forgalom és a konverziók jelentős részét elveszíti. Emiatt a bevétel is alulbecsülten jelenik meg."
+  },
+  {
+   "id": "b43",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "Szerver oldali adatok hiányoznak"
+   ],
+   "text": "Symptom 04"
+  },
+  {
+   "id": "b44",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "Az organikus forgalom értéke szisztematikusan alulértékelt"
+   ],
+   "text": "Az organikus forgalom értéke szisztematikusan alulértékelt"
+  },
+  {
+   "id": "b45",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "Az organikus forgalom értéke szisztematikusan alulértékelt"
+   ],
+   "text": "A last-click alapú mérés alulértékeli a SEO szerepét, ezért a büdzsévágásról szóló döntések gyakran torz adatokra épülnek."
+  },
+  {
+   "id": "b46",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "Az organikus forgalom értéke szisztematikusan alulértékelt"
+   ],
+   "text": "Tünet 05"
+  },
+  {
+   "id": "b47",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "A riport több kérdést szül, mint választ"
+   ],
+   "text": "A riport több kérdést szül, mint választ"
+  },
+  {
+   "id": "b48",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "A riport több kérdést szül, mint választ"
+   ],
+   "text": "A havi riport hosszú. A döntések rövidek. A metrika és az akció közötti kapcsolat hiányzik."
+  },
+  {
+   "id": "b49",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "A riport több kérdést szül, mint választ"
+   ],
+   "text": "Tünet 06"
+  },
+  {
+   "id": "b50",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "Nincs egyetlen igazságforrás"
+   ],
+   "text": "Nincs egyetlen igazságforrás"
+  },
+  {
+   "id": "b51",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "Nincs egyetlen igazságforrás"
+   ],
+   "text": "A Google Analytics és a CRM mást mutat. A hirdetési platformok is mást. Az adatba vetett bizalom bizonytalanságot szűl."
+  },
+  {
+   "id": "b52",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A legtöbb cég adatot gyűjt. Nagyon kevés épít döntési rendszert.",
+    "Nincs egyetlen igazságforrás"
+   ],
+   "text": "— Mit jelent valójában a mérési architektúra"
+  },
+  {
+   "id": "b53",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések."
+   ],
+   "text": "Nem több adat. Jobb döntések."
+  },
+  {
+   "id": "b54",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések."
+   ],
+   "text": "1. réteg"
+  },
+  {
+   "id": "b55",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések.",
+    "Mérési tervezés"
+   ],
+   "text": "Mérési tervezés"
+  },
+  {
+   "id": "b56",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések.",
+    "Mérési tervezés"
+   ],
+   "text": "Meghatározzuk, mit és miért kell mérni — mielőtt bármelyik eszközhöz nyúlnánk. Üzleti célok → konverzió-definíciók → döntési jelek → KPI-hierarchia."
+  },
+  {
+   "id": "b57",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések.",
+    "Mérési tervezés"
+   ],
+   "text": "2. réteg"
+  },
+  {
+   "id": "b58",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések.",
+    "Event- és tracking-architektúra"
+   ],
+   "text": "Event- és tracking-architektúra"
+  },
+  {
+   "id": "b59",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések.",
+    "Event- és tracking-architektúra"
+   ],
+   "text": "Tiszta, következetes event-taxonómia GA4-ben, GTM-ben és szerver oldalon. Minden interakció tölcsér-szakaszhoz és üzleti eredményhez rendelve."
+  },
+  {
+   "id": "b60",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések.",
+    "Event- és tracking-architektúra"
+   ],
+   "text": "Layer 03"
+  },
+  {
+   "id": "b61",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések.",
+    "Attribúciós logika"
+   ],
+   "text": "Attribúciós logika"
+  },
+  {
+   "id": "b62",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések.",
+    "Attribúciós logika"
+   ],
+   "text": "First-touch befolyás, asszisztált csatorna-szerepek, last-click konverzió — hogy minden csatornát igazságosan értékeljünk, az organikust is beleértve."
+  },
+  {
+   "id": "b63",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések.",
+    "Attribúciós logika"
+   ],
+   "text": "Layer 04"
+  },
+  {
+   "id": "b64",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések.",
+    "Insight-keretrendszer"
+   ],
+   "text": "Insight-keretrendszer"
+  },
+  {
+   "id": "b65",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések.",
+    "Insight-keretrendszer"
+   ],
+   "text": "Az adatot strukturált értelmezéssé alakítjuk: tölcsér-szivárgás detektálás, lemorzsolódás-diagnózis, forgalmi minőségelemzés, bevétel-korreláció."
+  },
+  {
+   "id": "b66",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Nem több adat. Jobb döntések.",
+    "Insight-keretrendszer"
+   ],
+   "text": "— A mérési stack"
+  },
+  {
+   "id": "b67",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik."
+   ],
+   "text": "Minden rétegnek van szerepe. Minden réteg kapcsolódik."
+  },
+  {
+   "id": "b68",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik."
+   ],
+   "text": "01"
+  },
+  {
+   "id": "b69",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "GA4 Event-architektúra"
+   ],
+   "text": "GA4 Event-architektúra"
+  },
+  {
+   "id": "b70",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "GA4 Event-architektúra"
+   ],
+   "text": "Tiszta event-taxonómia, tölcsér-szakasz jelölés, lead-minőség jelek, form-interakció követés, görgetési és engagement modellezés."
+  },
+  {
+   "id": "b71",
+   "kind": "other",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "GA4 Event-architektúra"
+   ],
+   "text": "GA4 GTM Datastream"
+  },
+  {
+   "id": "b72",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "GA4 Event-architektúra"
+   ],
+   "text": "Ez minden további elemzés alapja. Ha az eventek nincsenek rendben, egyik riport sem lesz igazán megbízható."
+  },
+  {
+   "id": "b73",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "GA4 Event-architektúra"
+   ],
+   "text": "02"
+  },
+  {
+   "id": "b74",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Szerver oldali mérés"
+   ],
+   "text": "Szerver oldali mérés"
+  },
+  {
+   "id": "b75",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Szerver oldali mérés"
+   ],
+   "text": "A kritikus konverziós jelek áthelyezése a böngészőből szerver oldali konténerbe — megkerülve az adblockereket, iOS-korlátozásokat és harmadik féltől származó cookie-veszteséget."
+  },
+  {
+   "id": "b76",
+   "kind": "other",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Szerver oldali mérés"
+   ],
+   "text": "GTM Server-side Stape.io Conversions API"
+  },
+  {
+   "id": "b77",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Szerver oldali mérés"
+   ],
+   "text": "Az elveszett konverziós adatok 20–40%-át visszaszerzi. Kritikus a pontos fizetett csatorna-optimalizáláshoz és az SEO-attribúcióhoz."
+  },
+  {
+   "id": "b78",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Szerver oldali mérés"
+   ],
+   "text": "03"
+  },
+  {
+   "id": "b79",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Attribúciós modellezés"
+   ],
+   "text": "Attribúciós modellezés"
+  },
+  {
+   "id": "b80",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Attribúciós modellezés"
+   ],
+   "text": "Megnézzük, melyik csatorna hol járul hozzá a vásárlási folyamathoz: melyik hozza be először a látogatót, melyiknél történik a konverzió, és melyik segíti a döntést útközben. Így láthatóvá válik, hogyan dolgozik együtt az organikus, a fizetett és a direkt forgalom a teljes ügyfélúton."
+  },
+  {
+   "id": "b81",
+   "kind": "other",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Attribúciós modellezés"
+   ],
+   "text": "GA4 Attribution BigQuery Custom Models"
+  },
+  {
+   "id": "b82",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Attribúciós modellezés"
+   ],
+   "text": "Láthatóvá teszi az SEO-befektetés értékét. Véget vet a last-click torzításra alapozott büdzsévitáknak."
+  },
+  {
+   "id": "b83",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Attribúciós modellezés"
+   ],
+   "text": "04"
+  },
+  {
+   "id": "b84",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Adattárház és konszolidáció"
+   ],
+   "text": "Adattárház és konszolidáció"
+  },
+  {
+   "id": "b85",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Adattárház és konszolidáció"
+   ],
+   "text": "Ahol szükséges: GA4 nyers adat, Search Console, CRM-jelek és UX-viselkedési adatok egységesítése strukturált lekérdezéshez és mintadetektáláshoz."
+  },
+  {
+   "id": "b86",
+   "kind": "other",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Adattárház és konszolidáció"
+   ],
+   "text": "BigQuery Looker Studio Cloudflare Logs"
+  },
+  {
+   "id": "b87",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Adattárház és konszolidáció"
+   ],
+   "text": "Nem minden cégnek van rá szükséges. Webshopoknak közepes és nagyobb oldalaknak általában igen."
+  },
+  {
+   "id": "b88",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Adattárház és konszolidáció"
+   ],
+   "text": "05"
+  },
+  {
+   "id": "b89",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Riportálás és döntési réteg"
+   ],
+   "text": "Riportálás és döntési réteg"
+  },
+  {
+   "id": "b90",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Riportálás és döntési réteg"
+   ],
+   "text": "Vezetői összefoglaló, operatív monitoring és iterációs visszacsatolás. Nem szebb dashboardok — tisztább döntések."
+  },
+  {
+   "id": "b91",
+   "kind": "other",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Riportálás és döntési réteg"
+   ],
+   "text": "GTM Server-side Stape.io Conversions API"
+  },
+  {
+   "id": "b92",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Riportálás és döntési réteg"
+   ],
+   "text": "Kevesebb belső vita. Gyorsabb, magabiztosabb priorizálás. Bevétel-korreláció gyorsan észrevehető."
+  },
+  {
+   "id": "b93",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Minden rétegnek van szerepe. Minden réteg kapcsolódik.",
+    "Riportálás és döntési réteg"
+   ],
+   "text": "— Szerver oldali mérés"
+  },
+  {
+   "id": "b94",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak."
+   ],
+   "text": "Az elveszett adatok azok, amelyek a legjobban számítanak."
+  },
+  {
+   "id": "b95",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés"
+   ],
+   "text": "Miért nem opcionális többé a szerver oldali mérés"
+  },
+  {
+   "id": "b96",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés"
+   ],
+   "text": "Kritikus réteg"
+  },
+  {
+   "id": "b97",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "Adblockerek"
+   ],
+   "text": "Adblockerek"
+  },
+  {
+   "id": "b98",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "Adblockerek"
+   ],
+   "text": "A böngésző alapú trackinget alapértelmezés szerint blokkolja a Firefox, a Brave, és a Chrome-felhasználók egyre növekvő hányada. A konverziós adat csendben eltűnik."
+  },
+  {
+   "id": "b99",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "iOS és adatvédelmi változások"
+   ],
+   "text": "iOS és adatvédelmi változások"
+  },
+  {
+   "id": "b100",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "iOS és adatvédelmi változások"
+   ],
+   "text": "Az Apple adatvédelmi keretrendszerei miatt a kliensoldali attribúció Apple-eszközökön erősen korlátozott. A Safari ITP-je rövidíti a követési ablakot, az ATT pedig visszafogja a cross-app/cross-site azonosítást, ezért a többmunkamenetes attribúció tisztán böngészőoldalon egyre kevésbé megbízható."
+  },
+  {
+   "id": "b101",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "Harmadik féltől szárm. cookie-k kivezetése"
+   ],
+   "text": "Harmadik féltől szárm. cookie-k kivezetése"
+  },
+  {
+   "id": "b102",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "Harmadik féltől szárm. cookie-k kivezetése"
+   ],
+   "text": "Az iparág a cookie-mentes jövő felé halad. A szerver oldali, first-party adatgyűjtés tartós infrastruktúra-befektetés — nem ideiglenes megkerülő megoldás."
+  },
+  {
+   "id": "b103",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "Meta és Google Conversions API"
+   ],
+   "text": "Meta és Google Conversions API"
+  },
+  {
+   "id": "b104",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "Meta és Google Conversions API"
+   ],
+   "text": "Mindkét platform ajánlja a szerver oldali event-egyeztetést a pontos kampányoptimalizáláshoz. A csak böngészőn alapuló jelek rontják a hirdetési teljesítményt."
+  },
+  {
+   "id": "b105",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "Oldalbetöltési sebesség"
+   ],
+   "text": "Oldalbetöltési sebesség"
+  },
+  {
+   "id": "b106",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "Oldalbetöltési sebesség"
+   ],
+   "text": "A tagek szerver oldalra helyezése csökkenti a kliens oldali JavaScript-terhelést. Kevesebb third-party script közvetlenül javítja a Core Web Vitals-t — ami SEO-t is érint."
+  },
+  {
+   "id": "b107",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "Adattulajdon"
+   ],
+   "text": "Adattulajdon"
+  },
+  {
+   "id": "b108",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "Adattulajdon"
+   ],
+   "text": "A szerver oldali gyűjtés azt jelenti, hogy az adatod olyan infrastruktúrán folyik át, amelyet te irányítasz — nem harmadik féltől származó pixeleken, amelyek kívül esnek az irányításodon."
+  },
+  {
+   "id": "b109",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "Adattulajdon"
+   ],
+   "text": "A szerveroldali mérés javíthatja a hirdetések hatékonyságát, mert kevesebb adat vész el a böngészős korlátozások, blokkolók és adatvédelmi változások miatt. Emiatt pontosabban látszik, mely kampányok, kulcsszavak vagy közönségek hoznak valódi eredményt, így a büdzsé jobban optimalizálható. Emellett a hirdetési platformok több és jobb minőségű konverziós jelet kapnak, ami javíthatja az automatizált ajánlattételt, a célzást és végső soron a megtérülést."
+  },
+  {
+   "id": "b110",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Az elveszett adatok azok, amelyek a legjobban számítanak.",
+    "Miért nem opcionális többé a szerver oldali mérés",
+    "Adattulajdon"
+   ],
+   "text": "— Döntési útmutató"
+  },
+  {
+   "id": "b111",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?"
+   ],
+   "text": "Mikor a mérés a helyes kiindulópont?"
+  },
+  {
+   "id": "b112",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?"
+   ],
+   "text": "Prioritizáld a mérést, ha —"
+  },
+  {
+   "id": "b113",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "Az adat minőséged bizonytalan"
+  },
+  {
+   "id": "b114",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "×"
+  },
+  {
+   "id": "b115",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "Különböző eszközök adatai rendszeresen ellentmondanak egymásnak"
+  },
+  {
+   "id": "b116",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "×"
+  },
+  {
+   "id": "b117",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "A bevétel-attribúció állandó vita tárgya"
+  },
+  {
+   "id": "b118",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "×"
+  },
+  {
+   "id": "b119",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "Az organikus SEO-teljesítménye nem látszik megfelelően"
+  },
+  {
+   "id": "b120",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "×"
+  },
+  {
+   "id": "b121",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "A fizetett csatorna költségei nőnek, de a hatás nem látható"
+  },
+  {
+   "id": "b122",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "×"
+  },
+  {
+   "id": "b123",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "A vezetés megkérdőjelezi, hogy a marketing egyáltalán működik-e"
+  },
+  {
+   "id": "b124",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "×"
+  },
+  {
+   "id": "b125",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "A konverziókövetés következetlen"
+  },
+  {
+   "id": "b126",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az adat minőséged bizonytalan"
+   ],
+   "text": "Mi változik utána"
+  },
+  {
+   "id": "b127",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "Az áttekinthetőség felváltja a vitát"
+  },
+  {
+   "id": "b128",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "→"
+  },
+  {
+   "id": "b129",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "Egyetlen igazságforrás a bevétel-attribúcióhoz"
+  },
+  {
+   "id": "b130",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "→"
+  },
+  {
+   "id": "b131",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "Az SEO támogatás-értéke mérhetővé és védhetővé válik"
+  },
+  {
+   "id": "b132",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "→"
+  },
+  {
+   "id": "b133",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "A szerver oldali mérés visszahozza az elveszett konverziós jeleket"
+  },
+  {
+   "id": "b134",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "→"
+  },
+  {
+   "id": "b135",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "A büdzsédöntések adatokon alapulnak, nem véleményen"
+  },
+  {
+   "id": "b136",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "→"
+  },
+  {
+   "id": "b137",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "A tölcsér lemorzsolódási pontjai láthatóak és kezelhetőek"
+  },
+  {
+   "id": "b138",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "→"
+  },
+  {
+   "id": "b139",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "Minden SEO- és UX-változásnak van mérhetősége"
+  },
+  {
+   "id": "b140",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Mikor a mérés a helyes kiindulópont?",
+    "Az áttekinthetőség felváltja a vitát"
+   ],
+   "text": "— A megközelítésem"
+  },
+  {
+   "id": "b141",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval."
+   ],
+   "text": "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval."
+  },
+  {
+   "id": "b142",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval."
+   ],
+   "text": "01"
+  },
+  {
+   "id": "b143",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Tracking integritás audit"
+   ],
+   "text": "Tracking integritás audit"
+  },
+  {
+   "id": "b144",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Tracking integritás audit"
+   ],
+   "text": "Átnézem a jelenlegi event struktúrát, a konverziós logikát és az attribúció működését, hogy kiderüljön, hol sérül az adatminőség, és hol van adatvesztés."
+  },
+  {
+   "id": "b145",
+   "kind": "other",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Tracking integritás audit"
+   ],
+   "text": "GA4 Debugger Tag Assistant GTM preview"
+  },
+  {
+   "id": "b146",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Tracking integritás audit"
+   ],
+   "text": "02"
+  },
+  {
+   "id": "b147",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Üzleti logikán alapuló KPI-modellezés"
+   ],
+   "text": "Üzleti logikán alapuló KPI-modellezés"
+  },
+  {
+   "id": "b148",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Üzleti logikán alapuló KPI-modellezés"
+   ],
+   "text": "Valódi KPI-ok meghatározása — nem hiúsági mutatók. Bevétel-összefüggések, döntési jelek és vezető vs. késleltetett indikátorok feltérképezése."
+  },
+  {
+   "id": "b149",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Üzleti logikán alapuló KPI-modellezés"
+   ],
+   "text": "03"
+  },
+  {
+   "id": "b150",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Követési architektúra felépítése"
+   ],
+   "text": "Követési architektúra felépítése"
+  },
+  {
+   "id": "b151",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Követési architektúra felépítése"
+   ],
+   "text": "Egységes eseményelnevezés, a tölcsér szakaszainak pontos mérése, szükség esetén szerveroldali mérés beállítása, valamint a konverziók ellenőrzése minden fontos csatornán."
+  },
+  {
+   "id": "b152",
+   "kind": "other",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Követési architektúra felépítése"
+   ],
+   "text": "GA4 GTM server-side Container Bigquery"
+  },
+  {
+   "id": "b153",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Követési architektúra felépítése"
+   ],
+   "text": "04"
+  },
+  {
+   "id": "b154",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Riportálás és insight-tervezés"
+   ],
+   "text": "Riportálás és insight-tervezés"
+  },
+  {
+   "id": "b155",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Riportálás és insight-tervezés"
+   ],
+   "text": "Vezetői összefoglalók, operatív monitoring és anomáliák korai felismerése — hogy a dashboardok ne puszta adathalmazok legyenek, hanem valóban segítsék a döntéshozatalt."
+  },
+  {
+   "id": "b156",
+   "kind": "other",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Riportálás és insight-tervezés"
+   ],
+   "text": "Looker studio Custom riports Power bi Tableau"
+  },
+  {
+   "id": "b157",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Riportálás és insight-tervezés"
+   ],
+   "text": "05"
+  },
+  {
+   "id": "b158",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Folyamatos minőségellenőrzés"
+   ],
+   "text": "Folyamatos minőségellenőrzés"
+  },
+  {
+   "id": "b159",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Folyamatos minőségellenőrzés"
+   ],
+   "text": "A mérés nem „állítsd be és felejtsd el”. Anomáliadetektálás, regressziómegelőzés és adatvalidálás minden sprint-ciklusban."
+  },
+  {
+   "id": "b160",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Folyamatos minőségellenőrzés"
+   ],
+   "text": "Mire számíthatsz"
+  },
+  {
+   "id": "b161",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Folyamatos minőségellenőrzés"
+   ],
+   "text": "Nem szebb dashboardokra. Tiszta KPI-definícióra, megbízható attribúciós logikára, döntési szakasz láthatóságára — és kevesebb belső vitára arról, mit jelent az adat."
+  },
+  {
+   "id": "b162",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Folyamatos minőségellenőrzés"
+   ],
+   "text": "Az AI szerepe a mérésben"
+  },
+  {
+   "id": "b163",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Folyamatos minőségellenőrzés"
+   ],
+   "text": "Az AI felgyorsítja a mintadetektálást, az anomáliariasztást és a hipotézisek gyors tesztelését. Az üzleti értelmezés — és az elszámoltathatóság — emberi marad."
+  },
+  {
+   "id": "b164",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Folyamatos minőségellenőrzés"
+   ],
+   "text": "KApcsolodó blogposzt"
+  },
+  {
+   "id": "b165",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Folyamatos minőségellenőrzés"
+   ],
+   "text": "r = 0.87 Sebesség–konverzió korreláció"
+  },
+  {
+   "id": "b166",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Folyamatos minőségellenőrzés"
+   ],
+   "text": "A Lineáris regresszió termékoldalaknál statisztikailag szignifikáns összefüggést mutatott a Core Web Vitals-fejlesztés és a konverzióemelkedés között. Ez tette lehetővé , hogy az ügyfelemet meggyőzzem, hogy több erőforrást használjon a weboldal gyorsaságának növelésére."
+  },
+  {
+   "id": "b167",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.",
+    "Folyamatos minőségellenőrzés"
+   ],
+   "text": "— Árazás"
+  },
+  {
+   "id": "b168",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+  },
+  {
+   "id": "b169",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "A munkadíj 16 000 Ft / óra. Minden projekt egy induló egyeztetéssel kezdődik, hogy előre tisztán látszódjon, pontosan min dolgozunk, és mekkora ráfordítással érdemes számolni. Az óraszámot befolyásolja, hány platform érintett, milyen összetett a meglévő rendszer, és hogy a megvalósítás önállóan vagy a belső csapattal együttműködve történik. Nincs hosszú távú elköteleződés. A projektek előre egyeztetett sprintekben haladnak. Ha a feladat vagy a projekt iránya közben változik, a becslést mindig frissítjük, mielőtt a munka tovább folytatódna."
+  },
+  {
+   "id": "b170",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "Project"
+  },
+  {
+   "id": "b171",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "Est. hours"
+  },
+  {
+   "id": "b172",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "Est. cost"
+  },
+  {
+   "id": "b173",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "Szerver oldali mérés beállítás"
+  },
+  {
+   "id": "b174",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "GTM szerver oldali konténer, Conversions API, first-party adatréteg, validálás"
+  },
+  {
+   "id": "b175",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "8-14 h"
+  },
+  {
+   "id": "b176",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "108000–184000 Ft"
+  },
+  {
+   "id": "b177",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "BigQuery integráció"
+  },
+  {
+   "id": "b178",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "GA4 export, Google ads, Search Console, Bing webmaster tools, Microsoft Clarity beállítás. séma tervezés."
+  },
+  {
+   "id": "b179",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "10-18 h"
+  },
+  {
+   "id": "b180",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "160000-208000 Ft"
+  },
+  {
+   "id": "b181",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "Looker Studio dashboard"
+  },
+  {
+   "id": "b182",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "Döntési réteg riportálás, KPI-hierarchia, csatornateljesítmény, konverzió nézet"
+  },
+  {
+   "id": "b183",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "10-20 h"
+  },
+  {
+   "id": "b184",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "160000-320000 Ft"
+  },
+  {
+   "id": "b185",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "Teljes mérési rendszer"
+  },
+  {
+   "id": "b186",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "GA4 architektúra + szerver oldali + attribúciós modellezés + BigQuery + Looker Studio"
+  },
+  {
+   "id": "b187",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "28-48 h"
+  },
+  {
+   "id": "b188",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "448000-768000 Ft"
+  },
+  {
+   "id": "b189",
+   "kind": "other",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "Óradíj: 16 000 Ft"
+  },
+  {
+   "id": "b190",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
+   ],
+   "text": "— Gyakori kérdések"
+  },
+  {
+   "id": "b191",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Amit mérési projekt előtt szoktak megkérdezni."
+   ],
+   "text": "Amit mérési projekt előtt szoktak megkérdezni."
+  },
+  {
+   "id": "b192",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Amit mérési projekt előtt szoktak megkérdezni.",
+    "Kell szerver oldali beállítás, ha már GA4-em van?"
+   ],
+   "text": "Kell szerver oldali beállítás, ha már GA4-em van?"
+  },
+  {
+   "id": "b193",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Amit mérési projekt előtt szoktak megkérdezni.",
+    "Kell szerver oldali beállítás, ha már GA4-em van?"
+   ],
+   "text": "A csak böngésző alapú GA4 egyre megbízhatatlanabb. Adblockerek, iOS ITP és harmadik féltől szárm. cookie-korlátozások csendben elvisznek 20–40% konverziós eventet. hibaüzenet nélkül. A szerver oldali mérés a kritikus jeleket olyan first-party infrastruktúrára viszi, amelyet te irányítasz, visszanyerve azt az adatot, amelyet a böngésző-alapú setup már nem tud megszerezni. Ha fizetett hirdetést futtatsz, vagy pontos organikus attribúcióra van szükséged, a szerver oldali mérés ma már nem opcionális — alapfeltétel."
+  },
+  {
+   "id": "b194",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Amit mérési projekt előtt szoktak megkérdezni.",
+    "Mi a különbség GA4-beállítás és mérési architektúra között?"
+   ],
+   "text": "Mi a különbség GA4-beállítás és mérési architektúra között?"
+  },
+  {
+   "id": "b195",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Amit mérési projekt előtt szoktak megkérdezni.",
+    "Mi a különbség GA4-beállítás és mérési architektúra között?"
+   ],
+   "text": "A GA4-beállítás eszközkonfiguráció. A mérési architektúra először üzleti logika — meghatározza, mi számít, hogyan kapcsolódik a bevételhez, és minden adatpont melyik döntéshez vezet. A GA4-beállítás arra felel: „telepítve van-e a tracking?” A mérési architektúra arra: „tudunk-e magabiztos növekedési döntéseket hozni ebből az adatból?”"
+  },
+  {
+   "id": "b196",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Amit mérési projekt előtt szoktak megkérdezni.",
+    "Hogyan befolyásolja a mérés az SEO-teljesítményt?"
+   ],
+   "text": "Hogyan befolyásolja a mérés az SEO-teljesítményt?"
+  },
+  {
+   "id": "b197",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Amit mérési projekt előtt szoktak megkérdezni.",
+    "Hogyan befolyásolja a mérés az SEO-teljesítményt?"
+   ],
+   "text": "Pontos mérés nélkül az SEO értéke szinte mindig alulértékelt marad. A legtöbb rendszer az utolsó kattintásnak adja az érdemet, ami gyakran egy direkt vagy fizetett csatorna. Így az organikus csatorna hozzájárulása a döntési folyamat korábbi szakaszaiban nem látszik, még akkor sem, ha valójában fontos szerepet játszott. Egy jól kialakított attribúciós modell láthatóvá teszi ezt a hatást a teljes ügyfélúton, ami jobb döntéseket tesz lehetővé a befektetések és a prioritások terén. Emellett minden SEO-munkát egy kiinduló állapothoz kell mérni. Ha nincs alapvonal, akkor nem lehet egyértelműen bizonyítani, hogy egy adott tartalmi, technikai vagy strukturális fejlesztés tényleg eredményt hozott."
+  },
+  {
+   "id": "b198",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Amit mérési projekt előtt szoktak megkérdezni.",
+    "Kell BigQuery, vagy elég a GA4?"
+   ],
+   "text": "Kell BigQuery, vagy elég a GA4?"
+  },
+  {
+   "id": "b199",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Amit mérési projekt előtt szoktak megkérdezni.",
+    "Kell BigQuery, vagy elég a GA4?"
+   ],
+   "text": "A legtöbb kkv-nak elég a GA4 megfelelő event-architektúrával és egy jól strukturált Looker Studio dashboarddal. A BigQuery akkor válik értékessé, ha nyers event-szintű adatra, összetett csatornák közötti lekérdezésekre, GA4 adatmegőrzési határain túli történeti elemzésre, vagy CRM és szerver oldali adatforrásokkal való integrációra van szükség. Nem alapértelmezett ajánlás — a megfelelő eszköz akkor, amikor a standard GA4-riportálás eléri a strukturális korlátait."
+  },
+  {
+   "id": "b200",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Amit mérési projekt előtt szoktak megkérdezni.",
+    "Mennyi ideig tart egy mérési rendszer felépítése?"
+   ],
+   "text": "Mennyi ideig tart egy mérési rendszer felépítése?"
+  },
+  {
+   "id": "b201",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Amit mérési projekt előtt szoktak megkérdezni.",
+    "Mennyi ideig tart egy mérési rendszer felépítése?"
+   ],
+   "text": "Egy alap audit és mérés beállítás általában egy sprintbe fér (2 hét). Egy teljes mérési architektúra — szerver oldali beállítással, attribúciós modellezéssel és riportálási réteggel — a meglévő rendszer összetettségétől függően 3–4 sprint. Az első sprint mindig egy tracking integritás audittal kezdődik, mielőtt bármilyen új implementáció elkezdődne."
+  },
+  {
+   "id": "b202",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Amit mérési projekt előtt szoktak megkérdezni.",
+    "Mennyi ideig tart egy mérési rendszer felépítése?"
+   ],
+   "text": "— A növekedési keretrendszerem további részei"
+  },
+  {
+   "id": "b203",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít"
+   ],
+   "text": "A mérés az alap. Ezek a rétegek, amelyeknek segít"
+  },
+  {
+   "id": "b204",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít"
+   ],
+   "text": "02. réteg"
+  },
+  {
+   "id": "b205",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "SEO"
+   ],
+   "text": "SEO"
+  },
+  {
+   "id": "b206",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "SEO"
+   ],
+   "text": "Keresési szándék feltárása, információs struktúra kialakítása és szakmai hitelesség építése, mérhető üzleti eredményekre hangolva."
+  },
+  {
+   "id": "b207",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "SEO"
+   ],
+   "text": "SEO felfedezése"
+  },
+  {
+   "id": "b208",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "SEO"
+   ],
+   "text": "03. réteg"
+  },
+  {
+   "id": "b209",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "GEO – AI láthatóság"
+   ],
+   "text": "GEO – AI láthatóság"
+  },
+  {
+   "id": "b210",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "GEO – AI láthatóság"
+   ],
+   "text": "Entitás-architektúra és tudásgráf strukturálás a generatív AI-rendszerekben való megjelenéshez"
+  },
+  {
+   "id": "b211",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "GEO – AI láthatóság"
+   ],
+   "text": "GEO felfedezése"
+  },
+  {
+   "id": "b212",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "GEO – AI láthatóság"
+   ],
+   "text": "04. réteg"
+  },
+  {
+   "id": "b213",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "UX & Konverzió"
+   ],
+   "text": "UX & Konverzió"
+  },
+  {
+   "id": "b214",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "UX & Konverzió"
+   ],
+   "text": "Döntési útvonalak tudatos kialakítása és a súrlódási pontok csökkentése, hogy a mért forgalomból mérhető bevétel legyen."
+  },
+  {
+   "id": "b215",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "UX & Konverzió"
+   ],
+   "text": "UX felfedezése"
+  },
+  {
+   "id": "b216",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "UX & Konverzió"
+   ],
+   "text": "05. réteg"
+  },
+  {
+   "id": "b217",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "Kivitelezés"
+   ],
+   "text": "Kivitelezés"
+  },
+  {
+   "id": "b218",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "Kivitelezés"
+   ],
+   "text": "Sprintalapú működés, amely a mérésből származó felismeréseket konkrét fejlesztésekké alakítja."
+  },
+  {
+   "id": "b219",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "A mérés az alap. Ezek a rétegek, amelyeknek segít",
+    "Kivitelezés"
+   ],
+   "text": "Kivitelezés felfedezése"
+  },
+  {
+   "id": "b220",
+   "kind": "heading",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Ha a riportjaid vitát szülnek döntések helyett, az strukturális probléma."
+   ],
+   "text": "Ha a riportjaid vitát szülnek döntések helyett, az strukturális probléma."
+  },
+  {
+   "id": "b221",
+   "kind": "paragraph",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Ha a riportjaid vitát szülnek döntések helyett, az strukturális probléma."
+   ],
+   "text": "Oszd meg a weboldalad és az elsődleges analitikai kihívásodat. Felvázolom, hol korlátozza a mérési architektúrád a döntéshozatalt — és hogyan néz ki egy strukturált megoldás."
+  },
+  {
+   "id": "b222",
+   "kind": "other",
+   "heading_path": [
+    "Mérés nélküli marketing nem más, mint találgatás.",
+    "Ha a riportjaid vitát szülnek döntések helyett, az strukturális probléma."
+   ],
+   "text": "Írj nekem"
+  }
+ ],
+ "gold": {
+  "primary_entities": [],
+  "entities": [],
+  "optional": [],
+  "negatives": []
+ }
+}
