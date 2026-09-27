@@ -228,3 +228,23 @@ def test_spotcheck_puts_the_three_outputs_side_by_side(tmp_path, monkeypatch):
     assert "| Kitalált Kft. | ~~org~~ | — | a Kitalált Kft. szervezi a fesztivált |" in text
     assert "A Budapest Coffee Fest idén is lesz a Bálnában." in text
     assert text.count("Hiányzik: ") == 1
+
+
+def test_gold_draft_lists_the_page_and_the_union(tmp_path, monkeypatch):
+    import tests.acceptance.gold_draft as gold
+
+    con, records = three_models(tmp_path)
+    url = con.execute("SELECT url FROM pages WHERE url LIKE '%/b/'").fetchone()[0]
+    con.execute(f"ATTACH '{(tmp_path / 'set.duckdb').as_posix()}' AS disk")
+    for table in ("pages", "headings"):
+        con.execute(f"CREATE TABLE disk.{table} AS SELECT * FROM memory.{table}")
+    con.execute("DETACH disk")
+    for provider, recs in records.items():
+        compare.write_jsonl(tmp_path / f"set.{provider}.jsonl", recs)
+    monkeypatch.setattr(gold, "GOLD_PAGES", [("b", "set", url)])
+    text = gold.draft_markdown(tmp_path)
+    assert f"## b: {url}" in text
+    assert "Modellek: Gemini 2 sor, OpenAI 1 sor, Anthropic nincs kimenet." in text
+    assert "| Budapest Coffee Fest | event | event | A Budapest Coffee Fest idén |" in text
+    assert "| Kitalált Kft. | ~~org~~ | — | ~~a Kitalált Kft. szervezi a fesztivált~~ |" in text
+    assert "A Budapest Coffee Fest idén is lesz a Bálnában." in text
