@@ -20,6 +20,7 @@ from aaa2.entities.validate import (
     KGMatch,
     canonical_key,
     classify_kg,
+    concept_status,
     decide_type,
     load_kg_types,
     validate_entities,
@@ -233,6 +234,14 @@ def entities_db(rows):
     return con
 
 
+def add_rows(con, name, *positions):
+    """Egy-egy page_entities sor a megadott pozíciókkal (külön oldalakon)."""
+    for page_id, position in enumerate(positions, start=100):
+        con.execute("INSERT INTO page_entities (page_id, entity_id, position, evidence, source) "
+                    "SELECT ?, entity_id, ?, name, 'rule' FROM entities WHERE name = ?",
+                    [page_id, position, name])
+
+
 def run(con, shared, apis, env, sleeps=None, **kwargs):
     return validate_entities(con, shared, http=apis.client(), env_file=env,
                              retry=Retry(sleep=(sleeps.append if sleeps is not None
@@ -354,6 +363,8 @@ def test_rules_rerun_finds_an_entity_the_kg_retyped(env):
     pages["/bq/"] = html("BQ", "")
     con = site(pages)
     run_rules(con)
+    # a type_suggested az LLM-körből jön, a szövegtörzsbeli sorával együtt (nem navigációs)
+    add_rows(con, "BigQuery", "body")
     con.execute("UPDATE entities SET type_suggested = 'tech'")
     run(con, connect(":memory:"), standard_apis(), env)
     assert con.execute("SELECT type, type_changed_from FROM entities").fetchall() == [
@@ -363,12 +374,159 @@ def test_rules_rerun_finds_an_entity_the_kg_retyped(env):
         ("BigQuery", "tech", "rule")]
 
 
+def thing(name, description="leírás", article="szócikk"):
+    return kg_body(kg_item(name, ["Thing"], description, article, kg_id=f"kg:/m/{name}"))
+
+
+def test_concept_needs_kg_and_wikipedia_in_its_own_language_for_high(env):
+    """Concept: "Thing" KG-találat és szócikk az entitás nyelvén → high; csak angol szócikk, vagy
+    nincs szócikk → medium (a leírás nélküli is); CreativeWork-találat → no_match, eltérés-jelölés."""
+    con = entities_db([("Mérés", "concept", "hu", None), ("Marketing", "concept", "hu", None),
+                       ("Wine list", "concept", "en", None), ("Borlap", "concept", "hu", None),
+                       ("Kapcsolat", "concept", "hu", None), ("Ütem", "concept", None, None)])
+    apis = FakeApis()
+    for name in ("Mérés", "Marketing", "Wine list", "Ütem"):
+        apis.kg[name] = thing(name)
+    apis.kg["Borlap"] = thing("Borlap", None, None)
+    apis.kg["Kapcsolat"] = kg_body(kg_item("Kapcsolat", ["Movie", "CreativeWork", "Thing"],
+                                           "film", "A Kapcsolat…"))
+    apis.wiki[("hu", "Mérés")] = wiki_body("Mérés", "hu")
+    apis.wiki[("en", "Marketing")] = wiki_body("Marketing")
+    apis.wiki[("en", "Wine list")] = wiki_body("Wine list")
+    apis.wiki[("en", "Ütem")] = wiki_body("Ütem")
+    result = run(con, connect(":memory:"), apis, env)
+    assert con.execute("SELECT name, kg_status, kg_id, kg_type, kg_type_mismatch, wikipedia_url "
+                       "FROM entities ORDER BY entity_id").fetchall() == [
+        ("Mérés", "high", "kg:/m/Mérés", None, False, "https://hu.wikipedia.org/wiki/Mérés"),
+        ("Marketing", "medium", "kg:/m/Marketing", None, False,
+         "https://en.wikipedia.org/wiki/Marketing"),
+        ("Wine list", "high", "kg:/m/Wine list", None, False,
+         "https://en.wikipedia.org/wiki/Wine_list"),
+        ("Borlap", "medium", "kg:/m/Borlap", None, False, None),
+        ("Kapcsolat", "no_match", None, "work", True, None),
+        # nyelv nélkül az angol az entitás nyelve
+        ("Ütem", "high", "kg:/m/Ütem", None, False, "https://en.wikipedia.org/wiki/Ütem"),
+    ]
+    assert (result.statuses, result.mismatches) == ({"high": 3, "medium": 2, "no_match": 1}, 1)
+
+
+@pytest.mark.parametrize(("kg", "wiki_own", "status"), [
+    (KGMatch("high"), True, "high"),
+    (KGMatch("stub"), True, "high"),
+    (KGMatch("high"), False, "medium"),
+    (KGMatch("ambiguous"), False, "medium"),
+    (KGMatch("high"), None, None),
+    (KGMatch("no_match"), True, "no_match"),
+    (KGMatch("no_match", kg_type="work"), True, "no_match"),
+    # típusos találat (a type_suggested szerint): az osztályozó státusza
+    (KGMatch("stub", kg_type="tech"), True, "stub"),
+])
+def test_concept_status(kg, wiki_own, status):
+    assert concept_status(kg, wiki_own) == status
+
+
+def test_concept_status_stays_when_its_own_language_wikipedia_fails(env):
+    con = entities_db([("Mérés", "concept", "hu", None)])
+    con.execute("UPDATE entities SET kg_status = 'medium'")
+    apis = FakeApis()
+    apis.kg["Mérés"] = thing("Mérés")
+    apis.wiki[("en", "Mérés")] = wiki_body("Mérés")
+    apis.fail["wikipedia"] = [503] * 4
+    result = run(con, connect(":memory:"), apis, env)
+    assert con.execute("SELECT kg_status, kg_id, wikipedia_url FROM entities").fetchone() == (
+        "medium", None, "https://en.wikipedia.org/wiki/Mérés")
+    assert (result.statuses, result.errors) == ({}, {"wikipedia": 1})
+
+
+def test_thing_match_on_a_concept_suggestion_follows_the_concept_rule(env):
+    """Az org "Thing" találata csak a concept-javaslat miatt számít; a mérce a concepté."""
+    con = entities_db([("Mérés", "org", "hu", "concept")])
+    apis = FakeApis()
+    apis.kg["Mérés"] = thing("Mérés")
+    run(con, connect(":memory:"), apis, env)
+    assert con.execute("SELECT type, kg_status, kg_type FROM entities").fetchone() == (
+        "org", "medium", None)
+
+
+def test_concept_without_wikipedia_is_at_most_medium(env):
+    con = entities_db([("Mérés", "concept", "hu", None)])
+    apis = FakeApis()
+    apis.kg["Mérés"] = thing("Mérés")
+    apis.wiki[("hu", "Mérés")] = wiki_body("Mérés", "hu")
+    run(con, connect(":memory:"), apis, env, wikipedia=False)
+    assert con.execute("SELECT kg_status FROM entities").fetchone() == ("medium",)
+    assert apis.services() == ["kg"]
+
+
+def test_navigational_concept_is_a_stub_without_calls(env):
+    """Concept, amelynek minden sora anchor vagy title: stub, navigational, KG- és Wikipedia-hívás
+    nélkül, a korábbi validálás mezői törölve. Más pozíciójú sorral, vagy ha nem concept: rendes
+    validálás; a navigational ok a következő rendes validálásnál törlődik."""
+    con = entities_db([("Wine List", "concept", "en", None), ("Mérés", "concept", "hu", None),
+                       ("Borlap", "concept", "hu", None), ("Google", "org", "en", None),
+                       ("Ismeretlen", "concept", "hu", None)])
+    add_rows(con, "Wine List", "anchor", "anchor", "anchor")
+    add_rows(con, "Mérés", "anchor", "title")
+    add_rows(con, "Borlap", "anchor", "body")
+    add_rows(con, "Google", "anchor", "anchor", "anchor")
+    con.execute("UPDATE entities SET kg_status = 'high', kg_id = 'kg:/m/x', kg_type_mismatch = true, "
+                "wikipedia_url = 'https://hu.wikipedia.org/wiki/Mérés' WHERE name = 'Mérés'")
+    apis = FakeApis()
+    apis.kg["Wine List"] = thing("Wine List")
+    apis.kg["Mérés"] = thing("Mérés")
+    apis.kg["Google"] = kg_body(kg_item("Google", ["Corporation"], "Company", "Google is",
+                                        kg_id="kg:/m/google"))
+    result = run(con, connect(":memory:"), apis, env)
+    rows = con.execute("SELECT name, kg_status, kg_reason, kg_id, kg_type_mismatch, wikipedia_url, "
+                       "validated_at FROM entities ORDER BY entity_id").fetchall()
+    assert [r[:6] for r in rows] == [
+        ("Wine List", "stub", "navigational", None, None, None),
+        ("Mérés", "stub", "navigational", None, None, None),
+        ("Borlap", "no_match", None, None, False, None),
+        ("Google", "high", None, "kg:/m/google", False, None),
+        ("Ismeretlen", "no_match", None, None, False, None),
+    ]
+    assert all(r[6] == NOON for r in rows)
+    assert (result.navigational, result.statuses) == (2, {"no_match": 2, "high": 1})
+    asked = {r.url.params.get("query") or r.url.params.get("gsrsearch") for r in apis.requests}
+    assert asked == {"Borlap", "Google", "Ismeretlen"}
+
+    add_rows(con, "Mérés", "body")
+    apis.wiki[("hu", "Mérés")] = wiki_body("Mérés", "hu")
+    again = run(con, connect(":memory:"), apis, env)
+    assert con.execute("SELECT kg_status, kg_reason FROM entities WHERE name = 'Mérés'"
+                       ).fetchone() == ("high", None)
+    assert again.navigational == 1
+
+
+def test_limit_counts_only_the_navigational_concepts_it_reaches(env):
+    con = entities_db([("Rólunk", "concept", "hu", None), ("Kapcsolat", "concept", "hu", None)])
+    add_rows(con, "Rólunk", "anchor")
+    add_rows(con, "Kapcsolat", "anchor")
+    result = run(con, connect(":memory:"), FakeApis(), env, limit=1)
+    assert (result.entities, result.navigational) == (1, 1)
+    assert con.execute("SELECT name, kg_status FROM entities ORDER BY entity_id").fetchall() == [
+        ("Rólunk", "stub"), ("Kapcsolat", "unchecked")]
+
+
+def test_navigational_stub_needs_no_kg_key(tmp_path, monkeypatch):
+    monkeypatch.delenv("GOOGLE_KG_API_KEY", raising=False)
+    con = entities_db([("Wine List", "concept", "en", None)])
+    add_rows(con, "Wine List", "anchor")
+    apis = FakeApis()
+    result = run(con, connect(":memory:"), apis, tmp_path / "nincs.env")
+    assert con.execute("SELECT kg_status, kg_reason FROM entities").fetchone() == (
+        "stub", "navigational")
+    assert (result.kg_skipped, result.navigational, apis.requests) == (True, 1, [])
+
+
 def test_cli_validate(env, tmp_path, monkeypatch):
     monkeypatch.setattr(connect_module, "DATA_DIR", tmp_path)
     con = connect(db_path("pelda.hu"))
     con.execute("INSERT INTO entities (name, type, lang, type_suggested, source) VALUES "
                 "('Budapest', 'place', 'hu', NULL, 'rule'), ('BigQuery', 'concept', 'en', "
-                "'tech', 'llm')")
+                "'tech', 'llm'), ('Rólunk', 'concept', 'hu', NULL, 'rule')")
+    add_rows(con, "Rólunk", "anchor", "anchor", "anchor")
     con.close()
     apis = standard_apis()
     monkeypatch.setattr(cli, "validate_entities", lambda c, s, **kw: validate_entities(
@@ -376,7 +534,8 @@ def test_cli_validate(env, tmp_path, monkeypatch):
     result = CliRunner().invoke(app, ["validate", "pelda.hu"])
     assert result.exit_code == 0, result.output
     lines = result.output.splitlines()
-    assert lines[0] == "validálás: 2 entitás; KG: high 1, medium 1; Wikipedia-szócikk: 2"
+    assert lines[0] == ("validálás: 3 entitás; KG: high 1, medium 1; navigációs stub: 1; "
+                        "Wikipedia-szócikk: 2")
     assert lines[1:3] == ["  típusváltás a KG szerint: 1, KG-típuseltérés jelölve: 0",
                           "    BigQuery: concept → tech"]
     assert lines[3].startswith("  API-hívás: KG 2, Wikipedia 2; cache: site 0, shared 0; "
@@ -398,12 +557,20 @@ def clone(con, path):
 
 
 def outcome(con):
-    return {f"{name}|{kind}": [status, kg_type, url] for name, kind, status, kg_type, url in
-            con.execute("SELECT name, type, kg_status, kg_type, wikipedia_url FROM entities "
-                        "ORDER BY entity_id").fetchall()}
+    return {f"{name}|{kind}": [status, kg_type, url, reason]
+            for name, kind, status, kg_type, url, reason in con.execute(
+                "SELECT name, type, kg_status, kg_type, wikipedia_url, kg_reason FROM entities "
+                "ORDER BY entity_id").fetchall()}
 
 
 REFERENCE_NAMES = ("kk-coach-crawl", "materia-crawl", "ngx-bootstrap-crawl")
+# A "Wine List" és a "Mérés" csak anchorban áll (navigációs); a Google a schemából jön.
+NAMED = {
+    "kk-coach-crawl": {"Mérés|concept": ["stub", None, None, "navigational"],
+                       "Google|org": ["high", "org", "https://en.wikipedia.org/wiki/Google", None]},
+    "materia-crawl": {"Wine List|concept": ["stub", None, None, "navigational"]},
+    "ngx-bootstrap-crawl": {},
+}
 
 
 @pytest.mark.parametrize("name", REFERENCE_NAMES)
@@ -431,7 +598,9 @@ def test_reference_validation_replays_the_recorded_answers(name, reference_crawl
                       http=httpx.Client(transport=httpx.MockTransport(handler)), env_file=env,
                       retry=Retry(sleep=lambda _: None), clock=lambda: NOON)
     assert misses == []
-    assert outcome(con) == recorded["measured"]
+    measured = outcome(con)
+    assert {key: measured.get(key) for key in NAMED[name]} == NAMED[name]
+    assert measured == recorded["measured"]
 
 
 @pytest.mark.live

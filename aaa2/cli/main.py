@@ -194,7 +194,8 @@ def validate(
     wikipedia: Annotated[bool, typer.Option(help="Wikipedia-szócikk keresése")] = True,
 ) -> None:
     """Az entitások validálása: Google Knowledge Graph (öt kategória, a KG-típus összevetése) és
-    Wikipedia-szócikk. A válaszok a site-adatbázisban és a shared.duckdb-ben cache-elve."""
+    Wikipedia-szócikk; a csak anchorban és title-ben álló concept hívás nélkül stub (navigációs).
+    A válaszok a site-adatbázisban és a shared.duckdb-ben cache-elve."""
     con = _open(domain)
     shared = connect(shared_path())
     try:
@@ -203,7 +204,8 @@ def validate(
         shared.close()
     kg = "kihagyva (nincs GOOGLE_KG_API_KEY)" if run.kg_skipped else ", ".join(
         f"{status} {count}" for status, count in sorted(run.statuses.items())) or "—"
-    typer.echo(f"validálás: {run.entities} entitás; KG: {kg}; Wikipedia-szócikk: {run.wikipedia}")
+    typer.echo(f"validálás: {run.entities} entitás; KG: {kg}; navigációs stub: {run.navigational}; "
+               f"Wikipedia-szócikk: {run.wikipedia}")
     typer.echo(f"  típusváltás a KG szerint: {len(run.type_changes)}, KG-típuseltérés jelölve: "
                f"{run.mismatches}")
     for name, before, after in run.type_changes:

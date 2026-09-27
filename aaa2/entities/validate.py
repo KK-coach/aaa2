@@ -1,5 +1,7 @@
 """Entitás-validálás: Google Knowledge Graph Search API és Wikipedia, minden entitásra.
 
+- Pozíció-feltétel előbb: a concept, amelynek minden `page_entities` sora `anchor` vagy `title`,
+  navigációs címke: `kg_status` stub, `kg_reason` navigational, KG- és Wikipedia-hívás nélkül.
 - KG: a `legacy/kg_validate.py` ötkategóriás osztályozója, név és típus szerint. Név-egyezés:
   az `alias_key` szerint, pontosan (nincs fuzzy), a névre vagy egy aliasra. Típus-egyezés: a
   találat típusa (`config/kg_types.toml` szerint leképezve) az entitás típusa vagy a
@@ -8,6 +10,11 @@
     stub: egyetlen név- és típus-egyezés leírás nélkül; ambiguous: több; no_match: nincs.
   - Más típusú, azonos nevű találat nem ad státuszt (no_match), a típusa a `kg_type`-ba kerül,
     és `kg_type_mismatch` jelöli.
+  - Csak "Thing" típusú (leképezhetetlen) találat, amely csak conceptnél (vagy concept
+    `type_suggested`-nél) számít: a KG-találat és egy Wikipedia-szócikk az entitás nyelvén
+    (pontos címegyezés) → high; csak a KG-találat → medium. Ha az entitás nyelvén a
+    Wikipedia-kérés hibára fut, a státusz marad; Wikipedia nélkül legfeljebb medium. Más típusú
+    találat conceptre (pl. CreativeWork → work): no_match és eltérés-jelölés.
   - Ha a KG-típus = `type_suggested`, és a találat high / medium, a típus átáll
     (`type_changed_from` a régi); ez az egyetlen út a típusváltásra. Más eltérés csak jelölés.
   - A kérés nyelvei: az entitás nyelve és az angol. Kulcs nélkül a KG kimarad, nem hiba; API-hiba
@@ -27,7 +34,7 @@ import time
 import tomllib
 from collections import Counter
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import quote
@@ -47,6 +54,7 @@ KG_LIMIT = 10
 KG_DAILY_QUOTA = 100_000
 WIKI_MIN_INTERVAL = 0.1
 RECOGNIZED = ("high", "medium")
+NAVIGATIONAL_POSITIONS = ("anchor", "title")
 USER_AGENT = "aaa2/0.1 (+https://github.com/KK-coach/aaa2)"
 _RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 
@@ -107,6 +115,26 @@ def classify_kg(body: dict, name_keys: set[str], prefer: set[str],
         status = "stub" if len(pool) == 1 else "ambiguous"
     return KGMatch(status, result.get("@id"), _values(result.get("name"))[0], tuple(types),
                    kg_type, score, len(pool))
+
+
+def concept_status(kg: KGMatch, wiki_own: bool | None) -> str | None:
+    """Egy concept státusza: csak "Thing" típusú KG-találatnál a Wikipedia-szócikk az entitás
+    nyelvén dönt (high / medium); None, ha nem dönthető el (a Wikipedia-kérés hibára futott).
+    Típusos találatnál (a `type_suggested` szerint) az osztályozó státusza marad."""
+    if kg.status == "no_match" or kg.kg_type is not None:
+        return kg.status
+    if wiki_own is None:
+        return None
+    return "high" if wiki_own else "medium"
+
+
+def navigational_concepts(con: duckdb.DuckDBPyConnection) -> set[int]:
+    """A conceptek, amelyeknek minden `page_entities` sora anchor vagy title."""
+    return {entity_id for (entity_id,) in con.execute(
+        "SELECT pe.entity_id FROM page_entities pe JOIN entities e USING (entity_id) "
+        "WHERE e.type = 'concept' GROUP BY pe.entity_id "
+        "HAVING bool_and(list_contains(?, pe.position))", [list(NAVIGATIONAL_POSITIONS)],
+    ).fetchall()}
 
 
 def decide_type(current: str, suggested: str | None, kg: KGMatch | None
@@ -251,6 +279,7 @@ class ValidationRun:
     statuses: dict[str, int]
     type_changes: list[tuple[str, str, str]]
     mismatches: int
+    navigational: int
     wikipedia: int
     calls: dict[str, int]
     cache_site: int
@@ -277,8 +306,15 @@ def validate_entities(con: duckdb.DuckDBPyConnection,
         "SELECT entity_id, name, type, type_suggested, aliases, lang FROM entities "
         "ORDER BY entity_id" + (" LIMIT ?" if limit else ""), [limit] if limit else [],
     ).fetchall()
+    navigational = navigational_concepts(con) & {row[0] for row in rows}
     try:
         for entity_id, name, kind, suggested, aliases, lang in rows:
+            if entity_id in navigational:
+                con.execute(
+                    "UPDATE entities SET kg_status = 'stub', kg_reason = 'navigational', "
+                    "kg_id = NULL, kg_type = NULL, kg_type_mismatch = NULL, wikipedia_url = NULL, "
+                    "validated_at = ? WHERE entity_id = ?", [clock(), entity_id])
+                continue
             keys = {alias_key(n) for n in [name, *(aliases or [])]}
             langs = [lang, "en"] if lang and lang != "en" else ["en"]
             kg = None
@@ -291,16 +327,22 @@ def validate_entities(con: duckdb.DuckDBPyConnection,
                     if kg.status != "no_match":
                         api.share("kg", key)
             url, wiki_ok = None, wikipedia
+            wiki_own: bool | None = False           # szócikk az entitás nyelvén; None: hiba
             if wikipedia:
                 for code in langs:
                     key, body = api.get("wikipedia", WIKI_API.format(lang=code), _wiki_params(name))
                     if body is None:
                         wiki_ok = False
+                        wiki_own = None if code == langs[0] else wiki_own
                         continue
                     url = wikipedia_match(body, keys)
                     if url:
+                        wiki_own = True if code == langs[0] else wiki_own
                         api.share("wikipedia", key)
                         break
+            if kg is not None:
+                status = concept_status(kg, wiki_own)
+                kg = replace(kg, status=status) if status is not None else None
             new_type, changed_from, mismatch = decide_type(kind, suggested, kg)
             if kg is not None:
                 statuses[kg.status] += 1
@@ -308,7 +350,7 @@ def validate_entities(con: duckdb.DuckDBPyConnection,
                 if changed_from:
                     changes.append((name, changed_from, new_type))
                 con.execute(
-                    "UPDATE entities SET kg_status = ?, kg_id = ?, kg_type = ?, "
+                    "UPDATE entities SET kg_status = ?, kg_reason = NULL, kg_id = ?, kg_type = ?, "
                     "kg_type_mismatch = ?, type = ?, type_changed_from = coalesce(?, "
                     "type_changed_from) WHERE entity_id = ?",
                     [kg.status, kg.kg_id, kg.kg_type, mismatch, new_type, changed_from,
@@ -322,8 +364,8 @@ def validate_entities(con: duckdb.DuckDBPyConnection,
     finally:
         if own_http:
             http.close()
-    return ValidationRun(len(rows), kg_key is None, dict(statuses), changes, mismatches, found,
-                         dict(api.counts.calls), api.counts.cache_site, api.counts.cache_shared,
+    return ValidationRun(len(rows), kg_key is None, dict(statuses), changes, mismatches,
+                         len(navigational), found, dict(api.counts.calls), api.counts.cache_site, api.counts.cache_shared,
                          dict(api.counts.errors))
 
 
