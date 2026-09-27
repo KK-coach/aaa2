@@ -382,11 +382,11 @@ def spend(path, model, usd):
 
 
 def test_budget_stops_above_threshold_without_calling(con, api, env, ledger_path):
-    spend(ledger_path, "claude-opus-5-5", 4.0)
+    spend(ledger_path, "claude-opus-5-5", 10.0)
     client = clients_for(con, api, env, ledger_path)["anthropic"]
-    client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")   # 4,0: még nem „felett”
-    assert client.spent_usd() == pytest.approx(4.014)
-    with pytest.raises(BudgetExceeded, match="4.0140 USD a 4.0 USD leállási küszöb fölött"):
+    client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")   # 10,0: még nem „felett”
+    assert client.spent_usd() == pytest.approx(10.014)
+    with pytest.raises(BudgetExceeded, match="10.0140 USD a 10.0 USD leállási küszöb fölött"):
         client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
     assert [route for route, _, _ in api.requests] == ["anthropic"]
 
@@ -461,7 +461,7 @@ def test_status_prints_cumulative_usd_per_model(tmp_path, monkeypatch):
     assert result.exit_code == 0, result.output
     lines = [line.strip() for line in result.output.splitlines()]
     assert "claude-opus-5-5: 1.7500 USD" in lines
-    assert ("anthropic összesen 1.7500 USD; leállás 4.00 USD felett, keret 5.00 USD" in lines)
+    assert ("anthropic összesen 1.7500 USD; leállás 10.00 USD felett, keret 10.00 USD" in lines)
     assert "gpt-6-luna (aktív): 0.0000 USD" in lines
     assert "gpt-5.6-terra: 2.6000 USD" in lines
     assert ("openai összesen 2.6000 USD; leállás 2.50 USD felett, keret 3.00 USD; LEÁLLVA"

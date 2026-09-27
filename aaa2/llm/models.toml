@@ -22,8 +22,8 @@ model = "claude-opus-5-5"
 alternatives = ["claude-sonnet-5", "claude-haiku-4-5-20251001"]
 key_env = "ANTHROPIC_API_KEY"
 max_output_tokens = 16000
-budget_usd = 5.0
-stop_usd = 4.0
+budget_usd = 10.0
+stop_usd = 10.0
 
 [openai]
 model = "gpt-6-luna"
