@@ -434,3 +434,11 @@ def test_recall_needs_the_reference_block():
     assert (wrong_block.found, wrong_block.good, wrong_block.wrong) == (0, 1, 0)
     assert ("Montalcino", "hard", "place", "felismerési") in wrong_block.missed
     assert (right_block.found, right_block.recognized) == (1, 1)
+
+
+def test_modifier_concept_rule_and_its_example_is_not_on_the_pages():
+    assert "A professional concept used as a modifier of another word" in BLOCK_PROMPT
+    assert "“hidegen sajtolt olívaolaj” → hidegen sajtolás" in BLOCK_PROMPT
+    for page in EVERY_PAGE.values():
+        text = "\n".join(block_text(b) for b in page["blocks"]).casefold()
+        assert "hidegen sajtol" not in text, page["page_id"]
