@@ -3,9 +3,10 @@
     python -m tests.acceptance.locked_pages [--data-dir data/compare]
 
 Szabály (`select`), site-onként, a crawl-adatbázis `pages` táblájából (csak az `url`,
-`status`, `final_url`, `canonical`, `hreflang` oszlop):
+`status`, `final_url`, `canonical`, `hreflang`, `word_count` oszlop; a `word_count` a
+`main_content` szavainak száma):
 
-1. csak a 2xx státuszú URL;
+1. csak a 2xx státuszú URL, legalább 150 szavas main contenttel;
 2. kizárva a fejlesztési oldal és a fordításai: a fejlesztési URL, a `hreflang`-jében szereplő
    URL-ek, azok az URL-ek, amelyeknek a `hreflang`-je a fejlesztési URL-t tartalmazza, a
    lekérdezés nélkül vele azonos URL-ek (`?tab=` változatok), és amelyek ezek egyikére
@@ -31,13 +32,14 @@ from aaa2.db.connect import DATA_DIR
 
 OUT = Path(__file__).parent / "locked_pages.json"
 PER_SITE = 3
+MIN_WORDS = 150
 DEVELOPMENT = {
     "kk-coach-crawl": "https://kk.coach/hu/megoldasok/meres/",
     "materia-crawl": "https://materia-tm.com/hu/etlap/",
     "ngx-bootstrap-crawl": "https://valor-software.com/ngx-bootstrap/components/accordion",
 }
 RULE = [
-    "csak a 2xx státuszú URL",
+    "csak a 2xx státuszú URL, legalább 150 szavas main contenttel (word_count)",
     ("kizárva a fejlesztési oldal és a fordításai (hreflang mindkét irányban), a lekérdezés "
      "nélkül vele azonos URL-ek (?tab= változatok) és az ezekre átirányító URL-ek"),
     ("egy oldal egyszer: kimarad az URL, amelynek a final_url-je vagy a canonical-ja egy másik, "
@@ -59,9 +61,12 @@ def sha256(url: str) -> str:
     return hashlib.sha256(url.encode("utf-8")).hexdigest()
 
 
-def select(rows: Sequence[Mapping], development: str, n: int = PER_SITE) -> list[str]:
-    """A szabály egy site soraira (`url`, `status`, `final_url`, `canonical`, `hreflang`)."""
-    ok = [r for r in rows if r["status"] is not None and 200 <= r["status"] < 300]
+def select(rows: Sequence[Mapping], development: str, n: int = PER_SITE,
+           min_words: int = MIN_WORDS) -> list[str]:
+    """A szabály egy site soraira (`url`, `status`, `final_url`, `canonical`, `hreflang`,
+    `word_count`)."""
+    ok = [r for r in rows if r["status"] is not None and 200 <= r["status"] < 300
+          and (r["word_count"] or 0) >= min_words]
     dev = next((r for r in ok if r["url"] == development), None)
     excluded = {development, *_hreflang_urls(dev["hreflang"] if dev else None)}
     excluded |= {r["url"] for r in ok if development in _hreflang_urls(r["hreflang"])}
@@ -78,7 +83,8 @@ def select(rows: Sequence[Mapping], development: str, n: int = PER_SITE) -> list
 def read_rows(db: Path) -> list[dict]:
     con = duckdb.connect(str(db), read_only=True)
     try:
-        cursor = con.execute("SELECT url, status, final_url, canonical, hreflang FROM pages")
+        cursor = con.execute("SELECT url, status, final_url, canonical, hreflang, word_count "
+                             "FROM pages")
         names = [d[0] for d in cursor.description]
         return [dict(zip(names, row, strict=True)) for row in cursor.fetchall()]
     finally:

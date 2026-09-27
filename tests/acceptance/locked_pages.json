@@ -1,6 +1,6 @@
 {
  "rule": [
-  "csak a 2xx státuszú URL",
+  "csak a 2xx státuszú URL, legalább 150 szavas main contenttel (word_count)",
   "kizárva a fejlesztési oldal és a fordításai (hreflang mindkét irányban), a lekérdezés nélkül vele azonos URL-ek (?tab= változatok) és az ezekre átirányító URL-ek",
   "egy oldal egyszer: kimarad az URL, amelynek a final_url-je vagy a canonical-ja egy másik, a listában maradt URL",
   "a maradék az URL (UTF-8) sha256-ja szerint növekvő sorrendben, site-onként az első 3"

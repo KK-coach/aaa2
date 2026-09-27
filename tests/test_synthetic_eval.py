@@ -168,8 +168,8 @@ def test_score_page_classifies_every_output():
         mention("b99", "GA4", "GA4", "tech"),                            # ismeretlen blokk
     ]}
     s = se.score_page(S1, output, (0.0012, 3000, 800))
-    assert (s.found, s.required) == (4, 27)
-    assert s.by_difficulty == {"easy": [3, 25], "hard": [1, 2]}
+    assert (s.found, s.required) == (3, 27)                  # a b9 nem a fogalom blokkja
+    assert s.by_difficulty == {"easy": [2, 25], "hard": [1, 2]}
     assert (s.good, s.wrong, s.neutral) == (4, 2, 1)
     assert s.wrong_types == [("Apple", "org", "tech")]
     assert s.wrong_subtypes == [("Looker Studio", "software", "tool")]
@@ -181,6 +181,8 @@ def test_score_page_classifies_every_output():
     assert (s.primary_found, s.primary_total, s.extra_primary) == (0, 1, ["Lumen Growth"])
     assert (s.cost_usd, s.tokens_in, s.tokens_out, s.mentions) == (0.0012, 3000, 800, 9)
     assert ("Debrecen", "hard", "place", "felismerési") in s.missed
+    assert ("szerver oldali mérés", "easy", "concept", "elnevezési") in s.missed
+    assert s.found <= s.recognized
 
 
 def test_report_lists_the_errors_per_page():
@@ -420,3 +422,15 @@ def test_targets_say_which_threshold_is_missed():
     assert "felismerés/megnevezett 94.0 (≥ 95: NEM)" in lines[5]
     assert "precizitás 90.0 (≥ 90: teljesül); recall — (≥ 90: —)" in lines[5]
     assert "(nem mind)" in lines[5]
+
+
+def test_recall_needs_the_reference_block():
+    """A név egyezik, de a blokk nem a referenciáé: nem recall-találat, a precizitásban jó."""
+    s6 = EVERY_PAGE["s6_calici_evento_it"]
+    wrong_block = se.score_page(s6, {"primary_entities": [], "entities": [
+        mention("b2", "Montalcino", "Montalcino", "place", "city")]})
+    right_block = se.score_page(s6, {"primary_entities": [], "entities": [
+        mention("b0", "Montalcino", "Montalcino", "place", "city")]})
+    assert (wrong_block.found, wrong_block.good, wrong_block.wrong) == (0, 1, 0)
+    assert ("Montalcino", "hard", "place", "felismerési") in wrong_block.missed
+    assert (right_block.found, right_block.recognized) == (1, 1)

@@ -60,7 +60,6 @@ GOLD_DIR = Path(__file__).parent / "gold"
 MODELS: tuple[tuple[str, str], ...] = (
     ("openai", "gpt-6-luna"),
     ("openai", "gpt-6-sol"),
-    ("anthropic", "claude-sonnet-5"),
     ("anthropic", "claude-haiku-4-5-20251001"),
 )
 MODES = ("page", "sections")

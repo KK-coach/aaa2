@@ -16,13 +16,15 @@ entitástárba, és nem használja az összevonási szabályokat.
 Pontozás (`score_page`), oldalanként:
 
 - ellenőrzés: a `surface_form` szerepel-e a megadott blokkban; ami nem, az kitalált, és kimarad;
-- a modell entitásai a kanonikus név kulcsa (`alias_key`: kis-nagybetű, ékezet, kötőjel)
-  szerint csoportosítva; találat, ha a kanonikus név vagy egy szöveg szerinti alak kulcsa egyezik
-  egy referencia-tétel kanonikus nevének vagy egy aliasának kulcsával;
-- recall a kötelező listán, összesítve és nehézség szerint;
-- precizitás: a kötelező tételhez illeszkedő csoport jó, a negatív tételhez illeszkedő és a
-  referenciában nem szereplő hiba, az opcionális semleges;
-- típus- és altípuspontosság a talált kötelező tételeken (altípus csak ahol a referenciában van);
+- recall a kötelező listán, összesítve és nehézség szerint. Találat: a modell egy említése a
+  referencia egy szöveg szerinti alakját ugyanabban a blokkban átfedi, és az említés kanonikus
+  nevének vagy szöveg szerinti alakjának kulcsa (`alias_key`: kis-nagybetű, ékezet, kötőjel) a
+  tétel kanonikus nevének vagy egy aliasának kulcsa; így a recall nem nagyobb a felismerésnél;
+- precizitás: a modell entitásai a kanonikus név kulcsa szerint csoportosítva; a kötelező
+  tételhez név szerint (blokktól függetlenül) illeszkedő csoport jó, a negatív tételhez
+  illeszkedő és a referenciában nem szereplő hiba, az opcionális semleges;
+- típus- és altípuspontosság a talált kötelező tételeken, a találatot adó említés csoportjának
+  típusával (altípus csak ahol a referenciában van);
 - forráshely: a talált kötelező tételek említéseiből hány áll a referencia szerinti blokkban;
 - felismerés: a kötelező tétel egy szöveg szerinti alakját ugyanabban a blokkban átfedi a
   modell egy (nem kitalált) `surface_form`-ja (a kanonikus névtől függetlenül); elnevezés: a
@@ -271,7 +273,8 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
         score.cost_usd, score.tokens_in, score.tokens_out = (call_row[0] or 0.0,
                                                              call_row[1] or 0, call_row[2] or 0)
     groups: dict[str, Group] = {}
-    spans: list[tuple[str, tuple[int, int], str]] = []      # (blokk, pozíció, kanonikus kulcs)
+    spans: list[tuple[str, tuple[int, int], str, str]] = []  # (blokk, hely, kanonikus és
+    #                                                           szöveg szerinti kulcs)
     for raw in record.get("entities") or []:
         entity = BlockEntity.model_construct(**raw)          # validálás nélkül: a régi kör is
         score.mentions += 1
@@ -282,9 +285,8 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
         group = groups.setdefault(key, Group(entity.canonical_name, entity.type, entity.subtype))
         group.surfaces.append(entity.surface_form)
         group.blocks.append(entity.block_id)
-        spans += [(entity.block_id, span, key)
+        spans += [(entity.block_id, span, key, alias_key(entity.surface_form))
                   for span in surface_spans(entity.surface_form, blocks[entity.block_id])]
-    hits: dict[Item, Group] = {}
     for group in groups.values():
         keys = group.keys()
         target = next((item for item in required if item.keys & keys), None)
@@ -294,7 +296,6 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
                 score.good_concepts += 1
             else:
                 score.good_named += 1
-            hits.setdefault(target, group)
             score.block_total += len(group.blocks)
             right = [b for b in group.blocks if b in target.blocks]
             score.block_right += len(right)
@@ -322,20 +323,23 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
         gold_spans = [(s["block"], span) for s in entry.get("surface_forms", [])
                       if s["block"] in blocks
                       for span in surface_spans(s["text"], blocks[s["block"]])]
-        overlapping = {key for block, span, key in spans
-                       if any(block == gb and _overlap(span, gs) for gb, gs in gold_spans)}
-        recognized, well_named = bool(overlapping), bool(overlapping & item.keys)
+        overlapping = [(key, surface_key) for block, span, key, surface_key in spans
+                       if any(block == gb and _overlap(span, gs) for gb, gs in gold_spans)]
+        recognized = bool(overlapping)
+        well_named = any(key in item.keys for key, _ in overlapping)
+        hit = next((key for key, surface_key in overlapping
+                    if key in item.keys or surface_key in item.keys), None)
         if concept:
             score.recognized_concepts += recognized
             score.well_named_concepts += well_named
         else:
             score.recognized_named += recognized
             score.well_named_named += well_named
-        group = hits.get(item)
-        if group is None:
+        if hit is None:
             score.missed.append((item.canonical, item.difficulty, item.type,
                                  NAMING if recognized else RECOGNITION))
             continue
+        group = groups[hit]
         score.found += 1
         score.concepts_found += concept
         score.named_found += not concept

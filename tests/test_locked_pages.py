@@ -7,9 +7,9 @@ from tests.acceptance.locked_pages import DEVELOPMENT, OUT, PER_SITE, select, sh
 DEV = "https://x.test/hu/fejlesztes/"
 
 
-def row(url, status=200, final_url=None, canonical=None, hreflang=None):
+def row(url, status=200, final_url=None, canonical=None, hreflang=None, word_count=500):
     return {"url": url, "status": status, "final_url": final_url or url,
-            "canonical": canonical or url, "hreflang": hreflang}
+            "canonical": canonical or url, "hreflang": hreflang, "word_count": word_count}
 
 
 def test_development_page_its_translations_and_variants_are_excluded():
@@ -22,6 +22,12 @@ def test_development_page_its_translations_and_variants_are_excluded():
         row("https://x.test/a/"), row("https://x.test/b/"),
     ]
     assert set(select(rows, DEV, n=10)) == {"https://x.test/a/", "https://x.test/b/"}
+
+
+def test_pages_under_150_words_are_dropped():
+    rows = [row("https://x.test/rovid/", word_count=149), row("https://x.test/eleg/", word_count=150),
+            row("https://x.test/ures/", word_count=None)]
+    assert select(rows, DEV, n=10) == ["https://x.test/eleg/"]
 
 
 def test_non_2xx_and_duplicates_are_dropped_and_order_is_sha256():
