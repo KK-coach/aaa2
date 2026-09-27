@@ -2,6 +2,7 @@
 fabrikáció-szűrő, az összevonás és a mérőszámok. A hívások a valódi LLM-kliensen mennek át
 (llm_calls, főkönyv), csak az adapter hamis."""
 import json
+import re
 from datetime import UTC, datetime
 
 import pytest
@@ -108,8 +109,14 @@ def test_prompt_never_carries_the_known_entities(tmp_path):
 
 def test_page_input_cuts_the_main_content():
     text, truncated = page_input("T", [(1, "H"), (2, "")], "x" * (MAX_INPUT_CHARS + 5))
-    assert text.splitlines()[:4] == ["TITLE: T", "HEADINGS:", "H1: H", "TEXT:"]
-    assert truncated and text.endswith("x" * 10) and len(text) < MAX_INPUT_CHARS + 50
+    assert text.split("\n\n") == ["T", "H", "x" * MAX_INPUT_CHARS]
+    assert truncated
+
+
+def test_page_input_carries_no_structural_label():
+    text, _ = page_input("Angular Bootstrap", [(1, "Accordion"), (3, "Usage")], "Szöveg.")
+    assert text == "Angular Bootstrap\n\nAccordion\n\nUsage\n\nSzöveg."
+    assert not re.search(r"(?i)\b(title|headings|text|h[1-6])\s*:", text)
 
 
 # ---------------------------------------------------------------------------
@@ -129,6 +136,14 @@ def test_page_input_cuts_the_main_content():
     (("A Példa Kávézó Budapest belvárosában működik 2016 óta, specialty kávéval. A pörkölést "
       "Kiss Anna vezeti, aki"), "evidence_length"),
     ("", "fabricated"),
+    # a korábbi bemenet címke-előtagja leválik az összevetés előtt
+    ("TITLE: Példa Kávézó | Kávé", None),
+    ("h2:  a Példa Kávézó Budapest belvárosában", None),
+    ("TEXT: H1: a Példa Kávézó Budapest belvárosában", None),
+    ("TITLE: Példa Kávézó", "evidence_length"),
+    ("TITLE: Példa Kávézó Szegeden működik", "fabricated"),
+    ("TITLE: Példa Kávézó | Kávé HEADINGS:", None),
+    ("Példa Kávézó | Kávé TEXT: A Példa Kávézó", "fabricated"),
 ])
 def test_check_evidence(evidence, reason):
     """3–15 szó: a 15 szavas még jó, a 16 szavas már nem."""
@@ -183,6 +198,28 @@ def test_heading_evidence_gets_the_heading_position(tmp_path):
     run_llm(con, client)
     assert con.execute("SELECT position, section_ordinal FROM page_entities").fetchall() == [
         ("heading", 2)]
+
+
+def test_title_label_quote_is_not_fabricated():
+    """A felvett ngx-kimenet esete: a címke nélkül a title; kétszavas, így a 3–15 szavas szabály
+    ejti ki, nem a fabrikáció-szűrő."""
+    quote = ExtractedEntity(name="Angular Bootstrap", type="brand",
+                            evidence="TITLE: Angular Bootstrap", context="c")
+    assert check_evidence(quote, [normalize_text("Angular Bootstrap")]) == "evidence_length"
+
+
+def test_labelled_evidence_is_kept_without_the_label(tmp_path):
+    """A címke-előtagos idézet nem fabrikált: címke nélkül tárolva, a helyének pozíciójával."""
+    con = site({"/": html("Példa Kávézó Budapest Belváros",
+                          "<h1>Egy</h1><h2>A Példa Kávézó csapata ma</h2><p>szöveg</p>")})
+    client, _ = client_for(con, [{"entities": [
+        entity("Példa Kávézó", "org", "TITLE: Példa Kávézó Budapest Belváros"),
+        entity("Egy", "concept", "H2: A Példa Kávézó csapata")]}], tmp_path)
+    run = run_llm(con, client)
+    assert run.fabricated == 0
+    assert con.execute("SELECT position, evidence FROM page_entities ORDER BY position"
+                       ).fetchall() == [("heading", "A Példa Kávézó csapata"),
+                                        ("title", "Példa Kávézó Budapest Belváros")]
 
 
 def test_llm_rows_merge_into_rule_and_schema_entities(tmp_path):
@@ -383,7 +420,7 @@ def test_page_ids_pick_the_pages(tmp_path):
         "SELECT page_id FROM pages WHERE url LIKE '%/1/' OR url LIKE '%/3/'").fetchall()]
     client, adapter = client_for(con, [{"entities": []}] * 4, tmp_path)
     assert run_llm(con, client, page_ids=ids, limit=5).pages == 2
-    assert [call[1].split("\n")[0] for call in adapter.calls] == ["TITLE: P1", "TITLE: P3"]
+    assert [call[1].split("\n")[0] for call in adapter.calls] == ["P1", "P3"]
     assert run_llm(con, client, page_ids=[]).pages == 0
 
 

@@ -3,9 +3,12 @@
 
 - Prompt: a `PROMPT` utasítás állandó, a tíz típus definíciójával; a site entitásai és a
   determinisztikus kör találatai sosem kerülnek bele. A bemenet (`page_input`) csak a title, a
-  headingek és a main content (`MAX_INPUT_CHARS`-nál levágva).
+  headingek és a main content (`MAX_INPUT_CHARS`-nál levágva), címke nélkül, üres sorral
+  elválasztva.
 - Séma: `PageExtraction` (kanonikus név, típus, evidence, context).
-- Szűrés kódban: az evidence-nek szó szerint (whitespace-normalizálva, kis-nagybetű-
+- Szűrés kódban: az evidence és a context elejéről és végéről leválik a szerkezeti címke
+  (`strip_label`: `TITLE:`, `H1:`…`H6:`, `HEADINGS:`, `TEXT:`, a korábbi bemenet-formátumé).
+  Az evidence-nek szó szerint (whitespace-normalizálva, kis-nagybetű-
   érzéketlenül) benne kell lennie a main contentben, egy headingben vagy a title-ben; ha nincs,
   fabrikált: eldobva, és az `llm_calls.fabricated_count`, az `entity_runs.fabricated` számolja.
   A benne lévő, de nem 3–15 szavas evidence is kimarad (`evidence_length`).
@@ -27,6 +30,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -93,13 +97,24 @@ class LLMRun:
 
 def page_input(title: str | None, headings: list[tuple[int, str]],
                main_content: str | None) -> tuple[str, bool]:
-    """A hívás bemenete: title, headingek (szintjükkel), main content; és hogy le kellett-e
+    """A hívás bemenete: title, headingek, main content, címke nélkül, üres sorral elválasztva
+    (a modell ne lásson szerkezeti tokent, amit az idézetbe másolhat); és hogy le kellett-e
     vágni a main contentet."""
     text = main_content or ""
-    lines = [f"TITLE: {title or ''}", "HEADINGS:"]
-    lines += [f"H{level}: {heading}" for level, heading in headings if heading]
-    lines += ["TEXT:", text[:MAX_INPUT_CHARS]]
-    return "\n".join(lines), len(text) > MAX_INPUT_CHARS
+    parts = [title or "", *(heading for _, heading in headings if heading),
+             text[:MAX_INPUT_CHARS]]
+    return "\n\n".join(parts), len(text) > MAX_INPUT_CHARS
+
+
+# A korábbi bemenet-formátum szerkezeti címkéi (a felvett kimenetekben előfordulnak).
+LABEL_PREFIX = re.compile(r"^\s*(?:(?:TITLE|HEADINGS|TEXT|H[1-6])\s*:\s*)+", re.IGNORECASE)
+LABEL_SUFFIX = re.compile(r"(?:\s+(?:TITLE|HEADINGS|TEXT|H[1-6])\s*:)+\s*$", re.IGNORECASE)
+
+
+def strip_label(text: str) -> str:
+    """A szerkezeti címke (`TITLE:`, `H1:`…`H6:`, `HEADINGS:`, `TEXT:`) nélkül az elejéről és a
+    végéről; a közepén álló címke két forrássor összefűzése, az marad."""
+    return LABEL_SUFFIX.sub("", LABEL_PREFIX.sub("", text or ""))
 
 
 def normalize_text(text: str | None) -> str:
@@ -108,9 +123,9 @@ def normalize_text(text: str | None) -> str:
 
 
 def check_evidence(entity: ExtractedEntity, sources: list[str]) -> str | None:
-    """A kimaradás oka, vagy None: `fabricated`, ha az evidence nincs benne egyik (már
-    normalizált) forrásban sem; `evidence_length`, ha nem 3–15 szavas."""
-    evidence = normalize_text(entity.evidence)
+    """A kimaradás oka, vagy None: `fabricated`, ha az evidence (a címke-előtag nélkül) nincs
+    benne egyik (már normalizált) forrásban sem; `evidence_length`, ha nem 3–15 szavas."""
+    evidence = normalize_text(strip_label(entity.evidence))
     if not evidence or not any(evidence in source for source in sources):
         return "fabricated"
     if not MIN_EVIDENCE_WORDS <= len(evidence.split()) <= MAX_EVIDENCE_WORDS:
@@ -182,6 +197,8 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *, limit: int | N
                 "DELETE FROM page_entities WHERE page_id = ? AND source = 'llm' AND llm_call_id "
                 "IN (SELECT call_id FROM llm_calls WHERE model = ?)", [page_id, client.model])
             for entity in result.parsed.entities:
+                entity = entity.model_copy(update={"evidence": strip_label(entity.evidence),
+                                                   "context": strip_label(entity.context)})
                 reason = check_evidence(entity, sources)
                 if reason == "fabricated":
                     page_fabricated += 1

@@ -15,7 +15,9 @@ egy sor (a hiba is).
 `report` (hálózat nélkül) a `tests/acceptance/out/llm-compare/` alá ír:
 
 - `report.md`, modellenként:
-  1. fabrikáció: a fabrikált (evidence nincs az oldalon) sorok aránya a visszaadott összeshez;
+  1. fabrikáció: a fabrikált (evidence nincs az oldalon) sorok aránya a visszaadott összeshez,
+     a jelenlegi szűrővel újraszámolva a nyers kimenetből; mellette a futáskori napló
+     (`llm_calls.fabricated_count`), amely a futás idejének szűrőjét tükrözi;
   2. egyezés: páronkénti Jaccard az (oldal, entitás) párokon, és a három metszete; az entitás az
      összevonás utáni azonosító, azaz kis-nagybetű, ékezet és alias szerint egyeztetett név;
   3. KG-találati arány: a modell sorai mögötti entitások közül high + medium;
@@ -378,7 +380,8 @@ def report_markdown(stats: dict[str, ModelStats]) -> str:
     lines += ["## Modellenként, a saját megválaszolt oldalain", "", *header]
     row("oldal (hívás / kimenet)", [f"{s.pages} / {len(s.answered)}" for s in models])
     quality(None)
-    row("fabrikált a naplóban (ellenőrzés)", [str(s.fabricated_logged) for s in models])
+    row("fabrikált a naplóban (a futáskori szűrővel)",
+        [str(s.fabricated_logged) for s in models])
     row("USD / megválaszolt oldal", [f"{s.cost_usd / len(s.answered):.4f}" if s.answered
                                      else "—" for s in models])
     row("USD összesen", [f"{s.cost_usd:.4f}" for s in models])
