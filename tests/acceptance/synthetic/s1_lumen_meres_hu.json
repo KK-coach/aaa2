@@ -1,0 +1,723 @@
+{
+  "page_id": "s1_lumen_meres_hu",
+  "lang": "hu",
+  "synthetic": true,
+  "site_description": "Lumen Growth — SEO-, GEO- és webanalitikai tanácsadó cég Budapesten, B2B és webshop ügyfeleknek.",
+  "tests": [
+    "saját szolgáltatások kártyán",
+    "magyar ragozás (Looker Studióban, KPI-hierarchiával, Perplexityből)",
+    "rövidítés és teljes alak (GTM, GSC-mintára)",
+    "zárójeles kifejtés (GEO)",
+    "kontextusból egyértelműsítés (Clarity = Microsoft Clarity)",
+    "keresztnév-visszautalás (Réka)",
+    "melléknévi helyutalás (debreceni)",
+    "összetett név nem ad külön entitást (Meta Conversions API)",
+    "CTA és generikus főnév nem entitás"
+  ],
+  "blocks": [
+    {
+      "id": "b0",
+      "kind": "title",
+      "text": "Mérési rendszer kiépítése – Lumen Growth",
+      "heading_path": []
+    },
+    {
+      "id": "b1",
+      "kind": "heading",
+      "level": 1,
+      "text": "Mérési rendszer kiépítése",
+      "heading_path": [
+        "Mérési rendszer kiépítése"
+      ]
+    },
+    {
+      "id": "b2",
+      "kind": "paragraph",
+      "text": "Mérés nélkül minden döntés találgatás. A Lumen Growth mérési rendszert épít: GA4-beállítás, szerver oldali mérés, attribúciós modellezés és adatarchitektúra, hogy a döntéseid adatra épüljenek.",
+      "heading_path": [
+        "Mérési rendszer kiépítése"
+      ]
+    },
+    {
+      "id": "b3",
+      "kind": "heading",
+      "level": 2,
+      "text": "Mikor van szükséged rá?",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Mikor van szükséged rá?"
+      ]
+    },
+    {
+      "id": "b4",
+      "kind": "list_item",
+      "text": "A GA4-eseményeket senki nem tudja értelmezni, mert nincs egységes event-taxonómia.",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Mikor van szükséged rá?"
+      ]
+    },
+    {
+      "id": "b5",
+      "kind": "list_item",
+      "text": "A fizetett csatornák és az SEO mást mondanak ugyanarról a konverzióról, mert a riport last-click attribúcióval számol.",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Mikor van szükséged rá?"
+      ]
+    },
+    {
+      "id": "b6",
+      "kind": "list_item",
+      "text": "Az adblockerek és az Apple ITP-je miatt a konverziók 20–40%-a eltűnik a böngészőből.",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Mikor van szükséged rá?"
+      ]
+    },
+    {
+      "id": "b7",
+      "kind": "heading",
+      "level": 2,
+      "text": "Szolgáltatásaink",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Szolgáltatásaink"
+      ]
+    },
+    {
+      "id": "b8",
+      "kind": "card",
+      "text": "Tracking integritás audit – Átnézzük a GA4- és a Google Tag Manager-beállításokat (GTM), és listázzuk a hibákat.",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Szolgáltatásaink"
+      ]
+    },
+    {
+      "id": "b9",
+      "kind": "card",
+      "text": "Szerver oldali mérés beállítás – GTM szerver oldali konténer, Meta Conversions API és Google Ads konverziókövetés.",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Szolgáltatásaink"
+      ]
+    },
+    {
+      "id": "b10",
+      "kind": "card",
+      "text": "Döntési dashboard – Looker Studióban, BigQuery-adatokra építve, vezetői KPI-hierarchiával.",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Szolgáltatásaink"
+      ]
+    },
+    {
+      "id": "b11",
+      "kind": "heading",
+      "level": 2,
+      "text": "Így dolgozunk",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Így dolgozunk"
+      ]
+    },
+    {
+      "id": "b12",
+      "kind": "paragraph",
+      "text": "Az első két hétben a Screaming Frog és a Microsoft Clarity adataiból felmérjük a kiinduló állapotot. A Clarity hőtérképei megmutatják, hol akadnak el a látogatók.",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Így dolgozunk"
+      ]
+    },
+    {
+      "id": "b13",
+      "kind": "paragraph",
+      "text": "A mérést összekötjük a GEO (Generative Engine Optimization) munkával is: látni akarjuk, mennyi forgalom jön a ChatGPT-ből és a Perplexityből.",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Így dolgozunk"
+      ]
+    },
+    {
+      "id": "b14",
+      "kind": "paragraph",
+      "text": "Szerző: Tóth Réka, a Lumen Growth alapítója. Réka korábban a debreceni irodánkat vezette.",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Így dolgozunk"
+      ]
+    },
+    {
+      "id": "b15",
+      "kind": "cta",
+      "text": "Kérj ajánlatot",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Így dolgozunk"
+      ]
+    },
+    {
+      "id": "b16",
+      "kind": "cta",
+      "text": "Tudj meg többet",
+      "heading_path": [
+        "Mérési rendszer kiépítése",
+        "Így dolgozunk"
+      ]
+    }
+  ],
+  "gold": {
+    "primary_entities": [
+      "Mérési rendszer kiépítése"
+    ],
+    "entities": [
+      {
+        "canonical": "Mérési rendszer kiépítése",
+        "type": "service",
+        "subtype": "implementation",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Mérési rendszer kiépítése"
+          },
+          {
+            "block": "b1",
+            "text": "Mérési rendszer kiépítése"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "az oldal saját szolgáltatása és témája"
+      },
+      {
+        "canonical": "Lumen Growth",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Lumen Growth"
+          },
+          {
+            "block": "b2",
+            "text": "Lumen Growth"
+          },
+          {
+            "block": "b14",
+            "text": "Lumen Growth"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "GA4",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [
+          "Google Analytics 4"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "GA4-beállítás"
+          },
+          {
+            "block": "b4",
+            "text": "GA4-eseményeket"
+          },
+          {
+            "block": "b8",
+            "text": "GA4-"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "szerver oldali mérés",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "server-side tracking"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "szerver oldali mérés"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "attribúciós modellezés",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "attribution modeling"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "attribúciós modellezés"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "adatarchitektúra",
+        "type": "concept",
+        "subtype": "discipline",
+        "aliases": [
+          "data architecture"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "adatarchitektúra"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "event-taxonómia",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "event taxonomy"
+        ],
+        "surface_forms": [
+          {
+            "block": "b4",
+            "text": "event-taxonómia"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "SEO",
+        "type": "concept",
+        "subtype": "discipline",
+        "aliases": [
+          "keresőoptimalizálás",
+          "search engine optimization"
+        ],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "SEO"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "last-click attribúció",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "last-click attribution"
+        ],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "last-click attribúcióval"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Apple",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "Apple"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "ITP",
+        "type": "tech",
+        "subtype": "feature",
+        "aliases": [
+          "Intelligent Tracking Prevention"
+        ],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "ITP-je"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Tracking integritás audit",
+        "type": "service",
+        "subtype": "audit",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "Tracking integritás audit"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Google Tag Manager",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [
+          "GTM"
+        ],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "Google Tag Manager-beállításokat"
+          },
+          {
+            "block": "b8",
+            "text": "GTM"
+          },
+          {
+            "block": "b9",
+            "text": "GTM"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Szerver oldali mérés beállítás",
+        "type": "service",
+        "subtype": "implementation",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "Szerver oldali mérés beállítás"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Meta Conversions API",
+        "type": "tech",
+        "subtype": "api",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "Meta Conversions API"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Google Ads",
+        "type": "tech",
+        "subtype": "platform",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "Google Ads"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Döntési dashboard",
+        "type": "service",
+        "subtype": "reporting",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b10",
+            "text": "Döntési dashboard"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Looker Studio",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b10",
+            "text": "Looker Studióban"
+          }
+        ],
+        "difficulty": "hard",
+        "note": "ragozás megváltoztatja a tövet (Studio → Studió)"
+      },
+      {
+        "canonical": "BigQuery",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b10",
+            "text": "BigQuery-adatokra"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "KPI-hierarchia",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "KPI hierarchy"
+        ],
+        "surface_forms": [
+          {
+            "block": "b10",
+            "text": "KPI-hierarchiával"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Screaming Frog",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "Screaming Frog"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Microsoft Clarity",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [
+          "Clarity"
+        ],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "Microsoft Clarity"
+          },
+          {
+            "block": "b12",
+            "text": "A Clarity"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "a második említés csak 'Clarity', kontextusból azonos"
+      },
+      {
+        "canonical": "GEO",
+        "type": "concept",
+        "subtype": "discipline",
+        "aliases": [
+          "Generative Engine Optimization"
+        ],
+        "surface_forms": [
+          {
+            "block": "b13",
+            "text": "GEO"
+          },
+          {
+            "block": "b13",
+            "text": "Generative Engine Optimization"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "zárójeles kifejtés: egy entitás"
+      },
+      {
+        "canonical": "ChatGPT",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b13",
+            "text": "ChatGPT-ből"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Perplexity",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b13",
+            "text": "Perplexityből"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Tóth Réka",
+        "type": "person",
+        "subtype": null,
+        "aliases": [
+          "Réka Tóth"
+        ],
+        "surface_forms": [
+          {
+            "block": "b14",
+            "text": "Tóth Réka"
+          },
+          {
+            "block": "b14",
+            "text": "Réka korábban"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "a keresztnév-visszautalás ugyanaz a személy"
+      },
+      {
+        "canonical": "Debrecen",
+        "type": "place",
+        "subtype": "city",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b14",
+            "text": "debreceni"
+          }
+        ],
+        "difficulty": "hard",
+        "note": "melléknévi alak, valódi helyutalás (az iroda helye)"
+      }
+    ],
+    "optional": [
+      {
+        "canonical": "szerver oldali konténer",
+        "type": "tech",
+        "subtype": "feature",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "szerver oldali konténer"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "a GTM egy funkciója"
+      },
+      {
+        "canonical": "konverziókövetés",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "konverziókövetés"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "hőtérkép",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "hőtérképei"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Google",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "Google Tag Manager-beállításokat"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "csak összetett névben szerepel"
+      },
+      {
+        "canonical": "Meta",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "Meta Conversions API"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "csak összetett névben szerepel"
+      },
+      {
+        "canonical": "konverzió",
+        "type": "concept",
+        "subtype": "metric",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "konverzióról"
+          }
+        ],
+        "difficulty": "easy"
+      }
+    ],
+    "negatives": [
+      {
+        "text": "Kérj ajánlatot"
+      },
+      {
+        "text": "Tudj meg többet"
+      },
+      {
+        "text": "Mikor van szükséged rá?"
+      },
+      {
+        "text": "Szolgáltatásaink"
+      },
+      {
+        "text": "Így dolgozunk"
+      },
+      {
+        "text": "riport"
+      },
+      {
+        "text": "látogatók"
+      },
+      {
+        "text": "döntés"
+      },
+      {
+        "text": "adblockerek"
+      },
+      {
+        "text": "böngészőből"
+      }
+    ]
+  },
+  "rules": {
+    "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+    "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+    "compound": "összetett névből (Meta Conversions API, San Marzano paradicsom) csak akkor lesz külön entitás, ha a szöveg önállóan is rá utal",
+    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány"
+  }
+}

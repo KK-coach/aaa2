@@ -1,0 +1,694 @@
+{
+  "page_id": "s2_osteria_etlap_hu",
+  "lang": "hu",
+  "synthetic": true,
+  "site_description": "Osteria Lucia — olasz étterem Budapesten, szicíliai és calabriai konyhával.",
+  "tests": [
+    "ételnevek egysoros listatételként",
+    "eredetvédett alapanyagok",
+    "kontextusfüggő típus: Franciacorta itt bor, nem hely; San Marzano és Tropea alapanyag, nem hely",
+    "táblázatsor oszlopfejléccel (Régió oszlopban valódi hely)",
+    "magyar ragozás (Szicíliából, guancialéval)",
+    "összetett magyar–olasz alak (brontei pisztáciakrémmel)",
+    "generikus alapanyag nem entitás (paradicsom, bazsalikom)",
+    "ár és CTA nem entitás"
+  ],
+  "blocks": [
+    {
+      "id": "b0",
+      "kind": "title",
+      "text": "Étlap – Osteria Lucia",
+      "heading_path": []
+    },
+    {
+      "id": "b1",
+      "kind": "heading",
+      "level": 1,
+      "text": "Étlap",
+      "heading_path": [
+        "Étlap"
+      ]
+    },
+    {
+      "id": "b2",
+      "kind": "paragraph",
+      "text": "Alapanyagaink nagy része Szicíliából és Calabriából érkezik. Konyhafőnök: Marco Bellini.",
+      "heading_path": [
+        "Étlap"
+      ]
+    },
+    {
+      "id": "b3",
+      "kind": "heading",
+      "level": 2,
+      "text": "Előételek",
+      "heading_path": [
+        "Étlap",
+        "Előételek"
+      ]
+    },
+    {
+      "id": "b4",
+      "kind": "list_item",
+      "text": "Caprese bivaly mozzarellával (Mozzarella di Bufala Campana D.O.P.), paradicsommal és bazsalikommal – 3 900 Ft",
+      "heading_path": [
+        "Étlap",
+        "Előételek"
+      ]
+    },
+    {
+      "id": "b5",
+      "kind": "list_item",
+      "text": "Vitello tonnato – 4 500 Ft",
+      "heading_path": [
+        "Étlap",
+        "Előételek"
+      ]
+    },
+    {
+      "id": "b6",
+      "kind": "heading",
+      "level": 2,
+      "text": "Tészták",
+      "heading_path": [
+        "Étlap",
+        "Tészták"
+      ]
+    },
+    {
+      "id": "b7",
+      "kind": "list_item",
+      "text": "Spaghetti alla carbonara guancialéval és Pecorino Romano D.O.P. sajttal – 5 900 Ft",
+      "heading_path": [
+        "Étlap",
+        "Tészták"
+      ]
+    },
+    {
+      "id": "b8",
+      "kind": "list_item",
+      "text": "Pasta alla Norma San Marzano paradicsommal és sült padlizsánnal – 5 200 Ft",
+      "heading_path": [
+        "Étlap",
+        "Tészták"
+      ]
+    },
+    {
+      "id": "b9",
+      "kind": "list_item",
+      "text": "Paccheri 'nduja krémmel és édes Tropea-hagymával – 5 600 Ft",
+      "heading_path": [
+        "Étlap",
+        "Tészták"
+      ]
+    },
+    {
+      "id": "b10",
+      "kind": "heading",
+      "level": 2,
+      "text": "Desszertek",
+      "heading_path": [
+        "Étlap",
+        "Desszertek"
+      ]
+    },
+    {
+      "id": "b11",
+      "kind": "list_item",
+      "text": "Tiramisù – 2 900 Ft",
+      "heading_path": [
+        "Étlap",
+        "Desszertek"
+      ]
+    },
+    {
+      "id": "b12",
+      "kind": "list_item",
+      "text": "Cannolo brontei pisztáciakrémmel – 3 200 Ft",
+      "heading_path": [
+        "Étlap",
+        "Desszertek"
+      ]
+    },
+    {
+      "id": "b13",
+      "kind": "list_item",
+      "text": "Sgroppino (citromsorbet, Franciacorta, vodka) – 3 500 Ft",
+      "heading_path": [
+        "Étlap",
+        "Desszertek"
+      ]
+    },
+    {
+      "id": "b14",
+      "kind": "heading",
+      "level": 2,
+      "text": "Borok",
+      "heading_path": [
+        "Étlap",
+        "Borok"
+      ]
+    },
+    {
+      "id": "b15",
+      "kind": "table_row",
+      "cells": [
+        {
+          "header": "Bor",
+          "value": "Barolo DOCG"
+        },
+        {
+          "header": "Régió",
+          "value": "Piemont"
+        },
+        {
+          "header": "Évjárat",
+          "value": "2019"
+        },
+        {
+          "header": "Ár",
+          "value": "32 000 Ft"
+        }
+      ],
+      "heading_path": [
+        "Étlap",
+        "Borok"
+      ],
+      "text": "Barolo DOCG | Piemont | 2019 | 32 000 Ft"
+    },
+    {
+      "id": "b16",
+      "kind": "table_row",
+      "cells": [
+        {
+          "header": "Bor",
+          "value": "Etna Rosso DOC"
+        },
+        {
+          "header": "Régió",
+          "value": "Szicília"
+        },
+        {
+          "header": "Évjárat",
+          "value": "2021"
+        },
+        {
+          "header": "Ár",
+          "value": "14 000 Ft"
+        }
+      ],
+      "heading_path": [
+        "Étlap",
+        "Borok"
+      ],
+      "text": "Etna Rosso DOC | Szicília | 2021 | 14 000 Ft"
+    },
+    {
+      "id": "b17",
+      "kind": "paragraph",
+      "text": "Olívaolajunkat a Frantoio Rossi készíti Calabriában.",
+      "heading_path": [
+        "Étlap",
+        "Borok"
+      ]
+    },
+    {
+      "id": "b18",
+      "kind": "cta",
+      "text": "Asztalfoglalás",
+      "heading_path": [
+        "Étlap",
+        "Borok"
+      ]
+    }
+  ],
+  "gold": {
+    "primary_entities": [
+      "Osteria Lucia"
+    ],
+    "entities": [
+      {
+        "canonical": "Osteria Lucia",
+        "type": "org",
+        "subtype": "restaurant",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Osteria Lucia"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Szicília",
+        "type": "place",
+        "subtype": "region",
+        "aliases": [
+          "Sicily",
+          "Sicilia"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Szicíliából"
+          },
+          {
+            "block": "b16",
+            "text": "Szicília"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Calabria",
+        "type": "place",
+        "subtype": "region",
+        "aliases": [
+          "Kalábria"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Calabriából"
+          },
+          {
+            "block": "b17",
+            "text": "Calabriában"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Marco Bellini",
+        "type": "person",
+        "subtype": null,
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Marco Bellini"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "caprese",
+        "type": "product",
+        "subtype": "dish",
+        "aliases": [
+          "insalata caprese"
+        ],
+        "surface_forms": [
+          {
+            "block": "b4",
+            "text": "Caprese"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Mozzarella di Bufala Campana D.O.P.",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "Mozzarella di Bufala Campana",
+          "bivaly mozzarella"
+        ],
+        "surface_forms": [
+          {
+            "block": "b4",
+            "text": "bivaly mozzarellával"
+          },
+          {
+            "block": "b4",
+            "text": "Mozzarella di Bufala Campana D.O.P."
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "vitello tonnato",
+        "type": "product",
+        "subtype": "dish",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "Vitello tonnato"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "spaghetti alla carbonara",
+        "type": "product",
+        "subtype": "dish",
+        "aliases": [
+          "carbonara"
+        ],
+        "surface_forms": [
+          {
+            "block": "b7",
+            "text": "Spaghetti alla carbonara"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "guanciale",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b7",
+            "text": "guancialéval"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Pecorino Romano D.O.P.",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "Pecorino Romano"
+        ],
+        "surface_forms": [
+          {
+            "block": "b7",
+            "text": "Pecorino Romano D.O.P."
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "pasta alla Norma",
+        "type": "product",
+        "subtype": "dish",
+        "aliases": [
+          "alla Norma"
+        ],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "Pasta alla Norma"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "San Marzano paradicsom",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "San Marzano tomato",
+          "pomodoro San Marzano"
+        ],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "San Marzano paradicsommal"
+          }
+        ],
+        "difficulty": "hard",
+        "note": "alapanyag, nem hely"
+      },
+      {
+        "canonical": "paccheri",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "Paccheri"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "tésztafajta"
+      },
+      {
+        "canonical": "'nduja",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "nduja"
+        ],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "'nduja"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Tropea-hagyma",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "Cipolla di Tropea",
+          "Tropea onion"
+        ],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "Tropea-hagymával"
+          }
+        ],
+        "difficulty": "hard",
+        "note": "alapanyag, nem hely"
+      },
+      {
+        "canonical": "tiramisù",
+        "type": "product",
+        "subtype": "dish",
+        "aliases": [
+          "tiramisu"
+        ],
+        "surface_forms": [
+          {
+            "block": "b11",
+            "text": "Tiramisù"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "cannolo",
+        "type": "product",
+        "subtype": "dish",
+        "aliases": [
+          "cannoli"
+        ],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "Cannolo"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Pistacchio di Bronte",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "brontei pisztácia",
+          "Bronte pistachio"
+        ],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "brontei pisztácia"
+          }
+        ],
+        "difficulty": "hard"
+      },
+      {
+        "canonical": "sgroppino",
+        "type": "product",
+        "subtype": "dish",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b13",
+            "text": "Sgroppino"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Franciacorta",
+        "type": "product",
+        "subtype": "wine",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b13",
+            "text": "Franciacorta"
+          }
+        ],
+        "difficulty": "hard",
+        "note": "koktél összetevője: bor, nem hely"
+      },
+      {
+        "canonical": "Barolo",
+        "type": "product",
+        "subtype": "wine",
+        "aliases": [
+          "Barolo DOCG"
+        ],
+        "surface_forms": [
+          {
+            "block": "b15",
+            "text": "Barolo DOCG"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Piemont",
+        "type": "place",
+        "subtype": "region",
+        "aliases": [
+          "Piemonte",
+          "Piedmont"
+        ],
+        "surface_forms": [
+          {
+            "block": "b15",
+            "text": "Piemont"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "a Régió oszlopban: valódi hely"
+      },
+      {
+        "canonical": "Etna Rosso",
+        "type": "product",
+        "subtype": "wine",
+        "aliases": [
+          "Etna Rosso DOC"
+        ],
+        "surface_forms": [
+          {
+            "block": "b16",
+            "text": "Etna Rosso DOC"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Frantoio Rossi",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b17",
+            "text": "Frantoio Rossi"
+          }
+        ],
+        "difficulty": "easy"
+      }
+    ],
+    "optional": [
+      {
+        "canonical": "D.O.P.",
+        "type": "concept",
+        "subtype": "designation",
+        "aliases": [
+          "DOP",
+          "Denominazione di Origine Protetta"
+        ],
+        "surface_forms": [
+          {
+            "block": "b4",
+            "text": "D.O.P."
+          },
+          {
+            "block": "b7",
+            "text": "D.O.P."
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "DOCG",
+        "type": "concept",
+        "subtype": "designation",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b15",
+            "text": "DOCG"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "DOC",
+        "type": "concept",
+        "subtype": "designation",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b16",
+            "text": "DOC"
+          }
+        ],
+        "difficulty": "easy"
+      }
+    ],
+    "negatives": [
+      {
+        "text": "Étlap"
+      },
+      {
+        "text": "Előételek"
+      },
+      {
+        "text": "Tészták"
+      },
+      {
+        "text": "Desszertek"
+      },
+      {
+        "text": "Borok"
+      },
+      {
+        "text": "Asztalfoglalás"
+      },
+      {
+        "text": "paradicsommal"
+      },
+      {
+        "text": "bazsalikommal"
+      },
+      {
+        "text": "padlizsánnal"
+      },
+      {
+        "text": "citromsorbet"
+      },
+      {
+        "text": "vodka"
+      },
+      {
+        "text": "3 900 Ft"
+      },
+      {
+        "text": "Olívaolajunkat"
+      }
+    ]
+  },
+  "rules": {
+    "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+    "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+    "compound": "összetett névből (Meta Conversions API, San Marzano paradicsom) csak akkor lesz külön entitás, ha a szöveg önállóan is rá utal",
+    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány"
+  }
+}

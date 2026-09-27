@@ -58,8 +58,8 @@ CONTEXT_CHARS = 500
 
 TYPE_DEFINITIONS = {
     "brand": "a brand or trade name that is not itself a company",
-    "product": ("goods: a product or product line, a food, a dish, a drink, a wine, a "
-                "protected-origin ingredient"),
+    "product": ("goods: a product or product line, a food, a dish, a drink, a wine, an "
+                "ingredient"),
     "service": "a service offered to customers",
     "work": "a creative work: article, book, report, course, case study, publication",
     "event": "an event held at a given time: conference, festival, workshop, webinar",

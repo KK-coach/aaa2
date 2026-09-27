@@ -1,0 +1,528 @@
+{
+  "page_id": "s3_atlas_tabs_en",
+  "lang": "en",
+  "synthetic": true,
+  "site_description": "Atlas UI — open-source Angular component library documentation, maintained by Northwind Labs.",
+  "tests": [
+    "az oldal témája köznév (Tabs)",
+    "konkrét komponens vs általános UI-minta (Tabs vs tabs pattern)",
+    "dokumentált API-elemek névtérrel",
+    "csomagnév mint entitás (@atlas-ui/tabs, @angular/core)",
+    "verziószámos említés (Angular 17, Bootstrap 5)",
+    "példakódbeli osztály és változó nem entitás",
+    "navigációs és heading-szöveg nem entitás"
+  ],
+  "blocks": [
+    {
+      "id": "b0",
+      "kind": "title",
+      "text": "Tabs · Atlas UI",
+      "heading_path": []
+    },
+    {
+      "id": "b1",
+      "kind": "heading",
+      "level": 1,
+      "text": "Tabs",
+      "heading_path": [
+        "Tabs"
+      ]
+    },
+    {
+      "id": "b2",
+      "kind": "paragraph",
+      "text": "The Tabs component organizes content into panels that the user switches between. It implements the WAI-ARIA Tabs pattern and builds on the Collapse directive for animated panels.",
+      "heading_path": [
+        "Tabs"
+      ]
+    },
+    {
+      "id": "b3",
+      "kind": "heading",
+      "level": 2,
+      "text": "Installation",
+      "heading_path": [
+        "Tabs",
+        "Installation"
+      ]
+    },
+    {
+      "id": "b4",
+      "kind": "code",
+      "text": "npm install @atlas-ui/tabs",
+      "heading_path": [
+        "Tabs",
+        "Installation"
+      ]
+    },
+    {
+      "id": "b5",
+      "kind": "paragraph",
+      "text": "Atlas UI supports Angular 17 and later with Bootstrap 5 and Tailwind CSS themes. It is written in TypeScript and uses RxJS for tab change events.",
+      "heading_path": [
+        "Tabs",
+        "Installation"
+      ]
+    },
+    {
+      "id": "b6",
+      "kind": "heading",
+      "level": 2,
+      "text": "API",
+      "heading_path": [
+        "Tabs",
+        "API"
+      ]
+    },
+    {
+      "id": "b7",
+      "kind": "list_item",
+      "text": "TabsModule – import it into your NgModule.",
+      "heading_path": [
+        "Tabs",
+        "API"
+      ]
+    },
+    {
+      "id": "b8",
+      "kind": "list_item",
+      "text": "TabsetComponent – the container. Inputs: vertical, justified, type.",
+      "heading_path": [
+        "Tabs",
+        "API"
+      ]
+    },
+    {
+      "id": "b9",
+      "kind": "list_item",
+      "text": "TabDirective – a single tab. Outputs: selectTab, deselect.",
+      "heading_path": [
+        "Tabs",
+        "API"
+      ]
+    },
+    {
+      "id": "b10",
+      "kind": "list_item",
+      "text": "TabsetConfig – default values for all tabsets.",
+      "heading_path": [
+        "Tabs",
+        "API"
+      ]
+    },
+    {
+      "id": "b11",
+      "kind": "heading",
+      "level": 2,
+      "text": "Example",
+      "heading_path": [
+        "Tabs",
+        "Example"
+      ]
+    },
+    {
+      "id": "b12",
+      "kind": "code",
+      "text": "import { Component } from '@angular/core';\n\n@Component({\n  selector: 'demo-tabs',\n  template: '<tabset><tab heading=\"Home\">First</tab></tabset>'\n})\nexport class DemoTabsComponent {\n  activeTab = 0;\n}",
+      "heading_path": [
+        "Tabs",
+        "Example"
+      ]
+    },
+    {
+      "id": "b13",
+      "kind": "paragraph",
+      "text": "Atlas UI is maintained by Northwind Labs and released under the MIT License.",
+      "heading_path": [
+        "Tabs",
+        "Example"
+      ]
+    },
+    {
+      "id": "b14",
+      "kind": "nav",
+      "text": "Overview · API · Examples",
+      "heading_path": [
+        "Tabs",
+        "Example"
+      ]
+    }
+  ],
+  "gold": {
+    "primary_entities": [
+      "Tabs"
+    ],
+    "entities": [
+      {
+        "canonical": "Tabs",
+        "type": "tech",
+        "subtype": "component",
+        "aliases": [
+          "Atlas UI Tabs",
+          "Tabs component"
+        ],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Tabs"
+          },
+          {
+            "block": "b1",
+            "text": "Tabs"
+          },
+          {
+            "block": "b2",
+            "text": "Tabs component"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@atlas-ui/tabs",
+        "note": "az oldal témája"
+      },
+      {
+        "canonical": "WAI-ARIA",
+        "type": "tech",
+        "subtype": "standard",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "WAI-ARIA"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "tabs pattern",
+        "type": "concept",
+        "subtype": "ui_pattern",
+        "aliases": [
+          "WAI-ARIA Tabs pattern",
+          "tabbed interface"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Tabs pattern"
+          }
+        ],
+        "difficulty": "hard",
+        "note": "az általános UI-minta, külön a konkrét komponenstől"
+      },
+      {
+        "canonical": "Collapse",
+        "type": "tech",
+        "subtype": "component",
+        "aliases": [
+          "Collapse directive"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Collapse directive"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@atlas-ui"
+      },
+      {
+        "canonical": "npm",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b4",
+            "text": "npm"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "@atlas-ui/tabs",
+        "type": "tech",
+        "subtype": "package",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b4",
+            "text": "@atlas-ui/tabs"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "npm"
+      },
+      {
+        "canonical": "Atlas UI",
+        "type": "tech",
+        "subtype": "library",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Atlas UI"
+          },
+          {
+            "block": "b5",
+            "text": "Atlas UI"
+          },
+          {
+            "block": "b13",
+            "text": "Atlas UI"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Angular",
+        "type": "tech",
+        "subtype": "framework",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "Angular 17"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Bootstrap",
+        "type": "tech",
+        "subtype": "framework",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "Bootstrap 5"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Tailwind CSS",
+        "type": "tech",
+        "subtype": "framework",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "Tailwind CSS"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "TypeScript",
+        "type": "tech",
+        "subtype": "language",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "TypeScript"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "RxJS",
+        "type": "tech",
+        "subtype": "library",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "RxJS"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "TabsModule",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b7",
+            "text": "TabsModule"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@atlas-ui/tabs"
+      },
+      {
+        "canonical": "NgModule",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b7",
+            "text": "NgModule"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@angular/core"
+      },
+      {
+        "canonical": "TabsetComponent",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "TabsetComponent"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@atlas-ui/tabs"
+      },
+      {
+        "canonical": "TabDirective",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "TabDirective"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@atlas-ui/tabs"
+      },
+      {
+        "canonical": "TabsetConfig",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b10",
+            "text": "TabsetConfig"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@atlas-ui/tabs"
+      },
+      {
+        "canonical": "@angular/core",
+        "type": "tech",
+        "subtype": "package",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "@angular/core"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "npm"
+      },
+      {
+        "canonical": "Northwind Labs",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b13",
+            "text": "Northwind Labs"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "MIT License",
+        "type": "concept",
+        "subtype": "license",
+        "aliases": [
+          "MIT"
+        ],
+        "surface_forms": [
+          {
+            "block": "b13",
+            "text": "MIT License"
+          }
+        ],
+        "difficulty": "easy"
+      }
+    ],
+    "optional": [
+      {
+        "canonical": "Component",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "@Component"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@angular/core",
+        "note": "Angular dekorátor a példakódban"
+      },
+      {
+        "canonical": "tabset",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "<tabset>"
+          }
+        ],
+        "difficulty": "easy",
+        "namespace": "@atlas-ui/tabs",
+        "note": "template-elem"
+      }
+    ],
+    "negatives": [
+      {
+        "text": "DemoTabsComponent"
+      },
+      {
+        "text": "activeTab"
+      },
+      {
+        "text": "demo-tabs"
+      },
+      {
+        "text": "vertical"
+      },
+      {
+        "text": "justified"
+      },
+      {
+        "text": "selectTab"
+      },
+      {
+        "text": "deselect"
+      },
+      {
+        "text": "Overview"
+      },
+      {
+        "text": "Examples"
+      },
+      {
+        "text": "Installation"
+      },
+      {
+        "text": "Home"
+      }
+    ]
+  },
+  "rules": {
+    "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+    "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+    "compound": "összetett névből (Meta Conversions API, San Marzano paradicsom) csak akkor lesz külön entitás, ha a szöveg önállóan is rá utal",
+    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány"
+  }
+}
