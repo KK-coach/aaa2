@@ -8,19 +8,31 @@ import pytest
 import tests.acceptance.synthetic_eval as se
 from aaa2.entities.blocks import (
     BLOCK_PROMPT,
-    BLOCK_PROMPT_WITH_KIND,
     block_input,
-    block_prompt,
     block_text,
     check_surface,
+)
+from aaa2.entities.naming import (
+    NAMING_PROMPT,
+    apply_naming,
+    name_record,
+    naming_input,
+    recognized_mentions,
 )
 from aaa2.llm.adapters import Reply
 from aaa2.llm.client import LLMClient, Retry
 from aaa2.llm.config import Usage, load_config
-from aaa2.llm.schemas import SUBTYPE_GLOSSARY, SUBTYPE_VOCABULARY, BlockEntity, Subtype
+from aaa2.llm.schemas import (
+    SUBTYPE_GLOSSARY,
+    SUBTYPE_VOCABULARY,
+    BlockEntity,
+    NamingResult,
+    Subtype,
+)
 
 CONFIG = load_config()
 PAGES = {page["page_id"]: page for page in se.load_pages()}
+EVERY_PAGE = {page["page_id"]: page for page in se.load_pages(page_set="all")}
 S1 = PAGES["s1_lumen_meres_hu"]
 
 
@@ -41,11 +53,11 @@ def test_the_three_pages():
         "s3_atlas_tabs_en": (15, 20)}
 
 
-@pytest.mark.parametrize("page_id", list(PAGES))
+@pytest.mark.parametrize("page_id", list(EVERY_PAGE))
 def test_the_reference_itself_scores_full(page_id):
     """A referencia szöveg szerinti alakjai szóhatárral a megadott blokkban állnak; a tökéletes
     kimenet 100%, a megnevezett és a fogalom recall is."""
-    s = se.score_page(PAGES[page_id], gold_as_output(PAGES[page_id]))
+    s = se.score_page(EVERY_PAGE[page_id], gold_as_output(EVERY_PAGE[page_id]))
     assert (s.found, s.good, s.wrong, s.type_right, s.fabricated) == (
         s.required, s.required, 0, s.required, [])
     assert (s.named_found, s.concepts_found) == (s.named, s.concepts)
@@ -55,7 +67,7 @@ def test_the_reference_itself_scores_full(page_id):
 
 
 def test_subtype_vocabulary_and_glossary_are_the_references():
-    for page in PAGES.values():
+    for page in EVERY_PAGE.values():
         assert {k: tuple(v) for k, v in page["subtype_vocabulary"].items()} == SUBTYPE_VOCABULARY
         assert page["subtype_glossary"] == SUBTYPE_GLOSSARY
     assert set(get_args(Subtype)) == {v for values in SUBTYPE_VOCABULARY.values() for v in values}
@@ -93,19 +105,6 @@ def test_block_prompt_v2():
         assert [n for n in names if len(n) > 4 and n in BLOCK_PROMPT] == []
 
 
-def test_variant_b_names_the_block_kind():
-    assert BLOCK_PROMPT_WITH_KIND.replace(
-        "each starts with its id and its kind in square brackets on its own line (for example "
-        "[b3 heading], [b7 code], [b9 cta]), followed by the block text; block_id is the id alone",
-        "each starts with its id in square brackets on its own line, followed by the block text"
-    ) == BLOCK_PROMPT
-    text = block_input(S1["site_description"], S1["blocks"], with_kind=True)
-    assert text.split("\n\n")[1:3] == ["[b0 title]\nMérési rendszer kiépítése – Lumen Growth",
-                                        "[b1 heading]\nMérési rendszer kiépítése"]
-    assert "[b15 cta]\nKérj ajánlatot" in text
-    assert block_prompt(True) == BLOCK_PROMPT_WITH_KIND and block_prompt() == BLOCK_PROMPT
-
-
 def test_block_input_puts_headings_in_order_without_heading_path():
     text = block_input(S1["site_description"], S1["blocks"][:5])
     assert text.split("\n\n") == [
@@ -116,6 +115,7 @@ def test_block_input_puts_headings_in_order_without_heading_path():
         "[b3]\nMikor van szükséged rá?",
         "[b4]\n" + S1["blocks"][4]["text"]]
     assert "›" not in block_input(S1["site_description"], S1["blocks"])
+    assert "[b15 cta]" not in block_input(S1["site_description"], S1["blocks"])
     assert S1["blocks"][4]["heading_path"] == ["Mérési rendszer kiépítése",
                                                "Mikor van szükséged rá?"]
 
@@ -255,21 +255,44 @@ def test_empty_primary_reference_wants_an_empty_list():
     assert (s.primary_found, s.primary_total, s.extra_primary) == (0, 1, ["Osteria Lucia"])
 
 
-def test_consensus_union_and_majority():
+VOTE_PAGE = {"page_id": "x", "blocks": [
+    {"id": "b1", "kind": "p", "text": "Az Apple ITP-je és a Shopify."},
+    {"id": "b2", "kind": "p", "text": "Stripe és Notion."}]}
+
+
+def test_consensus_votes_on_recognition_not_on_the_name():
+    """A szavazat az átfedő említés (blokk + hely), nem a kanonikus név: az ITP két futásban két
+    néven is többségi; a hosszabb, kevesebb futásban adott „Apple ITP-je” átfed a
+    megtartottakkal, és kiesik; a kitalált egyikbe sem kerül."""
     runs = [
-        {"page_id": "x", "primary_entities": ["A"], "entities": [
-            mention("b1", "A", "A", "tech"), mention("b2", "B", "B", "tech")]},
-        {"page_id": "x", "primary_entities": ["A", "C"], "entities": [
-            mention("b1", "A", "a", "tech"), mention("b3", "C", "C", "tech")]},
+        {"page_id": "x", "primary_entities": ["Shopify"], "entities": [
+            mention("b1", "Apple ITP-je", "Apple ITP", "tech"),
+            mention("b1", "Shopify", "Shopify", "tech"), mention("b2", "Stripe", "Stripe", "org")]},
+        {"page_id": "x", "primary_entities": ["Shopify", "Stripe"], "entities": [
+            mention("b1", "Apple", "Apple", "org"), mention("b1", "ITP-je", "ITP", "tech"),
+            mention("b1", "Shopify", "shopify", "tech"), mention("b2", "Notion", "Notion", "tech"),
+            mention("b1", "Figma", "Figma", "tech")]},
         {"page_id": "x", "primary_entities": [], "entities": None, "error": "call_error: x"},
-        {"page_id": "x", "primary_entities": ["A"], "entities": [
-            mention("b2", "B", "B", "tech")]},
+        {"page_id": "x", "primary_entities": ["Shopify"], "entities": [
+            mention("b1", "Apple", "Apple", "org"),
+            mention("b1", "ITP-je", "Intelligent Tracking Prevention", "tech"),
+            mention("b1", "Shopify", "Shopify", "tech")]},
     ]
-    union = se.consensus(runs, majority=False)
-    majority = se.consensus(runs, majority=True)          # 3 sikeres futás: legalább 2
-    assert [e["canonical_name"] for e in union["entities"]] == ["A", "B", "a", "C", "B"]
-    assert [e["canonical_name"] for e in majority["entities"]] == ["A", "B", "a", "B"]
-    assert (union["primary_entities"], majority["primary_entities"]) == (["A", "C"], ["A"])
+    union = se.consensus(VOTE_PAGE, runs, majority=False)
+    majority = se.consensus(VOTE_PAGE, runs, majority=True)     # 3 sikeres futás: legalább 2
+    assert [e["canonical_name"] for e in union["entities"]] == [
+        "Shopify", "Stripe", "Apple", "ITP", "Notion"]
+    assert [e["canonical_name"] for e in majority["entities"]] == ["Shopify", "Apple", "ITP"]
+    assert (union["primary_entities"], majority["primary_entities"]) == (
+        ["Shopify", "Stripe"], ["Shopify"])
+    assert majority["page_id"] == "x"
+
+
+def test_consensus_takes_the_most_common_name_of_a_recognition():
+    runs = [{"page_id": "x", "entities": [mention("b1", "ITP-je", name, "tech")]}
+            for name in ("ITP", "Intelligent Tracking Prevention", "itp")]
+    majority = se.consensus(VOTE_PAGE, runs, majority=True)
+    assert [e["canonical_name"] for e in majority["entities"]] == ["ITP"]
 
 
 def test_round_row_averages_runs_and_shows_the_spread():
@@ -280,7 +303,7 @@ def test_round_row_averages_runs_and_shows_the_spread():
     row = se.round_row("3a", [perfect, empty])
     assert row.startswith("| 3a | 50.0 ± 70.7 · 50.0 ± 70.7 · 50.0 ± 70.7 | 100.0 · 100.0 · 100.0 "
                           "| 50.0 ± 70.7 · ")
-    assert row.endswith("| 3/3 / 1/3 | 0 | 0.00300 | 3000 / 300 |")
+    assert row.endswith("| 3/3 / 1/3 | 0 | 0.00100 | 1000 / 100 |")
     single = se.round_row("egy", [perfect])
     assert single.startswith("| egy | 100.0 · 100.0 · 100.0 | 100.0 · 100.0 · 100.0 | ")
 
@@ -291,10 +314,109 @@ def test_misses_list_counts_runs_and_reasons():
         for _ in range(2)]
     runs.append([se.score_page(S2, gold_as_output(S2))])
     majority = [se.score_page(S2, se.consensus(
-        [gold_as_output(S2), gold_as_output(S2), {"page_id": "x", "entities": []}],
+        S2, [gold_as_output(S2), gold_as_output(S2), {"page_id": "x", "entities": []}],
         majority=True))]
     text = "\n".join(se.misses_markdown("3a", runs, majority))
     assert ("  - Pistacchio di Bronte (product): 2/3 futásból kimaradt (2× elnevezési); "
             "többségben: megvan") in text
     assert "  - caprese (product): 2/3 futásból kimaradt (2× felismerési); többségben: megvan" \
         in text
+
+
+def naming_reply(*mentions):
+    return {"mentions": [{"mention_id": mid, "entities": [
+        {"surface_form": s, "canonical_name": n, "type": k, "subtype": None}
+        for s, n, k in entities]} for mid, entities in mentions]}
+
+
+NAMING_RECORD = {"page_id": "x", "call_id": 7, "primary_entities": ["Shopify"], "entities": [
+    mention("b1", "Apple ITP-je", "Apple ITP", "tech"),
+    mention("b1", "Kitalált", "Kitalált", "tech"),
+    mention("b1", "Shopify", "Shopify", "tech"),
+    mention("b2", "Notion", "Notion", "tech")]}
+
+
+def test_naming_input_lists_the_recognized_mentions_with_their_blocks():
+    blocks = {b["id"]: b for b in VOTE_PAGE["blocks"]}
+    mentions = recognized_mentions(NAMING_RECORD, blocks)
+    assert [index for index, _ in mentions] == [0, 2, 3]
+    text = naming_input(blocks, mentions)
+    assert text.startswith("Blocks:\n\n[b1]\nAz Apple ITP-je és a Shopify.\n\n[b2]\nStripe")
+    assert ("[m0] block b1 | surface form: Apple ITP-je | first-round name: Apple ITP"
+            in text)
+    assert "[m3] block b2 | surface form: Notion" in text
+    assert "Kitalált" not in text
+
+
+def test_naming_splits_a_possessive_and_keeps_what_it_did_not_answer():
+    blocks = {b["id"]: b for b in VOTE_PAGE["blocks"]}
+    mentions = recognized_mentions(NAMING_RECORD, blocks)
+    result = NamingResult.model_validate(naming_reply(
+        ("m0", [("Apple", "Apple", "org"), ("ITP-je", "ITP", "tech")]),
+        ("[m2]", [("Shopify", "Shopify", "tech")])))
+    entities, missing = apply_naming(NAMING_RECORD, mentions, result, blocks)
+    assert [(e["block_id"], e["surface_form"], e["canonical_name"]) for e in entities] == [
+        ("b1", "Apple", "Apple"), ("b1", "ITP-je", "ITP"), ("b1", "Kitalált", "Kitalált"),
+        ("b1", "Shopify", "Shopify"), ("b2", "Notion", "Notion")]
+    assert missing == 1
+
+
+def test_naming_keeps_the_first_surface_form_when_its_own_is_not_in_the_block():
+    blocks = {b["id"]: b for b in VOTE_PAGE["blocks"]}
+    mentions = recognized_mentions(NAMING_RECORD, blocks)
+    result = NamingResult.model_validate(naming_reply(
+        ("m3", [("Notion app", "Notion", "tech")])))
+    entities, _ = apply_naming(NAMING_RECORD, mentions, result, blocks)
+    assert ("b2", "Notion", "Notion") in [
+        (e["block_id"], e["surface_form"], e["canonical_name"]) for e in entities]
+
+
+def test_name_record_logs_a_naming_call_and_sums_both_calls(tmp_path):
+    from aaa2.db.connect import connect
+
+    con = connect(":memory:")
+    adapter = Scripted([naming_reply(("m0", [("Apple", "Apple", "org"),
+                                             ("ITP-je", "ITP", "tech")]),
+                                     ("m2", [("Shopify", "Shopify", "tech")]),
+                                     ("m3", [("Notion", "Notion", "tech")]))])
+    client = LLMClient(con, adapter, CONFIG, tmp_path / "l.jsonl",
+                       retry=Retry(sleep=lambda _: None))
+    blocks = {b["id"]: b for b in VOTE_PAGE["blocks"]}
+    named = name_record(client, NAMING_RECORD, blocks)
+    assert adapter.inputs[0][0] == NAMING_PROMPT
+    assert named["call_ids"] == [7, named["naming_call_id"]]
+    assert named["naming_model"] == "gpt-6-luna"
+    assert (named["naming_missing"], named["naming_error"]) == (0, None)
+    assert len(named["naming_raw"]["mentions"]) == 3
+    assert named["primary_entities"] == ["Shopify"]
+    assert len(named["entities"]) == 5
+    assert con.execute("SELECT purpose FROM llm_calls WHERE call_id = ?",
+                       [named["naming_call_id"]]).fetchone() == ("naming",)
+    assert NAMING_RECORD["entities"][0]["canonical_name"] == "Apple ITP"
+
+
+def test_naming_prompt_examples_are_not_from_the_synthetic_pages():
+    examples = ["Mailchimp", "Notion", "mascarpone", "Figma", "Stripe", "Radar", "Photoshop"]
+    assert all(name in NAMING_PROMPT for name in examples)
+    for page in EVERY_PAGE.values():
+        text = "\n".join(block_text(b) for b in page["blocks"]).casefold()
+        assert [name for name in examples if name.casefold() in text] == [], page["page_id"]
+
+
+def test_pages_without_a_set_are_development():
+    assert set(PAGES) == {"s1_lumen_meres_hu", "s2_osteria_etlap_hu", "s3_atlas_tabs_en"}
+    generalization = se.load_pages(page_set="generalization")
+    assert all(page["set"] == "generalization" for page in generalization)
+    assert len(EVERY_PAGE) == len(PAGES) + len(generalization)
+
+
+def test_targets_say_which_threshold_is_missed():
+    perfect = [se.score_page(page, gold_as_output(page)) for page in PAGES.values()]
+    lines = se.targets_markdown([("jó", se.rates(se.total_of(perfect))),
+                                 ("gyenge", {"felismerés/megnevezett": 0.94,
+                                             "felismerés/fogalom": 0.95, "precizitás": 0.9,
+                                             "recall": None})])
+    assert lines[4].startswith("- **jó** (mind teljesül): felismerés/megnevezett 100.0 (≥ 95: ")
+    assert "felismerés/megnevezett 94.0 (≥ 95: NEM)" in lines[5]
+    assert "precizitás 90.0 (≥ 90: teljesül); recall — (≥ 90: —)" in lines[5]
+    assert "(nem mind)" in lines[5]

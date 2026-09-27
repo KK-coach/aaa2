@@ -19,14 +19,6 @@ from collections.abc import Mapping, Sequence
 from aaa2.entities.llm import TYPE_DEFINITIONS, normalize_text
 from aaa2.llm.schemas import SUBTYPE_GLOSSARY, BlockEntity
 
-_BLOCK_HEADER = {
-    False: "each starts with its id in square brackets on its own line, followed by the block "
-           "text",
-    True: "each starts with its id and its kind in square brackets on its own line (for "
-          "example [b3 heading], [b7 code], [b9 cta]), followed by the block text; block_id is "
-          "the id alone",
-}
-
 
 def _subtype_lines() -> str:
     lines = []
@@ -36,15 +28,15 @@ def _subtype_lines() -> str:
     return "\n".join(lines)
 
 
-def block_prompt(with_kind: bool = False) -> str:
-    """A blokkos prompt; `with_kind`: a bemenet a blokktípust is megadja az azonosító mellett."""
+def block_prompt() -> str:
+    """A blokkos prompt (a mesterséges oldalak 3a változata, rögzítve)."""
     return (
         "Extract every entity the page is about or mentions: named things, offered products or "
         "services, and definable professional concepts. A single mention is enough. Generic "
         "nouns on their own are not entities.\n"
         "The input starts with one line describing the website; it is not page text. Then come "
-        "the page blocks in document order, headings included: " + _BLOCK_HEADER[with_kind]
-        + ".\n\n"
+        "the page blocks in document order, headings included: each starts with its id in "
+        "square brackets on its own line, followed by the block text.\n\n"
         "Rules:\n"
         "- List each entity separately, under its shortest full name. In a possessive "
         "construction list both the owner and the thing owned, if each is an entity: "
@@ -82,7 +74,6 @@ def block_prompt(with_kind: bool = False) -> str:
 
 
 BLOCK_PROMPT = block_prompt()
-BLOCK_PROMPT_WITH_KIND = block_prompt(with_kind=True)
 
 
 def block_text(block: Mapping) -> str:
@@ -99,16 +90,11 @@ def _searchable(block: Mapping) -> str:
     return normalize_text(f"{block_text(block)}\n{block.get('text') or ''}")
 
 
-def block_input(site_description: str, blocks: Sequence[Mapping],
-                with_kind: bool = False) -> str:
-    """A hívás bemenete: a site-leíró sor, utána blokkonként az `[id]` (`with_kind`:
-    `[id kind]`) sor és a szöveg, üres sorral elválasztva, a dokumentum sorrendjében;
-    heading-útvonal nélkül."""
+def block_input(site_description: str, blocks: Sequence[Mapping]) -> str:
+    """A hívás bemenete: a site-leíró sor, utána blokkonként az `[id]` sor és a szöveg, üres
+    sorral elválasztva, a dokumentum sorrendjében; heading-útvonal és blokktípus nélkül."""
     parts = [site_description.strip()]
-    for block in blocks:
-        label = f"{block['id']} {block['kind']}" if with_kind and block.get("kind") \
-            else block["id"]
-        parts.append(f"[{label}]\n{block_text(block)}")
+    parts += [f"[{block['id']}]\n{block_text(block)}" for block in blocks]
     return "\n\n".join(parts)
 
 

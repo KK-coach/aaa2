@@ -86,6 +86,28 @@ class BlockEntity(BaseModel):
     description: str = Field(description="What the entity is in this text, at most 10 words.")
 
 
+class NamedEntity(BaseModel):
+    """Egy entitás egy felismert említésben (célzott elnevezési hívás)."""
+
+    surface_form: str = Field(description="The words of the mention that name this entity, "
+                                          "exactly as in the block text, suffixes included.")
+    canonical_name: str = Field(description="The entity's own name: base form, uninflected, in "
+                                            "full, not translated.")
+    type: EntityType
+    subtype: Subtype | None = Field(description="One value from the subtype list of the "
+                                                "entity's type; null for a person.")
+
+
+class NamedMention(BaseModel):
+    mention_id: str = Field(description="The id of the mention, as given in the input.")
+    entities: list[NamedEntity] = Field(description="The entity or entities the mention names; "
+                                                    "at least one.")
+
+
+class NamingResult(BaseModel):
+    mentions: list[NamedMention]
+
+
 class BlockExtraction(BaseModel):
     primary_entities: list[str] = Field(description="The canonical names of the entities the "
                                                     "page is mainly about; may be empty.")

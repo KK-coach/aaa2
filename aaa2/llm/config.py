@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from itertools import pairwise
 from pathlib import Path
@@ -89,10 +89,14 @@ class ProviderConfig:
                 + tuple(m for m in self.alternatives if m != self.model and m != self.fallback))
 
 
+PIPELINE_STEPS = ("extraction", "naming")
+
+
 @dataclass(frozen=True)
 class LLMConfig:
     providers: dict[str, ProviderConfig]
     prices: tuple[Price, ...]
+    pipeline: dict[str, str] = field(default_factory=dict)   # lépés → modell
 
     def price(self, model: str, day: date) -> Price:
         matching = [p for p in self.prices if p.model == model and p.covers(day)]
@@ -109,8 +113,8 @@ class LLMConfig:
 
 def load_config(path: Path = CONFIG_PATH) -> LLMConfig:
     """Beolvas és ellenőriz: mindhárom szolgáltató, 0 < küszöb ≤ keret, a fallback csak
-    megadott modellre kapcsolható, modellenként legalább egy ársor, és egy modell ársorainak
-    érvényessége nem fedi át egymást."""
+    megadott modellre kapcsolható, modellenként legalább egy ársor, egy modell ársorainak
+    érvényessége nem fedi át egymást, és a `[pipeline]` minden lépésének modellje konfigurált."""
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
     providers = {}
     for name in PROVIDERS:
@@ -135,7 +139,14 @@ def load_config(path: Path = CONFIG_PATH) -> LLMConfig:
                 if earlier.valid_until is None or later.valid_from is None \
                         or later.valid_from <= earlier.valid_until:
                     raise ValueError(f"{model}: átfedő ársorok")
-    return LLMConfig(providers=providers, prices=prices)
+    pipeline = dict(raw.get("pipeline", {}))
+    if set(pipeline) != set(PIPELINE_STEPS):
+        raise ValueError(f"[pipeline]: a lépések {', '.join(PIPELINE_STEPS)}")
+    config = LLMConfig(providers=providers, prices=prices, pipeline=pipeline)
+    for step, model in pipeline.items():
+        if config.provider_of(model) is None:
+            raise ValueError(f"[pipeline] {step}: a {model} nincs a konfigurált modellek között")
+    return config
 
 
 def _price(entry: dict) -> Price:

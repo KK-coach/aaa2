@@ -1,0 +1,34 @@
+{
+ "rule": [
+  "csak a 2xx státuszú URL",
+  "kizárva a fejlesztési oldal és a fordításai (hreflang mindkét irányban), a lekérdezés nélkül vele azonos URL-ek (?tab= változatok) és az ezekre átirányító URL-ek",
+  "egy oldal egyszer: kimarad az URL, amelynek a final_url-je vagy a canonical-ja egy másik, a listában maradt URL",
+  "a maradék az URL (UTF-8) sha256-ja szerint növekvő sorrendben, site-onként az első 3"
+ ],
+ "sites": {
+  "kk-coach-crawl": {
+   "development": "https://kk.coach/hu/megoldasok/meres/",
+   "urls": [
+    "https://kk.coach/privacy-policy/",
+    "https://kk.coach/solutions/execution/",
+    "https://kk.coach/hu/seo-ux-esettanulmany-amikor-a-weboldal-sebesseg-mar-nem-technikai-reszlet-hanem-beveteli-kerdes/"
+   ]
+  },
+  "materia-crawl": {
+   "development": "https://materia-tm.com/hu/etlap/",
+   "urls": [
+    "https://materia-tm.com/it/thank-you/",
+    "https://materia-tm.com/wine-list/",
+    "https://materia-tm.com/et_code_snippet_type/et_code_snippet_html_js/"
+   ]
+  },
+  "ngx-bootstrap-crawl": {
+   "development": "https://valor-software.com/ngx-bootstrap/components/accordion",
+   "urls": [
+    "https://valor-software.com/ngx-bootstrap/components/popover?tab=overview",
+    "https://valor-software.com/ngx-bootstrap/components/tabs?tab=api",
+    "https://valor-software.com/ngx-bootstrap/components/tooltip?tab=api"
+   ]
+  }
+ }
+}

@@ -75,6 +75,14 @@ def test_fallback_is_switched_from_config(tmp_path):
     assert config.price("gpt-5.6-terra", date(2026, 9, 26)).rates.output == 12.00
 
 
+def test_pipeline_steps_choose_their_models_independently(tmp_path):
+    assert CONFIG.pipeline == {"extraction": "gpt-6-luna", "naming": "gpt-6-luna"}
+    config = load_config(variant(tmp_path, 'naming = "gpt-6-luna"',
+                                 'naming = "claude-sonnet-5"'))
+    assert config.pipeline == {"extraction": "gpt-6-luna", "naming": "claude-sonnet-5"}
+    assert config.provider_of(config.pipeline["naming"]) == "anthropic"
+
+
 def test_stop_threshold_is_read_from_config(tmp_path):
     config = load_config(variant(tmp_path, "stop_usd = 2.5", "stop_usd = 2.0"))
     assert config.providers["openai"].stop_usd == 2.0
@@ -90,6 +98,9 @@ def test_stop_threshold_is_read_from_config(tmp_path):
     ("valid_from = 2027-01-01", "valid_from = 2026-12-31", "gemini-3.8-flash: átfedő ársorok"),
     ("valid_until = 2026-12-31\n", "", "gemini-3.8-flash: átfedő ársorok"),
     ("[gemini]", "[google]", r"hiányzik a \[gemini\] szakasz"),
+    ('naming = "gpt-6-luna"', 'naming = "gpt-6-x"',
+     r"\[pipeline\] naming: a gpt-6-x nincs a konfigurált modellek között"),
+    ('naming = "gpt-6-luna"', "", r"\[pipeline\]: a lépések extraction, naming"),
     ('alternatives = ["gpt-6-sol"]', 'alternatives = ["gpt-6-sol", "gpt-6-x"]',
      "gpt-6-x: nincs ársor"),
 ])

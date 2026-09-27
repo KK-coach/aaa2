@@ -3,9 +3,11 @@ pontozás a referencialista ellen a nyers kimenetből.
 
     python -m tests.acceptance.synthetic_eval run [--model gpt-6-luna] [--tag r2]
     python -m tests.acceptance.synthetic_eval report [--model gpt-6-luna] [--tag r2]
+    python -m tests.acceptance.synthetic_eval name --from r4a1 --tag r4a1n [--naming-model M]
 
 A tesztoldalak: `tests/acceptance/synthetic/*.json` (blokkok, site-leírás, referencialista:
-kötelező, opcionális, negatív). A bemenet a JSON blokkjaiból jön (`blocks.block_input`). A nyers
+kötelező, opcionális, negatív). A `set` mező szerint fejlesztési (a mező nélküli oldalak, s1–s3)
+vagy általánosítási (`generalization`, s4–s6); a `--set` választ közülük (alapból fejlesztési). A bemenet a JSON blokkjaiból jön (`blocks.block_input`). A nyers
 kimenet `data/compare/synthetic/<oldal>.<modell>[.<címke>].json` (a `--tag` a kört
 különbözteti meg); a hívások a
 `data/compare/synthetic.duckdb` `llm_calls`-ába és a főkönyvbe kerülnek. A pontozás nem ír
@@ -32,8 +34,13 @@ Pontozás (`score_page`), oldalanként:
   üres referenciánál csak az üres lista jó;
 - költség, token be / ki.
 
-Önkonzisztencia (`consensus`): több futás uniója, és a többség (az a kanonikus név, amely a
-futások legalább felénél több, vagyis 3-ból legalább 2 futásban szerepel).
+Elnevezés (`name`): egy meglévő kör rekordjaira a célzott elnevezési hívás
+(`entities.naming`), a kinyerés újrahívása nélkül; az új rekord a `--tag` alá kerül, a
+költsége a kinyerés és az elnevezés hívásainak összege (`call_ids`). A kinyerés modellje a
+`--model`, az elnevezésé a `--naming-model` (alapból a `models.toml` `[pipeline]` szakasza).
+
+Önkonzisztencia (`consensus`): több futás uniója és többsége, a felismerés szerint szavazva
+(blokk + átfedő szöveg szerinti alak), a név a jelölt említéseinek leggyakoribb kanonikus neve.
 """
 from __future__ import annotations
 
@@ -46,7 +53,8 @@ from pathlib import Path
 import duckdb
 
 from aaa2.db.connect import DATA_DIR, connect
-from aaa2.entities.blocks import block_input, block_prompt, check_surface, surface_spans
+from aaa2.entities.blocks import BLOCK_PROMPT, block_input, check_surface, surface_spans
+from aaa2.entities.naming import name_record
 from aaa2.entities.rules import alias_key
 from aaa2.llm.client import LLMError, SchemaMismatch, open_clients
 from aaa2.llm.config import load_config
@@ -54,11 +62,21 @@ from aaa2.llm.schemas import BlockEntity, BlockExtraction
 
 PAGES_DIR = Path(__file__).parent / "synthetic"
 OUT_DIR = Path(__file__).parent / "out" / "synthetic"
-DEFAULT_MODEL = "gpt-6-luna"
+TARGETS = (                     # (mérték, küszöb): AAAV2-42, M2 spec B
+    ("felismerés/megnevezett", 0.95), ("felismerés/fogalom", 0.90), ("precizitás", 0.90),
+    ("recall", 0.90),
+)
 
 
-def load_pages(pages_dir: Path = PAGES_DIR) -> list[dict]:
-    return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(pages_dir.glob("*.json"))]
+DEVELOPMENT = "development"
+SETS = (DEVELOPMENT, "generalization", "all")
+
+
+def load_pages(pages_dir: Path = PAGES_DIR, page_set: str = DEVELOPMENT) -> list[dict]:
+    """A `page_set` oldalai (`all`: mind); a `set` mező nélküli oldal fejlesztési."""
+    pages = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(pages_dir.glob("*.json"))]
+    return [page for page in pages
+            if page_set == "all" or page.get("set", DEVELOPMENT) == page_set]
 
 
 # ---------------------------------------------------------------------------
@@ -70,20 +88,23 @@ def output_path(data_dir: Path, page_id: str, model: str, tag: str = "") -> Path
     return data_dir / "synthetic" / f"{page_id}.{model}{'.' + tag if tag else ''}.json"
 
 
-def run(model: str, data_dir: Path, pages: list[dict], tag: str = "",
-        with_kind: bool = False) -> None:
-    """`with_kind`: a bemenet a blokktípust is megadja az azonosító mellett (3b)."""
+def _client(con, model: str):
     provider = load_config().provider_of(model)
     if provider is None:
         raise SystemExit(f"a {model} nincs a konfigurált modellek között")
+    clients, skipped = open_clients(con, models={provider: model})
+    if provider not in clients:
+        raise SystemExit(f"{model}: {skipped.get(provider)}")
+    return clients[provider]
+
+
+def run(model: str, data_dir: Path, pages: list[dict], tag: str = "") -> None:
     (data_dir / "synthetic").mkdir(parents=True, exist_ok=True)
     con = connect(data_dir / "synthetic.duckdb")
     try:
-        clients, skipped = open_clients(con, models={provider: model})
-        if provider not in clients:
-            raise SystemExit(f"{model}: {skipped.get(provider)}")
+        client = _client(con, model)
         for page in pages:
-            record = call(clients[provider], page, with_kind)
+            record = call(client, page)
             output_path(data_dir, page["page_id"], model, tag).write_text(
                 json.dumps(record, ensure_ascii=False, indent=1), encoding="utf-8")
             print(f"{page['page_id']}: {model}: "
@@ -93,13 +114,36 @@ def run(model: str, data_dir: Path, pages: list[dict], tag: str = "",
         con.close()
 
 
-def call(client, page: dict, with_kind: bool = False) -> dict:
-    record = {"page_id": page["page_id"], "model": client.model, "with_kind": with_kind,
-              "call_id": None, "primary_entities": None, "entities": None, "error": None}
-    text = block_input(page["site_description"], page["blocks"], with_kind)
+def name_run(model: str, data_dir: Path, pages: list[dict], source: str, tag: str,
+             naming_model: str) -> None:
+    """A `source` kör (`model` kinyerése) rekordjaira az elnevezési hívás a `naming_model`-lel;
+    az eredmény a `tag` alá kerül."""
+    con = connect(data_dir / "synthetic.duckdb")
     try:
-        result = client.extract(BlockExtraction, block_prompt(with_kind), text,
-                                domain="entity")
+        client = _client(con, naming_model)
+        for page in pages:
+            path = output_path(data_dir, page["page_id"], model, source)
+            record = json.loads(path.read_text(encoding="utf-8"))
+            if record.get("entities") is None:
+                named = {**record, "call_ids": [i for i in [record.get("call_id")] if i]}
+            else:
+                named = name_record(client, record, {b["id"]: b for b in page["blocks"]})
+            output_path(data_dir, page["page_id"], model, tag).write_text(
+                json.dumps(named, ensure_ascii=False, indent=1), encoding="utf-8")
+            print(f"{page['page_id']}: {source} → {tag}: "
+                  + (named.get("naming_error") or record.get("error")
+                     or f"{len(record['entities'])} → {len(named['entities'])} említés, "
+                        f"válasz nélkül {named['naming_missing']}"))
+    finally:
+        con.close()
+
+
+def call(client, page: dict) -> dict:
+    record = {"page_id": page["page_id"], "model": client.model,
+              "call_id": None, "primary_entities": None, "entities": None, "error": None}
+    text = block_input(page["site_description"], page["blocks"])
+    try:
+        result = client.extract(BlockExtraction, BLOCK_PROMPT, text, domain="entity")
     except SchemaMismatch as exc:
         record.update(call_id=exc.call_id, error=f"schema_mismatch: {exc}"[:500])
         return record
@@ -216,7 +260,8 @@ def _overlap(a: tuple[int, int], b: tuple[int, int]) -> bool:
 
 
 def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageScore:
-    """`call_row`: (cost_usd, tokens_in, tokens_out) az `llm_calls`-ból, ha van."""
+    """`call_row`: (cost_usd, tokens_in, tokens_out) az `llm_calls`-ból (a rekord hívásainak
+    összege), ha van."""
     gold = page["gold"]
     required, optional = _items(gold["entities"]), _items(gold.get("optional", []))
     negatives = {alias_key(n["text"]): n["text"] for n in gold.get("negatives", [])}
@@ -319,27 +364,61 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
     return score
 
 
-def consensus(records: list[dict], majority: bool) -> dict:
-    """Több futás rekordja egyben: az unió minden (nem hibás) futás említéseit tartalmazza; a
-    többség csak azokét, amelyeknek a kanonikus kulcsa a futások több mint felében szerepel. Az
-    elsődleges lista ugyanígy."""
+def consensus(page: dict, records: list[dict], majority: bool) -> dict:
+    """Több futás rekordja egyben, a felismerés szerint szavazva (nem a kanonikus név szerint).
+
+    - Említés: egy futás nem kitalált entitása, a blokkja és a szöveg szerinti alakjának
+      helyei abban a blokkban (`surface_spans`). Két említés ugyanazt ismeri fel, ha
+      ugyanabban a blokkban átfedik egymást.
+    - Szavazat: hány futásnak van az említéssel átfedő említése. Unió: legalább 1; többség: a
+      futások több mint fele (3-ból 2).
+    - Az átfedő említések közül a pontosan azonos helyűek egy jelöltet alkotnak. Jelöltek, sorban:
+      több futás adta; rövidebb; korábbi. Egy jelölt akkor marad, ha megvan a szavazata, és nem
+      fed át egy már megtartottal.
+    - A megtartott jelölt neve a leggyakoribb kanonikus kulcs a jelölt említései közül (a
+      típus és az altípus az első ilyen említésé).
+    - A kitalált említés egyikbe sem kerül. Az elsődleges lista a kanonikus kulcs szerint
+      szavaz, mint eddig."""
+    blocks = {b["id"]: b for b in page["blocks"]}
     runs = [r for r in records if r.get("entities") is not None]
     need = len(runs) // 2 + 1 if majority else 1
+    mentions = []                       # (futás, blokk, helyek, nyers entitás)
+    for run_index, record in enumerate(runs):
+        for raw in record["entities"]:
+            if not check_surface(BlockEntity.model_construct(**raw), blocks):
+                continue
+            spans = frozenset(surface_spans(raw["surface_form"], blocks[raw["block_id"]]))
+            mentions.append((run_index, raw["block_id"], spans, raw))
 
-    def votes(keys_per_run):
-        counted = {}
-        for keys in keys_per_run:
-            for key in keys:
-                counted[key] = counted.get(key, 0) + 1
-        return {k for k, n in counted.items() if n >= need}
+    def overlaps(block_a, spans_a, block_b, spans_b):
+        return block_a == block_b and any(_overlap(a, b) for a in spans_a for b in spans_b)
 
-    kept = votes({alias_key(e["canonical_name"]) for e in r["entities"]} for r in runs)
-    primary_kept = votes({alias_key(p) for p in r.get("primary_entities") or []} for r in runs)
-    entities = [e for r in runs for e in r["entities"] if alias_key(e["canonical_name"]) in kept]
+    candidates: dict[tuple[str, frozenset], list] = {}
+    for mention in mentions:
+        candidates.setdefault((mention[1], mention[2]), []).append(mention)
+    ranked = sorted(candidates.items(), key=lambda item: (
+        -len({m[0] for m in item[1]}), sum(e - s for s, e in item[0][1]),
+        mentions.index(item[1][0])))
+    kept: list[tuple[str, frozenset]] = []
+    entities = []
+    for (block, spans), members in ranked:
+        votes = {m[0] for m in mentions if overlaps(block, spans, m[1], m[2])}
+        if len(votes) < need or any(overlaps(block, spans, b, s) for b, s in kept):
+            continue
+        kept.append((block, spans))
+        names = [alias_key(m[3]["canonical_name"]) for m in members]
+        winner = max(names, key=lambda key: (names.count(key), -names.index(key)))
+        entities.append(next(m[3] for m in members
+                             if alias_key(m[3]["canonical_name"]) == winner))
+    order = {id(raw): index for index, (_, _, _, raw) in enumerate(mentions)}
+    entities.sort(key=lambda raw: order[id(raw)])
+    counted: dict[str, int] = {}
+    for record in runs:
+        for key in {alias_key(p) for p in record.get("primary_entities") or []}:
+            counted[key] = counted.get(key, 0) + 1
     primary = list(dict.fromkeys(p for r in runs for p in r.get("primary_entities") or []
-                                 if alias_key(p) in primary_kept))
-    return {"page_id": records[0].get("page_id"), "entities": entities,
-            "primary_entities": primary}
+                                 if counted[alias_key(p)] >= need))
+    return {"page_id": page["page_id"], "entities": entities, "primary_entities": primary}
 
 
 # ---------------------------------------------------------------------------
@@ -443,9 +522,10 @@ def measure(model: str, data_dir: Path, pages: list[dict], tag: str = ""
             if not path.exists():
                 continue
             record = json.loads(path.read_text(encoding="utf-8"))
-            row = con.execute("SELECT cost_usd, tokens_in, tokens_out FROM llm_calls "
-                              "WHERE call_id = ?", [record["call_id"]]).fetchone() \
-                if con is not None and record.get("call_id") else None
+            ids = record.get("call_ids") or [i for i in [record.get("call_id")] if i]
+            row = con.execute("SELECT sum(cost_usd), sum(tokens_in), sum(tokens_out) "
+                              "FROM llm_calls WHERE list_contains(?, call_id)",
+                              [ids]).fetchone() if con is not None and ids else None
             scores.append(score_page(page, record, row))
     finally:
         if con is not None:
@@ -501,16 +581,18 @@ def _cell(values: list[float | None]) -> str:
     return f"{mean:.1f} ± {statistics.stdev(present):.1f}"
 
 
-ROUND_HEADER = ("| sor | recall (össz · megnev. · fogalom) | precizitás (össz · megnev. · fogalom) "
-                "| felismerés (össz · megnev. · fogalom) | elnevezés (össz · megnev. · fogalom) | "
-                "típus | altípus | primary (oldal) | kitalált | USD | token be / ki |")
+ROUND_HEADER = ("| sor | végső recall (össz · megnev. · fogalom) | precizitás (össz · megnev. · "
+                "fogalom) | felismerés (össz · megnev. · fogalom) | elnevezési pontosság (össz · "
+                "megnev. · fogalom) | típus | altípus | primary (oldal) | kitalált | USD / oldal | "
+                "token be / ki / oldal |")
 ROUND_RULE = "|---|---|---|---|---|---|---|---|---|---|---|"
 
 
 def round_row(label: str, runs: list[list[PageScore]], cost_runs: list[list[PageScore]]
               | None = None) -> str:
     """Egy sor: `runs` futásonként az oldalak pontszámai; több futásnál átlag ± szórás. A
-    költség és a token a `cost_runs` (alapból a `runs`) összege futásonként, átlagolva."""
+    költség és a token a `cost_runs` (alapból a `runs`) összege futásonként, átlagolva, a
+    `runs` egy futásának oldalszámával osztva."""
     totals = [total_of(scores) for scores in runs]
     per = [rates(t) for t in totals]
     cost_totals = [total_of(s) for s in (cost_runs or runs)]
@@ -519,9 +601,10 @@ def round_row(label: str, runs: list[list[PageScore]], cost_runs: list[list[Page
         return " · ".join(_cell([r[key] for r in per])
                           for key in (name, f"{name}/megnevezett", f"{name}/fogalom"))
 
-    usd = statistics.mean(t.cost_usd for t in cost_totals)
-    tin = statistics.mean(t.tokens_in for t in cost_totals)
-    tout = statistics.mean(t.tokens_out for t in cost_totals)
+    pages = len(runs[0]) or 1
+    usd = statistics.mean(t.cost_usd for t in cost_totals) / pages
+    tin = statistics.mean(t.tokens_in for t in cost_totals) / pages
+    tout = statistics.mean(t.tokens_out for t in cost_totals) / pages
     fabricated = statistics.mean(len(t.fabricated) for t in totals)
     primary = " / ".join(f"{t.primary_found}/{t.primary_total}" for t in totals)
     return (f"| {label} | {triple('recall')} | {triple('precizitás')} | {triple('felismerés')} | "
@@ -552,6 +635,31 @@ def misses_markdown(label: str, runs: list[list[PageScore]],
     return lines + [""]
 
 
+def targets_markdown(rows: list[tuple[str, dict[str, float | None]]]) -> list[str]:
+    """Soronként a célok (`TARGETS`): az érték, a küszöb, teljesül-e."""
+    lines = ["## Célok", "",
+             ("Felismerés: megnevezett ≥ 95%, fogalom ≥ 90%; precizitás ≥ 90%; végső recall "
+              "(elnevezés után) ≥ 90% (javasolt). Futásonként az átlag."), ""]
+    for label, values in rows:
+        cells = []
+        for name, threshold in TARGETS:
+            value = values.get(name)
+            mark = "—" if value is None else ("teljesül" if value >= threshold else "NEM")
+            shown = "—" if value is None else f"{value * 100:.1f}"
+            cells.append(f"{name} {shown} (≥ {threshold * 100:.0f}: {mark})")
+        met = all(values.get(n) is not None and values[n] >= t for n, t in TARGETS)
+        lines.append(f"- **{label}** ({'mind teljesül' if met else 'nem mind'}): "
+                     + "; ".join(cells))
+    return lines + [""]
+
+
+def _mean_rates(runs: list[list[PageScore]]) -> dict[str, float | None]:
+    per = [rates(total_of(scores)) for scores in runs]
+    return {key: (statistics.mean(present) if (present := [r[key] for r in per
+                                                            if r[key] is not None]) else None)
+            for key in per[0]}
+
+
 def load_records(model: str, data_dir: Path, pages: list[dict], tag: str) -> list[dict]:
     return [json.loads(output_path(data_dir, page["page_id"], model, tag).read_text(
         encoding="utf-8")) for page in pages]
@@ -560,55 +668,76 @@ def load_records(model: str, data_dir: Path, pages: list[dict], tag: str) -> lis
 def compare_markdown(model: str, data_dir: Path, pages: list[dict], single: list[str],
                      repeated: dict[str, list[str]]) -> str:
     """Egyszeri körök (`single`: címkék) és ismételt változatok (`repeated`: név → a futások
-    címkéi): átlag ± szórás, unió, többség, oldalanként a kihagyások okkal."""
+    címkéi): futásonként, átlag ± szórás, unió, többség (felismerés szerint szavazva),
+    oldalanként a kihagyások okkal."""
     lines = [f"# Mesterséges oldalak: `{model}`, körök összevetése", "",
              ("Mindegyik sor a jelenlegi referencialistával, a nyers kimenetből pontozva. "
               "Megnevezett: nem concept típusú kötelező tétel; fogalom: concept típusú. Több "
-              "futásnál átlag ± mintaszórás; az unió és a többség költsége a futások összege."),
+              "futásnál átlag ± mintaszórás; az unió és a többség a felismerés szerint szavaz "
+              "(blokk + átfedő szöveg szerinti alak), a költségük a futások összege. A költség "
+              "egy futásnál a kinyerés és (ha van) az elnevezés hívása együtt."),
              "", ROUND_HEADER, ROUND_RULE]
     lines += [round_row(tag, [measure(model, data_dir, pages, tag)]) for tag in single]
     details = []
+    goals: list[tuple[str, dict]] = []
     for label, tags in repeated.items():
         runs = [measure(model, data_dir, pages, tag) for tag in tags]
         per_run = [load_records(model, data_dir, pages, tag) for tag in tags]
         every = [s for scores in runs for s in scores]
+        lines += [round_row(f"{label} · {tag}", [scores]) for tag, scores in zip(tags, runs)]
+        lines.append(round_row(f"{label} ({len(tags)} futás)", runs))
+        goals.append((f"{label}, futásonként", _mean_rates(runs)))
         both = {}
         for name, majority in (("unió", False), ("többség", True)):
-            both[name] = [score_page(page, consensus([records[i] for records in per_run],
+            both[name] = [score_page(page, consensus(page, [records[i] for records in per_run],
                                                      majority))
                           for i, page in enumerate(pages)]
             lines.append(round_row(f"{label} {name}", [both[name]], [every]))
-        lines.insert(len(lines) - 2, round_row(f"{label} ({len(tags)} futás)", runs))
+            goals.append((f"{label} {name}", rates(total_of(both[name]))))
         details += misses_markdown(label, runs, both["többség"])
-    return "\n".join(lines + ["", "## Kihagyások oldalanként", "", *details])
+    return "\n".join(lines + ["", *targets_markdown(goals), "## Kihagyások oldalanként", "",
+                              *details])
 
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["run", "report", "compare"])
-    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("command", choices=["run", "report", "compare", "name"])
+    parser.add_argument("--model", default=None,
+                        help="a kinyerés modellje (alapból a [pipeline] extraction)")
+    parser.add_argument("--naming-model", default=None,
+                        help="name: az elnevezés modellje (alapból a [pipeline] naming)")
     parser.add_argument("--tag", default="", help="a kör címkéje (r1, r2, …)")
-    parser.add_argument("--variant", choices=["a", "b"], default="a",
-                        help="b: a blokktípus is a bemenetben ([b12 code])")
+    parser.add_argument("--from", dest="source", default="",
+                        help="name: a kör címkéje, amelynek a rekordjait elnevezi")
     parser.add_argument("--single", default="", help="compare: egyszeri körök címkéi, vesszővel")
     parser.add_argument("--repeated", action="append", default=[],
                         help="compare: név=címke1,címke2,… (ismételt futások)")
+    parser.add_argument("--set", dest="page_set", choices=SETS, default=DEVELOPMENT,
+                        help="az oldalak köre: fejlesztési (s1–s3), általánosítási, mind")
     parser.add_argument("--data-dir", type=Path, default=DATA_DIR / "compare")
     parser.add_argument("--out", type=Path, default=OUT_DIR)
     args = parser.parse_args(argv)
-    pages = load_pages()
+    pipeline = load_config().pipeline
+    args.model = args.model or pipeline["extraction"]
+    pages = load_pages(page_set=args.page_set)
+    suffix = "" if args.page_set == DEVELOPMENT else f"-{args.page_set}"
     if args.command == "compare":
         repeated = dict(item.split("=", 1) for item in args.repeated)
         text = compare_markdown(args.model, args.data_dir, pages,
                                 [s for s in args.single.split(",") if s],
                                 {k: v.split(",") for k, v in repeated.items()})
         args.out.mkdir(parents=True, exist_ok=True)
-        out = args.out / f"{args.model}-compare.md"
+        out = args.out / f"{args.model}{suffix}-compare.md"
         out.write_text(text, encoding="utf-8")
         print(out)
         return
     if args.command == "run":
-        run(args.model, args.data_dir, pages, args.tag, with_kind=args.variant == "b")
+        run(args.model, args.data_dir, pages, args.tag)
+    if args.command == "name":
+        if not args.source or not args.tag or args.source == args.tag:
+            raise SystemExit("name: --from és egy tőle eltérő --tag kell")
+        name_run(args.model, args.data_dir, pages, args.source, args.tag,
+                 args.naming_model or pipeline["naming"])
     args.out.mkdir(parents=True, exist_ok=True)
     out = args.out / f"{args.model}{'-' + args.tag if args.tag else ''}-report.md"
     out.write_text(report_markdown(args.model, measure(args.model, args.data_dir, pages,

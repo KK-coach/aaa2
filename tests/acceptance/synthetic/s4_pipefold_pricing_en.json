@@ -1,0 +1,837 @@
+{
+  "page_id": "s4_pipefold_pricing_en",
+  "lang": "en",
+  "synthetic": true,
+  "set": "generalization",
+  "site_description": "Pipefold — revenue workflow software for B2B sales and marketing teams, made by Northbeam Software.",
+  "tests": [
+    "termék és cég eltérő névvel",
+    "csomagnevek táblázatban",
+    "tulajdonviszony (Salesforce's)",
+    "általános főnév a név után (HubSpot sync, Slack alerts)",
+    "metrika-fogalmak (MRR, churn)",
+    "szabvány és szabályozás (SAML, SOC 2, GDPR)",
+    "idézet személlyel, beosztással, céggel",
+    "CTA és marketingszöveg nem entitás"
+  ],
+  "blocks": [
+    {
+      "id": "b0",
+      "kind": "title",
+      "text": "Pricing · Pipefold",
+      "heading_path": []
+    },
+    {
+      "id": "b1",
+      "kind": "heading",
+      "level": 1,
+      "text": "Pipefold pricing",
+      "heading_path": [
+        "Pipefold pricing"
+      ]
+    },
+    {
+      "id": "b2",
+      "kind": "paragraph",
+      "text": "Pipefold is the revenue workflow platform from Northbeam Software. Every plan includes lead scoring, A/B testing for email sequences and a two-way HubSpot sync.",
+      "heading_path": [
+        "Pipefold pricing"
+      ]
+    },
+    {
+      "id": "b3",
+      "kind": "heading",
+      "level": 2,
+      "text": "Plans",
+      "heading_path": [
+        "Pipefold pricing",
+        "Plans"
+      ]
+    },
+    {
+      "id": "b4",
+      "kind": "table_row",
+      "cells": [
+        {
+          "header": "Plan",
+          "value": "Starter"
+        },
+        {
+          "header": "Price",
+          "value": "$29 / seat / month"
+        },
+        {
+          "header": "Seats",
+          "value": "up to 5"
+        },
+        {
+          "header": "Highlights",
+          "value": "Slack alerts, Google Sheets export"
+        }
+      ],
+      "heading_path": [
+        "Pipefold pricing",
+        "Plans"
+      ],
+      "text": "Starter | $29 / seat / month | up to 5 | Slack alerts, Google Sheets export"
+    },
+    {
+      "id": "b5",
+      "kind": "table_row",
+      "cells": [
+        {
+          "header": "Plan",
+          "value": "Growth"
+        },
+        {
+          "header": "Price",
+          "value": "$59 / seat / month"
+        },
+        {
+          "header": "Seats",
+          "value": "up to 50"
+        },
+        {
+          "header": "Highlights",
+          "value": "Salesforce and Microsoft Teams integration, MRR and churn dashboards"
+        }
+      ],
+      "heading_path": [
+        "Pipefold pricing",
+        "Plans"
+      ],
+      "text": "Growth | $59 / seat / month | up to 50 | Salesforce and Microsoft Teams integration, MRR and churn dashboards"
+    },
+    {
+      "id": "b6",
+      "kind": "table_row",
+      "cells": [
+        {
+          "header": "Plan",
+          "value": "Enterprise"
+        },
+        {
+          "header": "Price",
+          "value": "custom"
+        },
+        {
+          "header": "Seats",
+          "value": "unlimited"
+        },
+        {
+          "header": "Highlights",
+          "value": "SSO via SAML, SOC 2 Type II report, EU data residency"
+        }
+      ],
+      "heading_path": [
+        "Pipefold pricing",
+        "Plans"
+      ],
+      "text": "Enterprise | custom | unlimited | SSO via SAML, SOC 2 Type II report, EU data residency"
+    },
+    {
+      "id": "b7",
+      "kind": "heading",
+      "level": 2,
+      "text": "Integrations",
+      "heading_path": [
+        "Pipefold pricing",
+        "Integrations"
+      ]
+    },
+    {
+      "id": "b8",
+      "kind": "paragraph",
+      "text": "Salesforce's API limits apply to the Growth plan. Zapier connects Pipefold to 6,000+ other apps.",
+      "heading_path": [
+        "Pipefold pricing",
+        "Integrations"
+      ]
+    },
+    {
+      "id": "b9",
+      "kind": "heading",
+      "level": 2,
+      "text": "Security",
+      "heading_path": [
+        "Pipefold pricing",
+        "Security"
+      ]
+    },
+    {
+      "id": "b10",
+      "kind": "paragraph",
+      "text": "Customer data is stored in Frankfurt and processed in line with the GDPR.",
+      "heading_path": [
+        "Pipefold pricing",
+        "Security"
+      ]
+    },
+    {
+      "id": "b11",
+      "kind": "heading",
+      "level": 2,
+      "text": "What customers say",
+      "heading_path": [
+        "Pipefold pricing",
+        "What customers say"
+      ]
+    },
+    {
+      "id": "b12",
+      "kind": "paragraph",
+      "text": "“We cut our lead response time in half.” — Dana Whitfield, Head of RevOps at Acme Logistics",
+      "heading_path": [
+        "Pipefold pricing",
+        "What customers say"
+      ]
+    },
+    {
+      "id": "b13",
+      "kind": "cta",
+      "text": "Start free trial",
+      "heading_path": [
+        "Pipefold pricing",
+        "What customers say"
+      ]
+    },
+    {
+      "id": "b14",
+      "kind": "cta",
+      "text": "Book a demo",
+      "heading_path": [
+        "Pipefold pricing",
+        "What customers say"
+      ]
+    },
+    {
+      "id": "b15",
+      "kind": "paragraph",
+      "text": "Prices exclude VAT. Most popular: Growth.",
+      "heading_path": [
+        "Pipefold pricing",
+        "What customers say"
+      ]
+    }
+  ],
+  "gold": {
+    "primary_entities": [
+      "Pipefold"
+    ],
+    "entities": [
+      {
+        "canonical": "Pipefold",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Pipefold"
+          },
+          {
+            "block": "b1",
+            "text": "Pipefold"
+          },
+          {
+            "block": "b2",
+            "text": "Pipefold"
+          },
+          {
+            "block": "b8",
+            "text": "Pipefold"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "a termék, a site saját terméke"
+      },
+      {
+        "canonical": "Northbeam Software",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Northbeam Software"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "lead scoring",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "lead scoring"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "A/B testing",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "A/B test",
+          "split testing"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "A/B testing"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "HubSpot",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "HubSpot"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "a 'sync' nem része a névnek"
+      },
+      {
+        "canonical": "Starter",
+        "type": "product",
+        "subtype": "other",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b4",
+            "text": "Starter"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "csomag"
+      },
+      {
+        "canonical": "Growth",
+        "type": "product",
+        "subtype": "other",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "Growth"
+          },
+          {
+            "block": "b8",
+            "text": "Growth"
+          },
+          {
+            "block": "b15",
+            "text": "Growth"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "csomag"
+      },
+      {
+        "canonical": "Enterprise",
+        "type": "product",
+        "subtype": "other",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "Enterprise"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "csomag"
+      },
+      {
+        "canonical": "Slack",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b4",
+            "text": "Slack"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Google Sheets",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b4",
+            "text": "Google Sheets"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Salesforce",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "Salesforce"
+          },
+          {
+            "block": "b8",
+            "text": "Salesforce's"
+          }
+        ],
+        "difficulty": "hard",
+        "note": "a b8-ban tulajdonviszony"
+      },
+      {
+        "canonical": "Microsoft Teams",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "Microsoft Teams"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "MRR",
+        "type": "concept",
+        "subtype": "metric",
+        "aliases": [
+          "monthly recurring revenue"
+        ],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "MRR"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "churn",
+        "type": "concept",
+        "subtype": "metric",
+        "aliases": [
+          "churn rate",
+          "customer churn"
+        ],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "churn"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "SSO",
+        "type": "tech",
+        "subtype": "feature",
+        "aliases": [
+          "single sign-on"
+        ],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "SSO"
+          }
+        ],
+        "difficulty": "easy",
+        "acceptable_types": [
+          "tech",
+          "concept"
+        ],
+        "acceptable_subtypes": [
+          "feature",
+          "method",
+          "other"
+        ]
+      },
+      {
+        "canonical": "SAML",
+        "type": "tech",
+        "subtype": "standard",
+        "aliases": [
+          "Security Assertion Markup Language"
+        ],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "SAML"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "SOC 2",
+        "type": "concept",
+        "subtype": "other",
+        "aliases": [
+          "SOC 2 Type II"
+        ],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "SOC 2"
+          }
+        ],
+        "difficulty": "easy",
+        "acceptable_types": [
+          "concept",
+          "tech"
+        ],
+        "acceptable_subtypes": [
+          "other",
+          "designation",
+          "standard"
+        ]
+      },
+      {
+        "canonical": "Zapier",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "Zapier"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Frankfurt",
+        "type": "place",
+        "subtype": "city",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b10",
+            "text": "Frankfurt"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "GDPR",
+        "type": "concept",
+        "subtype": "other",
+        "aliases": [
+          "General Data Protection Regulation",
+          "általános adatvédelmi rendelet"
+        ],
+        "surface_forms": [
+          {
+            "block": "b10",
+            "text": "GDPR"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Dana Whitfield",
+        "type": "person",
+        "subtype": null,
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "Dana Whitfield"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "RevOps",
+        "type": "concept",
+        "subtype": "discipline",
+        "aliases": [
+          "Revenue Operations"
+        ],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "RevOps"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Acme Logistics",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "Acme Logistics"
+          }
+        ],
+        "difficulty": "easy"
+      }
+    ],
+    "optional": [
+      {
+        "canonical": "EU",
+        "type": "place",
+        "subtype": "region",
+        "aliases": [
+          "European Union",
+          "Európai Unió"
+        ],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "EU"
+          }
+        ],
+        "difficulty": "easy",
+        "acceptable_types": [
+          "place",
+          "org"
+        ],
+        "acceptable_subtypes": [
+          "region",
+          "institution",
+          "other"
+        ]
+      },
+      {
+        "canonical": "data residency",
+        "type": "concept",
+        "subtype": "other",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "data residency"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "VAT",
+        "type": "concept",
+        "subtype": "other",
+        "aliases": [
+          "value-added tax",
+          "ÁFA"
+        ],
+        "surface_forms": [
+          {
+            "block": "b15",
+            "text": "VAT"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "API",
+        "type": "tech",
+        "subtype": "api",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "API"
+          }
+        ],
+        "difficulty": "easy"
+      }
+    ],
+    "negatives": [
+      {
+        "text": "Start free trial"
+      },
+      {
+        "text": "Book a demo"
+      },
+      {
+        "text": "Most popular"
+      },
+      {
+        "text": "dashboards"
+      },
+      {
+        "text": "email sequences"
+      },
+      {
+        "text": "lead response time"
+      },
+      {
+        "text": "Head of"
+      }
+    ]
+  },
+  "rules": {
+    "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+    "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+    "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
+    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
+    "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
+    "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
+    "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
+    "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
+    "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
+    "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
+    "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes"
+  },
+  "subtype_glossary": {
+    "service": {
+      "audit": "felmérés, átvilágítás",
+      "implementation": "beállítás, kiépítés, bevezetés",
+      "consulting": "tanácsadás",
+      "reporting": "riport, dashboard",
+      "training": "képzés, workshop",
+      "other": "egyéb"
+    },
+    "org": {
+      "company": "cég",
+      "restaurant": "étterem, vendéglátóhely",
+      "institution": "intézmény, szervezet",
+      "team": "csapat",
+      "other": "egyéb"
+    },
+    "tech": {
+      "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+      "library": "programkönyvtár",
+      "framework": "keretrendszer",
+      "language": "programozási nyelv",
+      "package": "telepíthető csomag (npm, pip)",
+      "component": "egy könyvtár konkrét komponense",
+      "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+      "api": "programozói interfész, amit szolgáltatásként hívnak",
+      "standard": "műszaki szabvány, specifikáció",
+      "feature": "egy szoftver funkciója",
+      "other": "egyéb"
+    },
+    "product": {
+      "dish": "étel vagy desszert az étlapon",
+      "ingredient": "alapanyag, tésztafajta",
+      "wine": "bor",
+      "drink": "ital, koktél",
+      "physical_good": "egyéb fizikai áru",
+      "other": "egyéb"
+    },
+    "concept": {
+      "method": "módszer, keretrendszer, eljárás",
+      "discipline": "szakterület",
+      "metric": "mérhető mennyiség, mutató",
+      "ui_pattern": "általános felületi minta",
+      "license": "licenc",
+      "designation": "eredetvédelmi vagy minőségi jelölés",
+      "other": "egyéb"
+    },
+    "place": {
+      "city": "város",
+      "region": "régió, tartomány",
+      "country": "ország",
+      "venue": "helyszín, épület",
+      "other": "egyéb"
+    },
+    "work": {
+      "article": "cikk",
+      "case_study": "esettanulmány",
+      "book": "könyv",
+      "course": "tanfolyam",
+      "other": "egyéb"
+    },
+    "event": {
+      "conference": "konferencia",
+      "webinar": "webinár",
+      "festival": "fesztivál",
+      "other": "egyéb"
+    },
+    "brand": {
+      "other": "egyéb"
+    },
+    "person": {}
+  },
+  "subtype_vocabulary": {
+    "service": [
+      "audit",
+      "implementation",
+      "consulting",
+      "reporting",
+      "training",
+      "other"
+    ],
+    "org": [
+      "company",
+      "restaurant",
+      "institution",
+      "team",
+      "other"
+    ],
+    "tech": [
+      "software",
+      "library",
+      "framework",
+      "language",
+      "package",
+      "component",
+      "api_symbol",
+      "api",
+      "standard",
+      "feature",
+      "other"
+    ],
+    "product": [
+      "dish",
+      "ingredient",
+      "wine",
+      "drink",
+      "physical_good",
+      "other"
+    ],
+    "concept": [
+      "method",
+      "discipline",
+      "metric",
+      "ui_pattern",
+      "license",
+      "designation",
+      "other"
+    ],
+    "place": [
+      "city",
+      "region",
+      "country",
+      "venue",
+      "other"
+    ],
+    "work": [
+      "article",
+      "case_study",
+      "book",
+      "course",
+      "other"
+    ],
+    "event": [
+      "conference",
+      "webinar",
+      "festival",
+      "other"
+    ],
+    "brand": [
+      "other"
+    ],
+    "person": []
+  }
+}
