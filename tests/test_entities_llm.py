@@ -377,6 +377,16 @@ def test_limit_caps_the_pages(tmp_path):
     assert len(adapter.calls) == 2
 
 
+def test_page_ids_pick_the_pages(tmp_path):
+    con = site({f"/{i}/": html(f"P{i}", "<p>szöveg itt</p>") for i in range(4)})
+    ids = [page_id for (page_id,) in con.execute(
+        "SELECT page_id FROM pages WHERE url LIKE '%/1/' OR url LIKE '%/3/'").fetchall()]
+    client, adapter = client_for(con, [{"entities": []}] * 4, tmp_path)
+    assert run_llm(con, client, page_ids=ids, limit=5).pages == 2
+    assert [call[1].split("\n")[0] for call in adapter.calls] == ["TITLE: P1", "TITLE: P3"]
+    assert run_llm(con, client, page_ids=[]).pages == 0
+
+
 def test_status_shows_the_llm_run_per_page(tmp_path, monkeypatch):
     monkeypatch.setattr(connect_module, "DATA_DIR", tmp_path)
     memory = site({f"/{i}/": html(f"P{i}", "<p>A Budapest Coffee Fest idén is lesz</p>")

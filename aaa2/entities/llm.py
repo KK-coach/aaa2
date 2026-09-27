@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -119,14 +119,23 @@ def check_evidence(entity: ExtractedEntity, sources: list[str]) -> str | None:
 
 
 def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *, limit: int | None = None,
+            page_ids: Sequence[int] | None = None,
             clock: Callable[[], datetime] | None = None) -> LLMRun:
+    """`page_ids`: csak ezek közül az alkalmas oldalak; `limit`: legfeljebb ennyi oldal."""
     clock = clock or _now
     started = clock()
+    params: list = []
+    only = ""
+    if page_ids is not None:
+        only = " AND list_contains(?, page_id)"
+        params.append(list(page_ids))
+    if limit:
+        params.append(limit)
     pages = con.execute(
         "SELECT page_id, title, lang, main_content, rendered_html FROM pages "
         "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL "
-        "AND trim(coalesce(main_content, '')) <> '' ORDER BY page_id"
-        + (" LIMIT ?" if limit else ""), [limit] if limit else [],
+        "AND trim(coalesce(main_content, '')) <> ''" + only + " ORDER BY page_id"
+        + (" LIMIT ?" if limit else ""), params,
     ).fetchall()
     headings: dict[int, list[tuple[int, str, int]]] = defaultdict(list)
     for page_id, level, text, ordinal in con.execute(
