@@ -381,12 +381,19 @@ def spend(path, model, usd):
     ledger.append({"model": model, "cost_usd": usd}, path)
 
 
-def test_budget_stops_above_threshold_without_calling(con, api, env, ledger_path):
-    spend(ledger_path, "claude-opus-5-5", 10.0)
+def test_budget_counts_the_worst_case_of_the_call_before_calling(con, api, env, ledger_path):
+    """A hívás legnagyobb költsége (Opus: 16 000 kimeneti token × 20 USD / 1M = 0,32 USD, plusz
+    a bemenet becslése) a halmozotthoz adva: ha a küszöb fölé vinné, nem hív, akkor sem, ha a
+    halmozott még a küszöb alatt van."""
     client = clients_for(con, api, env, ledger_path)["anthropic"]
-    client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")   # 10,0: még nem „felett”
-    assert client.spent_usd() == pytest.approx(10.014)
-    with pytest.raises(BudgetExceeded, match="10.0140 USD a 10.0 USD leállási küszöb fölött"):
+    worst = client.worst_case_usd("UTASÍTÁS", "OLDAL", NOON.date())
+    assert worst == pytest.approx((7 * 4 + 16_000 * 20) / 1e6)             # 13 karakter → 7 token
+    spend(ledger_path, "claude-opus-5-5", 9.6)
+    client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")   # 9,6 + 0,32 < 10
+    assert client.spent_usd() == pytest.approx(9.614)
+    spend(ledger_path, "claude-opus-5-5", 0.1)                           # 9,714 + 0,32 > 10
+    with pytest.raises(BudgetExceeded, match=r"9\.7140 USD \+ ez a hívás legfeljebb 0\.3200 USD "
+                                             r"\(max_output_tokens 16000\) a 10\.0 USD"):
         client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
     assert [route for route, _, _ in api.requests] == ["anthropic"]
 
