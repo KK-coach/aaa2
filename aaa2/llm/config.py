@@ -76,6 +76,7 @@ class ProviderConfig:
     fallback: str | None = None
     use_fallback: bool = False
     thinking_level: str | None = None
+    alternatives: tuple[str, ...] = ()     # kérésre hívható további modellek (összevetéshez)
 
     @property
     def active_model(self) -> str:
@@ -84,7 +85,8 @@ class ProviderConfig:
     @property
     def models(self) -> tuple[str, ...]:
         """A szolgáltató konfigurált modelljei; a keret ezek együttes költségére vonatkozik."""
-        return (self.model,) + ((self.fallback,) if self.fallback else ())
+        return ((self.model,) + ((self.fallback,) if self.fallback else ())
+                + tuple(m for m in self.alternatives if m != self.model and m != self.fallback))
 
 
 @dataclass(frozen=True)
@@ -114,7 +116,9 @@ def load_config(path: Path = CONFIG_PATH) -> LLMConfig:
     for name in PROVIDERS:
         if name not in raw:
             raise ValueError(f"{path.name}: hiányzik a [{name}] szakasz")
-        provider = ProviderConfig(name=name, **raw[name])
+        section = dict(raw[name])
+        section["alternatives"] = tuple(section.get("alternatives", ()))
+        provider = ProviderConfig(name=name, **section)
         if not 0 < provider.stop_usd <= provider.budget_usd:
             raise ValueError(f"[{name}]: a leállási küszöb 0 és a keret közé esik")
         if provider.use_fallback and not provider.fallback:

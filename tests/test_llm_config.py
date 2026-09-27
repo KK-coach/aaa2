@@ -3,6 +3,7 @@ from datetime import date
 
 import pytest
 
+from aaa2.llm.client import LLMClient, open_clients
 from aaa2.llm.config import CONFIG_PATH, PriceError, Usage, load_config
 
 CONFIG = load_config()
@@ -20,7 +21,9 @@ def test_defaults():
     providers = CONFIG.providers
     assert [providers[n].active_model for n in ("anthropic", "openai", "gemini")] == [
         "claude-opus-5-5", "gpt-6-luna", "gemini-3.8-flash"]
-    assert providers["openai"].models == ("gpt-6-luna", "gpt-5.6-terra")
+    assert providers["openai"].models == ("gpt-6-luna", "gpt-5.6-terra", "gpt-6-sol")
+    assert providers["anthropic"].models == (
+        "claude-opus-5-5", "claude-sonnet-5", "claude-haiku-4-5-20251001")
     assert providers["gemini"].thinking_level == "low"
     assert [(p.budget_usd, p.stop_usd) for p in providers.values()] == [
         (5.0, 4.0), (3.0, 2.5), (5.0, 4.0)]
@@ -80,12 +83,15 @@ def test_stop_threshold_is_read_from_config(tmp_path):
 @pytest.mark.parametrize(("old", "new", "message"), [
     ("stop_usd = 2.5", "stop_usd = 3.5", r"\[openai\]: a leállási küszöb"),
     ("stop_usd = 4.0", "stop_usd = 0", r"\[anthropic\]: a leállási küszöb"),
-    ('fallback = "gpt-5.6-terra"\nuse_fallback = false', "use_fallback = true",
+    ('fallback = "gpt-5.6-terra"\nalternatives = ["gpt-6-sol"]\nuse_fallback = false',
+     "use_fallback = true",
      r"\[openai\]: use_fallback, de nincs fallback"),
     ('model = "gpt-5.6-terra"', 'model = "gpt-5.6-terra-x"', "gpt-5.6-terra: nincs ársor"),
     ("valid_from = 2027-01-01", "valid_from = 2026-12-31", "gemini-3.8-flash: átfedő ársorok"),
     ("valid_until = 2026-12-31\n", "", "gemini-3.8-flash: átfedő ársorok"),
     ("[gemini]", "[google]", r"hiányzik a \[gemini\] szakasz"),
+    ('alternatives = ["gpt-6-sol"]', 'alternatives = ["gpt-6-sol", "gpt-6-x"]',
+     "gpt-6-x: nincs ársor"),
 ])
 def test_invalid_config_is_refused(tmp_path, old, new, message):
     with pytest.raises(ValueError, match=message):
@@ -93,5 +99,39 @@ def test_invalid_config_is_refused(tmp_path, old, new, message):
 
 
 def test_every_price_row_names_its_source():
-    assert all(p.source.startswith("https://") and p.checked == date(2026, 9, 26)
-               for p in CONFIG.prices)
+    assert all(p.source.startswith("https://")
+               and p.checked in (date(2026, 9, 26), date(2026, 9, 27)) for p in CONFIG.prices)
+
+
+@pytest.mark.parametrize(("model", "rates"), [
+    ("gpt-6-sol", (2.00, 0.20, 2.50, 10.00)),
+    ("claude-sonnet-5", (2.00, 0.20, 2.50, 10.00)),
+    ("claude-haiku-4-5-20251001", (1.00, 0.10, 1.25, 5.00)),
+])
+def test_candidate_prices(model, rates):
+    r = CONFIG.price(model, date(2026, 9, 27)).rates
+    assert (r.input, r.cached_input, r.cache_write, r.output) == rates
+
+
+class _Adapter:
+    def __init__(self, provider):
+        self.config = CONFIG.providers[provider]
+
+
+def test_client_model_override_is_a_configured_model():
+    assert LLMClient(None, _Adapter("openai"), CONFIG).model == "gpt-6-luna"
+    assert LLMClient(None, _Adapter("openai"), CONFIG, model="gpt-6-sol").model == "gpt-6-sol"
+    with pytest.raises(ValueError, match="gpt-6-astra nincs a konfigurált modellek"):
+        LLMClient(None, _Adapter("openai"), CONFIG, model="gpt-6-astra")
+
+
+def test_open_clients_takes_a_model_per_provider(tmp_path, monkeypatch):
+    for name in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    env = tmp_path / ".env"
+    env.write_text("ANTHROPIC_API_KEY=a\nOPENAI_API_KEY=o\n", encoding="utf-8")
+    clients, skipped = open_clients(None, env_file=env,
+                                    models={"anthropic": "claude-sonnet-5"})
+    assert (clients["anthropic"].model, clients["openai"].model) == (
+        "claude-sonnet-5", "gpt-6-luna")
+    assert "gemini" in skipped

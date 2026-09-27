@@ -435,7 +435,8 @@ def test_check_models_against_provider_lists(api, env, tmp_path, monkeypatch):
     checks = {c.model: c for c in check_models(env_file=env,
                                                base_urls=dict.fromkeys(PROVIDERS, api.base))}
     assert {m: c.found for m, c in checks.items()} == {
-        "claude-opus-5-5": True, "gpt-6-luna": True, "gpt-5.6-terra": False,
+        "claude-opus-5-5": True, "claude-sonnet-5": True, "claude-haiku-4-5-20251001": False,
+        "gpt-6-luna": True, "gpt-5.6-terra": False, "gpt-6-sol": False,
         "gemini-3.8-flash": True}
     assert checks["gemini-3.8-flash"].note == "2 modell a listán"
     api.replies["openai-models"] = (200, {"object": "list", "data": [

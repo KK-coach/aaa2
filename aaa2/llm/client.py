@@ -76,18 +76,25 @@ class Retry:
 class LLMClient:
     def __init__(self, con: duckdb.DuckDBPyConnection, adapter: Adapter, config: LLMConfig,
                  ledger_path: Path | None = None,
-                 clock: Callable[[], datetime] | None = None, retry: Retry | None = None):
+                 clock: Callable[[], datetime] | None = None, retry: Retry | None = None,
+                 model: str | None = None):
+        """`model`: a szolgáltató egy konfigurált modellje (`ProviderConfig.models`) az aktív
+        helyett."""
         self.con = con
         self.adapter = adapter
         self.config = config
         self.provider = adapter.config
+        if model is not None and model not in self.provider.models:
+            raise ValueError(f"{self.provider.name}: a {model} nincs a konfigurált modellek "
+                             f"között ({', '.join(self.provider.models)})")
+        self._model = model
         self.ledger_path = ledger_path
         self.clock = clock or _now
         self.retry = retry or Retry()
 
     @property
     def model(self) -> str:
-        return self.provider.active_model
+        return self._model or self.provider.active_model
 
     def spent_usd(self) -> float:
         """A szolgáltató konfigurált modelljeinek halmozott költsége a főkönyvből."""
@@ -163,8 +170,10 @@ def open_clients(con: duckdb.DuckDBPyConnection, *, config: LLMConfig | None = N
                  env_file: Path = ENV_PATH, ledger_path: Path | None = None,
                  base_urls: dict[str, str] | None = None,
                  clock: Callable[[], datetime] | None = None, retry: Retry | None = None,
+                 models: dict[str, str] | None = None,
                  ) -> tuple[dict[str, LLMClient], dict[str, str]]:
-    """A kulccsal rendelkező szolgáltatók kliensei, és a kimaradtak az okukkal."""
+    """A kulccsal rendelkező szolgáltatók kliensei, és a kimaradtak az okukkal. `models`:
+    szolgáltatónként egy konfigurált modell az aktív helyett."""
     config = config or load_config()
     clients, skipped = {}, {}
     for name, provider in config.providers.items():
@@ -173,7 +182,8 @@ def open_clients(con: duckdb.DuckDBPyConnection, *, config: LLMConfig | None = N
             skipped[name] = f"nincs {provider.key_env}"
             continue
         adapter = ADAPTERS[name](provider, key, (base_urls or {}).get(name))
-        clients[name] = LLMClient(con, adapter, config, ledger_path, clock, retry)
+        clients[name] = LLMClient(con, adapter, config, ledger_path, clock, retry,
+                                  (models or {}).get(name))
     return clients, skipped
 
 
