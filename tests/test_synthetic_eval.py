@@ -466,3 +466,17 @@ def test_an_ambiguous_alias_is_enough_to_recognize_but_not_to_name():
     assert gtm("Google Tag Manager") == (1, 1, 1, None, 0)
     assert se._items([{**item, "ambiguous_aliases": []}])[0].naming_keys == {
         "google tag manager", "gtm"}
+
+
+def test_checkpoint_report_per_page_and_total(tmp_path):
+    (tmp_path / "synthetic").mkdir()
+    for page in PAGES.values():
+        se.output_path(tmp_path, page["page_id"], "m", "t").write_text(
+            json.dumps(gold_as_output(page), ensure_ascii=False), encoding="utf-8")
+    text = se.checkpoint_markdown("m", tmp_path, list(PAGES.values()), {"Tökéletes": "t"})
+    assert "## Tökéletes (`t`)" in text
+    assert ("| s1_lumen_meres_hu | 100.0 (19/19) | 100.0 (8/8) | 100.0 (27/27) | "
+            "100.0 · 100.0 · 100.0 (27/27) | 100.0 (27/27) | 100.0 (27/27) |") in text
+    assert "| **összesen** | 100.0 (" in text
+    assert "- **Tökéletes** (mind teljesül):" in text
+    assert "- **s1_lumen_meres_hu** (0): —" in text

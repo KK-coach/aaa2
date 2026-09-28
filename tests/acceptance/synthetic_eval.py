@@ -690,6 +690,68 @@ def _mean_rates(runs: list[list[PageScore]]) -> dict[str, float | None]:
             for key in per[0]}
 
 
+CHECKPOINT_HEADER = ("| oldal | felismerés megnev. | felismerés fogalom | elnevezési pontosság | "
+                     "végső recall (össz · megnev. · fogalom) | precizitás | típus | altípus | "
+                     "főtéma | USD / oldal |")
+CHECKPOINT_RULE = "|---|---|---|---|---|---|---|---|---|---|"
+
+
+def checkpoint_row(label: str, scores: list[PageScore]) -> str:
+    total = total_of(scores)
+    r = rates(total)
+
+    def pct(key):
+        return "—" if r[key] is None else f"{r[key] * 100:.1f}"
+
+    def counted(part, whole):
+        return f"{pct_of(part, whole)} ({part}/{whole})"
+
+    return (f"| {label} | {counted(total.recognized_named, total.named)} | "
+            f"{counted(total.recognized_concepts, total.concepts)} | "
+            f"{counted(total.well_named, total.recognized)} | "
+            f"{pct('recall')} · {pct('recall/megnevezett')} · {pct('recall/fogalom')} "
+            f"({total.found}/{total.required}) | {counted(total.good, total.precision_total)} | "
+            f"{counted(total.type_right, total.found)} | "
+            f"{counted(total.subtype_right, total.subtype_total)} | "
+            f"{total.primary_found}/{total.primary_total} | "
+            f"{total.cost_usd / (len(scores) or 1):.4f} |")
+
+
+def pct_of(part: int, whole: int) -> str:
+    return f"{part / whole * 100:.1f}" if whole else "—"
+
+
+def checkpoint_markdown(model: str, data_dir: Path, pages: list[dict],
+                        series: dict[str, str]) -> str:
+    """Sorozatonként (név → címke) oldalanként és összesítve: felismerés (megnevezett, fogalom),
+    elnevezési pontosság, végső recall, precizitás, típus- és altípus-pontosság, főtéma,
+    költség/oldal; a célok az összesítettre; a kihagyások oldalanként, felismerési vagy
+    elnevezési hibaként."""
+    lines = [f"# Ellenőrzőpont-mérés: `{model}` kinyerés", "",
+             ("Pontozás hálózat nélkül a tárolt kimenetekből, a jelenlegi szabályokkal (recall "
+              "a referencia blokkjában; az `ambiguous_aliases` felismerésnek elég, elnevezésnek "
+              "nem). A költség egy oldalra: a kinyerő hívás(ok) és az elnevezés."), ""]
+    goals: list[tuple[str, dict]] = []
+    details: list[str] = []
+    for label, tag in series.items():
+        scores = measure(model, data_dir, pages, tag)
+        lines += [f"## {label} (`{tag}`)", "", CHECKPOINT_HEADER, CHECKPOINT_RULE]
+        lines += [checkpoint_row(s.page_id, [s]) for s in scores]
+        lines.append(checkpoint_row("**összesen**", scores))
+        lines.append("")
+        goals.append((label, rates(total_of(scores))))
+        details += [f"### {label}", ""]
+        for s in scores:
+            missed = ", ".join(f"{name} ({kind}, {why})" for name, _, kind, why in s.missed)
+            details.append(f"- **{s.page_id}** ({len(s.missed)}): {missed or '—'}")
+            wrong = [f"{name} ({kind})" for name, kind in s.unlisted] + [
+                f"{name} (= negatív „{neg}”)" for name, neg in s.negatives_hit]
+            details.append(f"  - téves találat ({len(wrong)}): {', '.join(wrong) or '—'}")
+        details.append("")
+    return "\n".join(lines + targets_markdown(goals) + ["## Kihagyások és téves találatok", "",
+                                                         *details])
+
+
 def load_records(model: str, data_dir: Path, pages: list[dict], tag: str) -> list[dict]:
     return [json.loads(output_path(data_dir, page["page_id"], model, tag).read_text(
         encoding="utf-8")) for page in pages]
@@ -731,7 +793,7 @@ def compare_markdown(model: str, data_dir: Path, pages: list[dict], single: list
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["run", "report", "compare", "name"])
+    parser.add_argument("command", choices=["run", "report", "compare", "name", "checkpoint"])
     parser.add_argument("--model", default=None,
                         help="a kinyerés modellje (alapból a [pipeline] extraction)")
     parser.add_argument("--naming-model", default=None,
@@ -742,6 +804,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--single", default="", help="compare: egyszeri körök címkéi, vesszővel")
     parser.add_argument("--repeated", action="append", default=[],
                         help="compare: név=címke1,címke2,… (ismételt futások)")
+    parser.add_argument("--series", action="append", default=[],
+                        help="checkpoint: név=címke (egy sorozat)")
     parser.add_argument("--set", dest="page_set", choices=SETS, default=DEVELOPMENT,
                         help="az oldalak köre: fejlesztési (s1–s3), általánosítási, mind")
     parser.add_argument("--page", action="append", default=[],
@@ -756,6 +820,14 @@ def main(argv: list[str] | None = None) -> None:
     pages = [page for page in load_pages(args.pages_dir, args.page_set)
              if not args.page or page["page_id"] in args.page]
     suffix = "" if args.page_set == DEVELOPMENT else f"-{args.page_set}"
+    if args.command == "checkpoint":
+        series = dict(item.split("=", 1) for item in args.series)
+        args.out.mkdir(parents=True, exist_ok=True)
+        out = args.out / f"{args.model}{suffix}-checkpoint.md"
+        out.write_text(checkpoint_markdown(args.model, args.data_dir, pages, series),
+                       encoding="utf-8")
+        print(out)
+        return
     if args.command == "compare":
         repeated = dict(item.split("=", 1) for item in args.repeated)
         text = compare_markdown(args.model, args.data_dir, pages,
