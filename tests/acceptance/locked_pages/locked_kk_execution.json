@@ -2266,20 +2266,6 @@
         ]
       },
       {
-        "canonical": "UX & Conversion",
-        "type": "service",
-        "subtype": "consulting",
-        "note": "a keretrendszer rétege",
-        "difficulty": "easy",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b223",
-            "text": "UX & Conversion"
-          }
-        ]
-      },
-      {
         "canonical": "SEO",
         "type": "concept",
         "subtype": "discipline",
@@ -3073,6 +3059,20 @@
           {
             "block": "b68",
             "text": "Technical health check"
+          }
+        ]
+      },
+      {
+        "canonical": "UX & Conversion",
+        "type": "service",
+        "subtype": "consulting",
+        "note": "két külön kifejezés (UX, konverzió); a modell helyesen bontja szét, ezért optional",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b223",
+            "text": "UX & Conversion"
           }
         ]
       }

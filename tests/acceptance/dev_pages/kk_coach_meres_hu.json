@@ -3002,20 +3002,6 @@
     ]
    },
    {
-    "canonical": "UX & Konverzió",
-    "type": "service",
-    "subtype": "consulting",
-    "difficulty": "easy",
-    "note": "a keretrendszer saját rétege",
-    "aliases": [],
-    "surface_forms": [
-     {
-      "block": "b199",
-      "text": "UX & Konverzió"
-     }
-    ]
-   },
-   {
     "canonical": "Kivitelezés",
     "type": "service",
     "subtype": "consulting",
@@ -3780,6 +3766,20 @@
      {
       "block": "b125",
       "text": "konverziókövetés"
+     }
+    ]
+   },
+   {
+    "canonical": "UX & Konverzió",
+    "type": "service",
+    "subtype": "consulting",
+    "difficulty": "easy",
+    "note": "két külön kifejezés (UX, konverzió); a modell helyesen bontja szét, ezért optional",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b199",
+      "text": "UX & Konverzió"
      }
     ]
    }
