@@ -3,7 +3,7 @@
 - URL: https://valor-software.com/ngx-bootstrap/components/accordion
 - nyelv: en
 - site: This page belongs to the website valor-software.com, whose home page is titled “Angular Bootstrap”.
-- blokkok (content régió): 212
+- blokkok (content régió): 157
 
 Blokkonként: azonosító, típus, heading-útvonal, szöveg (táblázatsornál a cellák az oszlopfejléccel).
 
@@ -642,71 +642,16 @@ Blokkonként: azonosító, típus, heading-útvonal, szöveg (táblázatsornál 
 - **b214** `heading`: Properties
 - **b215** `table_row` (Accordion › API Reference › Properties): closeOthers; Type: boolean Default value: false Whether the other panels should be closed when a panel is opened
 - **b216** `table_row` (Accordion › API Reference › Properties): isAnimated; Type: boolean Default value: false turn on/off animation
-- **b217** `heading`: Basic
-- **b218** `card` (Accordion › API Reference › Basic): Static Header
-- **b219** `card` (Accordion › API Reference › Basic): Another group
-- **b220** `card` (Accordion › API Reference › Basic): Another group
-- **b221** `card` (Accordion › API Reference › Basic): Another group
-- **b222** `heading`: With animation
-- **b223** `card` (Accordion › API Reference › With animation): Static Header
-- **b224** `card` (Accordion › API Reference › With animation): Another group
-- **b225** `card` (Accordion › API Reference › With animation): Another group
-- **b226** `card` (Accordion › API Reference › With animation): Another group
-- **b227** `heading`: Group opening event
-- **b228** `card` (Accordion › API Reference › Group opening event): Group without isOpenChange event listener
-- **b229** `card` (Accordion › API Reference › Group opening event): Group with isOpenChange event listener
-- **b230** `card` (Accordion › API Reference › Group opening event): Group with isOpenChange event listener
-- **b231** `heading`: Custom HTML
-- **b232** `card` (Accordion › API Reference › Custom HTML): I can have markup! Some HTML here
-- **b233** `card` (Accordion › API Reference › Custom HTML): I can have markup, too!
-- **b234** `heading`: Disabled
-- **b235** `card` (Accordion › API Reference › Disabled): Enable / Disable first panel
-- **b236** `card` (Accordion › API Reference › Disabled): Static Header
-- **b237** `card` (Accordion › API Reference › Disabled): Content 1
-- **b238** `card` (Accordion › API Reference › Disabled): Content 2
-- **b239** `heading`: Initially opened
-- **b240** `card` (Accordion › API Reference › Initially opened): Content 1
-- **b241** `card` (Accordion › API Reference › Initially opened): Initially expanded
-- **b242** `card` (Accordion › API Reference › Initially opened): This content is straight in the template.
-- **b243** `card` (Accordion › API Reference › Initially opened): Content 2
-- **b244** `heading`: Dynamic accordion
-- **b245** `card` (Accordion › API Reference › Dynamic accordion): Add Group Item
-- **b246** `card` (Accordion › API Reference › Dynamic accordion): Dynamic Group Header - 1
-- **b247** `card` (Accordion › API Reference › Dynamic accordion): Dynamic Group Header - 2
-- **b248** `heading`: Dynamic body content
-- **b249** `card` (Accordion › API Reference › Dynamic body content): Dynamic Body Content
-- **b250** `card` (Accordion › API Reference › Dynamic body content): Content 2
-- **b251** `card` (Accordion › API Reference › Dynamic body content): Content 3
-- **b252** `heading`: Manual toggle
-- **b253** `card` (Accordion › API Reference › Manual toggle): Toggle last panel
-- **b254** `card` (Accordion › API Reference › Manual toggle): Content 1
-- **b255** `card` (Accordion › API Reference › Manual toggle): Content 2
-- **b256** `card` (Accordion › API Reference › Manual toggle): Last panel
-- **b257** `card` (Accordion › API Reference › Manual toggle): accordion 3
-- **b258** `heading`: Open only one at a time
-- **b259** `card` (Accordion › API Reference › Open only one at a time): Open only one at a time
-- **b260** `card` (Accordion › API Reference › Open only one at a time): Header
-- **b261** `card` (Accordion › API Reference › Open only one at a time): Content 1
-- **b262** `card` (Accordion › API Reference › Open only one at a time): Content 2
-- **b263** `heading`: Styling
-- **b264** `card` (Accordion › API Reference › Styling): Static Header, initially expanded
-- **b265** `card` (Accordion › API Reference › Styling): This content is straight in the template.
-- **b266** `card` (Accordion › API Reference › Styling): Content 1
-- **b267** `card` (Accordion › API Reference › Styling): Content 2
-- **b268** `heading`: Configuring defaults
-- **b269** `card` (Accordion › API Reference › Configuring defaults): Header
-- **b270** `card` (Accordion › API Reference › Configuring defaults): Content 1
-- **b271** `card` (Accordion › API Reference › Configuring defaults): Content 2
-- **b272** `other` (Accordion › API Reference › Configuring defaults): components
-- **b273** `list_item` (Accordion › API Reference › Configuring defaults): Basic
-- **b274** `list_item` (Accordion › API Reference › Configuring defaults): With animation
-- **b275** `list_item` (Accordion › API Reference › Configuring defaults): Group opening event
-- **b276** `list_item` (Accordion › API Reference › Configuring defaults): Custom HTML
-- **b277** `list_item` (Accordion › API Reference › Configuring defaults): Disabled
-- **b278** `list_item` (Accordion › API Reference › Configuring defaults): Initially opened
-- **b279** `list_item` (Accordion › API Reference › Configuring defaults): Dynamic accordion
-- **b280** `list_item` (Accordion › API Reference › Configuring defaults): Dynamic body content
-- **b281** `list_item` (Accordion › API Reference › Configuring defaults): Manual toggle
-- **b282** `list_item` (Accordion › API Reference › Configuring defaults): Open only one at a time
-- **b283** `list_item` (Accordion › API Reference › Configuring defaults): Styling
-- **b284** `list_item` (Accordion › API Reference › Configuring defaults): Configuring defaults
+- **b217** `other` (Accordion › API Reference › Properties): components
+- **b218** `list_item` (Accordion › API Reference › Properties): Basic
+- **b219** `list_item` (Accordion › API Reference › Properties): With animation
+- **b220** `list_item` (Accordion › API Reference › Properties): Group opening event
+- **b221** `list_item` (Accordion › API Reference › Properties): Custom HTML
+- **b222** `list_item` (Accordion › API Reference › Properties): Disabled
+- **b223** `list_item` (Accordion › API Reference › Properties): Initially opened
+- **b224** `list_item` (Accordion › API Reference › Properties): Dynamic accordion
+- **b225** `list_item` (Accordion › API Reference › Properties): Dynamic body content
+- **b226** `list_item` (Accordion › API Reference › Properties): Manual toggle
+- **b227** `list_item` (Accordion › API Reference › Properties): Open only one at a time
+- **b228** `list_item` (Accordion › API Reference › Properties): Styling
+- **b229** `list_item` (Accordion › API Reference › Properties): Configuring defaults

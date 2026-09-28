@@ -13,11 +13,17 @@ azt kapja. Kimenet oldalanként (`tests/acceptance/dev_pages/`):
   `negatives`), a tétel formája ugyanaz, mint a mesterséges oldalakon;
 - `<oldal>.md`: ugyanez olvasható formában, blokkonként egy sorral.
 
+Ha a célfájlban már van referencialista, a generátor megtartja a fájl többi mezőjét, és a
+tételek blokk-hivatkozásait az új blokkokhoz igazítja (`realign`): a régi és az új blokkok
+szövege (a címkelista „ · ” elválasztója nélkül) sorrend szerint párosítva; ami eltűnt blokkra
+mutat, kimarad; minden változás a kimeneten.
+
 A generátor nem ír adatbázisba, és nem hív hálózatot.
 """
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 from pathlib import Path
 
@@ -25,6 +31,7 @@ import duckdb
 import zstandard
 
 from aaa2.db.connect import DATA_DIR
+from aaa2.entities.blocks import surface_spans
 from aaa2.entities.dom import parse_blocks
 from aaa2.entities.llm import site_line
 
@@ -64,6 +71,48 @@ def template(page_id: str, db: Path, url: str) -> dict:
             "site_description": site, "blocks": blocks, "gold": EMPTY_GOLD}
 
 
+def block_mapping(old: list[dict], new: list[dict]) -> dict[str, str]:
+    """Régi blokk-azonosító → új: a szövegek („ · ” nélkül) sorrend szerinti párosítása."""
+    def plain(block):
+        return block["text"].replace(" · ", " ")
+    matcher = difflib.SequenceMatcher(a=[plain(b) for b in old], b=[plain(b) for b in new],
+                                      autojunk=False)
+    return {old[i]["id"]: new[j]["id"]
+            for tag, i1, i2, j1, j2 in matcher.get_opcodes() if tag == "equal"
+            for i, j in zip(range(i1, i2), range(j1, j2), strict=True)}
+
+
+def realign(gold: dict, old: list[dict], new: list[dict]) -> tuple[dict, list[str]]:
+    """A tételek szöveg szerinti alakjai az új blokk-azonosítókkal; ami eltűnt blokkra mutat,
+    vagy az új blokkban nem áll, kimarad. Visszaad: az új referencialista és a változások."""
+    mapping = block_mapping(old, new)
+    blocks = {b["id"]: b for b in new}
+    changes: list[str] = []
+    out = {key: value for key, value in gold.items()}
+    for section in ("entities", "optional"):
+        items = []
+        for item in gold.get(section, []):
+            forms = []
+            for form in item.get("surface_forms", []):
+                target = mapping.get(form["block"])
+                if target is None:
+                    changes.append(f"{section} {item['canonical']}: {form['block']} "
+                                   f"„{form['text']}” kimarad (a blokk nincs meg)")
+                    continue
+                if not surface_spans(form["text"], blocks[target]):
+                    changes.append(f"{section} {item['canonical']}: {form['block']} → {target} "
+                                   f"„{form['text']}” kimarad (nem áll az új blokkban)")
+                    continue
+                if target != form["block"]:
+                    changes.append(f"{section} {item['canonical']}: {form['block']} → {target}")
+                forms.append({**form, "block": target})
+            if not forms and item.get("surface_forms"):
+                changes.append(f"{section} {item['canonical']}: nem maradt szöveg szerinti alak")
+            items.append({**item, "surface_forms": forms})
+        out[section] = items
+    return out, changes
+
+
 def markdown(page: dict) -> str:
     lines = [f"# {page['page_id']}", "", f"- URL: {page['url']}", f"- nyelv: {page['lang']}",
              f"- site: {page['site_description']}",
@@ -94,10 +143,20 @@ def main(argv: list[str] | None = None) -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     for page_id, name, url in PAGES:
         page = template(page_id, args.data_dir / f"{name}.duckdb", url)
-        (args.out / f"{page_id}.json").write_text(
-            json.dumps(page, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        target = args.out / f"{page_id}.json"
+        changes: list[str] = []
+        if target.exists():
+            previous = json.loads(target.read_text(encoding="utf-8"))
+            if any(previous.get("gold", {}).get(k) for k in EMPTY_GOLD):
+                gold, changes = realign(previous["gold"], previous["blocks"], page["blocks"])
+                page = {**previous, "blocks": page["blocks"], "gold": gold}
+        target.write_text(json.dumps(page, ensure_ascii=False, indent=1) + "\n",
+                          encoding="utf-8")
         (args.out / f"{page_id}.md").write_text(markdown(page), encoding="utf-8")
-        print(f"{page_id}: {len(page['blocks'])} blokk")
+        print(f"{page_id}: {len(page['blocks'])} blokk, {len(changes)} változás a "
+              "referencialistában")
+        for change in changes:
+            print(f"  {change}")
 
 
 if __name__ == "__main__":

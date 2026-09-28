@@ -13,7 +13,7 @@ Blokkonként: azonosító, típus, heading-útvonal, szöveg (táblázatsornál 
 - **b15** `heading`: Mérés nélküli marketing nem más, mint találgatás.
 - **b16** `paragraph` (Mérés nélküli marketing nem más, mint találgatás.): GA4 beállítás, szerveroldali adatkövetés, attribúciós modellezés és adatarchitektúra — hogy az elemzési rendszered valódi döntéstámogató eszköz legyen, ne csak egy kimutatáshalmaz, amit végül senki sem használ.
 - **b17** `other` (Mérés nélküli marketing nem más, mint találgatás.): Nézd meg, Hogy dolgozom
-- **b18** `other` (Mérés nélküli marketing nem más, mint találgatás.): GA4 beállítás Szerver oldali mérés Attribution Modeling BigQuery Looker Studio Google tag manager
+- **b18** `other` (Mérés nélküli marketing nem más, mint találgatás.): GA4 beállítás · Szerver oldali mérés · Attribution Modeling · BigQuery · Looker Studio · Google tag manager
 - **b19** `paragraph` (Mérés nélküli marketing nem más, mint találgatás.): Ha a mérés elromlik
 - **b20** `heading`: A konverziók nem a megfelelő csatornákhoz vannak kötve.
 - **b21** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A konverziók nem a megfelelő csatornákhoz vannak kötve.): A GA4 last-click-et mutat. A valóság multi-touch. A büdzséd rossz adatok alapján van tervezve.
@@ -66,27 +66,27 @@ Blokkonként: azonosító, típus, heading-útvonal, szöveg (táblázatsornál 
 - **b68** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik.): 01
 - **b69** `heading`: GA4 Event-architektúra
 - **b70** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › GA4 Event-architektúra): Tiszta event-taxonómia, tölcsér-szakasz jelölés, lead-minőség jelek, form-interakció követés, görgetési és engagement modellezés.
-- **b71** `other` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › GA4 Event-architektúra): GA4 GTM Datastream
+- **b71** `other` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › GA4 Event-architektúra): GA4 · GTM · Datastream
 - **b72** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › GA4 Event-architektúra): Ez minden további elemzés alapja. Ha az eventek nincsenek rendben, egyik riport sem lesz igazán megbízható.
 - **b73** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › GA4 Event-architektúra): 02
 - **b74** `heading`: Szerver oldali mérés
 - **b75** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Szerver oldali mérés): A kritikus konverziós jelek áthelyezése a böngészőből szerver oldali konténerbe — megkerülve az adblockereket, iOS-korlátozásokat és harmadik féltől származó cookie-veszteséget.
-- **b76** `other` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Szerver oldali mérés): GTM Server-side Stape.io Conversions API
+- **b76** `other` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Szerver oldali mérés): GTM Server-side · Stape.io · Conversions API
 - **b77** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Szerver oldali mérés): Az elveszett konverziós adatok 20–40%-át visszaszerzi. Kritikus a pontos fizetett csatorna-optimalizáláshoz és az SEO-attribúcióhoz.
 - **b78** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Szerver oldali mérés): 03
 - **b79** `heading`: Attribúciós modellezés
 - **b80** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Attribúciós modellezés): Megnézzük, melyik csatorna hol járul hozzá a vásárlási folyamathoz: melyik hozza be először a látogatót, melyiknél történik a konverzió, és melyik segíti a döntést útközben. Így láthatóvá válik, hogyan dolgozik együtt az organikus, a fizetett és a direkt forgalom a teljes ügyfélúton.
-- **b81** `other` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Attribúciós modellezés): GA4 Attribution BigQuery Custom Models
+- **b81** `other` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Attribúciós modellezés): GA4 Attribution · BigQuery · Custom Models
 - **b82** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Attribúciós modellezés): Láthatóvá teszi az SEO-befektetés értékét. Véget vet a last-click torzításra alapozott büdzsévitáknak.
 - **b83** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Attribúciós modellezés): 04
 - **b84** `heading`: Adattárház és konszolidáció
 - **b85** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Adattárház és konszolidáció): Ahol szükséges: GA4 nyers adat, Search Console, CRM-jelek és UX-viselkedési adatok egységesítése strukturált lekérdezéshez és mintadetektáláshoz.
-- **b86** `other` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Adattárház és konszolidáció): BigQuery Looker Studio Cloudflare Logs
+- **b86** `other` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Adattárház és konszolidáció): BigQuery · Looker Studio · Cloudflare Logs
 - **b87** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Adattárház és konszolidáció): Nem minden cégnek van rá szükséges. Webshopoknak közepes és nagyobb oldalaknak általában igen.
 - **b88** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Adattárház és konszolidáció): 05
 - **b89** `heading`: Riportálás és döntési réteg
 - **b90** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Riportálás és döntési réteg): Vezetői összefoglaló, operatív monitoring és iterációs visszacsatolás. Nem szebb dashboardok — tisztább döntések.
-- **b91** `other` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Riportálás és döntési réteg): GTM Server-side Stape.io Conversions API
+- **b91** `other` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Riportálás és döntési réteg): GTM Server-side · Stape.io · Conversions API
 - **b92** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Riportálás és döntési réteg): Kevesebb belső vita. Gyorsabb, magabiztosabb priorizálás. Bevétel-korreláció gyorsan észrevehető.
 - **b93** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Minden rétegnek van szerepe. Minden réteg kapcsolódik. › Riportálás és döntési réteg): — Szerver oldali mérés
 - **b94** `heading`: Az elveszett adatok azok, amelyek a legjobban számítanak.
@@ -140,18 +140,18 @@ Blokkonként: azonosító, típus, heading-útvonal, szöveg (táblázatsornál 
 - **b142** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval.): 01
 - **b143** `heading`: Tracking integritás audit
 - **b144** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Tracking integritás audit): Átnézem a jelenlegi event struktúrát, a konverziós logikát és az attribúció működését, hogy kiderüljön, hol sérül az adatminőség, és hol van adatvesztés.
-- **b145** `other` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Tracking integritás audit): GA4 Debugger Tag Assistant GTM preview
+- **b145** `other` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Tracking integritás audit): GA4 Debugger · Tag Assistant · GTM preview
 - **b146** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Tracking integritás audit): 02
 - **b147** `heading`: Üzleti logikán alapuló KPI-modellezés
 - **b148** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Üzleti logikán alapuló KPI-modellezés): Valódi KPI-ok meghatározása — nem hiúsági mutatók. Bevétel-összefüggések, döntési jelek és vezető vs. késleltetett indikátorok feltérképezése.
 - **b149** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Üzleti logikán alapuló KPI-modellezés): 03
 - **b150** `heading`: Követési architektúra felépítése
 - **b151** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Követési architektúra felépítése): Egységes eseményelnevezés, a tölcsér szakaszainak pontos mérése, szükség esetén szerveroldali mérés beállítása, valamint a konverziók ellenőrzése minden fontos csatornán.
-- **b152** `other` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Követési architektúra felépítése): GA4 GTM server-side Container Bigquery
+- **b152** `other` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Követési architektúra felépítése): GA4 · GTM · server-side Container · Bigquery
 - **b153** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Követési architektúra felépítése): 04
 - **b154** `heading`: Riportálás és insight-tervezés
 - **b155** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Riportálás és insight-tervezés): Vezetői összefoglalók, operatív monitoring és anomáliák korai felismerése — hogy a dashboardok ne puszta adathalmazok legyenek, hanem valóban segítsék a döntéshozatalt.
-- **b156** `other` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Riportálás és insight-tervezés): Looker studio Custom riports Power bi Tableau
+- **b156** `other` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Riportálás és insight-tervezés): Looker studio · Custom riports · Power bi · Tableau
 - **b157** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Riportálás és insight-tervezés): 05
 - **b158** `heading`: Folyamatos minőségellenőrzés
 - **b159** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Folyamatos minőségellenőrzés): A mérés nem „állítsd be és felejtsd el”. Anomáliadetektálás, regressziómegelőzés és adatvalidálás minden sprint-ciklusban.

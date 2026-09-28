@@ -105,3 +105,36 @@ def test_build_blocks_once_and_read_them_back():
     assert [(b["id"], b["kind"], b["text"]) for b in content] == [
         ("b0", "title", "Példa | Kávé"), ("b1", "heading", "Példa"), ("b2", "paragraph", "Szöveg")]
     assert [b["region"] for b in page_blocks(con, 1)] == ["content"] * 3 + ["chrome"]
+
+
+def texts(body):
+    return [b.text for b in parse_blocks(f"<html><body>{body}</body></html>")]
+
+
+def test_sibling_inline_labels_are_separated():
+    assert texts("<div><a href='/a'>GA4</a><a href='/b'>GTM</a><span>Stape.io</span></div>") == [
+        "GA4 · GTM · Stape.io"]
+    # saját szöveggel, headingben és bekezdésben nem címkelista
+    assert texts("<div>Lásd: <a href='/a'>GA4</a> <b>GTM</b></div>") == ["Lásd: GA4 GTM"]
+    assert texts("<h2><span>Mérés</span> <span>és adat</span></h2>") == ["Mérés és adat"]
+    assert texts("<p><a href='/a'>GA4</a> <a href='/b'>GTM</a></p>") == ["GA4 GTM"]
+    assert texts("<div><a href='/a'>GA4</a><br><img alt='x'></div>") == ["GA4"]
+
+
+TABS = """
+<h1>Oldal</h1>
+<div class="tab-content">
+  <div class="tab-pane active"><h2>Példa</h2><div class="card">Static Header</div></div>
+  <div class="tab-pane"><h2>API</h2><p>closeOthers: boolean</p></div>
+  <div class="tab-pane"><h2>Példa</h2><div class="card">Static Header</div></div>
+</div>
+<p>Utána</p>
+"""
+
+
+def test_an_inactive_tab_that_only_repeats_visible_content_yields_no_block():
+    parsed = parse_blocks(f"<html><body>{TABS}</body></html>")
+    assert [b.text for b in parsed] == ["Oldal", "Példa", "Static Header", "API",
+                                        "closeOthers: boolean", "Utána"]
+    assert [b.ordinal for b in parsed] == [1, 2, 3, 4, 5, 6]
+    assert parsed[-1].heading_path == ["Oldal", "API"]

@@ -10,7 +10,13 @@ heading-útvonallal; a `blocks` tábla forrása (M2 spec A2). A forrás közvetl
 - 0. blokk: a title (`pages.title`), ha van.
 - Minden blokkszintű elem új blokkot kezd; a soron belüli elemek (a, span, strong, code …) a
   szülő blokkjához tartoznak. A szöveg a szövegcsomópontok szóközzel összefűzve, szóközök
-  összevonva.
+  összevonva. Címkelista: ha egy tároló (nem heading, bekezdés vagy listaelem) közvetlen
+  gyerekei csak szöveget hordozó soron belüli elemek, saját szöveg nélkül, a szövegük közé
+  „ · ” kerül („GA4 · GTM · Datastream”).
+- Rejtett ismétlés: a nem aktív fül (`tab-pane` osztály, `active` / `show` nélkül) nem ad
+  blokkot, ha minden szövegblokkja szó szerint megvan a fülön kívüli tartalomban is (a
+  példák ismétlése egy rejtett fülön). A saját tartalmú nem aktív fül (API-referencia, a
+  példák kódja) marad.
 - Típus: heading (h1–h6, a szintjével), paragraph (p), list_item (li, dt, dd), table_row (tr;
   a nem üres cellák a `cells`-ben az oszlopfejléccel, ha a táblázatnak van csupa-th fejlécsora;
   a szöveg a cellák ` | `-vel), code (pre; soronként `<li>`-be tördelt kódnál a sorok új sorral,
@@ -74,6 +80,7 @@ class ParsedBlock:
     level: int | None = None
     cells: list[dict] | None = None
     anchors: list[str] = field(default_factory=list)
+    pane: int | None = None                  # a nem aktív fül, amelyben áll (`mem_id`)
 
 
 def content_tree(html: str) -> HTMLParser:
@@ -107,6 +114,33 @@ def _hidden(node: Node) -> bool:
         return True
     marks = f"{attrs.get('class') or ''} {attrs.get('id') or ''}".lower()
     return bool(COOKIE.search(marks))
+
+
+def _inactive_tab(node: Node) -> bool:
+    classes = set((node.attributes.get("class") or "").split())
+    return "tab-pane" in classes and not classes & {"active", "show"}
+
+
+def _chips(node: Node) -> bool:
+    """Címkelista-tároló: nem heading, bekezdés vagy listaelem, nincs saját szövege és
+    blokkszintű gyereke, és legalább két szöveget hordozó soron belüli gyereke van."""
+    if node.tag in KIND_OF:
+        return False
+    carriers = 0
+    child = node.child
+    while child is not None:
+        name = child.tag
+        if name == "-text":
+            if (child.text(deep=False) or "").strip():
+                return False
+        elif name in SKIP or name == "-comment" or _hidden(child):
+            pass
+        elif name not in INLINE:
+            return False
+        elif collapse(child.text(separator=" ") or ""):
+            carriers += 1
+        child = child.next
+    return carriers >= 2
 
 
 def _chrome(node: Node) -> bool:
@@ -163,8 +197,22 @@ def _table(node: Node) -> Node | None:
 
 
 def parse_blocks(html: str, title: str | None = None) -> list[ParsedBlock]:
-    """A látható szövegblokkok dokumentum-sorrendben; a 0. a title, ha van."""
+    """A látható szövegblokkok dokumentum-sorrendben; a 0. a title, ha van. A rejtett
+    ismétlést hordozó nem aktív fülek nélkül (két menet ugyanazon a fán)."""
     tree = content_tree(html)
+    first = _parse(tree, title, frozenset())
+    visible = {b.text for b in first if b.pane is None}
+    panes: dict[int, list[str]] = {}
+    for block in first:
+        if block.pane is not None:
+            panes.setdefault(block.pane, []).append(block.text)
+    repeated = frozenset(pane for pane, texts in panes.items()
+                         if all(text in visible for text in texts))
+    return _parse(tree, title, repeated) if repeated else first
+
+
+def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
+           ) -> list[ParsedBlock]:
     blocks: list[ParsedBlock] = []
     if title and collapse(title):
         blocks.append(ParsedBlock(0, "title", "content", collapse(title), []))
@@ -175,6 +223,7 @@ def parse_blocks(html: str, title: str | None = None) -> list[ParsedBlock]:
     stack: list[tuple[int, str]] = []
     headers: dict[int, list[str]] = {}
     ordinal = 0
+    pane: int | None = None
 
     def emit(kind: str, region: str, text: str, anchors: list[str], level: int | None = None,
              cells: list[dict] | None = None) -> None:
@@ -187,7 +236,7 @@ def parse_blocks(html: str, title: str | None = None) -> list[ParsedBlock]:
             stack.append((level or 6, text))
         ordinal += 1
         blocks.append(ParsedBlock(ordinal, kind, region, text, [t for _, t in stack], level,
-                                  cells, list(anchors)))
+                                  cells, list(anchors), pane))
 
     def row(tr: Node, region: str) -> None:
         values: list[tuple[str, str]] = []
@@ -224,8 +273,10 @@ def parse_blocks(html: str, title: str | None = None) -> list[ParsedBlock]:
         emit("code", region, text, [])
 
     def walk(node: Node, kind: str, region: str, in_card: bool, level: int | None) -> None:
+        nonlocal pane
         parts: list[str] = []
         anchors: list[str] = []
+        chips = _chips(node)
 
         def flush() -> None:
             emit(kind, region, collapse(" ".join(p for p in parts if p)), anchors, level)
@@ -242,7 +293,16 @@ def parse_blocks(html: str, title: str | None = None) -> list[ParsedBlock]:
             elif name in INLINE:
                 if name == "a" and "href" in child.attributes and (text := anchor_text(child)):
                     anchors.append(text)
-                _inline(child, parts, anchors)
+                if chips:
+                    own: list[str] = []
+                    _inline(child, own, anchors)
+                    if any(own) and any(parts):
+                        parts.append("·")
+                    parts.extend(own)
+                else:
+                    _inline(child, parts, anchors)
+            elif child.mem_id in skip_panes:
+                pass
             else:
                 flush()
                 child_region = "chrome" if region == "chrome" or _chrome(child) else "content"
@@ -256,7 +316,11 @@ def parse_blocks(html: str, title: str | None = None) -> list[ParsedBlock]:
                     if child_card and child_kind != "heading":
                         child_kind = "card"
                     child_level = int(name[1]) if child_kind == "heading" else None
+                    outer = pane
+                    if pane is None and _inactive_tab(child):
+                        pane = child.mem_id
                     walk(child, child_kind, child_region, child_card, child_level)
+                    pane = outer
             child = child.next
         flush()
 

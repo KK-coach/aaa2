@@ -1,3004 +1,2434 @@
 {
-  "page_id": "ngx_accordion_en",
-  "set": "development-real",
-  "url": "https://valor-software.com/ngx-bootstrap/components/accordion",
-  "lang": "en",
-  "site_description": "This page belongs to the website valor-software.com, whose home page is titled “Angular Bootstrap”.",
-  "blocks": [
-    {
-      "id": "b0",
-      "kind": "title",
-      "heading_path": [],
-      "text": "Angular Bootstrap"
-    },
-    {
-      "id": "b74",
-      "kind": "list_item",
-      "heading_path": [],
-      "text": "Home"
-    },
-    {
-      "id": "b75",
-      "kind": "list_item",
-      "heading_path": [],
-      "text": "/ components"
-    },
-    {
-      "id": "b76",
-      "kind": "list_item",
-      "heading_path": [],
-      "text": "/ accordion"
-    },
-    {
-      "id": "b77",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion"
-      ],
-      "text": "Accordion"
-    },
-    {
-      "id": "b78",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion"
-      ],
-      "text": "Displays collapsible content panels for presenting information in a limited amount of space"
-    },
-    {
-      "id": "b79",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion"
-      ],
-      "text": "The accordion component builds on top of the collapse directive to provide a list of items, with collapsible bodies that are collapsed or expanded by clicking on the item's header."
-    },
-    {
-      "id": "b80",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion"
-      ],
-      "text": "The easiest way to add an accordion component to your app (will be added to the root module)"
-    },
-    {
-      "id": "b81",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion"
-      ],
-      "text": "Overview"
-    },
-    {
-      "id": "b82",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion"
-      ],
-      "text": "API"
-    },
-    {
-      "id": "b83",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion"
-      ],
-      "text": "Examples"
-    },
-    {
-      "id": "b84",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "Basic"
-      ],
-      "text": "Basic"
-    },
-    {
-      "id": "b85",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Basic"
-      ],
-      "text": "#"
-    },
-    {
-      "id": "b86",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Basic"
-      ],
-      "text": "Click headers to expand/collapse content that is broken into logical sections, much like tabs."
-    },
-    {
-      "id": "b87",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Basic"
-      ],
-      "text": "Static Header"
-    },
-    {
-      "id": "b88",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Basic"
-      ],
-      "text": "Another group"
-    },
-    {
-      "id": "b89",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Basic"
-      ],
-      "text": "Another group"
-    },
-    {
-      "id": "b90",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Basic"
-      ],
-      "text": "Another group"
-    },
-    {
-      "id": "b91",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Basic"
-      ],
-      "text": "template"
-    },
-    {
-      "id": "b92",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Basic"
-      ],
-      "text": "component"
-    },
-    {
-      "id": "b93",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Basic"
-      ],
-      "text": "<accordion>\n<accordion-group heading = \"Static Header\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Another group\" >\n<p> Some content </p>\n</accordion-group>\n<accordion-group heading = \"Another group\" >\n<p> Some content </p>\n</accordion-group>\n<accordion-group heading = \"Another group\" >\n<p> Some content </p>\n</accordion-group>\n</accordion>"
-    },
-    {
-      "id": "b94",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Basic"
-      ],
-      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-basic' ,\ntemplateUrl : './basic.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionBasicComponent {}"
-    },
-    {
-      "id": "b95",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "With animation"
-      ],
-      "text": "With animation"
-    },
-    {
-      "id": "b96",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "With animation"
-      ],
-      "text": "#"
-    },
-    {
-      "id": "b97",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "With animation"
-      ],
-      "text": "Use input property or config property isAnimated to enable/disable animation"
-    },
-    {
-      "id": "b98",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "With animation"
-      ],
-      "text": "Static Header"
-    },
-    {
-      "id": "b99",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "With animation"
-      ],
-      "text": "Another group"
-    },
-    {
-      "id": "b100",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "With animation"
-      ],
-      "text": "Another group"
-    },
-    {
-      "id": "b101",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "With animation"
-      ],
-      "text": "Another group"
-    },
-    {
-      "id": "b102",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "With animation"
-      ],
-      "text": "template"
-    },
-    {
-      "id": "b103",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "With animation"
-      ],
-      "text": "component"
-    },
-    {
-      "id": "b104",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "With animation"
-      ],
-      "text": "<accordion [ isAnimated ] = \"true\" >\n<accordion-group heading = \"Static Header\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Another group\" >\n<p> Some content </p>\n</accordion-group>\n<accordion-group heading = \"Another group\" >\n<p> Some content </p>\n</accordion-group>\n<accordion-group heading = \"Another group\" >\n<p> Some content </p>\n</accordion-group>\n</accordion>"
-    },
-    {
-      "id": "b105",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "With animation"
-      ],
-      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-animation' ,\ntemplateUrl : './animated.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionAnimatedComponent {}"
-    },
-    {
-      "id": "b106",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "Group opening event"
-      ],
-      "text": "Group opening event"
-    },
-    {
-      "id": "b107",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Group opening event"
-      ],
-      "text": "#"
-    },
-    {
-      "id": "b108",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Group opening event"
-      ],
-      "text": "Accordion with isOpenChange event listener."
-    },
-    {
-      "id": "b109",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Group opening event"
-      ],
-      "text": "Group without isOpenChange event listener"
-    },
-    {
-      "id": "b110",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Group opening event"
-      ],
-      "text": "Group with isOpenChange event listener"
-    },
-    {
-      "id": "b111",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Group opening event"
-      ],
-      "text": "Group with isOpenChange event listener"
-    },
-    {
-      "id": "b112",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Group opening event"
-      ],
-      "text": "template"
-    },
-    {
-      "id": "b113",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Group opening event"
-      ],
-      "text": "component"
-    },
-    {
-      "id": "b114",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Group opening event"
-      ],
-      "text": "<accordion>\n<accordion-group heading = \"Group without isOpenChange event listener\" >\n<p> Some content </p>\n</accordion-group>\n<accordion-group heading = \"Group with isOpenChange event listener\" ( isOpenChange ) = \"log($event)\" >\n<p> Some content </p>\n</accordion-group>\n<accordion-group heading = \"Group with isOpenChange event listener\" ( isOpenChange ) = \"log($event)\" >\n<p> Some content </p>\n</accordion-group>\n</accordion>"
-    },
-    {
-      "id": "b115",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Group opening event"
-      ],
-      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-open-event' ,\ntemplateUrl : './open-event.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionOpenEventComponent {\nlog ( event : boolean ) {\nconsole . log (` Accordion has been $ { event ? 'opened' : 'closed' }`);\n}\n}"
-    },
-    {
-      "id": "b116",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "Custom HTML"
-      ],
-      "text": "Custom HTML"
-    },
-    {
-      "id": "b117",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Custom HTML"
-      ],
-      "text": "#"
-    },
-    {
-      "id": "b118",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Custom HTML"
-      ],
-      "text": "I can have markup! Some HTML here"
-    },
-    {
-      "id": "b119",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Custom HTML"
-      ],
-      "text": "I can have markup, too!"
-    },
-    {
-      "id": "b120",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Custom HTML"
-      ],
-      "text": "template"
-    },
-    {
-      "id": "b121",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Custom HTML"
-      ],
-      "text": "component"
-    },
-    {
-      "id": "b122",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Custom HTML"
-      ],
-      "text": "<accordion>\n<accordion-group>\n<button\nclass = \"btn btn-link btn-block justify-content-between d-flex w-100 shadow-none\"\naccordion-heading type = \"button\" >\n<div class = \"pull-left float-left\" > I can have markup! </div>\n<span class = \"badge badge-secondary bg-secondary float-right pull-right\" > Some HTML here </span>\n</button>\nThis is just some content to illustrate fancy headings.\n</accordion-group>\n<accordion-group>\n<button class = \"btn btn-link shadow-none\" accordion-heading type = \"button\" >\nI can have markup, too!\n</button>\n<span class = \"badge badge-secondary bg-secondary center\" > And some HTML here </span>\n</accordion-group>\n</accordion>"
-    },
-    {
-      "id": "b123",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Custom HTML"
-      ],
-      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\nimport { getBsVer , IBsVersion } from 'ngx-bootstrap/utils' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-custom-html' ,\ntemplateUrl : './custom-html.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionCustomHTMLComponent {\nget _getBsVer (): IBsVersion {\nreturn getBsVer ();\n}\n}"
-    },
-    {
-      "id": "b124",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "Disabled"
-      ],
-      "text": "Disabled"
-    },
-    {
-      "id": "b125",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Disabled"
-      ],
-      "text": "#"
-    },
-    {
-      "id": "b126",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Disabled"
-      ],
-      "text": "Enable / Disable first panel"
-    },
-    {
-      "id": "b127",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Disabled"
-      ],
-      "text": "Static Header"
-    },
-    {
-      "id": "b128",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Disabled"
-      ],
-      "text": "Content 1"
-    },
-    {
-      "id": "b129",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Disabled"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b130",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Disabled"
-      ],
-      "text": "template"
-    },
-    {
-      "id": "b131",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Disabled"
-      ],
-      "text": "component"
-    },
-    {
-      "id": "b132",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Disabled"
-      ],
-      "text": "<p>\n<button type = \"button\" class = \"btn btn-primary btn-sm\" ( click ) = \"isFirstDisabled = !isFirstDisabled\" >\nEnable / Disable first panel\n</button>\n</p>\n\n<accordion>\n<accordion-group heading = \"Static Header\"\n[ isDisabled ] = \"isFirstDisabled\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Content 1\" >\n<p> accordion 1 </p>\n</accordion-group>\n<accordion-group heading = \"Content 2\" >\n<p> accordion 2 </p>\n</accordion-group>\n</accordion>"
-    },
-    {
-      "id": "b133",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Disabled"
-      ],
-      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-disabled' ,\ntemplateUrl : './disabled.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionDisabledComponent {\nisFirstDisabled = false ;\n}"
-    },
-    {
-      "id": "b134",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "Initially opened"
-      ],
-      "text": "Initially opened"
-    },
-    {
-      "id": "b135",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Initially opened"
-      ],
-      "text": "#"
-    },
-    {
-      "id": "b136",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Initially opened"
-      ],
-      "text": "Content 1"
-    },
-    {
-      "id": "b137",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Initially opened"
-      ],
-      "text": "Initially expanded"
-    },
-    {
-      "id": "b138",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Initially opened"
-      ],
-      "text": "This content is straight in the template."
-    },
-    {
-      "id": "b139",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Initially opened"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b140",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Initially opened"
-      ],
-      "text": "template"
-    },
-    {
-      "id": "b141",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Initially opened"
-      ],
-      "text": "component"
-    },
-    {
-      "id": "b142",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Initially opened"
-      ],
-      "text": "<accordion>\n<accordion-group heading = \"Content 1\" >\n<p> accordion 1 </p>\n</accordion-group>\n<accordion-group heading = \"Initially expanded\"\n[ isOpen ] = \"isFirstOpen\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Content 2\" >\n<p> accordion 3 </p>\n</accordion-group>\n</accordion>"
-    },
-    {
-      "id": "b143",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Initially opened"
-      ],
-      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-opened' ,\ntemplateUrl : './opened.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionOpenedComponent {\nisFirstOpen = true ;\n}"
-    },
-    {
-      "id": "b144",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "Dynamic accordion"
-      ],
-      "text": "Dynamic accordion"
-    },
-    {
-      "id": "b145",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Dynamic accordion"
-      ],
-      "text": "#"
-    },
-    {
-      "id": "b146",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Dynamic accordion"
-      ],
-      "text": "Add Group Item"
-    },
-    {
-      "id": "b147",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Dynamic accordion"
-      ],
-      "text": "Dynamic Group Header - 1"
-    },
-    {
-      "id": "b148",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Dynamic accordion"
-      ],
-      "text": "Dynamic Group Header - 2"
-    },
-    {
-      "id": "b149",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Dynamic accordion"
-      ],
-      "text": "template"
-    },
-    {
-      "id": "b150",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Dynamic accordion"
-      ],
-      "text": "component"
-    },
-    {
-      "id": "b151",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Dynamic accordion"
-      ],
-      "text": "<p>\n<button type = \"button\" class = \"btn btn-primary btn-sm\" ( click ) = \"addGroupItem()\" >\nAdd Group Item\n</button>\n</p>\n\n<accordion>\n@for (group of groups; track group) {\n<accordion-group [ heading ] = \"group.title\" >\n{{ group?.content }}\n</accordion-group>\n}\n</accordion>"
-    },
-    {
-      "id": "b152",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Dynamic accordion"
-      ],
-      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-dynamic' ,\ntemplateUrl : './dynamic.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionDynamicComponent {\ngroups = [\n{\ntitle : 'Dynamic Group Header - 1' ,\ncontent : 'Dynamic Group Body - 1'\n},\n{\ntitle : 'Dynamic Group Header - 2' ,\ncontent : 'Dynamic Group Body - 2'\n}\n];\n\naddGroupItem (): void {\nthis . groups . push ({\ntitle : ` Dynamic Group Header - $ { this . groups . length + 1 }`,\ncontent : ` Dynamic Group Body - $ { this . groups . length + 1 }`\n});\n}\n}"
-    },
-    {
-      "id": "b153",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "Dynamic body content"
-      ],
-      "text": "Dynamic body content"
-    },
-    {
-      "id": "b154",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Dynamic body content"
-      ],
-      "text": "#"
-    },
-    {
-      "id": "b155",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Dynamic body content"
-      ],
-      "text": "Dynamic Body Content"
-    },
-    {
-      "id": "b156",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Dynamic body content"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b157",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Dynamic body content"
-      ],
-      "text": "Content 3"
-    },
-    {
-      "id": "b158",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Dynamic body content"
-      ],
-      "text": "template"
-    },
-    {
-      "id": "b159",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Dynamic body content"
-      ],
-      "text": "component"
-    },
-    {
-      "id": "b160",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Dynamic body content"
-      ],
-      "text": "<accordion>\n<accordion-group heading = \"Dynamic Body Content\" >\n<p> The body of the accordion group grows to fit the contents </p>\n<button type = \"button\" class = \"btn btn-primary btn-sm\" ( click ) = \"addItem()\" > Add\nItem\n</button>\n<button type = \"button\" class = \"btn btn-primary btn-sm ms-3 ml-3\" ( click ) = \"removeItem()\" > Remove\nItem\n</button>\n@for (item of items; track item) {\n<div> {{item}} </div>\n}\n</accordion-group>\n<accordion-group heading = \"Content 2\" >\n<p> accordion 2 </p>\n</accordion-group>\n<accordion-group heading = \"Content 3\" >\n<p> accordion 3 </p>\n</accordion-group>\n</accordion>"
-    },
-    {
-      "id": "b161",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Dynamic body content"
-      ],
-      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-dynamic-body' ,\ntemplateUrl : './dynamic-body.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionDynamicBodyComponent {\nitems = [ 'Item 1' , 'Item 2' , 'Item 3' ];\n\naddItem (): void {\nthis . items . push (` Item $ { this . items . length + 1 }`);\n}\n\nremoveItem (): void {\nthis . items = this . items . slice ( 0 , this . items . length - 1 );\n}\n}"
-    },
-    {
-      "id": "b162",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "Manual toggle"
-      ],
-      "text": "Manual toggle"
-    },
-    {
-      "id": "b163",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Manual toggle"
-      ],
-      "text": "#"
-    },
-    {
-      "id": "b164",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Manual toggle"
-      ],
-      "text": "Toggle last panel"
-    },
-    {
-      "id": "b165",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Manual toggle"
-      ],
-      "text": "Content 1"
-    },
-    {
-      "id": "b166",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Manual toggle"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b167",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Manual toggle"
-      ],
-      "text": "Last panel"
-    },
-    {
-      "id": "b168",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Manual toggle"
-      ],
-      "text": "accordion 3"
-    },
-    {
-      "id": "b169",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Manual toggle"
-      ],
-      "text": "template"
-    },
-    {
-      "id": "b170",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Manual toggle"
-      ],
-      "text": "component"
-    },
-    {
-      "id": "b171",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Manual toggle"
-      ],
-      "text": "<p>\n<button type = \"button\" class = \"btn btn-primary btn-sm\"\n( click ) = \"isOpen = !isOpen\" > Toggle last panel\n</button>\n</p>\n\n<accordion>\n<accordion-group heading = \"Content 1\" >\n<p> accordion 1 </p>\n</accordion-group>\n<accordion-group heading = \"Content 2\" >\n<p> accordion 2 </p>\n</accordion-group>\n<accordion-group [ isOpen ] = \"isOpen\" heading = \"Last panel\" >\n<p> accordion 3 </p>\n</accordion-group>\n</accordion>"
-    },
-    {
-      "id": "b172",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Manual toggle"
-      ],
-      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-manual-toggle' ,\ntemplateUrl : './manual-toggle.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionManualToggleComponent {\nisOpen = true ;\n}"
-    },
-    {
-      "id": "b173",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "Open only one at a time"
-      ],
-      "text": "Open only one at a time"
-    },
-    {
-      "id": "b174",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Open only one at a time"
-      ],
-      "text": "#"
-    },
-    {
-      "id": "b175",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Open only one at a time"
-      ],
-      "text": "Open only one at a time"
-    },
-    {
-      "id": "b176",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Open only one at a time"
-      ],
-      "text": "Header"
-    },
-    {
-      "id": "b177",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Open only one at a time"
-      ],
-      "text": "Content 1"
-    },
-    {
-      "id": "b178",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Open only one at a time"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b179",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Open only one at a time"
-      ],
-      "text": "template"
-    },
-    {
-      "id": "b180",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Open only one at a time"
-      ],
-      "text": "component"
-    },
-    {
-      "id": "b181",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Open only one at a time"
-      ],
-      "text": "<div class = \"checkbox\" >\n<label>\n<input type = \"checkbox\" [( ngModel )] = \"oneAtATime\" >\nOpen only one at a time\n</label>\n</div>\n\n<accordion [ closeOthers ] = \"oneAtATime\" >\n<accordion-group heading = \"Header\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Content 1\" >\n<p> Content 1 </p>\n</accordion-group>\n<accordion-group heading = \"Content 2\" >\n<p> Content 2 </p>\n</accordion-group>\n</accordion>"
-    },
-    {
-      "id": "b182",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Open only one at a time"
-      ],
-      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-one-time' ,\ntemplateUrl : './one-at-a-time.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionOneAtATimeComponent {\noneAtATime = true ;\n}"
-    },
-    {
-      "id": "b183",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "Styling"
-      ],
-      "text": "Styling"
-    },
-    {
-      "id": "b184",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Styling"
-      ],
-      "text": "#"
-    },
-    {
-      "id": "b185",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Styling"
-      ],
-      "text": "Static Header, initially expanded"
-    },
-    {
-      "id": "b186",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Styling"
-      ],
-      "text": "This content is straight in the template."
-    },
-    {
-      "id": "b187",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Styling"
-      ],
-      "text": "Content 1"
-    },
-    {
-      "id": "b188",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Styling"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b189",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Styling"
-      ],
-      "text": "template"
-    },
-    {
-      "id": "b190",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Styling"
-      ],
-      "text": "component"
-    },
-    {
-      "id": "b191",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Styling"
-      ],
-      "text": "<accordion>\n<accordion-group heading = \"Static Header, initially expanded\"\n[ panelClass ] = \"customClass\"\n[ isOpen ] = \"isFirstOpen\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Content 1\" >\n<p> accordion 1 </p>\n</accordion-group>\n<accordion-group heading = \"Content 2\" panelClass = \"customClass\" >\n<p> accordion 2 </p>\n</accordion-group>\n</accordion>"
-    },
-    {
-      "id": "b192",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Styling"
-      ],
-      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-styling' ,\ntemplateUrl : './styling.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionStylingComponent {\ncustomClass = 'customClass' ;\nisFirstOpen = true ;\n}"
-    },
-    {
-      "id": "b193",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "Configuring defaults"
-      ],
-      "text": "Configuring defaults"
-    },
-    {
-      "id": "b194",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "Configuring defaults"
-      ],
-      "text": "#"
-    },
-    {
-      "id": "b195",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Configuring defaults"
-      ],
-      "text": "Header"
-    },
-    {
-      "id": "b196",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Configuring defaults"
-      ],
-      "text": "Content 1"
-    },
-    {
-      "id": "b197",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "Configuring defaults"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b198",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Configuring defaults"
-      ],
-      "text": "template"
-    },
-    {
-      "id": "b199",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "Configuring defaults"
-      ],
-      "text": "component"
-    },
-    {
-      "id": "b200",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Configuring defaults"
-      ],
-      "text": "<accordion [ isAnimated ] = \"true\" >\n<accordion-group heading = \"Header\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Content 1\" >\n<p> Content 1 </p>\n</accordion-group>\n<accordion-group heading = \"Content 2\" >\n<p> Content 2 </p>\n</accordion-group>\n</accordion>"
-    },
-    {
-      "id": "b201",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "Configuring defaults"
-      ],
-      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\nimport { AccordionConfig } from 'ngx-bootstrap/accordion' ;\n\n// such override allows to keep some initial values\n\nexport function getAccordionConfig (): AccordionConfig {\nreturn Object . assign ( new AccordionConfig (), { closeOthers : true });\n}\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-config' ,\ntemplateUrl : './config.html' ,\nproviders : [{ provide : AccordionConfig , useFactory : getAccordionConfig }],\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionConfigComponent {}"
-    },
-    {
-      "id": "b202",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference"
-      ],
-      "text": "API Reference"
-    },
-    {
-      "id": "b203",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "API Reference"
-      ],
-      "text": "ng add ngx-bootstrap  --component accordion"
-    },
-    {
-      "id": "b204",
-      "kind": "code",
-      "heading_path": [
-        "Accordion",
-        "API Reference"
-      ],
-      "text": "### Standalone component usage\nimport { BrowserAnimationsModule } from '@angular/platform-browser/animations';\n\nimport { AccordionComponent, AccordionPanelComponent } from 'ngx-bootstrap/accordion';\n\n@Component({\n  standalone: true,\n  imports: [\n    BrowserAnimationsModule,\n    AccordionComponent,\n    AccordionPanelComponent\n    ...\n  ]\n})\nexport class AppComponent(){}\n\nAlso should be added web-animations-js polyfill for IE browser (Edge)\n### Module usage\nimport { BrowserAnimationsModule } from '@angular/platform-browser/animations';\n\nimport { AccordionModule } from 'ngx-bootstrap/accordion';\n\n@NgModule({\n  imports: [\n    BrowserAnimationsModule,\n    AccordionModule,\n    ...\n  ]\n})\nexport class AppModule(){}\n\nAlso should be added web-animations-js polyfill for IE browser (Edge)"
-    },
-    {
-      "id": "b205",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "AccordionComponent"
-      ],
-      "text": "AccordionComponent"
-    },
-    {
-      "id": "b206",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "AccordionComponent"
-      ],
-      "text": "Displays collapsible content panels for presenting information in a limited amount of space."
-    },
-    {
-      "id": "b207",
-      "kind": "table_row",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "AccordionComponent"
-      ],
-      "text": "Selector",
-      "cells": [
-        {
-          "header": null,
-          "value": "Selector"
-        }
-      ]
-    },
-    {
-      "id": "b208",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "AccordionPanelComponent"
-      ],
-      "text": "AccordionPanelComponent"
-    },
-    {
-      "id": "b209",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Accordion heading"
-      ],
-      "text": "Accordion heading"
-    },
-    {
-      "id": "b210",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Accordion heading"
-      ],
-      "text": "Instead of using heading attribute on the accordion-group , you can use an accordion-heading attribute on any element inside of a group that will be used as group's header template."
-    },
-    {
-      "id": "b211",
-      "kind": "table_row",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Accordion heading"
-      ],
-      "text": "Selector",
-      "cells": [
-        {
-          "header": null,
-          "value": "Selector"
-        }
-      ]
-    },
-    {
-      "id": "b212",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "AccordionConfig"
-      ],
-      "text": "AccordionConfig"
-    },
-    {
-      "id": "b213",
-      "kind": "paragraph",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "AccordionConfig"
-      ],
-      "text": "Configuration service, provides default values for the AccordionComponent."
-    },
-    {
-      "id": "b214",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Properties"
-      ],
-      "text": "Properties"
-    },
-    {
-      "id": "b215",
-      "kind": "table_row",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Properties"
-      ],
-      "text": "closeOthers | Type: boolean Default value: false Whether the other panels should be closed when a panel is opened",
-      "cells": [
-        {
-          "header": null,
-          "value": "closeOthers"
-        },
-        {
-          "header": null,
-          "value": "Type: boolean Default value: false Whether the other panels should be closed when a panel is opened"
-        }
-      ]
-    },
-    {
-      "id": "b216",
-      "kind": "table_row",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Properties"
-      ],
-      "text": "isAnimated | Type: boolean Default value: false turn on/off animation",
-      "cells": [
-        {
-          "header": null,
-          "value": "isAnimated"
-        },
-        {
-          "header": null,
-          "value": "Type: boolean Default value: false turn on/off animation"
-        }
-      ]
-    },
-    {
-      "id": "b217",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Basic"
-      ],
-      "text": "Basic"
-    },
-    {
-      "id": "b218",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Basic"
-      ],
-      "text": "Static Header"
-    },
-    {
-      "id": "b219",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Basic"
-      ],
-      "text": "Another group"
-    },
-    {
-      "id": "b220",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Basic"
-      ],
-      "text": "Another group"
-    },
-    {
-      "id": "b221",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Basic"
-      ],
-      "text": "Another group"
-    },
-    {
-      "id": "b222",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "With animation"
-      ],
-      "text": "With animation"
-    },
-    {
-      "id": "b223",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "With animation"
-      ],
-      "text": "Static Header"
-    },
-    {
-      "id": "b224",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "With animation"
-      ],
-      "text": "Another group"
-    },
-    {
-      "id": "b225",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "With animation"
-      ],
-      "text": "Another group"
-    },
-    {
-      "id": "b226",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "With animation"
-      ],
-      "text": "Another group"
-    },
-    {
-      "id": "b227",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Group opening event"
-      ],
-      "text": "Group opening event"
-    },
-    {
-      "id": "b228",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Group opening event"
-      ],
-      "text": "Group without isOpenChange event listener"
-    },
-    {
-      "id": "b229",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Group opening event"
-      ],
-      "text": "Group with isOpenChange event listener"
-    },
-    {
-      "id": "b230",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Group opening event"
-      ],
-      "text": "Group with isOpenChange event listener"
-    },
-    {
-      "id": "b231",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Custom HTML"
-      ],
-      "text": "Custom HTML"
-    },
-    {
-      "id": "b232",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Custom HTML"
-      ],
-      "text": "I can have markup! Some HTML here"
-    },
-    {
-      "id": "b233",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Custom HTML"
-      ],
-      "text": "I can have markup, too!"
-    },
-    {
-      "id": "b234",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Disabled"
-      ],
-      "text": "Disabled"
-    },
-    {
-      "id": "b235",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Disabled"
-      ],
-      "text": "Enable / Disable first panel"
-    },
-    {
-      "id": "b236",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Disabled"
-      ],
-      "text": "Static Header"
-    },
-    {
-      "id": "b237",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Disabled"
-      ],
-      "text": "Content 1"
-    },
-    {
-      "id": "b238",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Disabled"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b239",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Initially opened"
-      ],
-      "text": "Initially opened"
-    },
-    {
-      "id": "b240",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Initially opened"
-      ],
-      "text": "Content 1"
-    },
-    {
-      "id": "b241",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Initially opened"
-      ],
-      "text": "Initially expanded"
-    },
-    {
-      "id": "b242",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Initially opened"
-      ],
-      "text": "This content is straight in the template."
-    },
-    {
-      "id": "b243",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Initially opened"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b244",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Dynamic accordion"
-      ],
-      "text": "Dynamic accordion"
-    },
-    {
-      "id": "b245",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Dynamic accordion"
-      ],
-      "text": "Add Group Item"
-    },
-    {
-      "id": "b246",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Dynamic accordion"
-      ],
-      "text": "Dynamic Group Header - 1"
-    },
-    {
-      "id": "b247",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Dynamic accordion"
-      ],
-      "text": "Dynamic Group Header - 2"
-    },
-    {
-      "id": "b248",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Dynamic body content"
-      ],
-      "text": "Dynamic body content"
-    },
-    {
-      "id": "b249",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Dynamic body content"
-      ],
-      "text": "Dynamic Body Content"
-    },
-    {
-      "id": "b250",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Dynamic body content"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b251",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Dynamic body content"
-      ],
-      "text": "Content 3"
-    },
-    {
-      "id": "b252",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Manual toggle"
-      ],
-      "text": "Manual toggle"
-    },
-    {
-      "id": "b253",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Manual toggle"
-      ],
-      "text": "Toggle last panel"
-    },
-    {
-      "id": "b254",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Manual toggle"
-      ],
-      "text": "Content 1"
-    },
-    {
-      "id": "b255",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Manual toggle"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b256",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Manual toggle"
-      ],
-      "text": "Last panel"
-    },
-    {
-      "id": "b257",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Manual toggle"
-      ],
-      "text": "accordion 3"
-    },
-    {
-      "id": "b258",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Open only one at a time"
-      ],
-      "text": "Open only one at a time"
-    },
-    {
-      "id": "b259",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Open only one at a time"
-      ],
-      "text": "Open only one at a time"
-    },
-    {
-      "id": "b260",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Open only one at a time"
-      ],
-      "text": "Header"
-    },
-    {
-      "id": "b261",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Open only one at a time"
-      ],
-      "text": "Content 1"
-    },
-    {
-      "id": "b262",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Open only one at a time"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b263",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Styling"
-      ],
-      "text": "Styling"
-    },
-    {
-      "id": "b264",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Styling"
-      ],
-      "text": "Static Header, initially expanded"
-    },
-    {
-      "id": "b265",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Styling"
-      ],
-      "text": "This content is straight in the template."
-    },
-    {
-      "id": "b266",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Styling"
-      ],
-      "text": "Content 1"
-    },
-    {
-      "id": "b267",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Styling"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b268",
-      "kind": "heading",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Configuring defaults"
-    },
-    {
-      "id": "b269",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Header"
-    },
-    {
-      "id": "b270",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Content 1"
-    },
-    {
-      "id": "b271",
-      "kind": "card",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Content 2"
-    },
-    {
-      "id": "b272",
-      "kind": "other",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "components"
-    },
-    {
-      "id": "b273",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Basic"
-    },
-    {
-      "id": "b274",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "With animation"
-    },
-    {
-      "id": "b275",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Group opening event"
-    },
-    {
-      "id": "b276",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Custom HTML"
-    },
-    {
-      "id": "b277",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Disabled"
-    },
-    {
-      "id": "b278",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Initially opened"
-    },
-    {
-      "id": "b279",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Dynamic accordion"
-    },
-    {
-      "id": "b280",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Dynamic body content"
-    },
-    {
-      "id": "b281",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Manual toggle"
-    },
-    {
-      "id": "b282",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Open only one at a time"
-    },
-    {
-      "id": "b283",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Styling"
-    },
-    {
-      "id": "b284",
-      "kind": "list_item",
-      "heading_path": [
-        "Accordion",
-        "API Reference",
-        "Configuring defaults"
-      ],
-      "text": "Configuring defaults"
+ "page_id": "ngx_accordion_en",
+ "set": "development-real",
+ "url": "https://valor-software.com/ngx-bootstrap/components/accordion",
+ "lang": "en",
+ "site_description": "This page belongs to the website valor-software.com, whose home page is titled “Angular Bootstrap”.",
+ "blocks": [
+  {
+   "id": "b0",
+   "kind": "title",
+   "heading_path": [],
+   "text": "Angular Bootstrap"
+  },
+  {
+   "id": "b74",
+   "kind": "list_item",
+   "heading_path": [],
+   "text": "Home"
+  },
+  {
+   "id": "b75",
+   "kind": "list_item",
+   "heading_path": [],
+   "text": "/ components"
+  },
+  {
+   "id": "b76",
+   "kind": "list_item",
+   "heading_path": [],
+   "text": "/ accordion"
+  },
+  {
+   "id": "b77",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion"
+   ],
+   "text": "Accordion"
+  },
+  {
+   "id": "b78",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion"
+   ],
+   "text": "Displays collapsible content panels for presenting information in a limited amount of space"
+  },
+  {
+   "id": "b79",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion"
+   ],
+   "text": "The accordion component builds on top of the collapse directive to provide a list of items, with collapsible bodies that are collapsed or expanded by clicking on the item's header."
+  },
+  {
+   "id": "b80",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion"
+   ],
+   "text": "The easiest way to add an accordion component to your app (will be added to the root module)"
+  },
+  {
+   "id": "b81",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion"
+   ],
+   "text": "Overview"
+  },
+  {
+   "id": "b82",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion"
+   ],
+   "text": "API"
+  },
+  {
+   "id": "b83",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion"
+   ],
+   "text": "Examples"
+  },
+  {
+   "id": "b84",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "Basic"
+   ],
+   "text": "Basic"
+  },
+  {
+   "id": "b85",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Basic"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b86",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Basic"
+   ],
+   "text": "Click headers to expand/collapse content that is broken into logical sections, much like tabs."
+  },
+  {
+   "id": "b87",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Basic"
+   ],
+   "text": "Static Header"
+  },
+  {
+   "id": "b88",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Basic"
+   ],
+   "text": "Another group"
+  },
+  {
+   "id": "b89",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Basic"
+   ],
+   "text": "Another group"
+  },
+  {
+   "id": "b90",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Basic"
+   ],
+   "text": "Another group"
+  },
+  {
+   "id": "b91",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Basic"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b92",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Basic"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b93",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Basic"
+   ],
+   "text": "<accordion>\n<accordion-group heading = \"Static Header\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Another group\" >\n<p> Some content </p>\n</accordion-group>\n<accordion-group heading = \"Another group\" >\n<p> Some content </p>\n</accordion-group>\n<accordion-group heading = \"Another group\" >\n<p> Some content </p>\n</accordion-group>\n</accordion>"
+  },
+  {
+   "id": "b94",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Basic"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-basic' ,\ntemplateUrl : './basic.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionBasicComponent {}"
+  },
+  {
+   "id": "b95",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "With animation"
+   ],
+   "text": "With animation"
+  },
+  {
+   "id": "b96",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "With animation"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b97",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "With animation"
+   ],
+   "text": "Use input property or config property isAnimated to enable/disable animation"
+  },
+  {
+   "id": "b98",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "With animation"
+   ],
+   "text": "Static Header"
+  },
+  {
+   "id": "b99",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "With animation"
+   ],
+   "text": "Another group"
+  },
+  {
+   "id": "b100",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "With animation"
+   ],
+   "text": "Another group"
+  },
+  {
+   "id": "b101",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "With animation"
+   ],
+   "text": "Another group"
+  },
+  {
+   "id": "b102",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "With animation"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b103",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "With animation"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b104",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "With animation"
+   ],
+   "text": "<accordion [ isAnimated ] = \"true\" >\n<accordion-group heading = \"Static Header\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Another group\" >\n<p> Some content </p>\n</accordion-group>\n<accordion-group heading = \"Another group\" >\n<p> Some content </p>\n</accordion-group>\n<accordion-group heading = \"Another group\" >\n<p> Some content </p>\n</accordion-group>\n</accordion>"
+  },
+  {
+   "id": "b105",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "With animation"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-animation' ,\ntemplateUrl : './animated.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionAnimatedComponent {}"
+  },
+  {
+   "id": "b106",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "Group opening event"
+   ],
+   "text": "Group opening event"
+  },
+  {
+   "id": "b107",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Group opening event"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b108",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Group opening event"
+   ],
+   "text": "Accordion with isOpenChange event listener."
+  },
+  {
+   "id": "b109",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Group opening event"
+   ],
+   "text": "Group without isOpenChange event listener"
+  },
+  {
+   "id": "b110",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Group opening event"
+   ],
+   "text": "Group with isOpenChange event listener"
+  },
+  {
+   "id": "b111",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Group opening event"
+   ],
+   "text": "Group with isOpenChange event listener"
+  },
+  {
+   "id": "b112",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Group opening event"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b113",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Group opening event"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b114",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Group opening event"
+   ],
+   "text": "<accordion>\n<accordion-group heading = \"Group without isOpenChange event listener\" >\n<p> Some content </p>\n</accordion-group>\n<accordion-group heading = \"Group with isOpenChange event listener\" ( isOpenChange ) = \"log($event)\" >\n<p> Some content </p>\n</accordion-group>\n<accordion-group heading = \"Group with isOpenChange event listener\" ( isOpenChange ) = \"log($event)\" >\n<p> Some content </p>\n</accordion-group>\n</accordion>"
+  },
+  {
+   "id": "b115",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Group opening event"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-open-event' ,\ntemplateUrl : './open-event.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionOpenEventComponent {\nlog ( event : boolean ) {\nconsole . log (` Accordion has been $ { event ? 'opened' : 'closed' }`);\n}\n}"
+  },
+  {
+   "id": "b116",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "Custom HTML"
+   ],
+   "text": "Custom HTML"
+  },
+  {
+   "id": "b117",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Custom HTML"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b118",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Custom HTML"
+   ],
+   "text": "I can have markup! Some HTML here"
+  },
+  {
+   "id": "b119",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Custom HTML"
+   ],
+   "text": "I can have markup, too!"
+  },
+  {
+   "id": "b120",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Custom HTML"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b121",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Custom HTML"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b122",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Custom HTML"
+   ],
+   "text": "<accordion>\n<accordion-group>\n<button\nclass = \"btn btn-link btn-block justify-content-between d-flex w-100 shadow-none\"\naccordion-heading type = \"button\" >\n<div class = \"pull-left float-left\" > I can have markup! </div>\n<span class = \"badge badge-secondary bg-secondary float-right pull-right\" > Some HTML here </span>\n</button>\nThis is just some content to illustrate fancy headings.\n</accordion-group>\n<accordion-group>\n<button class = \"btn btn-link shadow-none\" accordion-heading type = \"button\" >\nI can have markup, too!\n</button>\n<span class = \"badge badge-secondary bg-secondary center\" > And some HTML here </span>\n</accordion-group>\n</accordion>"
+  },
+  {
+   "id": "b123",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Custom HTML"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\nimport { getBsVer , IBsVersion } from 'ngx-bootstrap/utils' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-custom-html' ,\ntemplateUrl : './custom-html.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionCustomHTMLComponent {\nget _getBsVer (): IBsVersion {\nreturn getBsVer ();\n}\n}"
+  },
+  {
+   "id": "b124",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "Disabled"
+   ],
+   "text": "Disabled"
+  },
+  {
+   "id": "b125",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Disabled"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b126",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Disabled"
+   ],
+   "text": "Enable / Disable first panel"
+  },
+  {
+   "id": "b127",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Disabled"
+   ],
+   "text": "Static Header"
+  },
+  {
+   "id": "b128",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Disabled"
+   ],
+   "text": "Content 1"
+  },
+  {
+   "id": "b129",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Disabled"
+   ],
+   "text": "Content 2"
+  },
+  {
+   "id": "b130",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Disabled"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b131",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Disabled"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b132",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Disabled"
+   ],
+   "text": "<p>\n<button type = \"button\" class = \"btn btn-primary btn-sm\" ( click ) = \"isFirstDisabled = !isFirstDisabled\" >\nEnable / Disable first panel\n</button>\n</p>\n\n<accordion>\n<accordion-group heading = \"Static Header\"\n[ isDisabled ] = \"isFirstDisabled\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Content 1\" >\n<p> accordion 1 </p>\n</accordion-group>\n<accordion-group heading = \"Content 2\" >\n<p> accordion 2 </p>\n</accordion-group>\n</accordion>"
+  },
+  {
+   "id": "b133",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Disabled"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-disabled' ,\ntemplateUrl : './disabled.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionDisabledComponent {\nisFirstDisabled = false ;\n}"
+  },
+  {
+   "id": "b134",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "Initially opened"
+   ],
+   "text": "Initially opened"
+  },
+  {
+   "id": "b135",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Initially opened"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b136",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Initially opened"
+   ],
+   "text": "Content 1"
+  },
+  {
+   "id": "b137",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Initially opened"
+   ],
+   "text": "Initially expanded"
+  },
+  {
+   "id": "b138",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Initially opened"
+   ],
+   "text": "This content is straight in the template."
+  },
+  {
+   "id": "b139",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Initially opened"
+   ],
+   "text": "Content 2"
+  },
+  {
+   "id": "b140",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Initially opened"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b141",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Initially opened"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b142",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Initially opened"
+   ],
+   "text": "<accordion>\n<accordion-group heading = \"Content 1\" >\n<p> accordion 1 </p>\n</accordion-group>\n<accordion-group heading = \"Initially expanded\"\n[ isOpen ] = \"isFirstOpen\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Content 2\" >\n<p> accordion 3 </p>\n</accordion-group>\n</accordion>"
+  },
+  {
+   "id": "b143",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Initially opened"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-opened' ,\ntemplateUrl : './opened.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionOpenedComponent {\nisFirstOpen = true ;\n}"
+  },
+  {
+   "id": "b144",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "Dynamic accordion"
+   ],
+   "text": "Dynamic accordion"
+  },
+  {
+   "id": "b145",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Dynamic accordion"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b146",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Dynamic accordion"
+   ],
+   "text": "Add Group Item"
+  },
+  {
+   "id": "b147",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Dynamic accordion"
+   ],
+   "text": "Dynamic Group Header - 1"
+  },
+  {
+   "id": "b148",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Dynamic accordion"
+   ],
+   "text": "Dynamic Group Header - 2"
+  },
+  {
+   "id": "b149",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Dynamic accordion"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b150",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Dynamic accordion"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b151",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Dynamic accordion"
+   ],
+   "text": "<p>\n<button type = \"button\" class = \"btn btn-primary btn-sm\" ( click ) = \"addGroupItem()\" >\nAdd Group Item\n</button>\n</p>\n\n<accordion>\n@for (group of groups; track group) {\n<accordion-group [ heading ] = \"group.title\" >\n{{ group?.content }}\n</accordion-group>\n}\n</accordion>"
+  },
+  {
+   "id": "b152",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Dynamic accordion"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-dynamic' ,\ntemplateUrl : './dynamic.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionDynamicComponent {\ngroups = [\n{\ntitle : 'Dynamic Group Header - 1' ,\ncontent : 'Dynamic Group Body - 1'\n},\n{\ntitle : 'Dynamic Group Header - 2' ,\ncontent : 'Dynamic Group Body - 2'\n}\n];\n\naddGroupItem (): void {\nthis . groups . push ({\ntitle : ` Dynamic Group Header - $ { this . groups . length + 1 }`,\ncontent : ` Dynamic Group Body - $ { this . groups . length + 1 }`\n});\n}\n}"
+  },
+  {
+   "id": "b153",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "Dynamic body content"
+   ],
+   "text": "Dynamic body content"
+  },
+  {
+   "id": "b154",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Dynamic body content"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b155",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Dynamic body content"
+   ],
+   "text": "Dynamic Body Content"
+  },
+  {
+   "id": "b156",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Dynamic body content"
+   ],
+   "text": "Content 2"
+  },
+  {
+   "id": "b157",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Dynamic body content"
+   ],
+   "text": "Content 3"
+  },
+  {
+   "id": "b158",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Dynamic body content"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b159",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Dynamic body content"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b160",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Dynamic body content"
+   ],
+   "text": "<accordion>\n<accordion-group heading = \"Dynamic Body Content\" >\n<p> The body of the accordion group grows to fit the contents </p>\n<button type = \"button\" class = \"btn btn-primary btn-sm\" ( click ) = \"addItem()\" > Add\nItem\n</button>\n<button type = \"button\" class = \"btn btn-primary btn-sm ms-3 ml-3\" ( click ) = \"removeItem()\" > Remove\nItem\n</button>\n@for (item of items; track item) {\n<div> {{item}} </div>\n}\n</accordion-group>\n<accordion-group heading = \"Content 2\" >\n<p> accordion 2 </p>\n</accordion-group>\n<accordion-group heading = \"Content 3\" >\n<p> accordion 3 </p>\n</accordion-group>\n</accordion>"
+  },
+  {
+   "id": "b161",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Dynamic body content"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-dynamic-body' ,\ntemplateUrl : './dynamic-body.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionDynamicBodyComponent {\nitems = [ 'Item 1' , 'Item 2' , 'Item 3' ];\n\naddItem (): void {\nthis . items . push (` Item $ { this . items . length + 1 }`);\n}\n\nremoveItem (): void {\nthis . items = this . items . slice ( 0 , this . items . length - 1 );\n}\n}"
+  },
+  {
+   "id": "b162",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "Manual toggle"
+   ],
+   "text": "Manual toggle"
+  },
+  {
+   "id": "b163",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Manual toggle"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b164",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Manual toggle"
+   ],
+   "text": "Toggle last panel"
+  },
+  {
+   "id": "b165",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Manual toggle"
+   ],
+   "text": "Content 1"
+  },
+  {
+   "id": "b166",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Manual toggle"
+   ],
+   "text": "Content 2"
+  },
+  {
+   "id": "b167",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Manual toggle"
+   ],
+   "text": "Last panel"
+  },
+  {
+   "id": "b168",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Manual toggle"
+   ],
+   "text": "accordion 3"
+  },
+  {
+   "id": "b169",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Manual toggle"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b170",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Manual toggle"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b171",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Manual toggle"
+   ],
+   "text": "<p>\n<button type = \"button\" class = \"btn btn-primary btn-sm\"\n( click ) = \"isOpen = !isOpen\" > Toggle last panel\n</button>\n</p>\n\n<accordion>\n<accordion-group heading = \"Content 1\" >\n<p> accordion 1 </p>\n</accordion-group>\n<accordion-group heading = \"Content 2\" >\n<p> accordion 2 </p>\n</accordion-group>\n<accordion-group [ isOpen ] = \"isOpen\" heading = \"Last panel\" >\n<p> accordion 3 </p>\n</accordion-group>\n</accordion>"
+  },
+  {
+   "id": "b172",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Manual toggle"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-manual-toggle' ,\ntemplateUrl : './manual-toggle.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionManualToggleComponent {\nisOpen = true ;\n}"
+  },
+  {
+   "id": "b173",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "Open only one at a time"
+   ],
+   "text": "Open only one at a time"
+  },
+  {
+   "id": "b174",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Open only one at a time"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b175",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Open only one at a time"
+   ],
+   "text": "Open only one at a time"
+  },
+  {
+   "id": "b176",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Open only one at a time"
+   ],
+   "text": "Header"
+  },
+  {
+   "id": "b177",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Open only one at a time"
+   ],
+   "text": "Content 1"
+  },
+  {
+   "id": "b178",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Open only one at a time"
+   ],
+   "text": "Content 2"
+  },
+  {
+   "id": "b179",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Open only one at a time"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b180",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Open only one at a time"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b181",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Open only one at a time"
+   ],
+   "text": "<div class = \"checkbox\" >\n<label>\n<input type = \"checkbox\" [( ngModel )] = \"oneAtATime\" >\nOpen only one at a time\n</label>\n</div>\n\n<accordion [ closeOthers ] = \"oneAtATime\" >\n<accordion-group heading = \"Header\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Content 1\" >\n<p> Content 1 </p>\n</accordion-group>\n<accordion-group heading = \"Content 2\" >\n<p> Content 2 </p>\n</accordion-group>\n</accordion>"
+  },
+  {
+   "id": "b182",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Open only one at a time"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-one-time' ,\ntemplateUrl : './one-at-a-time.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionOneAtATimeComponent {\noneAtATime = true ;\n}"
+  },
+  {
+   "id": "b183",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "Styling"
+   ],
+   "text": "Styling"
+  },
+  {
+   "id": "b184",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Styling"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b185",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Styling"
+   ],
+   "text": "Static Header, initially expanded"
+  },
+  {
+   "id": "b186",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Styling"
+   ],
+   "text": "This content is straight in the template."
+  },
+  {
+   "id": "b187",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Styling"
+   ],
+   "text": "Content 1"
+  },
+  {
+   "id": "b188",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Styling"
+   ],
+   "text": "Content 2"
+  },
+  {
+   "id": "b189",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Styling"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b190",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Styling"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b191",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Styling"
+   ],
+   "text": "<accordion>\n<accordion-group heading = \"Static Header, initially expanded\"\n[ panelClass ] = \"customClass\"\n[ isOpen ] = \"isFirstOpen\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Content 1\" >\n<p> accordion 1 </p>\n</accordion-group>\n<accordion-group heading = \"Content 2\" panelClass = \"customClass\" >\n<p> accordion 2 </p>\n</accordion-group>\n</accordion>"
+  },
+  {
+   "id": "b192",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Styling"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-styling' ,\ntemplateUrl : './styling.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionStylingComponent {\ncustomClass = 'customClass' ;\nisFirstOpen = true ;\n}"
+  },
+  {
+   "id": "b193",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "Configuring defaults"
+   ],
+   "text": "Configuring defaults"
+  },
+  {
+   "id": "b194",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "Configuring defaults"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b195",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Configuring defaults"
+   ],
+   "text": "Header"
+  },
+  {
+   "id": "b196",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Configuring defaults"
+   ],
+   "text": "Content 1"
+  },
+  {
+   "id": "b197",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "Configuring defaults"
+   ],
+   "text": "Content 2"
+  },
+  {
+   "id": "b198",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Configuring defaults"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b199",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "Configuring defaults"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b200",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Configuring defaults"
+   ],
+   "text": "<accordion [ isAnimated ] = \"true\" >\n<accordion-group heading = \"Header\" >\nThis content is straight in the template.\n</accordion-group>\n<accordion-group heading = \"Content 1\" >\n<p> Content 1 </p>\n</accordion-group>\n<accordion-group heading = \"Content 2\" >\n<p> Content 2 </p>\n</accordion-group>\n</accordion>"
+  },
+  {
+   "id": "b201",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "Configuring defaults"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\nimport { AccordionConfig } from 'ngx-bootstrap/accordion' ;\n\n// such override allows to keep some initial values\n\nexport function getAccordionConfig (): AccordionConfig {\nreturn Object . assign ( new AccordionConfig (), { closeOthers : true });\n}\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-accordion-config' ,\ntemplateUrl : './config.html' ,\nproviders : [{ provide : AccordionConfig , useFactory : getAccordionConfig }],\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAccordionConfigComponent {}"
+  },
+  {
+   "id": "b202",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "API Reference"
+   ],
+   "text": "API Reference"
+  },
+  {
+   "id": "b203",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "API Reference"
+   ],
+   "text": "ng add ngx-bootstrap  --component accordion"
+  },
+  {
+   "id": "b204",
+   "kind": "code",
+   "heading_path": [
+    "Accordion",
+    "API Reference"
+   ],
+   "text": "### Standalone component usage\nimport { BrowserAnimationsModule } from '@angular/platform-browser/animations';\n\nimport { AccordionComponent, AccordionPanelComponent } from 'ngx-bootstrap/accordion';\n\n@Component({\n  standalone: true,\n  imports: [\n    BrowserAnimationsModule,\n    AccordionComponent,\n    AccordionPanelComponent\n    ...\n  ]\n})\nexport class AppComponent(){}\n\nAlso should be added web-animations-js polyfill for IE browser (Edge)\n### Module usage\nimport { BrowserAnimationsModule } from '@angular/platform-browser/animations';\n\nimport { AccordionModule } from 'ngx-bootstrap/accordion';\n\n@NgModule({\n  imports: [\n    BrowserAnimationsModule,\n    AccordionModule,\n    ...\n  ]\n})\nexport class AppModule(){}\n\nAlso should be added web-animations-js polyfill for IE browser (Edge)"
+  },
+  {
+   "id": "b205",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "AccordionComponent"
+   ],
+   "text": "AccordionComponent"
+  },
+  {
+   "id": "b206",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "AccordionComponent"
+   ],
+   "text": "Displays collapsible content panels for presenting information in a limited amount of space."
+  },
+  {
+   "id": "b207",
+   "kind": "table_row",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "AccordionComponent"
+   ],
+   "text": "Selector",
+   "cells": [
+    {
+     "header": null,
+     "value": "Selector"
     }
-  ],
-  "gold": {
-    "primary_entities": [
-      "Accordion"
-    ],
-    "entities": [
-      {
-        "canonical": "ngx-bootstrap",
-        "type": "tech",
-        "subtype": "library",
-        "aliases": [
-          "Angular Bootstrap"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b0",
-            "text": "Angular Bootstrap"
-          },
-          {
-            "block": "b123",
-            "text": "ngx-bootstrap"
-          },
-          {
-            "block": "b201",
-            "text": "ngx-bootstrap"
-          },
-          {
-            "block": "b203",
-            "text": "ngx-bootstrap"
-          },
-          {
-            "block": "b204",
-            "text": "ngx-bootstrap"
-          }
-        ]
-      },
-      {
-        "canonical": "Accordion",
-        "type": "tech",
-        "subtype": "component",
-        "aliases": [
-          "accordion component"
-        ],
-        "difficulty": "easy",
-        "note": "az oldal témája",
-        "namespace": "ngx-bootstrap",
-        "surface_forms": [
-          {
-            "block": "b76",
-            "text": "accordion"
-          },
-          {
-            "block": "b77",
-            "text": "Accordion"
-          },
-          {
-            "block": "b79",
-            "text": "accordion"
-          },
-          {
-            "block": "b80",
-            "text": "accordion"
-          },
-          {
-            "block": "b93",
-            "text": "accordion"
-          },
-          {
-            "block": "b104",
-            "text": "accordion"
-          },
-          {
-            "block": "b108",
-            "text": "Accordion"
-          },
-          {
-            "block": "b114",
-            "text": "accordion"
-          },
-          {
-            "block": "b115",
-            "text": "Accordion"
-          },
-          {
-            "block": "b122",
-            "text": "accordion"
-          },
-          {
-            "block": "b132",
-            "text": "accordion"
-          },
-          {
-            "block": "b142",
-            "text": "accordion"
-          },
-          {
-            "block": "b144",
-            "text": "accordion"
-          },
-          {
-            "block": "b151",
-            "text": "accordion"
-          },
-          {
-            "block": "b160",
-            "text": "accordion"
-          },
-          {
-            "block": "b168",
-            "text": "accordion"
-          },
-          {
-            "block": "b171",
-            "text": "accordion"
-          },
-          {
-            "block": "b181",
-            "text": "accordion"
-          },
-          {
-            "block": "b191",
-            "text": "accordion"
-          },
-          {
-            "block": "b200",
-            "text": "accordion"
-          },
-          {
-            "block": "b201",
-            "text": "accordion"
-          },
-          {
-            "block": "b203",
-            "text": "accordion"
-          },
-          {
-            "block": "b204",
-            "text": "accordion"
-          },
-          {
-            "block": "b209",
-            "text": "Accordion"
-          },
-          {
-            "block": "b244",
-            "text": "accordion"
-          },
-          {
-            "block": "b257",
-            "text": "accordion"
-          },
-          {
-            "block": "b279",
-            "text": "accordion"
-          }
-        ]
-      },
-      {
-        "canonical": "Collapse",
-        "type": "tech",
-        "subtype": "component",
-        "aliases": [
-          "collapse directive"
-        ],
-        "difficulty": "easy",
-        "namespace": "ngx-bootstrap",
-        "surface_forms": [
-          {
-            "block": "b79",
-            "text": "collapse directive"
-          }
-        ]
-      },
-      {
-        "canonical": "@angular/core",
-        "type": "tech",
-        "subtype": "package",
-        "difficulty": "easy",
-        "namespace": "npm",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b94",
-            "text": "@angular/core"
-          },
-          {
-            "block": "b105",
-            "text": "@angular/core"
-          },
-          {
-            "block": "b115",
-            "text": "@angular/core"
-          },
-          {
-            "block": "b123",
-            "text": "@angular/core"
-          },
-          {
-            "block": "b133",
-            "text": "@angular/core"
-          },
-          {
-            "block": "b143",
-            "text": "@angular/core"
-          },
-          {
-            "block": "b152",
-            "text": "@angular/core"
-          },
-          {
-            "block": "b161",
-            "text": "@angular/core"
-          },
-          {
-            "block": "b172",
-            "text": "@angular/core"
-          },
-          {
-            "block": "b182",
-            "text": "@angular/core"
-          },
-          {
-            "block": "b192",
-            "text": "@angular/core"
-          },
-          {
-            "block": "b201",
-            "text": "@angular/core"
-          }
-        ]
-      },
-      {
-        "canonical": "@angular/platform-browser/animations",
-        "type": "tech",
-        "subtype": "package",
-        "difficulty": "easy",
-        "namespace": "npm",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b204",
-            "text": "@angular/platform-browser/animations"
-          }
-        ]
-      },
-      {
-        "canonical": "AccordionComponent",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "ngx-bootstrap/accordion",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b204",
-            "text": "AccordionComponent"
-          },
-          {
-            "block": "b205",
-            "text": "AccordionComponent"
-          },
-          {
-            "block": "b213",
-            "text": "AccordionComponent"
-          }
-        ]
-      },
-      {
-        "canonical": "AccordionPanelComponent",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "ngx-bootstrap/accordion",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b204",
-            "text": "AccordionPanelComponent"
-          },
-          {
-            "block": "b208",
-            "text": "AccordionPanelComponent"
-          }
-        ]
-      },
-      {
-        "canonical": "AccordionConfig",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "ngx-bootstrap/accordion",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b201",
-            "text": "AccordionConfig"
-          },
-          {
-            "block": "b212",
-            "text": "AccordionConfig"
-          }
-        ]
-      },
-      {
-        "canonical": "BrowserAnimationsModule",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "@angular/platform-browser/animations",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b204",
-            "text": "BrowserAnimationsModule"
-          }
-        ]
-      },
-      {
-        "canonical": "accordion-group",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "note": "prózában dokumentált selector",
-        "namespace": "ngx-bootstrap/accordion",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b93",
-            "text": "accordion-group"
-          },
-          {
-            "block": "b104",
-            "text": "accordion-group"
-          },
-          {
-            "block": "b114",
-            "text": "accordion-group"
-          },
-          {
-            "block": "b122",
-            "text": "accordion-group"
-          },
-          {
-            "block": "b132",
-            "text": "accordion-group"
-          },
-          {
-            "block": "b142",
-            "text": "accordion-group"
-          },
-          {
-            "block": "b151",
-            "text": "accordion-group"
-          },
-          {
-            "block": "b160",
-            "text": "accordion-group"
-          },
-          {
-            "block": "b171",
-            "text": "accordion-group"
-          },
-          {
-            "block": "b181",
-            "text": "accordion-group"
-          },
-          {
-            "block": "b191",
-            "text": "accordion-group"
-          },
-          {
-            "block": "b200",
-            "text": "accordion-group"
-          },
-          {
-            "block": "b210",
-            "text": "accordion-group"
-          }
-        ]
-      },
-      {
-        "canonical": "accordion-heading",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "note": "prózában dokumentált attribútum",
-        "namespace": "ngx-bootstrap/accordion",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b122",
-            "text": "accordion-heading"
-          },
-          {
-            "block": "b210",
-            "text": "accordion-heading"
-          }
-        ]
-      }
-    ],
-    "optional": [
-      {
-        "canonical": "Angular",
-        "type": "tech",
-        "subtype": "framework",
-        "difficulty": "easy",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b0",
-            "text": "Angular"
-          }
-        ]
-      },
-      {
-        "canonical": "ngx-bootstrap/accordion",
-        "type": "tech",
-        "subtype": "package",
-        "difficulty": "easy",
-        "namespace": "npm",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b201",
-            "text": "ngx-bootstrap/accordion"
-          },
-          {
-            "block": "b204",
-            "text": "ngx-bootstrap/accordion"
-          }
-        ]
-      },
-      {
-        "canonical": "ngx-bootstrap/utils",
-        "type": "tech",
-        "subtype": "package",
-        "difficulty": "easy",
-        "namespace": "npm",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b123",
-            "text": "ngx-bootstrap/utils"
-          }
-        ]
-      },
-      {
-        "canonical": "isAnimated",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "ngx-bootstrap/accordion",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b97",
-            "text": "isAnimated"
-          },
-          {
-            "block": "b104",
-            "text": "isAnimated"
-          },
-          {
-            "block": "b200",
-            "text": "isAnimated"
-          },
-          {
-            "block": "b216",
-            "text": "isAnimated"
-          }
-        ]
-      },
-      {
-        "canonical": "isOpenChange",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "ngx-bootstrap/accordion",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b108",
-            "text": "isOpenChange"
-          },
-          {
-            "block": "b109",
-            "text": "isOpenChange"
-          },
-          {
-            "block": "b110",
-            "text": "isOpenChange"
-          },
-          {
-            "block": "b111",
-            "text": "isOpenChange"
-          },
-          {
-            "block": "b114",
-            "text": "isOpenChange"
-          },
-          {
-            "block": "b228",
-            "text": "isOpenChange"
-          },
-          {
-            "block": "b229",
-            "text": "isOpenChange"
-          },
-          {
-            "block": "b230",
-            "text": "isOpenChange"
-          }
-        ]
-      },
-      {
-        "canonical": "closeOthers",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "ngx-bootstrap/accordion",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b181",
-            "text": "closeOthers"
-          },
-          {
-            "block": "b201",
-            "text": "closeOthers"
-          },
-          {
-            "block": "b215",
-            "text": "closeOthers"
-          }
-        ]
-      },
-      {
-        "canonical": "isOpen",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "ngx-bootstrap/accordion",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b142",
-            "text": "isOpen"
-          },
-          {
-            "block": "b171",
-            "text": "isOpen"
-          },
-          {
-            "block": "b172",
-            "text": "isOpen"
-          },
-          {
-            "block": "b191",
-            "text": "isOpen"
-          }
-        ]
-      },
-      {
-        "canonical": "isDisabled",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "ngx-bootstrap/accordion",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b132",
-            "text": "isDisabled"
-          }
-        ]
-      },
-      {
-        "canonical": "panelClass",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "ngx-bootstrap/accordion",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b191",
-            "text": "panelClass"
-          }
-        ]
-      },
-      {
-        "canonical": "Component",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "@angular/core",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b94",
-            "text": "@Component"
-          },
-          {
-            "block": "b105",
-            "text": "@Component"
-          },
-          {
-            "block": "b115",
-            "text": "@Component"
-          },
-          {
-            "block": "b123",
-            "text": "@Component"
-          },
-          {
-            "block": "b133",
-            "text": "@Component"
-          },
-          {
-            "block": "b143",
-            "text": "@Component"
-          },
-          {
-            "block": "b152",
-            "text": "@Component"
-          },
-          {
-            "block": "b161",
-            "text": "@Component"
-          },
-          {
-            "block": "b172",
-            "text": "@Component"
-          },
-          {
-            "block": "b182",
-            "text": "@Component"
-          },
-          {
-            "block": "b192",
-            "text": "@Component"
-          },
-          {
-            "block": "b201",
-            "text": "@Component"
-          },
-          {
-            "block": "b204",
-            "text": "@Component"
-          }
-        ]
-      },
-      {
-        "canonical": "ChangeDetectionStrategy",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "@angular/core",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b94",
-            "text": "ChangeDetectionStrategy"
-          },
-          {
-            "block": "b105",
-            "text": "ChangeDetectionStrategy"
-          },
-          {
-            "block": "b115",
-            "text": "ChangeDetectionStrategy"
-          },
-          {
-            "block": "b123",
-            "text": "ChangeDetectionStrategy"
-          },
-          {
-            "block": "b133",
-            "text": "ChangeDetectionStrategy"
-          },
-          {
-            "block": "b143",
-            "text": "ChangeDetectionStrategy"
-          },
-          {
-            "block": "b152",
-            "text": "ChangeDetectionStrategy"
-          },
-          {
-            "block": "b161",
-            "text": "ChangeDetectionStrategy"
-          },
-          {
-            "block": "b172",
-            "text": "ChangeDetectionStrategy"
-          },
-          {
-            "block": "b182",
-            "text": "ChangeDetectionStrategy"
-          },
-          {
-            "block": "b192",
-            "text": "ChangeDetectionStrategy"
-          },
-          {
-            "block": "b201",
-            "text": "ChangeDetectionStrategy"
-          }
-        ]
-      },
-      {
-        "canonical": "getBsVer",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "ngx-bootstrap/utils",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b123",
-            "text": "getBsVer"
-          },
-          {
-            "block": "b123",
-            "text": "_getBsVer"
-          }
-        ]
-      },
-      {
-        "canonical": "IBsVersion",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "difficulty": "easy",
-        "namespace": "ngx-bootstrap/utils",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b123",
-            "text": "IBsVersion"
-          }
-        ]
-      },
-      {
-        "canonical": "tabs",
-        "type": "concept",
-        "subtype": "ui_pattern",
-        "difficulty": "easy",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b86",
-            "text": "tabs"
-          }
-        ]
-      },
-      {
-        "canonical": "Angular CLI",
-        "type": "tech",
-        "subtype": "software",
-        "aliases": [
-          "ng add"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b203",
-            "text": "ng add"
-          }
-        ]
-      },
-      {
-        "canonical": "root module",
-        "type": "concept",
-        "subtype": "other",
-        "difficulty": "easy",
-        "acceptable_types": [
-          "concept",
-          "tech"
-        ],
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b80",
-            "text": "root module"
-          }
-        ]
-      }
-    ],
-    "negatives": [
-      {
-        "text": "Home"
-      },
-      {
-        "text": "Overview"
-      },
-      {
-        "text": "Examples"
-      },
-      {
-        "text": "API Reference"
-      },
-      {
-        "text": "Static Header"
-      },
-      {
-        "text": "Another group"
-      },
-      {
-        "text": "Content 1"
-      },
-      {
-        "text": "Add Group Item"
-      },
-      {
-        "text": "Toggle last panel"
-      },
-      {
-        "text": "With animation"
-      },
-      {
-        "text": "Configuring defaults"
-      },
-      {
-        "text": "I can have markup!"
-      },
-      {
-        "text": "Dynamic Group Header"
-      },
-      {
-        "text": "Some content"
-      }
-    ]
+   ]
   },
-  "gold_status": "final (Krisztián jóváhagyta, 2026-09-28)",
-  "annotation_notes": [
-    "A dokumentált, prózában vagy API-referenciában szereplő elemek kötelezők; a példák inputjai/outputjai és a példakódba importált Angular-szimbólumok opcionálisak (mint az s3-on).",
-    "A példák demótartalma (Static Header, Content 1, Add Group Item) negatív.",
-    "Parser-megfigyelés: a b217–b271 kártyák a példák ismétlései (valószínűleg a rejtett Examples fül); ellenőrizni, látható-e."
-  ],
-  "rules": {
-    "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
-    "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
-    "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
-    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
-    "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
-    "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
-    "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
-    "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
-    "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
-    "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
-    "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes"
+  {
+   "id": "b208",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "AccordionPanelComponent"
+   ],
+   "text": "AccordionPanelComponent"
   },
-  "subtype_glossary": {
-    "service": {
-      "audit": "felmérés, átvilágítás",
-      "implementation": "beállítás, kiépítés, bevezetés",
-      "consulting": "tanácsadás",
-      "reporting": "riport, dashboard",
-      "training": "képzés, workshop",
-      "other": "egyéb"
-    },
-    "org": {
-      "company": "cég",
-      "restaurant": "étterem, vendéglátóhely",
-      "institution": "intézmény, szervezet",
-      "team": "csapat",
-      "other": "egyéb"
-    },
-    "tech": {
-      "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
-      "library": "programkönyvtár",
-      "framework": "keretrendszer",
-      "language": "programozási nyelv",
-      "package": "telepíthető csomag (npm, pip)",
-      "component": "egy könyvtár konkrét komponense",
-      "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
-      "api": "programozói interfész, amit szolgáltatásként hívnak",
-      "standard": "műszaki szabvány, specifikáció",
-      "feature": "egy szoftver funkciója",
-      "other": "egyéb"
-    },
-    "product": {
-      "dish": "étel vagy desszert az étlapon",
-      "ingredient": "alapanyag, tésztafajta",
-      "wine": "bor",
-      "drink": "ital, koktél",
-      "physical_good": "egyéb fizikai áru",
-      "other": "egyéb"
-    },
-    "concept": {
-      "method": "módszer, keretrendszer, eljárás",
-      "discipline": "szakterület",
-      "metric": "mérhető mennyiség, mutató",
-      "ui_pattern": "általános felületi minta",
-      "license": "licenc",
-      "designation": "eredetvédelmi vagy minőségi jelölés",
-      "other": "egyéb"
-    },
-    "place": {
-      "city": "város",
-      "region": "régió, tartomány",
-      "country": "ország",
-      "venue": "helyszín, épület",
-      "other": "egyéb"
-    },
-    "work": {
-      "article": "cikk",
-      "case_study": "esettanulmány",
-      "book": "könyv",
-      "course": "tanfolyam",
-      "other": "egyéb"
-    },
-    "event": {
-      "conference": "konferencia",
-      "webinar": "webinár",
-      "festival": "fesztivál",
-      "other": "egyéb"
-    },
-    "brand": {
-      "other": "egyéb"
-    },
-    "person": {}
+  {
+   "id": "b209",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Accordion heading"
+   ],
+   "text": "Accordion heading"
   },
-  "subtype_vocabulary": {
-    "service": [
-      "audit",
-      "implementation",
-      "consulting",
-      "reporting",
-      "training",
-      "other"
-    ],
-    "org": [
-      "company",
-      "restaurant",
-      "institution",
-      "team",
-      "other"
-    ],
-    "tech": [
-      "software",
-      "library",
-      "framework",
-      "language",
-      "package",
-      "component",
-      "api_symbol",
-      "api",
-      "standard",
-      "feature",
-      "other"
-    ],
-    "product": [
-      "dish",
-      "ingredient",
-      "wine",
-      "drink",
-      "physical_good",
-      "other"
-    ],
-    "concept": [
-      "method",
-      "discipline",
-      "metric",
-      "ui_pattern",
-      "license",
-      "designation",
-      "other"
-    ],
-    "place": [
-      "city",
-      "region",
-      "country",
-      "venue",
-      "other"
-    ],
-    "work": [
-      "article",
-      "case_study",
-      "book",
-      "course",
-      "other"
-    ],
-    "event": [
-      "conference",
-      "webinar",
-      "festival",
-      "other"
-    ],
-    "brand": [
-      "other"
-    ],
-    "person": []
+  {
+   "id": "b210",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Accordion heading"
+   ],
+   "text": "Instead of using heading attribute on the accordion-group , you can use an accordion-heading attribute on any element inside of a group that will be used as group's header template."
+  },
+  {
+   "id": "b211",
+   "kind": "table_row",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Accordion heading"
+   ],
+   "text": "Selector",
+   "cells": [
+    {
+     "header": null,
+     "value": "Selector"
+    }
+   ]
+  },
+  {
+   "id": "b212",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "AccordionConfig"
+   ],
+   "text": "AccordionConfig"
+  },
+  {
+   "id": "b213",
+   "kind": "paragraph",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "AccordionConfig"
+   ],
+   "text": "Configuration service, provides default values for the AccordionComponent."
+  },
+  {
+   "id": "b214",
+   "kind": "heading",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "Properties"
+  },
+  {
+   "id": "b215",
+   "kind": "table_row",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "closeOthers | Type: boolean Default value: false Whether the other panels should be closed when a panel is opened",
+   "cells": [
+    {
+     "header": null,
+     "value": "closeOthers"
+    },
+    {
+     "header": null,
+     "value": "Type: boolean Default value: false Whether the other panels should be closed when a panel is opened"
+    }
+   ]
+  },
+  {
+   "id": "b216",
+   "kind": "table_row",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "isAnimated | Type: boolean Default value: false turn on/off animation",
+   "cells": [
+    {
+     "header": null,
+     "value": "isAnimated"
+    },
+    {
+     "header": null,
+     "value": "Type: boolean Default value: false turn on/off animation"
+    }
+   ]
+  },
+  {
+   "id": "b217",
+   "kind": "other",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "components"
+  },
+  {
+   "id": "b218",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "Basic"
+  },
+  {
+   "id": "b219",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "With animation"
+  },
+  {
+   "id": "b220",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "Group opening event"
+  },
+  {
+   "id": "b221",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "Custom HTML"
+  },
+  {
+   "id": "b222",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "Disabled"
+  },
+  {
+   "id": "b223",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "Initially opened"
+  },
+  {
+   "id": "b224",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "Dynamic accordion"
+  },
+  {
+   "id": "b225",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "Dynamic body content"
+  },
+  {
+   "id": "b226",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "Manual toggle"
+  },
+  {
+   "id": "b227",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "Open only one at a time"
+  },
+  {
+   "id": "b228",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "Styling"
+  },
+  {
+   "id": "b229",
+   "kind": "list_item",
+   "heading_path": [
+    "Accordion",
+    "API Reference",
+    "Properties"
+   ],
+   "text": "Configuring defaults"
   }
+ ],
+ "gold": {
+  "primary_entities": [
+   "Accordion"
+  ],
+  "entities": [
+   {
+    "canonical": "ngx-bootstrap",
+    "type": "tech",
+    "subtype": "library",
+    "aliases": [
+     "Angular Bootstrap"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Angular Bootstrap"
+     },
+     {
+      "block": "b123",
+      "text": "ngx-bootstrap"
+     },
+     {
+      "block": "b201",
+      "text": "ngx-bootstrap"
+     },
+     {
+      "block": "b203",
+      "text": "ngx-bootstrap"
+     },
+     {
+      "block": "b204",
+      "text": "ngx-bootstrap"
+     }
+    ]
+   },
+   {
+    "canonical": "Accordion",
+    "type": "tech",
+    "subtype": "component",
+    "aliases": [
+     "accordion component"
+    ],
+    "difficulty": "easy",
+    "note": "az oldal témája",
+    "namespace": "ngx-bootstrap",
+    "surface_forms": [
+     {
+      "block": "b76",
+      "text": "accordion"
+     },
+     {
+      "block": "b77",
+      "text": "Accordion"
+     },
+     {
+      "block": "b79",
+      "text": "accordion"
+     },
+     {
+      "block": "b80",
+      "text": "accordion"
+     },
+     {
+      "block": "b93",
+      "text": "accordion"
+     },
+     {
+      "block": "b104",
+      "text": "accordion"
+     },
+     {
+      "block": "b108",
+      "text": "Accordion"
+     },
+     {
+      "block": "b114",
+      "text": "accordion"
+     },
+     {
+      "block": "b115",
+      "text": "Accordion"
+     },
+     {
+      "block": "b122",
+      "text": "accordion"
+     },
+     {
+      "block": "b132",
+      "text": "accordion"
+     },
+     {
+      "block": "b142",
+      "text": "accordion"
+     },
+     {
+      "block": "b144",
+      "text": "accordion"
+     },
+     {
+      "block": "b151",
+      "text": "accordion"
+     },
+     {
+      "block": "b160",
+      "text": "accordion"
+     },
+     {
+      "block": "b168",
+      "text": "accordion"
+     },
+     {
+      "block": "b171",
+      "text": "accordion"
+     },
+     {
+      "block": "b181",
+      "text": "accordion"
+     },
+     {
+      "block": "b191",
+      "text": "accordion"
+     },
+     {
+      "block": "b200",
+      "text": "accordion"
+     },
+     {
+      "block": "b201",
+      "text": "accordion"
+     },
+     {
+      "block": "b203",
+      "text": "accordion"
+     },
+     {
+      "block": "b204",
+      "text": "accordion"
+     },
+     {
+      "block": "b209",
+      "text": "Accordion"
+     },
+     {
+      "block": "b224",
+      "text": "accordion"
+     }
+    ]
+   },
+   {
+    "canonical": "Collapse",
+    "type": "tech",
+    "subtype": "component",
+    "aliases": [
+     "collapse directive"
+    ],
+    "difficulty": "easy",
+    "namespace": "ngx-bootstrap",
+    "surface_forms": [
+     {
+      "block": "b79",
+      "text": "collapse directive"
+     }
+    ]
+   },
+   {
+    "canonical": "@angular/core",
+    "type": "tech",
+    "subtype": "package",
+    "difficulty": "easy",
+    "namespace": "npm",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b94",
+      "text": "@angular/core"
+     },
+     {
+      "block": "b105",
+      "text": "@angular/core"
+     },
+     {
+      "block": "b115",
+      "text": "@angular/core"
+     },
+     {
+      "block": "b123",
+      "text": "@angular/core"
+     },
+     {
+      "block": "b133",
+      "text": "@angular/core"
+     },
+     {
+      "block": "b143",
+      "text": "@angular/core"
+     },
+     {
+      "block": "b152",
+      "text": "@angular/core"
+     },
+     {
+      "block": "b161",
+      "text": "@angular/core"
+     },
+     {
+      "block": "b172",
+      "text": "@angular/core"
+     },
+     {
+      "block": "b182",
+      "text": "@angular/core"
+     },
+     {
+      "block": "b192",
+      "text": "@angular/core"
+     },
+     {
+      "block": "b201",
+      "text": "@angular/core"
+     }
+    ]
+   },
+   {
+    "canonical": "@angular/platform-browser/animations",
+    "type": "tech",
+    "subtype": "package",
+    "difficulty": "easy",
+    "namespace": "npm",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b204",
+      "text": "@angular/platform-browser/animations"
+     }
+    ]
+   },
+   {
+    "canonical": "AccordionComponent",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "ngx-bootstrap/accordion",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b204",
+      "text": "AccordionComponent"
+     },
+     {
+      "block": "b205",
+      "text": "AccordionComponent"
+     },
+     {
+      "block": "b213",
+      "text": "AccordionComponent"
+     }
+    ]
+   },
+   {
+    "canonical": "AccordionPanelComponent",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "ngx-bootstrap/accordion",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b204",
+      "text": "AccordionPanelComponent"
+     },
+     {
+      "block": "b208",
+      "text": "AccordionPanelComponent"
+     }
+    ]
+   },
+   {
+    "canonical": "AccordionConfig",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "ngx-bootstrap/accordion",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b201",
+      "text": "AccordionConfig"
+     },
+     {
+      "block": "b212",
+      "text": "AccordionConfig"
+     }
+    ]
+   },
+   {
+    "canonical": "BrowserAnimationsModule",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "@angular/platform-browser/animations",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b204",
+      "text": "BrowserAnimationsModule"
+     }
+    ]
+   },
+   {
+    "canonical": "accordion-group",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "note": "prózában dokumentált selector",
+    "namespace": "ngx-bootstrap/accordion",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b93",
+      "text": "accordion-group"
+     },
+     {
+      "block": "b104",
+      "text": "accordion-group"
+     },
+     {
+      "block": "b114",
+      "text": "accordion-group"
+     },
+     {
+      "block": "b122",
+      "text": "accordion-group"
+     },
+     {
+      "block": "b132",
+      "text": "accordion-group"
+     },
+     {
+      "block": "b142",
+      "text": "accordion-group"
+     },
+     {
+      "block": "b151",
+      "text": "accordion-group"
+     },
+     {
+      "block": "b160",
+      "text": "accordion-group"
+     },
+     {
+      "block": "b171",
+      "text": "accordion-group"
+     },
+     {
+      "block": "b181",
+      "text": "accordion-group"
+     },
+     {
+      "block": "b191",
+      "text": "accordion-group"
+     },
+     {
+      "block": "b200",
+      "text": "accordion-group"
+     },
+     {
+      "block": "b210",
+      "text": "accordion-group"
+     }
+    ]
+   },
+   {
+    "canonical": "accordion-heading",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "note": "prózában dokumentált attribútum",
+    "namespace": "ngx-bootstrap/accordion",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b122",
+      "text": "accordion-heading"
+     },
+     {
+      "block": "b210",
+      "text": "accordion-heading"
+     }
+    ]
+   }
+  ],
+  "optional": [
+   {
+    "canonical": "Angular",
+    "type": "tech",
+    "subtype": "framework",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Angular"
+     }
+    ]
+   },
+   {
+    "canonical": "ngx-bootstrap/accordion",
+    "type": "tech",
+    "subtype": "package",
+    "difficulty": "easy",
+    "namespace": "npm",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b201",
+      "text": "ngx-bootstrap/accordion"
+     },
+     {
+      "block": "b204",
+      "text": "ngx-bootstrap/accordion"
+     }
+    ]
+   },
+   {
+    "canonical": "ngx-bootstrap/utils",
+    "type": "tech",
+    "subtype": "package",
+    "difficulty": "easy",
+    "namespace": "npm",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b123",
+      "text": "ngx-bootstrap/utils"
+     }
+    ]
+   },
+   {
+    "canonical": "isAnimated",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "ngx-bootstrap/accordion",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b97",
+      "text": "isAnimated"
+     },
+     {
+      "block": "b104",
+      "text": "isAnimated"
+     },
+     {
+      "block": "b200",
+      "text": "isAnimated"
+     },
+     {
+      "block": "b216",
+      "text": "isAnimated"
+     }
+    ]
+   },
+   {
+    "canonical": "isOpenChange",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "ngx-bootstrap/accordion",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b108",
+      "text": "isOpenChange"
+     },
+     {
+      "block": "b109",
+      "text": "isOpenChange"
+     },
+     {
+      "block": "b110",
+      "text": "isOpenChange"
+     },
+     {
+      "block": "b111",
+      "text": "isOpenChange"
+     },
+     {
+      "block": "b114",
+      "text": "isOpenChange"
+     }
+    ]
+   },
+   {
+    "canonical": "closeOthers",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "ngx-bootstrap/accordion",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b181",
+      "text": "closeOthers"
+     },
+     {
+      "block": "b201",
+      "text": "closeOthers"
+     },
+     {
+      "block": "b215",
+      "text": "closeOthers"
+     }
+    ]
+   },
+   {
+    "canonical": "isOpen",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "ngx-bootstrap/accordion",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b142",
+      "text": "isOpen"
+     },
+     {
+      "block": "b171",
+      "text": "isOpen"
+     },
+     {
+      "block": "b172",
+      "text": "isOpen"
+     },
+     {
+      "block": "b191",
+      "text": "isOpen"
+     }
+    ]
+   },
+   {
+    "canonical": "isDisabled",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "ngx-bootstrap/accordion",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b132",
+      "text": "isDisabled"
+     }
+    ]
+   },
+   {
+    "canonical": "panelClass",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "ngx-bootstrap/accordion",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b191",
+      "text": "panelClass"
+     }
+    ]
+   },
+   {
+    "canonical": "Component",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "@angular/core",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b94",
+      "text": "@Component"
+     },
+     {
+      "block": "b105",
+      "text": "@Component"
+     },
+     {
+      "block": "b115",
+      "text": "@Component"
+     },
+     {
+      "block": "b123",
+      "text": "@Component"
+     },
+     {
+      "block": "b133",
+      "text": "@Component"
+     },
+     {
+      "block": "b143",
+      "text": "@Component"
+     },
+     {
+      "block": "b152",
+      "text": "@Component"
+     },
+     {
+      "block": "b161",
+      "text": "@Component"
+     },
+     {
+      "block": "b172",
+      "text": "@Component"
+     },
+     {
+      "block": "b182",
+      "text": "@Component"
+     },
+     {
+      "block": "b192",
+      "text": "@Component"
+     },
+     {
+      "block": "b201",
+      "text": "@Component"
+     },
+     {
+      "block": "b204",
+      "text": "@Component"
+     }
+    ]
+   },
+   {
+    "canonical": "ChangeDetectionStrategy",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "@angular/core",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b94",
+      "text": "ChangeDetectionStrategy"
+     },
+     {
+      "block": "b105",
+      "text": "ChangeDetectionStrategy"
+     },
+     {
+      "block": "b115",
+      "text": "ChangeDetectionStrategy"
+     },
+     {
+      "block": "b123",
+      "text": "ChangeDetectionStrategy"
+     },
+     {
+      "block": "b133",
+      "text": "ChangeDetectionStrategy"
+     },
+     {
+      "block": "b143",
+      "text": "ChangeDetectionStrategy"
+     },
+     {
+      "block": "b152",
+      "text": "ChangeDetectionStrategy"
+     },
+     {
+      "block": "b161",
+      "text": "ChangeDetectionStrategy"
+     },
+     {
+      "block": "b172",
+      "text": "ChangeDetectionStrategy"
+     },
+     {
+      "block": "b182",
+      "text": "ChangeDetectionStrategy"
+     },
+     {
+      "block": "b192",
+      "text": "ChangeDetectionStrategy"
+     },
+     {
+      "block": "b201",
+      "text": "ChangeDetectionStrategy"
+     }
+    ]
+   },
+   {
+    "canonical": "getBsVer",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "ngx-bootstrap/utils",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b123",
+      "text": "getBsVer"
+     },
+     {
+      "block": "b123",
+      "text": "_getBsVer"
+     }
+    ]
+   },
+   {
+    "canonical": "IBsVersion",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "difficulty": "easy",
+    "namespace": "ngx-bootstrap/utils",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b123",
+      "text": "IBsVersion"
+     }
+    ]
+   },
+   {
+    "canonical": "tabs",
+    "type": "concept",
+    "subtype": "ui_pattern",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b86",
+      "text": "tabs"
+     }
+    ]
+   },
+   {
+    "canonical": "Angular CLI",
+    "type": "tech",
+    "subtype": "software",
+    "aliases": [
+     "ng add"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b203",
+      "text": "ng add"
+     }
+    ]
+   },
+   {
+    "canonical": "root module",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "acceptable_types": [
+     "concept",
+     "tech"
+    ],
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b80",
+      "text": "root module"
+     }
+    ]
+   }
+  ],
+  "negatives": [
+   {
+    "text": "Home"
+   },
+   {
+    "text": "Overview"
+   },
+   {
+    "text": "Examples"
+   },
+   {
+    "text": "API Reference"
+   },
+   {
+    "text": "Static Header"
+   },
+   {
+    "text": "Another group"
+   },
+   {
+    "text": "Content 1"
+   },
+   {
+    "text": "Add Group Item"
+   },
+   {
+    "text": "Toggle last panel"
+   },
+   {
+    "text": "With animation"
+   },
+   {
+    "text": "Configuring defaults"
+   },
+   {
+    "text": "I can have markup!"
+   },
+   {
+    "text": "Dynamic Group Header"
+   },
+   {
+    "text": "Some content"
+   }
+  ]
+ },
+ "gold_status": "final (Krisztián jóváhagyta, 2026-09-28)",
+ "annotation_notes": [
+  "A dokumentált, prózában vagy API-referenciában szereplő elemek kötelezők; a példák inputjai/outputjai és a példakódba importált Angular-szimbólumok opcionálisak (mint az s3-on).",
+  "A példák demótartalma (Static Header, Content 1, Add Group Item) negatív.",
+  "Parser-megfigyelés: a b217–b271 kártyák a példák ismétlései (valószínűleg a rejtett Examples fül); ellenőrizni, látható-e."
+ ],
+ "rules": {
+  "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+  "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+  "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
+  "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
+  "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
+  "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
+  "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
+  "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
+  "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
+  "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
+  "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes"
+ },
+ "subtype_glossary": {
+  "service": {
+   "audit": "felmérés, átvilágítás",
+   "implementation": "beállítás, kiépítés, bevezetés",
+   "consulting": "tanácsadás",
+   "reporting": "riport, dashboard",
+   "training": "képzés, workshop",
+   "other": "egyéb"
+  },
+  "org": {
+   "company": "cég",
+   "restaurant": "étterem, vendéglátóhely",
+   "institution": "intézmény, szervezet",
+   "team": "csapat",
+   "other": "egyéb"
+  },
+  "tech": {
+   "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+   "library": "programkönyvtár",
+   "framework": "keretrendszer",
+   "language": "programozási nyelv",
+   "package": "telepíthető csomag (npm, pip)",
+   "component": "egy könyvtár konkrét komponense",
+   "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+   "api": "programozói interfész, amit szolgáltatásként hívnak",
+   "standard": "műszaki szabvány, specifikáció",
+   "feature": "egy szoftver funkciója",
+   "other": "egyéb"
+  },
+  "product": {
+   "dish": "étel vagy desszert az étlapon",
+   "ingredient": "alapanyag, tésztafajta",
+   "wine": "bor",
+   "drink": "ital, koktél",
+   "physical_good": "egyéb fizikai áru",
+   "other": "egyéb"
+  },
+  "concept": {
+   "method": "módszer, keretrendszer, eljárás",
+   "discipline": "szakterület",
+   "metric": "mérhető mennyiség, mutató",
+   "ui_pattern": "általános felületi minta",
+   "license": "licenc",
+   "designation": "eredetvédelmi vagy minőségi jelölés",
+   "other": "egyéb"
+  },
+  "place": {
+   "city": "város",
+   "region": "régió, tartomány",
+   "country": "ország",
+   "venue": "helyszín, épület",
+   "other": "egyéb"
+  },
+  "work": {
+   "article": "cikk",
+   "case_study": "esettanulmány",
+   "book": "könyv",
+   "course": "tanfolyam",
+   "other": "egyéb"
+  },
+  "event": {
+   "conference": "konferencia",
+   "webinar": "webinár",
+   "festival": "fesztivál",
+   "other": "egyéb"
+  },
+  "brand": {
+   "other": "egyéb"
+  },
+  "person": {}
+ },
+ "subtype_vocabulary": {
+  "service": [
+   "audit",
+   "implementation",
+   "consulting",
+   "reporting",
+   "training",
+   "other"
+  ],
+  "org": [
+   "company",
+   "restaurant",
+   "institution",
+   "team",
+   "other"
+  ],
+  "tech": [
+   "software",
+   "library",
+   "framework",
+   "language",
+   "package",
+   "component",
+   "api_symbol",
+   "api",
+   "standard",
+   "feature",
+   "other"
+  ],
+  "product": [
+   "dish",
+   "ingredient",
+   "wine",
+   "drink",
+   "physical_good",
+   "other"
+  ],
+  "concept": [
+   "method",
+   "discipline",
+   "metric",
+   "ui_pattern",
+   "license",
+   "designation",
+   "other"
+  ],
+  "place": [
+   "city",
+   "region",
+   "country",
+   "venue",
+   "other"
+  ],
+  "work": [
+   "article",
+   "case_study",
+   "book",
+   "course",
+   "other"
+  ],
+  "event": [
+   "conference",
+   "webinar",
+   "festival",
+   "other"
+  ],
+  "brand": [
+   "other"
+  ],
+  "person": []
+ }
 }
