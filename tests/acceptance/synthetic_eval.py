@@ -21,7 +21,10 @@ Pontozás (`score_page`), oldalanként:
 - recall a kötelező listán, összesítve és nehézség szerint. Találat: a modell egy említése a
   referencia egy szöveg szerinti alakját ugyanabban a blokkban átfedi, és az említés kanonikus
   nevének vagy szöveg szerinti alakjának kulcsa (`alias_key`: kis-nagybetű, ékezet, kötőjel) a
-  tétel kanonikus nevének vagy egy aliasának kulcsa; így a recall nem nagyobb a felismerésnél;
+  tétel kanonikus nevének vagy egy aliasának kulcsa; így a recall nem nagyobb a felismerésnél.
+  A tétel `ambiguous_aliases`-e (többértelmű rövidítés, pl. GTM) a felismeréshez elég (az
+  átfedés a név nélkül is számít), de a recall-találathoz és a helyes elnevezéshez nem: ott a
+  kanonikus névnek vagy egy egyértelmű aliasnak kell egyeznie;
 - precizitás: a modell entitásai a kanonikus név kulcsa szerint csoportosítva; a kötelező
   tételhez név szerint (blokktól függetlenül) illeszkedő csoport jó, a negatív tételhez
   illeszkedő és a referenciában nem szereplő hiba, az opcionális semleges;
@@ -189,16 +192,23 @@ class Item:
     types: frozenset[str] = frozenset()      # a helyes típusok: `acceptable_types`, vagy a típus
     subtypes: frozenset[str] = frozenset()   # a helyes altípusok: `acceptable_subtypes`, vagy az
                                              # altípus
+    naming_keys: frozenset[str] = frozenset()  # a helyes elnevezés kulcsai: `keys` az
+                                               # `ambiguous_aliases` nélkül
 
 
 def _items(entries: list[dict]) -> list[Item]:
-    return [Item(e["canonical"], e.get("type"), e.get("subtype"), e.get("difficulty"),
-                 frozenset(alias_key(n) for n in [e["canonical"], *e.get("aliases", [])]),
-                 frozenset(s["block"] for s in e.get("surface_forms", [])),
-                 frozenset(e.get("acceptable_types") or [e.get("type")]),
-                 frozenset(alias_key(s) for s in e.get("acceptable_subtypes")
-                           or ([e["subtype"]] if e.get("subtype") else [])))
-            for e in entries]
+    items = []
+    for e in entries:
+        keys = frozenset(alias_key(n) for n in [e["canonical"], *e.get("aliases", [])])
+        ambiguous = frozenset(alias_key(n) for n in e.get("ambiguous_aliases", []))
+        items.append(Item(
+            e["canonical"], e.get("type"), e.get("subtype"), e.get("difficulty"), keys,
+            frozenset(s["block"] for s in e.get("surface_forms", [])),
+            frozenset(e.get("acceptable_types") or [e.get("type")]),
+            frozenset(alias_key(s) for s in e.get("acceptable_subtypes")
+                      or ([e["subtype"]] if e.get("subtype") else [])),
+            keys - ambiguous))
+    return items
 
 
 @dataclass
@@ -342,9 +352,9 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
         overlapping = [(key, surface_key) for block, span, key, surface_key in spans
                        if any(block == gb and _overlap(span, gs) for gb, gs in gold_spans)]
         recognized = bool(overlapping)
-        well_named = any(key in item.keys for key, _ in overlapping)
+        well_named = any(key in item.naming_keys for key, _ in overlapping)
         hit = next((key for key, surface_key in overlapping
-                    if key in item.keys or surface_key in item.keys), None)
+                    if key in item.naming_keys or surface_key in item.naming_keys), None)
         if concept:
             score.recognized_concepts += recognized
             score.well_named_concepts += well_named

@@ -445,3 +445,24 @@ def test_real_development_pages_load_from_the_annotation_templates():
         assert all(block["id"].startswith("b") for block in page["blocks"])
         assert set(page["gold"]) == {"primary_entities", "entities", "optional", "negatives"}
     assert len(se.load_pages(page_set="all")) == len(EVERY_PAGE)
+
+
+def test_an_ambiguous_alias_is_enough_to_recognize_but_not_to_name():
+    """A „GTM” (ambiguous_aliases) felismerésnek elég; a helyes elnevezéshez és a
+    recall-találathoz a teljes név kell. A precizitásban a „GTM” nevű csoport nem hiba."""
+    kk = next(p for p in se.load_pages(page_set="development-real")
+              if p["page_id"] == "kk_coach_meres_hu")
+    item = next(e for e in kk["gold"]["entities"] if e["canonical"] == "Google Tag Manager")
+    assert item["ambiguous_aliases"] == ["GTM"] and "GTM" in item["aliases"]
+
+    def gtm(canonical):
+        score = se.score_page(kk, {"primary_entities": [], "entities": [
+            mention("b71", "GTM", canonical, "tech", "software")]})
+        missed = {name: why for name, _, _, why in score.missed}
+        return (score.recognized_named, score.well_named_named, score.named_found,
+                missed.get("Google Tag Manager"), score.wrong)
+
+    assert gtm("GTM") == (1, 0, 0, "elnevezési", 0)
+    assert gtm("Google Tag Manager") == (1, 1, 1, None, 0)
+    assert se._items([{**item, "ambiguous_aliases": []}])[0].naming_keys == {
+        "google tag manager", "gtm"}
