@@ -734,12 +734,17 @@ def main(argv: list[str] | None = None) -> None:
                         help="compare: név=címke1,címke2,… (ismételt futások)")
     parser.add_argument("--set", dest="page_set", choices=SETS, default=DEVELOPMENT,
                         help="az oldalak köre: fejlesztési (s1–s3), általánosítási, mind")
+    parser.add_argument("--page", action="append", default=[],
+                        help="csak ez az oldal (page_id; ismételhető)")
+    parser.add_argument("--pages-dir", type=Path, default=None,
+                        help="az oldalak JSON-jai innen (pl. a futáskori blokkokkal)")
     parser.add_argument("--data-dir", type=Path, default=DATA_DIR / "compare")
     parser.add_argument("--out", type=Path, default=OUT_DIR)
     args = parser.parse_args(argv)
     pipeline = load_config().pipeline
     args.model = args.model or pipeline["extraction"]
-    pages = load_pages(page_set=args.page_set)
+    pages = [page for page in load_pages(args.pages_dir, args.page_set)
+             if not args.page or page["page_id"] in args.page]
     suffix = "" if args.page_set == DEVELOPMENT else f"-{args.page_set}"
     if args.command == "compare":
         repeated = dict(item.split("=", 1) for item in args.repeated)
