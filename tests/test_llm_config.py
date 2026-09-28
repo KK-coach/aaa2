@@ -28,6 +28,7 @@ def test_defaults():
     assert [(p.budget_usd, p.stop_usd) for p in providers.values()] == [
         (10.0, 10.0), (3.0, 2.5), (5.0, 4.0)]
     assert "gpt-6-astra" not in {p.model for p in CONFIG.prices}
+    assert [p.max_output_tokens for p in providers.values()] == [16000, 32000, 16000]
 
 
 def test_gemini_introductory_price_ends_on_2026_12_31():

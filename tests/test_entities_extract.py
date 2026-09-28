@@ -448,3 +448,34 @@ def test_live_three_pages_with_the_pipeline_models(reference_crawl):
     for name, surface, text, start, end in rows:
         print(f"  {name}  «{surface}»")
         assert text[start:end] == surface
+
+
+def long_page():
+    """Title, H1, három H2-szakasz 30-30 bekezdéssel (95 blokk): két darab, 33 és 63 blokk."""
+    body = "<h1>Hosszú</h1>" + "".join(
+        f"<h2>Szakasz {s}</h2>" + "".join(f"<p>Bekezdés {s}-{i} a Kávé Kft. termékéről</p>"
+                                            for i in range(30)) for s in range(3))
+    return site({"/": html("Hosszú oldal", body)})
+
+
+def test_a_long_page_is_extracted_in_chunks_and_merged(tmp_path):
+    con = long_page()
+    client, adapter = client_for(con, [
+        reply(mention("b3", "Kávé Kft.", "Kávé Kft.", "org"), primary=["Kávé Kft."]),
+        reply(mention("b40", "Kávé Kft.", "Kávé Kft.", "org"), primary=["kávé kft."]),
+    ], tmp_path)
+    run = run_llm(con, client)
+    assert [text.count("\n[b") for _, text in adapter.calls] == [33, 63]
+    assert all(text.split("\n\n")[1] == "[b0]\nHosszú oldal" for _, text in adapter.calls)
+    assert (run.llm_calls, run.rows, run.skipped) == (2, 2, {})
+    assert [row[1] for row in mentions(con)] == [3, 40]
+
+
+def test_a_failed_chunk_keeps_the_others(tmp_path):
+    con = long_page()
+    client, _ = client_for(con, [
+        reply(mention("b3", "Kávé Kft.", "Kávé Kft.", "org")),
+        reply(mention("b40", "X", "X", "software")),
+    ], tmp_path)
+    run = run_llm(con, client)
+    assert (run.llm_calls, run.rows, run.skipped) == (2, 1, {"chunk_schema_mismatch": 1})

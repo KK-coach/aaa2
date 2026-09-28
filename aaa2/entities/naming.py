@@ -107,7 +107,8 @@ def name_record(client, record: Mapping, blocks: Mapping[str, Mapping],
     out = dict(record)
     out.update(naming_model=client.model, naming_call_id=None, naming_missing=0,
                naming_error=None, naming_raw=None,
-               call_ids=[i for i in [record.get("call_id")] if i is not None])
+               call_ids=list(record.get("call_ids")
+                             or [i for i in [record.get("call_id")] if i is not None]))
     mentions = recognized_mentions(record, blocks)
     if not mentions:
         return out

@@ -21,7 +21,10 @@ Pontozás (`score_page`), oldalanként:
 - recall a kötelező listán, összesítve és nehézség szerint. Találat: a modell egy említése a
   referencia egy szöveg szerinti alakját ugyanabban a blokkban átfedi, és az említés kanonikus
   nevének vagy szöveg szerinti alakjának kulcsa (`alias_key`: kis-nagybetű, ékezet, kötőjel) a
-  tétel kanonikus nevének vagy egy aliasának kulcsa; így a recall nem nagyobb a felismerésnél;
+  tétel kanonikus nevének vagy egy aliasának kulcsa; így a recall nem nagyobb a felismerésnél.
+  A tétel `ambiguous_aliases`-e (többértelmű rövidítés, pl. GTM) a felismeréshez elég (az
+  átfedés a név nélkül is számít), de a recall-találathoz és a helyes elnevezéshez nem: ott a
+  kanonikus névnek vagy egy egyértelmű aliasnak kell egyeznie;
 - precizitás: a modell entitásai a kanonikus név kulcsa szerint csoportosítva; a kötelező
   tételhez név szerint (blokktól függetlenül) illeszkedő csoport jó, a negatív tételhez
   illeszkedő és a referenciában nem szereplő hiba, az opcionális semleges;
@@ -57,12 +60,13 @@ from pathlib import Path
 import duckdb
 
 from aaa2.db.connect import DATA_DIR, connect
-from aaa2.entities.blocks import BLOCK_PROMPT, block_input, check_surface, surface_spans
+from aaa2.entities.blocks import check_surface, surface_spans
+from aaa2.entities.extract import extract_page
 from aaa2.entities.naming import name_record
 from aaa2.entities.rules import alias_key
-from aaa2.llm.client import LLMError, SchemaMismatch, open_clients
+from aaa2.llm.client import LLMError, open_clients
 from aaa2.llm.config import load_config
-from aaa2.llm.schemas import BlockEntity, BlockExtraction
+from aaa2.llm.schemas import BlockEntity
 
 PAGES_DIR = Path(__file__).parent / "synthetic"
 DEV_PAGES_DIR = Path(__file__).parent / "dev_pages"
@@ -147,19 +151,28 @@ def name_run(model: str, data_dir: Path, pages: list[dict], source: str, tag: st
 
 
 def call(client, page: dict) -> dict:
-    record = {"page_id": page["page_id"], "model": client.model,
-              "call_id": None, "primary_entities": None, "entities": None, "error": None}
-    text = block_input(page["site_description"], page["blocks"])
+    """Egy oldal kinyerése, hosszú oldalon darabolva (`extract.extract_page`). A rekord
+    `call_id`-je az első sikeres hívás, a `call_ids` mind (a költséghez), `chunks` a darabok
+    száma, a sikertelen darabok a `chunk_errors`-ban; `error` csak akkor, ha egy darab sem
+    sikerült."""
+    record = {"page_id": page["page_id"], "model": client.model, "call_id": None,
+              "call_ids": [], "chunks": 0, "chunk_errors": [], "primary_entities": None,
+              "entities": None, "error": None}
     try:
-        result = client.extract(BlockExtraction, BLOCK_PROMPT, text, domain="entity")
-    except SchemaMismatch as exc:
-        record.update(call_id=exc.call_id, error=f"schema_mismatch: {exc}"[:500])
-        return record
+        result = extract_page(client, page["site_description"], page["blocks"])
     except LLMError as exc:
         record.update(error=f"call_error: {exc}"[:500])
         return record
-    record.update(call_id=result.call_id, primary_entities=result.parsed.primary_entities,
-                  entities=[entity.model_dump() for entity in result.parsed.entities])
+    failed = {call_id for _, call_id in result.failures}
+    succeeded = [i for i in result.call_ids if i not in failed]
+    record.update(call_ids=result.call_ids, chunks=result.chunks,
+                  chunk_errors=[f"{reason}: call {call_id}" for reason, call_id in result.failures])
+    if not succeeded:
+        record.update(call_id=result.call_ids[0] if result.call_ids else None,
+                      error="; ".join(record["chunk_errors"]))
+        return record
+    record.update(call_id=succeeded[0], primary_entities=result.primary_entities,
+                  entities=result.entities)
     return record
 
 
@@ -179,16 +192,23 @@ class Item:
     types: frozenset[str] = frozenset()      # a helyes típusok: `acceptable_types`, vagy a típus
     subtypes: frozenset[str] = frozenset()   # a helyes altípusok: `acceptable_subtypes`, vagy az
                                              # altípus
+    naming_keys: frozenset[str] = frozenset()  # a helyes elnevezés kulcsai: `keys` az
+                                               # `ambiguous_aliases` nélkül
 
 
 def _items(entries: list[dict]) -> list[Item]:
-    return [Item(e["canonical"], e.get("type"), e.get("subtype"), e.get("difficulty"),
-                 frozenset(alias_key(n) for n in [e["canonical"], *e.get("aliases", [])]),
-                 frozenset(s["block"] for s in e.get("surface_forms", [])),
-                 frozenset(e.get("acceptable_types") or [e.get("type")]),
-                 frozenset(alias_key(s) for s in e.get("acceptable_subtypes")
-                           or ([e["subtype"]] if e.get("subtype") else [])))
-            for e in entries]
+    items = []
+    for e in entries:
+        keys = frozenset(alias_key(n) for n in [e["canonical"], *e.get("aliases", [])])
+        ambiguous = frozenset(alias_key(n) for n in e.get("ambiguous_aliases", []))
+        items.append(Item(
+            e["canonical"], e.get("type"), e.get("subtype"), e.get("difficulty"), keys,
+            frozenset(s["block"] for s in e.get("surface_forms", [])),
+            frozenset(e.get("acceptable_types") or [e.get("type")]),
+            frozenset(alias_key(s) for s in e.get("acceptable_subtypes")
+                      or ([e["subtype"]] if e.get("subtype") else [])),
+            keys - ambiguous))
+    return items
 
 
 @dataclass
@@ -332,9 +352,9 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
         overlapping = [(key, surface_key) for block, span, key, surface_key in spans
                        if any(block == gb and _overlap(span, gs) for gb, gs in gold_spans)]
         recognized = bool(overlapping)
-        well_named = any(key in item.keys for key, _ in overlapping)
+        well_named = any(key in item.naming_keys for key, _ in overlapping)
         hit = next((key for key, surface_key in overlapping
-                    if key in item.keys or surface_key in item.keys), None)
+                    if key in item.naming_keys or surface_key in item.naming_keys), None)
         if concept:
             score.recognized_concepts += recognized
             score.well_named_concepts += well_named
@@ -670,6 +690,68 @@ def _mean_rates(runs: list[list[PageScore]]) -> dict[str, float | None]:
             for key in per[0]}
 
 
+CHECKPOINT_HEADER = ("| oldal | felismerés megnev. | felismerés fogalom | elnevezési pontosság | "
+                     "végső recall (össz · megnev. · fogalom) | precizitás | típus | altípus | "
+                     "főtéma | USD / oldal |")
+CHECKPOINT_RULE = "|---|---|---|---|---|---|---|---|---|---|"
+
+
+def checkpoint_row(label: str, scores: list[PageScore]) -> str:
+    total = total_of(scores)
+    r = rates(total)
+
+    def pct(key):
+        return "—" if r[key] is None else f"{r[key] * 100:.1f}"
+
+    def counted(part, whole):
+        return f"{pct_of(part, whole)} ({part}/{whole})"
+
+    return (f"| {label} | {counted(total.recognized_named, total.named)} | "
+            f"{counted(total.recognized_concepts, total.concepts)} | "
+            f"{counted(total.well_named, total.recognized)} | "
+            f"{pct('recall')} · {pct('recall/megnevezett')} · {pct('recall/fogalom')} "
+            f"({total.found}/{total.required}) | {counted(total.good, total.precision_total)} | "
+            f"{counted(total.type_right, total.found)} | "
+            f"{counted(total.subtype_right, total.subtype_total)} | "
+            f"{total.primary_found}/{total.primary_total} | "
+            f"{total.cost_usd / (len(scores) or 1):.4f} |")
+
+
+def pct_of(part: int, whole: int) -> str:
+    return f"{part / whole * 100:.1f}" if whole else "—"
+
+
+def checkpoint_markdown(model: str, data_dir: Path, pages: list[dict],
+                        series: dict[str, str]) -> str:
+    """Sorozatonként (név → címke) oldalanként és összesítve: felismerés (megnevezett, fogalom),
+    elnevezési pontosság, végső recall, precizitás, típus- és altípus-pontosság, főtéma,
+    költség/oldal; a célok az összesítettre; a kihagyások oldalanként, felismerési vagy
+    elnevezési hibaként."""
+    lines = [f"# Ellenőrzőpont-mérés: `{model}` kinyerés", "",
+             ("Pontozás hálózat nélkül a tárolt kimenetekből, a jelenlegi szabályokkal (recall "
+              "a referencia blokkjában; az `ambiguous_aliases` felismerésnek elég, elnevezésnek "
+              "nem). A költség egy oldalra: a kinyerő hívás(ok) és az elnevezés."), ""]
+    goals: list[tuple[str, dict]] = []
+    details: list[str] = []
+    for label, tag in series.items():
+        scores = measure(model, data_dir, pages, tag)
+        lines += [f"## {label} (`{tag}`)", "", CHECKPOINT_HEADER, CHECKPOINT_RULE]
+        lines += [checkpoint_row(s.page_id, [s]) for s in scores]
+        lines.append(checkpoint_row("**összesen**", scores))
+        lines.append("")
+        goals.append((label, rates(total_of(scores))))
+        details += [f"### {label}", ""]
+        for s in scores:
+            missed = ", ".join(f"{name} ({kind}, {why})" for name, _, kind, why in s.missed)
+            details.append(f"- **{s.page_id}** ({len(s.missed)}): {missed or '—'}")
+            wrong = [f"{name} ({kind})" for name, kind in s.unlisted] + [
+                f"{name} (= negatív „{neg}”)" for name, neg in s.negatives_hit]
+            details.append(f"  - téves találat ({len(wrong)}): {', '.join(wrong) or '—'}")
+        details.append("")
+    return "\n".join(lines + targets_markdown(goals) + ["## Kihagyások és téves találatok", "",
+                                                         *details])
+
+
 def load_records(model: str, data_dir: Path, pages: list[dict], tag: str) -> list[dict]:
     return [json.loads(output_path(data_dir, page["page_id"], model, tag).read_text(
         encoding="utf-8")) for page in pages]
@@ -711,7 +793,7 @@ def compare_markdown(model: str, data_dir: Path, pages: list[dict], single: list
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["run", "report", "compare", "name"])
+    parser.add_argument("command", choices=["run", "report", "compare", "name", "checkpoint"])
     parser.add_argument("--model", default=None,
                         help="a kinyerés modellje (alapból a [pipeline] extraction)")
     parser.add_argument("--naming-model", default=None,
@@ -722,15 +804,30 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--single", default="", help="compare: egyszeri körök címkéi, vesszővel")
     parser.add_argument("--repeated", action="append", default=[],
                         help="compare: név=címke1,címke2,… (ismételt futások)")
+    parser.add_argument("--series", action="append", default=[],
+                        help="checkpoint: név=címke (egy sorozat)")
     parser.add_argument("--set", dest="page_set", choices=SETS, default=DEVELOPMENT,
                         help="az oldalak köre: fejlesztési (s1–s3), általánosítási, mind")
+    parser.add_argument("--page", action="append", default=[],
+                        help="csak ez az oldal (page_id; ismételhető)")
+    parser.add_argument("--pages-dir", type=Path, default=None,
+                        help="az oldalak JSON-jai innen (pl. a futáskori blokkokkal)")
     parser.add_argument("--data-dir", type=Path, default=DATA_DIR / "compare")
     parser.add_argument("--out", type=Path, default=OUT_DIR)
     args = parser.parse_args(argv)
     pipeline = load_config().pipeline
     args.model = args.model or pipeline["extraction"]
-    pages = load_pages(page_set=args.page_set)
+    pages = [page for page in load_pages(args.pages_dir, args.page_set)
+             if not args.page or page["page_id"] in args.page]
     suffix = "" if args.page_set == DEVELOPMENT else f"-{args.page_set}"
+    if args.command == "checkpoint":
+        series = dict(item.split("=", 1) for item in args.series)
+        args.out.mkdir(parents=True, exist_ok=True)
+        out = args.out / f"{args.model}{suffix}-checkpoint.md"
+        out.write_text(checkpoint_markdown(args.model, args.data_dir, pages, series),
+                       encoding="utf-8")
+        print(out)
+        return
     if args.command == "compare":
         repeated = dict(item.split("=", 1) for item in args.repeated)
         text = compare_markdown(args.model, args.data_dir, pages,

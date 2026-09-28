@@ -1,5 +1,6 @@
 """A blokkmodell (aaa2/entities/dom.py): blokkok a renderelt DOM-ból, típussal, régióval,
 heading-útvonallal, táblázatsornál a cellákkal; és a `blocks` tábla."""
+from aaa2.entities.blocks import CHUNK_MAX_BLOCKS, chunk_blocks
 from aaa2.entities.dom import build_blocks, page_blocks, parse_blocks
 from tests.test_entities_rules import html, site
 
@@ -138,3 +139,37 @@ def test_an_inactive_tab_that_only_repeats_visible_content_yields_no_block():
                                         "closeOthers: boolean", "Utána"]
     assert [b.ordinal for b in parsed] == [1, 2, 3, 4, 5, 6]
     assert parsed[-1].heading_path == ["Oldal", "API"]
+
+
+def page_of(sections, per_section, title=True):
+    """Title, egy H1, utána `sections` darab H2-szakasz, mindegyikben `per_section` bekezdés."""
+    blocks = [{"id": "b0", "kind": "title", "heading_path": [], "text": "T"}] if title else []
+    blocks.append({"id": "b1", "kind": "heading", "heading_path": ["H1"], "text": "H1"})
+    for s in range(sections):
+        path = ["H1", f"S{s}"]
+        blocks.append({"id": f"s{s}", "kind": "heading", "heading_path": path, "text": f"S{s}"})
+        blocks += [{"id": f"s{s}p{i}", "kind": "paragraph", "heading_path": path, "text": "x"}
+                   for i in range(per_section)]
+    return blocks
+
+
+def test_short_pages_are_one_chunk():
+    page = page_of(3, 20)
+    assert chunk_blocks(page) == [page]
+
+
+def test_long_pages_split_at_top_level_headings_with_the_title_in_each_chunk():
+    page = page_of(6, 29)                        # 1 + 1 + 6 × 30 = 182 blokk
+    chunks = chunk_blocks(page)
+    assert [len(c) for c in chunks] == [62, 61, 61]
+    assert all(c[0]["kind"] == "title" for c in chunks)
+    assert [c[1]["id"] for c in chunks] == ["b1", "s2", "s4"]
+    assert [b["id"] for c in chunks for b in c[1:]] == [b["id"] for b in page[1:]]
+    assert max(len(c) for c in chunks) <= CHUNK_MAX_BLOCKS
+
+
+def test_a_section_bigger_than_a_chunk_is_cut_further():
+    page = page_of(1, 200)                       # nincs második H2: 70-esével vágva
+    chunks = chunk_blocks(page)
+    assert all(len(c) <= CHUNK_MAX_BLOCKS for c in chunks)
+    assert [b["id"] for c in chunks for b in c[1:]] == [b["id"] for b in page[1:]]
