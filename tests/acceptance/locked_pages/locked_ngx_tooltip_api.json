@@ -1,1880 +1,2814 @@
 {
- "page_id": "locked_ngx_tooltip_api",
- "set": "locked",
- "url": "https://valor-software.com/ngx-bootstrap/components/tooltip?tab=api",
- "lang": "en",
- "site_description": "This page belongs to the website valor-software.com, whose home page is titled “Angular Bootstrap”.",
- "blocks": [
-  {
-   "id": "b0",
-   "kind": "title",
-   "heading_path": [],
-   "text": "Angular Bootstrap"
-  },
-  {
-   "id": "b74",
-   "kind": "list_item",
-   "heading_path": [],
-   "text": "Home"
-  },
-  {
-   "id": "b75",
-   "kind": "list_item",
-   "heading_path": [],
-   "text": "/ components"
-  },
-  {
-   "id": "b76",
-   "kind": "list_item",
-   "heading_path": [],
-   "text": "/ tooltip"
-  },
-  {
-   "id": "b77",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip"
-   ],
-   "text": "Tooltip"
-  },
-  {
-   "id": "b78",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip"
-   ],
-   "text": "Inspired by the excellent Tipsy jQuery plugin written by Jason Frame. Tooltips are an updated version, which don’t rely on images, use CSS3 for animations, and much more."
-  },
-  {
-   "id": "b79",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip"
-   ],
-   "text": "The easiest way to add the tooltip component to your app (will be added to the root module)"
-  },
-  {
-   "id": "b80",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip"
-   ],
-   "text": "Overview"
-  },
-  {
-   "id": "b81",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip"
-   ],
-   "text": "API"
-  },
-  {
-   "id": "b82",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip"
-   ],
-   "text": "Examples"
-  },
-  {
-   "id": "b83",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Basic"
-   ],
-   "text": "Basic"
-  },
-  {
-   "id": "b84",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Basic"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b85",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Basic"
-   ],
-   "text": "Simple demo"
-  },
-  {
-   "id": "b86",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Basic"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b87",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Basic"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b88",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Basic"
-   ],
-   "text": "<button type = \"button\" class = \"btn btn-primary\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\" >\nSimple demo\n</button>"
-  },
-  {
-   "id": "b89",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Basic"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-basic' ,\ntemplateUrl : './basic.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipBasicComponent {}"
-  },
-  {
-   "id": "b90",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Placement"
-   ],
-   "text": "Placement"
-  },
-  {
-   "id": "b91",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Placement"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b92",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Placement"
-   ],
-   "text": "Four positioning options are available: top , right , bottom , and left . Besides that, auto option may be used to detect a position that fits the component on the screen."
-  },
-  {
-   "id": "b93",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Placement"
-   ],
-   "text": "Tooltip on top"
-  },
-  {
-   "id": "b94",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Placement"
-   ],
-   "text": "Tooltip on right"
-  },
-  {
-   "id": "b95",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Placement"
-   ],
-   "text": "Tooltip auto"
-  },
-  {
-   "id": "b96",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Placement"
-   ],
-   "text": "Tooltip on left"
-  },
-  {
-   "id": "b97",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Placement"
-   ],
-   "text": "Tooltip on bottom"
-  },
-  {
-   "id": "b98",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Placement"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b99",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Placement"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b100",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Placement"
-   ],
-   "text": "<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\nplacement = \"top\" >\nTooltip on top\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\nplacement = \"right\" >\nTooltip on right\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\nplacement = \"auto\" >\nTooltip auto\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\nplacement = \"left\" >\nTooltip on left\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\nplacement = \"bottom\" >\nTooltip on bottom\n</button>"
-  },
-  {
-   "id": "b101",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Placement"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-placement' ,\ntemplateUrl : './placement.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipPlacementComponent {}"
-  },
-  {
-   "id": "b102",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Disable adaptive position"
-   ],
-   "text": "Disable adaptive position"
-  },
-  {
-   "id": "b103",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Disable adaptive position"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b104",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Disable adaptive position"
-   ],
-   "text": "You can disable adaptive position via adaptivePosition input or config option"
-  },
-  {
-   "id": "b105",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Disable adaptive position"
-   ],
-   "text": "Tooltip on top"
-  },
-  {
-   "id": "b106",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Disable adaptive position"
-   ],
-   "text": "Tooltip on right"
-  },
-  {
-   "id": "b107",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Disable adaptive position"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b108",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Disable adaptive position"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b109",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Disable adaptive position"
-   ],
-   "text": "<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\n[ adaptivePosition ] = \"false\"\nplacement = \"top\" >\nTooltip on top\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\n[ adaptivePosition ] = \"false\"\nplacement = \"right\" >\nTooltip on right\n</button>"
-  },
-  {
-   "id": "b110",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Disable adaptive position"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-adaptive-position' ,\ntemplateUrl : './adaptive-position.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipAdaptivePositionComponent {}"
-  },
-  {
-   "id": "b111",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Dismiss on next click"
-   ],
-   "text": "Dismiss on next click"
-  },
-  {
-   "id": "b112",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Dismiss on next click"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b113",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Dismiss on next click"
-   ],
-   "text": "Use the focus trigger to dismiss tooltips on the next click that the user makes."
-  },
-  {
-   "id": "b114",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Dismiss on next click"
-   ],
-   "text": "Dismissible tooltip"
-  },
-  {
-   "id": "b115",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Dismiss on next click"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b116",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Dismiss on next click"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b117",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Dismiss on next click"
-   ],
-   "text": "<button type = \"button\" class = \"btn btn-success\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\ntriggers = \"focus\" >\nDismissible tooltip\n</button>"
-  },
-  {
-   "id": "b118",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Dismiss on next click"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-dismiss' ,\ntemplateUrl : './dismiss.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipDismissComponent {}"
-  },
-  {
-   "id": "b119",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Content"
-   ],
-   "text": "Dynamic Content"
-  },
-  {
-   "id": "b120",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Content"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b121",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Content"
-   ],
-   "text": "Pass a string as tooltip content"
-  },
-  {
-   "id": "b122",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Content"
-   ],
-   "text": "Simple binding"
-  },
-  {
-   "id": "b123",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Content"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b124",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Content"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b125",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Content"
-   ],
-   "text": "<button type = \"button\" class = \"btn btn-info\" [ tooltip ] = \"content\" >\nSimple binding\n</button>"
-  },
-  {
-   "id": "b126",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Content"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-dynamic' ,\ntemplateUrl : './dynamic.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipDynamicComponent {\ncontent = 'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.' ;\n}"
-  },
-  {
-   "id": "b127",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Custom content template"
-   ],
-   "text": "Custom content template"
-  },
-  {
-   "id": "b128",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Custom content template"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b129",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Custom content template"
-   ],
-   "text": "Create <ng-template #myId> with any html allowed by Angular, and provide template ref [tooltip]=\"myId\" as tooltip content"
-  },
-  {
-   "id": "b130",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Custom content template"
-   ],
-   "text": "TemplateRef binding"
-  },
-  {
-   "id": "b131",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Custom content template"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b132",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Custom content template"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b133",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Custom content template"
-   ],
-   "text": "<ng-template # tolTemplate > Just another: {{content}} </ng-template>\n<button type = \"button\" class = \"btn btn-warning\" [ tooltip ] = \"tolTemplate\" >\nTemplateRef binding\n</button>"
-  },
-  {
-   "id": "b134",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Custom content template"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-custom-content' ,\ntemplateUrl : './custom-content.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipCustomContentComponent {\ncontent = 'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.' ;\n}"
-  },
-  {
-   "id": "b135",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Html"
-   ],
-   "text": "Dynamic Html"
-  },
-  {
-   "id": "b136",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Html"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b137",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Html"
-   ],
-   "text": "By using [innerHtml] inside ng-template you can display any dynamic html"
-  },
-  {
-   "id": "b138",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Html"
-   ],
-   "text": "Show me tooltip with html"
-  },
-  {
-   "id": "b139",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Html"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b140",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Html"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b141",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Html"
-   ],
-   "text": "<ng-template # popTemplate > Here we go: <div [ innerHtml ] = \"html\" ></div></ng-template>\n<button type = \"button\" class = \"btn btn-success\"\n[ tooltip ] = \"popTemplate\" >\nShow me tooltip with html\n</button>"
-  },
-  {
-   "id": "b142",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Dynamic Html"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-dynamic-html' ,\ntemplateUrl : './dynamic-html.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipDynamicHtmlComponent {\nhtml = `< span class = \"btn-block btn-danger well-sm\" > Never trust not sanitized HTML !!!</ span >`;\n}"
-  },
-  {
-   "id": "b143",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Append to body"
-   ],
-   "text": "Append to body"
-  },
-  {
-   "id": "b144",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Append to body"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b145",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Append to body"
-   ],
-   "text": "When you have some styles on a parent element that interfere with a tooltip, you’ll want to specify a container=\"body\" so that the tooltip’s HTML will be appended to body. This will help to avoid rendering problems in more complex components (like our input groups, button groups, etc) or inside elements with overflow: hidden"
-  },
-  {
-   "id": "b146",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Append to body"
-   ],
-   "text": "Default tooltip"
-  },
-  {
-   "id": "b147",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Append to body"
-   ],
-   "text": "Tooltip appended to body"
-  },
-  {
-   "id": "b148",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Append to body"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b149",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Append to body"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b150",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Append to body"
-   ],
-   "text": "<div class = \"row\" style = \" position : relative ; overflow : hidden ; padding - top : 10px ; \" >\n<div class = \"col-xs-12 col-12\" >\n<button type = \"button\" class = \"btn btn-danger\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\" >\nDefault tooltip\n</button>\n<button type = \"button\" class = \"btn btn-success\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\ncontainer = \"body\" >\nTooltip appended to body\n</button>\n</div>\n</div>"
-  },
-  {
-   "id": "b151",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Append to body"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-container' ,\ntemplateUrl : './container.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipContainerComponent {}"
-  },
-  {
-   "id": "b152",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Configuring defaults"
-   ],
-   "text": "Configuring defaults"
-  },
-  {
-   "id": "b153",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Configuring defaults"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b154",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Configuring defaults"
-   ],
-   "text": "Preconfigured tooltip"
-  },
-  {
-   "id": "b155",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Configuring defaults"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b156",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Configuring defaults"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b157",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Configuring defaults"
-   ],
-   "text": "<button type = \"button\" class = \"btn btn-primary\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\" >\nPreconfigured tooltip\n</button>"
-  },
-  {
-   "id": "b158",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Configuring defaults"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\nimport { TooltipConfig } from 'ngx-bootstrap/tooltip' ;\n\n// such override allows to keep some initial values\n\nexport function getAlertConfig (): TooltipConfig {\nreturn Object . assign ( new TooltipConfig (), {\nplacement : 'right' ,\ncontainer : 'body' ,\ndelay : 500\n});\n}\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-config' ,\ntemplateUrl : './config.html' ,\nproviders : [{ provide : TooltipConfig , useFactory : getAlertConfig }],\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipConfigComponent {}"
-  },
-  {
-   "id": "b159",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Custom triggers"
-   ],
-   "text": "Custom triggers"
-  },
-  {
-   "id": "b160",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Custom triggers"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b161",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Custom triggers"
-   ],
-   "text": "Desktop"
-  },
-  {
-   "id": "b162",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Custom triggers"
-   ],
-   "text": "Hover over me!"
-  },
-  {
-   "id": "b163",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Custom triggers"
-   ],
-   "text": "Mobile"
-  },
-  {
-   "id": "b164",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Custom triggers"
-   ],
-   "text": "Click on me!"
-  },
-  {
-   "id": "b165",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Custom triggers"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b166",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Custom triggers"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b167",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Custom triggers"
-   ],
-   "text": "<div class = \"row\" >\n<div class = \"col-xs-6 col-6\" >\n<p> Desktop </p>\n<button type = \"button\" class = \"btn btn-info\"\ntooltip = \"I will hide on click\"\ntriggers = \"mouseenter:click\" >\nHover over me!\n</button>\n</div>\n\n<div class = \"col-xs-6 col-6\" >\n<p> Mobile </p>\n<button type = \"button\" class = \"btn btn-info\"\ntooltip = \"I will hide on click\"\ntriggers = \"click\" >\nClick on me!\n</button>\n</div>\n</div>"
-  },
-  {
-   "id": "b168",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Custom triggers"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-triggers-custom' ,\ntemplateUrl : './triggers-custom.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipTriggersCustomComponent {}"
-  },
-  {
-   "id": "b169",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Manual triggering"
-   ],
-   "text": "Manual triggering"
-  },
-  {
-   "id": "b170",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Manual triggering"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b171",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Manual triggering"
-   ],
-   "text": "You can manage tooltip using its show() , hide() and toggle() methods. If you want to manage tooltip's state manually, use triggers=\"\""
-  },
-  {
-   "id": "b172",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Manual triggering"
-   ],
-   "text": "This text has attached tooltip"
-  },
-  {
-   "id": "b173",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Manual triggering"
-   ],
-   "text": "Show Hide Toggle"
-  },
-  {
-   "id": "b174",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Manual triggering"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b175",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Manual triggering"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b176",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Manual triggering"
-   ],
-   "text": "<p>\n<span tooltip = \"Hello there! I was triggered manually\"\ntriggers = \"\" # pop = \"bs-tooltip\" >\nThis text has attached tooltip\n</span>\n</p>\n\n<button type = \"button\" class = \"btn btn-success\" ( click ) = \"pop.show()\" >\nShow\n</button>\n<button type = \"button\" class = \"btn btn-warning\" ( click ) = \"pop.hide()\" >\nHide\n</button>\n<button type = \"button\" class = \"btn btn-info\" ( click ) = \"pop.toggle()\" >\nToggle\n</button>"
-  },
-  {
-   "id": "b177",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Manual triggering"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-triggers-manual' ,\ntemplateUrl : './triggers-manual.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipTriggersManualComponent {}"
-  },
-  {
-   "id": "b178",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Component level styling"
-   ],
-   "text": "Component level styling"
-  },
-  {
-   "id": "b179",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Component level styling"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b180",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Component level styling"
-   ],
-   "text": "I have component level styling"
-  },
-  {
-   "id": "b181",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Component level styling"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b182",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Component level styling"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b183",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Component level styling"
-   ],
-   "text": "<button type = \"button\" class = \"btn btn-info\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\" >\nI have component level styling\n</button>"
-  },
-  {
-   "id": "b184",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Component level styling"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-styling-local' ,\ntemplateUrl : './styling-local.html' ,\nstyles : [\n`\n: host . tooltip - inner {\nbackground - color : # 009688 ;\ncolor : # fff ;\n}\n: host . tooltip . top . tooltip - arrow : before ,\n: host . tooltip . top . tooltip - arrow {\nborder - top - color : # 009688 ;\n}\n`\n],\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipStylingLocalComponent {}"
-  },
-  {
-   "id": "b185",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Custom class"
-   ],
-   "text": "Custom class"
-  },
-  {
-   "id": "b186",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Custom class"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b187",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Custom class"
-   ],
-   "text": "Demo with custom class"
-  },
-  {
-   "id": "b188",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Custom class"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b189",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Custom class"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b190",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Custom class"
-   ],
-   "text": "<button type = \"button\" class = \"btn btn-primary\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\" containerClass = \"customClass\" >\nDemo with custom class\n</button>"
-  },
-  {
-   "id": "b191",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Custom class"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-class' ,\ntemplateUrl : './class.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipClassComponent {}"
-  },
-  {
-   "id": "b192",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Tooltip with delay"
-   ],
-   "text": "Tooltip with delay"
-  },
-  {
-   "id": "b193",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Tooltip with delay"
-   ],
-   "text": "#"
-  },
-  {
-   "id": "b194",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Tooltip with delay"
-   ],
-   "text": "Hold on cursor above button for 0,5 second or more to see delayed tooltip"
-  },
-  {
-   "id": "b195",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Tooltip with delay"
-   ],
-   "text": "Tooltip with 0.5sec delay"
-  },
-  {
-   "id": "b196",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Tooltip with delay"
-   ],
-   "text": "template"
-  },
-  {
-   "id": "b197",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Tooltip with delay"
-   ],
-   "text": "component"
-  },
-  {
-   "id": "b198",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Tooltip with delay"
-   ],
-   "text": "<button type = \"button\" class = \"btn btn-primary\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\" [ delay ] = \"500\" >\nTooltip with 0.5sec delay\n</button>"
-  },
-  {
-   "id": "b199",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Tooltip with delay"
-   ],
-   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-delay' ,\ntemplateUrl : './delay.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipDelayComponent {}"
-  },
-  {
-   "id": "b200",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation"
-   ],
-   "text": "Installation"
-  },
-  {
-   "id": "b201",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Installation"
-   ],
-   "text": "ng add ngx-bootstrap  --component tooltip"
-  },
-  {
-   "id": "b202",
-   "kind": "code",
-   "heading_path": [
-    "Tooltip",
-    "Installation"
-   ],
-   "text": "### Standalone component usage\nimport { TooltipModule } from 'ngx-bootstrap/timepicker';\n\n@Component({\n  standalone: true,\n  imports: [TooltipModule,...]\n})\nexport class AppComponent(){}\n\n### Module usage\nimport { TooltipModule } from 'ngx-bootstrap/tooltip';\n\n@NgModule({\n  imports: [TooltipModule,...]\n})\nexport class AppModule(){}"
-  },
-  {
-   "id": "b203",
-   "kind": "table_row",
-   "heading_path": [
-    "Tooltip",
-    "Installation"
-   ],
-   "text": "Selector",
-   "cells": [
+  "page_id": "locked_ngx_tooltip_api",
+  "set": "locked",
+  "url": "https://valor-software.com/ngx-bootstrap/components/tooltip?tab=api",
+  "lang": "en",
+  "site_description": "This page belongs to the website valor-software.com, whose home page is titled “Angular Bootstrap”.",
+  "blocks": [
     {
-     "header": null,
-     "value": "Selector"
-    }
-   ]
-  },
-  {
-   "id": "b204",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "TooltipConfig"
-   ],
-   "text": "TooltipConfig"
-  },
-  {
-   "id": "b205",
-   "kind": "paragraph",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "TooltipConfig"
-   ],
-   "text": "Default values provider for tooltip"
-  },
-  {
-   "id": "b206",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Properties"
-   ],
-   "text": "Properties"
-  },
-  {
-   "id": "b207",
-   "kind": "table_row",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Properties"
-   ],
-   "text": "adaptivePosition | Type: boolean Default value: true sets disable adaptive position",
-   "cells": [
-    {
-     "header": null,
-     "value": "adaptivePosition"
+      "id": "b0",
+      "kind": "title",
+      "heading_path": [],
+      "text": "Angular Bootstrap"
     },
     {
-     "header": null,
-     "value": "Type: boolean Default value: true sets disable adaptive position"
-    }
-   ]
-  },
-  {
-   "id": "b208",
-   "kind": "table_row",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Properties"
-   ],
-   "text": "container | Type: string | undefined a selector specifying the element the tooltip should be appended to.",
-   "cells": [
-    {
-     "header": null,
-     "value": "container"
+      "id": "b74",
+      "kind": "list_item",
+      "heading_path": [],
+      "text": "Home"
     },
     {
-     "header": null,
-     "value": "Type: string | undefined a selector specifying the element the tooltip should be appended to."
-    }
-   ]
-  },
-  {
-   "id": "b209",
-   "kind": "table_row",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Properties"
-   ],
-   "text": "delay | Type: number Default value: 0 delay before showing the tooltip",
-   "cells": [
-    {
-     "header": null,
-     "value": "delay"
+      "id": "b75",
+      "kind": "list_item",
+      "heading_path": [],
+      "text": "/ components"
     },
     {
-     "header": null,
-     "value": "Type: number Default value: 0 delay before showing the tooltip"
-    }
-   ]
-  },
-  {
-   "id": "b210",
-   "kind": "table_row",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Properties"
-   ],
-   "text": "placement | Type: string Default value: top tooltip placement, supported positions: 'top', 'bottom', 'left', 'right'",
-   "cells": [
-    {
-     "header": null,
-     "value": "placement"
+      "id": "b76",
+      "kind": "list_item",
+      "heading_path": [],
+      "text": "/ tooltip"
     },
     {
-     "header": null,
-     "value": "Type: string Default value: top tooltip placement, supported positions: 'top', 'bottom', 'left', 'right'"
-    }
-   ]
-  },
-  {
-   "id": "b211",
-   "kind": "table_row",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Properties"
-   ],
-   "text": "triggers | Type: string Default value: hover focus array of event names which triggers tooltip opening",
-   "cells": [
-    {
-     "header": null,
-     "value": "triggers"
+      "id": "b77",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip"
+      ],
+      "text": "Tooltip"
     },
     {
-     "header": null,
-     "value": "Type: string Default value: hover focus array of event names which triggers tooltip opening"
+      "id": "b78",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip"
+      ],
+      "text": "Inspired by the excellent Tipsy jQuery plugin written by Jason Frame. Tooltips are an updated version, which don’t rely on images, use CSS3 for animations, and much more."
+    },
+    {
+      "id": "b79",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip"
+      ],
+      "text": "The easiest way to add the tooltip component to your app (will be added to the root module)"
+    },
+    {
+      "id": "b80",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip"
+      ],
+      "text": "Overview"
+    },
+    {
+      "id": "b81",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip"
+      ],
+      "text": "API"
+    },
+    {
+      "id": "b82",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip"
+      ],
+      "text": "Examples"
+    },
+    {
+      "id": "b83",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Basic"
+      ],
+      "text": "Basic"
+    },
+    {
+      "id": "b84",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Basic"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b85",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Basic"
+      ],
+      "text": "Simple demo"
+    },
+    {
+      "id": "b86",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Basic"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b87",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Basic"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b88",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Basic"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-primary\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\" >\nSimple demo\n</button>"
+    },
+    {
+      "id": "b89",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Basic"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-basic' ,\ntemplateUrl : './basic.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipBasicComponent {}"
+    },
+    {
+      "id": "b90",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Placement"
+      ],
+      "text": "Placement"
+    },
+    {
+      "id": "b91",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Placement"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b92",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Placement"
+      ],
+      "text": "Four positioning options are available: top , right , bottom , and left . Besides that, auto option may be used to detect a position that fits the component on the screen."
+    },
+    {
+      "id": "b93",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Placement"
+      ],
+      "text": "Tooltip on top"
+    },
+    {
+      "id": "b94",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Placement"
+      ],
+      "text": "Tooltip on right"
+    },
+    {
+      "id": "b95",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Placement"
+      ],
+      "text": "Tooltip auto"
+    },
+    {
+      "id": "b96",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Placement"
+      ],
+      "text": "Tooltip on left"
+    },
+    {
+      "id": "b97",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Placement"
+      ],
+      "text": "Tooltip on bottom"
+    },
+    {
+      "id": "b98",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Placement"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b99",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Placement"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b100",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Placement"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\nplacement = \"top\" >\nTooltip on top\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\nplacement = \"right\" >\nTooltip on right\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\nplacement = \"auto\" >\nTooltip auto\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\nplacement = \"left\" >\nTooltip on left\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\nplacement = \"bottom\" >\nTooltip on bottom\n</button>"
+    },
+    {
+      "id": "b101",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Placement"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-placement' ,\ntemplateUrl : './placement.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipPlacementComponent {}"
+    },
+    {
+      "id": "b102",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Disable adaptive position"
+      ],
+      "text": "Disable adaptive position"
+    },
+    {
+      "id": "b103",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Disable adaptive position"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b104",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Disable adaptive position"
+      ],
+      "text": "You can disable adaptive position via adaptivePosition input or config option"
+    },
+    {
+      "id": "b105",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Disable adaptive position"
+      ],
+      "text": "Tooltip on top"
+    },
+    {
+      "id": "b106",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Disable adaptive position"
+      ],
+      "text": "Tooltip on right"
+    },
+    {
+      "id": "b107",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Disable adaptive position"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b108",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Disable adaptive position"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b109",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Disable adaptive position"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\n[ adaptivePosition ] = \"false\"\nplacement = \"top\" >\nTooltip on top\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary mb-2\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\n[ adaptivePosition ] = \"false\"\nplacement = \"right\" >\nTooltip on right\n</button>"
+    },
+    {
+      "id": "b110",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Disable adaptive position"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-adaptive-position' ,\ntemplateUrl : './adaptive-position.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipAdaptivePositionComponent {}"
+    },
+    {
+      "id": "b111",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Dismiss on next click"
+      ],
+      "text": "Dismiss on next click"
+    },
+    {
+      "id": "b112",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Dismiss on next click"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b113",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Dismiss on next click"
+      ],
+      "text": "Use the focus trigger to dismiss tooltips on the next click that the user makes."
+    },
+    {
+      "id": "b114",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Dismiss on next click"
+      ],
+      "text": "Dismissible tooltip"
+    },
+    {
+      "id": "b115",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Dismiss on next click"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b116",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Dismiss on next click"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b117",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Dismiss on next click"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-success\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\ntriggers = \"focus\" >\nDismissible tooltip\n</button>"
+    },
+    {
+      "id": "b118",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Dismiss on next click"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-dismiss' ,\ntemplateUrl : './dismiss.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipDismissComponent {}"
+    },
+    {
+      "id": "b119",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Content"
+      ],
+      "text": "Dynamic Content"
+    },
+    {
+      "id": "b120",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Content"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b121",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Content"
+      ],
+      "text": "Pass a string as tooltip content"
+    },
+    {
+      "id": "b122",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Content"
+      ],
+      "text": "Simple binding"
+    },
+    {
+      "id": "b123",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Content"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b124",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Content"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b125",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Content"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-info\" [ tooltip ] = \"content\" >\nSimple binding\n</button>"
+    },
+    {
+      "id": "b126",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Content"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-dynamic' ,\ntemplateUrl : './dynamic.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipDynamicComponent {\ncontent = 'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.' ;\n}"
+    },
+    {
+      "id": "b127",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Custom content template"
+      ],
+      "text": "Custom content template"
+    },
+    {
+      "id": "b128",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Custom content template"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b129",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Custom content template"
+      ],
+      "text": "Create <ng-template #myId> with any html allowed by Angular, and provide template ref [tooltip]=\"myId\" as tooltip content"
+    },
+    {
+      "id": "b130",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Custom content template"
+      ],
+      "text": "TemplateRef binding"
+    },
+    {
+      "id": "b131",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Custom content template"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b132",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Custom content template"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b133",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Custom content template"
+      ],
+      "text": "<ng-template # tolTemplate > Just another: {{content}} </ng-template>\n<button type = \"button\" class = \"btn btn-warning\" [ tooltip ] = \"tolTemplate\" >\nTemplateRef binding\n</button>"
+    },
+    {
+      "id": "b134",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Custom content template"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-custom-content' ,\ntemplateUrl : './custom-content.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipCustomContentComponent {\ncontent = 'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.' ;\n}"
+    },
+    {
+      "id": "b135",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Html"
+      ],
+      "text": "Dynamic Html"
+    },
+    {
+      "id": "b136",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Html"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b137",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Html"
+      ],
+      "text": "By using [innerHtml] inside ng-template you can display any dynamic html"
+    },
+    {
+      "id": "b138",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Html"
+      ],
+      "text": "Show me tooltip with html"
+    },
+    {
+      "id": "b139",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Html"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b140",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Html"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b141",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Html"
+      ],
+      "text": "<ng-template # popTemplate > Here we go: <div [ innerHtml ] = \"html\" ></div></ng-template>\n<button type = \"button\" class = \"btn btn-success\"\n[ tooltip ] = \"popTemplate\" >\nShow me tooltip with html\n</button>"
+    },
+    {
+      "id": "b142",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Dynamic Html"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-dynamic-html' ,\ntemplateUrl : './dynamic-html.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipDynamicHtmlComponent {\nhtml = `< span class = \"btn-block btn-danger well-sm\" > Never trust not sanitized HTML !!!</ span >`;\n}"
+    },
+    {
+      "id": "b143",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Append to body"
+      ],
+      "text": "Append to body"
+    },
+    {
+      "id": "b144",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Append to body"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b145",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Append to body"
+      ],
+      "text": "When you have some styles on a parent element that interfere with a tooltip, you’ll want to specify a container=\"body\" so that the tooltip’s HTML will be appended to body. This will help to avoid rendering problems in more complex components (like our input groups, button groups, etc) or inside elements with overflow: hidden"
+    },
+    {
+      "id": "b146",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Append to body"
+      ],
+      "text": "Default tooltip"
+    },
+    {
+      "id": "b147",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Append to body"
+      ],
+      "text": "Tooltip appended to body"
+    },
+    {
+      "id": "b148",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Append to body"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b149",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Append to body"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b150",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Append to body"
+      ],
+      "text": "<div class = \"row\" style = \" position : relative ; overflow : hidden ; padding - top : 10px ; \" >\n<div class = \"col-xs-12 col-12\" >\n<button type = \"button\" class = \"btn btn-danger\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\" >\nDefault tooltip\n</button>\n<button type = \"button\" class = \"btn btn-success\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\"\ncontainer = \"body\" >\nTooltip appended to body\n</button>\n</div>\n</div>"
+    },
+    {
+      "id": "b151",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Append to body"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-container' ,\ntemplateUrl : './container.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipContainerComponent {}"
+    },
+    {
+      "id": "b152",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Configuring defaults"
+      ],
+      "text": "Configuring defaults"
+    },
+    {
+      "id": "b153",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Configuring defaults"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b154",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Configuring defaults"
+      ],
+      "text": "Preconfigured tooltip"
+    },
+    {
+      "id": "b155",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Configuring defaults"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b156",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Configuring defaults"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b157",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Configuring defaults"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-primary\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\" >\nPreconfigured tooltip\n</button>"
+    },
+    {
+      "id": "b158",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Configuring defaults"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\nimport { TooltipConfig } from 'ngx-bootstrap/tooltip' ;\n\n// such override allows to keep some initial values\n\nexport function getAlertConfig (): TooltipConfig {\nreturn Object . assign ( new TooltipConfig (), {\nplacement : 'right' ,\ncontainer : 'body' ,\ndelay : 500\n});\n}\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-config' ,\ntemplateUrl : './config.html' ,\nproviders : [{ provide : TooltipConfig , useFactory : getAlertConfig }],\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipConfigComponent {}"
+    },
+    {
+      "id": "b159",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Custom triggers"
+      ],
+      "text": "Custom triggers"
+    },
+    {
+      "id": "b160",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Custom triggers"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b161",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Custom triggers"
+      ],
+      "text": "Desktop"
+    },
+    {
+      "id": "b162",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Custom triggers"
+      ],
+      "text": "Hover over me!"
+    },
+    {
+      "id": "b163",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Custom triggers"
+      ],
+      "text": "Mobile"
+    },
+    {
+      "id": "b164",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Custom triggers"
+      ],
+      "text": "Click on me!"
+    },
+    {
+      "id": "b165",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Custom triggers"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b166",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Custom triggers"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b167",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Custom triggers"
+      ],
+      "text": "<div class = \"row\" >\n<div class = \"col-xs-6 col-6\" >\n<p> Desktop </p>\n<button type = \"button\" class = \"btn btn-info\"\ntooltip = \"I will hide on click\"\ntriggers = \"mouseenter:click\" >\nHover over me!\n</button>\n</div>\n\n<div class = \"col-xs-6 col-6\" >\n<p> Mobile </p>\n<button type = \"button\" class = \"btn btn-info\"\ntooltip = \"I will hide on click\"\ntriggers = \"click\" >\nClick on me!\n</button>\n</div>\n</div>"
+    },
+    {
+      "id": "b168",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Custom triggers"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-triggers-custom' ,\ntemplateUrl : './triggers-custom.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipTriggersCustomComponent {}"
+    },
+    {
+      "id": "b169",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Manual triggering"
+      ],
+      "text": "Manual triggering"
+    },
+    {
+      "id": "b170",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Manual triggering"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b171",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Manual triggering"
+      ],
+      "text": "You can manage tooltip using its show() , hide() and toggle() methods. If you want to manage tooltip's state manually, use triggers=\"\""
+    },
+    {
+      "id": "b172",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Manual triggering"
+      ],
+      "text": "This text has attached tooltip"
+    },
+    {
+      "id": "b173",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Manual triggering"
+      ],
+      "text": "Show Hide Toggle"
+    },
+    {
+      "id": "b174",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Manual triggering"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b175",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Manual triggering"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b176",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Manual triggering"
+      ],
+      "text": "<p>\n<span tooltip = \"Hello there! I was triggered manually\"\ntriggers = \"\" # pop = \"bs-tooltip\" >\nThis text has attached tooltip\n</span>\n</p>\n\n<button type = \"button\" class = \"btn btn-success\" ( click ) = \"pop.show()\" >\nShow\n</button>\n<button type = \"button\" class = \"btn btn-warning\" ( click ) = \"pop.hide()\" >\nHide\n</button>\n<button type = \"button\" class = \"btn btn-info\" ( click ) = \"pop.toggle()\" >\nToggle\n</button>"
+    },
+    {
+      "id": "b177",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Manual triggering"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-triggers-manual' ,\ntemplateUrl : './triggers-manual.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipTriggersManualComponent {}"
+    },
+    {
+      "id": "b178",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Component level styling"
+      ],
+      "text": "Component level styling"
+    },
+    {
+      "id": "b179",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Component level styling"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b180",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Component level styling"
+      ],
+      "text": "I have component level styling"
+    },
+    {
+      "id": "b181",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Component level styling"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b182",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Component level styling"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b183",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Component level styling"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-info\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\" >\nI have component level styling\n</button>"
+    },
+    {
+      "id": "b184",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Component level styling"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-styling-local' ,\ntemplateUrl : './styling-local.html' ,\nstyles : [\n`\n: host . tooltip - inner {\nbackground - color : # 009688 ;\ncolor : # fff ;\n}\n: host . tooltip . top . tooltip - arrow : before ,\n: host . tooltip . top . tooltip - arrow {\nborder - top - color : # 009688 ;\n}\n`\n],\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipStylingLocalComponent {}"
+    },
+    {
+      "id": "b185",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Custom class"
+      ],
+      "text": "Custom class"
+    },
+    {
+      "id": "b186",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Custom class"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b187",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Custom class"
+      ],
+      "text": "Demo with custom class"
+    },
+    {
+      "id": "b188",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Custom class"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b189",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Custom class"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b190",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Custom class"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-primary\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\" containerClass = \"customClass\" >\nDemo with custom class\n</button>"
+    },
+    {
+      "id": "b191",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Custom class"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-class' ,\ntemplateUrl : './class.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipClassComponent {}"
+    },
+    {
+      "id": "b192",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Tooltip with delay"
+      ],
+      "text": "Tooltip with delay"
+    },
+    {
+      "id": "b193",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Tooltip with delay"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b194",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Tooltip with delay"
+      ],
+      "text": "Hold on cursor above button for 0,5 second or more to see delayed tooltip"
+    },
+    {
+      "id": "b195",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Tooltip with delay"
+      ],
+      "text": "Tooltip with 0.5sec delay"
+    },
+    {
+      "id": "b196",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Tooltip with delay"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b197",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Tooltip with delay"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b198",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Tooltip with delay"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-primary\"\ntooltip = \"Vivamus sagittis lacus vel augue laoreet rutrum faucibus.\" [ delay ] = \"500\" >\nTooltip with 0.5sec delay\n</button>"
+    },
+    {
+      "id": "b199",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Tooltip with delay"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tooltip-delay' ,\ntemplateUrl : './delay.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTooltipDelayComponent {}"
+    },
+    {
+      "id": "b200",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation"
+      ],
+      "text": "Installation"
+    },
+    {
+      "id": "b201",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Installation"
+      ],
+      "text": "ng add ngx-bootstrap  --component tooltip"
+    },
+    {
+      "id": "b202",
+      "kind": "code",
+      "heading_path": [
+        "Tooltip",
+        "Installation"
+      ],
+      "text": "### Standalone component usage\nimport { TooltipModule } from 'ngx-bootstrap/timepicker';\n\n@Component({\n  standalone: true,\n  imports: [TooltipModule,...]\n})\nexport class AppComponent(){}\n\n### Module usage\nimport { TooltipModule } from 'ngx-bootstrap/tooltip';\n\n@NgModule({\n  imports: [TooltipModule,...]\n})\nexport class AppModule(){}"
+    },
+    {
+      "id": "b203",
+      "kind": "table_row",
+      "heading_path": [
+        "Tooltip",
+        "Installation"
+      ],
+      "text": "Selector",
+      "cells": [
+        {
+          "header": null,
+          "value": "Selector"
+        }
+      ]
+    },
+    {
+      "id": "b204",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "TooltipConfig"
+      ],
+      "text": "TooltipConfig"
+    },
+    {
+      "id": "b205",
+      "kind": "paragraph",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "TooltipConfig"
+      ],
+      "text": "Default values provider for tooltip"
+    },
+    {
+      "id": "b206",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Properties"
+    },
+    {
+      "id": "b207",
+      "kind": "table_row",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Properties"
+      ],
+      "text": "adaptivePosition | Type: boolean Default value: true sets disable adaptive position",
+      "cells": [
+        {
+          "header": null,
+          "value": "adaptivePosition"
+        },
+        {
+          "header": null,
+          "value": "Type: boolean Default value: true sets disable adaptive position"
+        }
+      ]
+    },
+    {
+      "id": "b208",
+      "kind": "table_row",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Properties"
+      ],
+      "text": "container | Type: string | undefined a selector specifying the element the tooltip should be appended to.",
+      "cells": [
+        {
+          "header": null,
+          "value": "container"
+        },
+        {
+          "header": null,
+          "value": "Type: string | undefined a selector specifying the element the tooltip should be appended to."
+        }
+      ]
+    },
+    {
+      "id": "b209",
+      "kind": "table_row",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Properties"
+      ],
+      "text": "delay | Type: number Default value: 0 delay before showing the tooltip",
+      "cells": [
+        {
+          "header": null,
+          "value": "delay"
+        },
+        {
+          "header": null,
+          "value": "Type: number Default value: 0 delay before showing the tooltip"
+        }
+      ]
+    },
+    {
+      "id": "b210",
+      "kind": "table_row",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Properties"
+      ],
+      "text": "placement | Type: string Default value: top tooltip placement, supported positions: 'top', 'bottom', 'left', 'right'",
+      "cells": [
+        {
+          "header": null,
+          "value": "placement"
+        },
+        {
+          "header": null,
+          "value": "Type: string Default value: top tooltip placement, supported positions: 'top', 'bottom', 'left', 'right'"
+        }
+      ]
+    },
+    {
+      "id": "b211",
+      "kind": "table_row",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Properties"
+      ],
+      "text": "triggers | Type: string Default value: hover focus array of event names which triggers tooltip opening",
+      "cells": [
+        {
+          "header": null,
+          "value": "triggers"
+        },
+        {
+          "header": null,
+          "value": "Type: string Default value: hover focus array of event names which triggers tooltip opening"
+        }
+      ]
+    },
+    {
+      "id": "b212",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Basic"
+      ],
+      "text": "Basic"
+    },
+    {
+      "id": "b213",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Basic"
+      ],
+      "text": "Simple demo"
+    },
+    {
+      "id": "b214",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Placement"
+      ],
+      "text": "Placement"
+    },
+    {
+      "id": "b215",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Placement"
+      ],
+      "text": "Tooltip on top"
+    },
+    {
+      "id": "b216",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Placement"
+      ],
+      "text": "Tooltip on right"
+    },
+    {
+      "id": "b217",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Placement"
+      ],
+      "text": "Tooltip auto"
+    },
+    {
+      "id": "b218",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Placement"
+      ],
+      "text": "Tooltip on left"
+    },
+    {
+      "id": "b219",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Placement"
+      ],
+      "text": "Tooltip on bottom"
+    },
+    {
+      "id": "b220",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Disable adaptive position"
+      ],
+      "text": "Disable adaptive position"
+    },
+    {
+      "id": "b221",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Disable adaptive position"
+      ],
+      "text": "Tooltip on top"
+    },
+    {
+      "id": "b222",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Disable adaptive position"
+      ],
+      "text": "Tooltip on right"
+    },
+    {
+      "id": "b223",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Dismiss on next click"
+      ],
+      "text": "Dismiss on next click"
+    },
+    {
+      "id": "b224",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Dismiss on next click"
+      ],
+      "text": "Dismissible tooltip"
+    },
+    {
+      "id": "b225",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Dynamic Content"
+      ],
+      "text": "Dynamic Content"
+    },
+    {
+      "id": "b226",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Dynamic Content"
+      ],
+      "text": "Simple binding"
+    },
+    {
+      "id": "b227",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Custom content template"
+      ],
+      "text": "Custom content template"
+    },
+    {
+      "id": "b228",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Custom content template"
+      ],
+      "text": "TemplateRef binding"
+    },
+    {
+      "id": "b229",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Dynamic Html"
+      ],
+      "text": "Dynamic Html"
+    },
+    {
+      "id": "b230",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Dynamic Html"
+      ],
+      "text": "Show me tooltip with html"
+    },
+    {
+      "id": "b231",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Append to body"
+      ],
+      "text": "Append to body"
+    },
+    {
+      "id": "b232",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Append to body"
+      ],
+      "text": "Default tooltip"
+    },
+    {
+      "id": "b233",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Append to body"
+      ],
+      "text": "Tooltip appended to body"
+    },
+    {
+      "id": "b234",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Configuring defaults"
+      ],
+      "text": "Configuring defaults"
+    },
+    {
+      "id": "b235",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Configuring defaults"
+      ],
+      "text": "Preconfigured tooltip"
+    },
+    {
+      "id": "b236",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Custom triggers"
+      ],
+      "text": "Custom triggers"
+    },
+    {
+      "id": "b237",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Custom triggers"
+      ],
+      "text": "Desktop"
+    },
+    {
+      "id": "b238",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Custom triggers"
+      ],
+      "text": "Hover over me!"
+    },
+    {
+      "id": "b239",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Custom triggers"
+      ],
+      "text": "Mobile"
+    },
+    {
+      "id": "b240",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Custom triggers"
+      ],
+      "text": "Click on me!"
+    },
+    {
+      "id": "b241",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Manual triggering"
+      ],
+      "text": "Manual triggering"
+    },
+    {
+      "id": "b242",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Manual triggering"
+      ],
+      "text": "This text has attached tooltip"
+    },
+    {
+      "id": "b243",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Manual triggering"
+      ],
+      "text": "Show Hide Toggle"
+    },
+    {
+      "id": "b244",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Component level styling"
+      ],
+      "text": "Component level styling"
+    },
+    {
+      "id": "b245",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Component level styling"
+      ],
+      "text": "I have component level styling"
+    },
+    {
+      "id": "b246",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Custom class"
+      ],
+      "text": "Custom class"
+    },
+    {
+      "id": "b247",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Custom class"
+      ],
+      "text": "Demo with custom class"
+    },
+    {
+      "id": "b248",
+      "kind": "heading",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Tooltip with delay"
+      ],
+      "text": "Tooltip with delay"
+    },
+    {
+      "id": "b249",
+      "kind": "card",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Tooltip with delay"
+      ],
+      "text": "Tooltip with 0.5sec delay"
+    },
+    {
+      "id": "b250",
+      "kind": "other",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Tooltip with delay"
+      ],
+      "text": "components"
+    },
+    {
+      "id": "b251",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Tooltip with delay"
+      ],
+      "text": "TooltipDirective"
+    },
+    {
+      "id": "b252",
+      "kind": "list_item",
+      "heading_path": [
+        "Tooltip",
+        "Installation",
+        "Tooltip with delay"
+      ],
+      "text": "TooltipConfig"
     }
-   ]
+  ],
+  "gold": {
+    "primary_entities": [
+      "Tooltip"
+    ],
+    "entities": [
+      {
+        "canonical": "ngx-bootstrap",
+        "type": "tech",
+        "subtype": "library",
+        "aliases": [
+          "Angular Bootstrap"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Angular Bootstrap"
+          },
+          {
+            "block": "b158",
+            "text": "ngx-bootstrap"
+          },
+          {
+            "block": "b201",
+            "text": "ngx-bootstrap"
+          },
+          {
+            "block": "b202",
+            "text": "ngx-bootstrap"
+          }
+        ]
+      },
+      {
+        "canonical": "Tooltip",
+        "type": "tech",
+        "subtype": "component",
+        "aliases": [
+          "tooltip component"
+        ],
+        "note": "az oldal témája",
+        "namespace": "ngx-bootstrap",
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b76",
+            "text": "tooltip"
+          },
+          {
+            "block": "b77",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b78",
+            "text": "Tooltips"
+          },
+          {
+            "block": "b79",
+            "text": "tooltip"
+          },
+          {
+            "block": "b88",
+            "text": "tooltip"
+          },
+          {
+            "block": "b93",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b94",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b95",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b96",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b97",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b100",
+            "text": "tooltip"
+          },
+          {
+            "block": "b100",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b105",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b106",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b109",
+            "text": "tooltip"
+          },
+          {
+            "block": "b109",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b113",
+            "text": "tooltips"
+          },
+          {
+            "block": "b114",
+            "text": "tooltip"
+          },
+          {
+            "block": "b117",
+            "text": "tooltip"
+          },
+          {
+            "block": "b121",
+            "text": "tooltip"
+          },
+          {
+            "block": "b125",
+            "text": "tooltip"
+          },
+          {
+            "block": "b129",
+            "text": "tooltip"
+          },
+          {
+            "block": "b133",
+            "text": "tooltip"
+          },
+          {
+            "block": "b138",
+            "text": "tooltip"
+          },
+          {
+            "block": "b141",
+            "text": "tooltip"
+          },
+          {
+            "block": "b145",
+            "text": "tooltip"
+          },
+          {
+            "block": "b146",
+            "text": "tooltip"
+          },
+          {
+            "block": "b147",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b150",
+            "text": "tooltip"
+          },
+          {
+            "block": "b150",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b154",
+            "text": "tooltip"
+          },
+          {
+            "block": "b157",
+            "text": "tooltip"
+          },
+          {
+            "block": "b158",
+            "text": "tooltip"
+          },
+          {
+            "block": "b167",
+            "text": "tooltip"
+          },
+          {
+            "block": "b171",
+            "text": "tooltip"
+          },
+          {
+            "block": "b172",
+            "text": "tooltip"
+          },
+          {
+            "block": "b176",
+            "text": "tooltip"
+          },
+          {
+            "block": "b183",
+            "text": "tooltip"
+          },
+          {
+            "block": "b184",
+            "text": "tooltip"
+          },
+          {
+            "block": "b190",
+            "text": "tooltip"
+          },
+          {
+            "block": "b192",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b194",
+            "text": "tooltip"
+          },
+          {
+            "block": "b195",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b198",
+            "text": "tooltip"
+          },
+          {
+            "block": "b198",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b201",
+            "text": "tooltip"
+          },
+          {
+            "block": "b202",
+            "text": "tooltip"
+          },
+          {
+            "block": "b205",
+            "text": "tooltip"
+          },
+          {
+            "block": "b208",
+            "text": "tooltip"
+          },
+          {
+            "block": "b209",
+            "text": "tooltip"
+          },
+          {
+            "block": "b210",
+            "text": "tooltip"
+          },
+          {
+            "block": "b211",
+            "text": "tooltip"
+          },
+          {
+            "block": "b215",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b216",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b217",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b218",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b219",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b221",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b222",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b224",
+            "text": "tooltip"
+          },
+          {
+            "block": "b230",
+            "text": "tooltip"
+          },
+          {
+            "block": "b232",
+            "text": "tooltip"
+          },
+          {
+            "block": "b233",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b235",
+            "text": "tooltip"
+          },
+          {
+            "block": "b242",
+            "text": "tooltip"
+          },
+          {
+            "block": "b248",
+            "text": "Tooltip"
+          },
+          {
+            "block": "b249",
+            "text": "Tooltip"
+          }
+        ]
+      },
+      {
+        "canonical": "Tipsy",
+        "type": "tech",
+        "subtype": "library",
+        "aliases": [
+          "Tipsy jQuery plugin"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b78",
+            "text": "Tipsy"
+          }
+        ]
+      },
+      {
+        "canonical": "jQuery",
+        "type": "tech",
+        "subtype": "library",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b78",
+            "text": "jQuery"
+          }
+        ]
+      },
+      {
+        "canonical": "Jason Frame",
+        "type": "person",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b78",
+            "text": "Jason Frame"
+          }
+        ]
+      },
+      {
+        "canonical": "CSS3",
+        "type": "tech",
+        "subtype": "standard",
+        "aliases": [
+          "CSS"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b78",
+            "text": "CSS3"
+          }
+        ]
+      },
+      {
+        "canonical": "Angular",
+        "type": "tech",
+        "subtype": "framework",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b129",
+            "text": "Angular"
+          }
+        ]
+      },
+      {
+        "canonical": "@angular/core",
+        "type": "tech",
+        "subtype": "package",
+        "namespace": "npm",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b89",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b101",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b110",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b118",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b126",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b134",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b142",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b151",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b158",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b168",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b177",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b184",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b191",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b199",
+            "text": "@angular/core"
+          }
+        ]
+      },
+      {
+        "canonical": "TooltipDirective",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/tooltip",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b251",
+            "text": "TooltipDirective"
+          }
+        ]
+      },
+      {
+        "canonical": "TooltipConfig",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/tooltip",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b158",
+            "text": "TooltipConfig"
+          },
+          {
+            "block": "b204",
+            "text": "TooltipConfig"
+          },
+          {
+            "block": "b252",
+            "text": "TooltipConfig"
+          }
+        ]
+      },
+      {
+        "canonical": "TooltipModule",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/tooltip",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b202",
+            "text": "TooltipModule"
+          }
+        ]
+      }
+    ],
+    "optional": [
+      {
+        "canonical": "ng-template",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "@angular/core",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b129",
+            "text": "ng-template"
+          },
+          {
+            "block": "b133",
+            "text": "ng-template"
+          },
+          {
+            "block": "b137",
+            "text": "ng-template"
+          },
+          {
+            "block": "b141",
+            "text": "ng-template"
+          }
+        ]
+      },
+      {
+        "canonical": "TemplateRef",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "@angular/core",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b130",
+            "text": "TemplateRef"
+          },
+          {
+            "block": "b133",
+            "text": "TemplateRef"
+          },
+          {
+            "block": "b228",
+            "text": "TemplateRef"
+          }
+        ]
+      },
+      {
+        "canonical": "innerHtml",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "@angular/core",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b137",
+            "text": "innerHtml"
+          },
+          {
+            "block": "b141",
+            "text": "innerHtml"
+          }
+        ]
+      },
+      {
+        "canonical": "adaptivePosition",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/tooltip",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b104",
+            "text": "adaptivePosition"
+          },
+          {
+            "block": "b109",
+            "text": "adaptivePosition"
+          },
+          {
+            "block": "b207",
+            "text": "adaptivePosition"
+          }
+        ]
+      },
+      {
+        "canonical": "container",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/tooltip",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b208",
+            "text": "container"
+          }
+        ]
+      },
+      {
+        "canonical": "delay",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/tooltip",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b209",
+            "text": "delay"
+          }
+        ]
+      },
+      {
+        "canonical": "placement",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/tooltip",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b210",
+            "text": "placement"
+          }
+        ]
+      },
+      {
+        "canonical": "triggers",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/tooltip",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b171",
+            "text": "triggers="
+          },
+          {
+            "block": "b211",
+            "text": "triggers"
+          }
+        ]
+      },
+      {
+        "canonical": "show",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/tooltip",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b171",
+            "text": "show()"
+          },
+          {
+            "block": "b176",
+            "text": "show()"
+          }
+        ]
+      },
+      {
+        "canonical": "hide",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/tooltip",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b171",
+            "text": "hide()"
+          },
+          {
+            "block": "b176",
+            "text": "hide()"
+          }
+        ]
+      },
+      {
+        "canonical": "toggle",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/tooltip",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b171",
+            "text": "toggle()"
+          },
+          {
+            "block": "b176",
+            "text": "toggle()"
+          }
+        ]
+      },
+      {
+        "canonical": "Component",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "@angular/core",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b89",
+            "text": "@Component"
+          },
+          {
+            "block": "b101",
+            "text": "@Component"
+          },
+          {
+            "block": "b110",
+            "text": "@Component"
+          },
+          {
+            "block": "b118",
+            "text": "@Component"
+          },
+          {
+            "block": "b126",
+            "text": "@Component"
+          },
+          {
+            "block": "b134",
+            "text": "@Component"
+          },
+          {
+            "block": "b142",
+            "text": "@Component"
+          },
+          {
+            "block": "b151",
+            "text": "@Component"
+          },
+          {
+            "block": "b158",
+            "text": "@Component"
+          },
+          {
+            "block": "b168",
+            "text": "@Component"
+          },
+          {
+            "block": "b177",
+            "text": "@Component"
+          },
+          {
+            "block": "b184",
+            "text": "@Component"
+          },
+          {
+            "block": "b191",
+            "text": "@Component"
+          },
+          {
+            "block": "b199",
+            "text": "@Component"
+          },
+          {
+            "block": "b202",
+            "text": "@Component"
+          }
+        ]
+      },
+      {
+        "canonical": "ChangeDetectionStrategy",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "@angular/core",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b89",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b101",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b110",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b118",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b126",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b134",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b142",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b151",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b158",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b168",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b177",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b184",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b191",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b199",
+            "text": "ChangeDetectionStrategy"
+          }
+        ]
+      },
+      {
+        "canonical": "ngx-bootstrap/tooltip",
+        "type": "tech",
+        "subtype": "package",
+        "namespace": "npm",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b158",
+            "text": "ngx-bootstrap/tooltip"
+          },
+          {
+            "block": "b202",
+            "text": "ngx-bootstrap/tooltip"
+          }
+        ]
+      },
+      {
+        "canonical": "ngx-bootstrap/timepicker",
+        "type": "tech",
+        "subtype": "package",
+        "note": "a dokumentáció hibája: a TooltipModule-t innen importálja",
+        "namespace": "npm",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b202",
+            "text": "ngx-bootstrap/timepicker"
+          }
+        ]
+      },
+      {
+        "canonical": "Angular CLI",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [
+          "ng add"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b201",
+            "text": "ng add"
+          }
+        ]
+      },
+      {
+        "canonical": "root module",
+        "type": "concept",
+        "subtype": "other",
+        "acceptable_types": [
+          "concept",
+          "tech"
+        ],
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b79",
+            "text": "root module"
+          }
+        ]
+      }
+    ],
+    "negatives": [
+      {
+        "text": "Home"
+      },
+      {
+        "text": "Overview"
+      },
+      {
+        "text": "Examples"
+      },
+      {
+        "text": "Simple demo"
+      },
+      {
+        "text": "Hover over me!"
+      },
+      {
+        "text": "Click on me!"
+      },
+      {
+        "text": "Vivamus sagittis"
+      },
+      {
+        "text": "Demo with custom class"
+      },
+      {
+        "text": "This text has attached tooltip"
+      },
+      {
+        "text": "Tooltip on top"
+      }
+    ]
   },
-  {
-   "id": "b212",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Basic"
-   ],
-   "text": "Basic"
+  "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+  "annotation_notes": [
+    "A prózában szereplő külső hivatkozások (Tipsy, jQuery, Jason Frame, CSS3, Angular) kötelezők.",
+    "A dokumentált API-elemek kötelezők, a konfigurációs tulajdonságok és a metódusok opcionálisak.",
+    "Parser-megfigyelés: a b212–b249 kártyák a példák ismétlései (rejtett fül)."
+  ],
+  "rules": {
+    "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+    "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+    "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
+    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
+    "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
+    "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
+    "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
+    "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
+    "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
+    "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
+    "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
+    "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service)."
   },
-  {
-   "id": "b213",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Basic"
-   ],
-   "text": "Simple demo"
+  "subtype_glossary": {
+    "service": {
+      "audit": "felmérés, átvilágítás",
+      "implementation": "beállítás, kiépítés, bevezetés",
+      "consulting": "tanácsadás",
+      "reporting": "riport, dashboard",
+      "training": "képzés, workshop",
+      "other": "egyéb"
+    },
+    "org": {
+      "company": "cég",
+      "restaurant": "étterem, vendéglátóhely",
+      "institution": "intézmény, szervezet",
+      "team": "csapat",
+      "other": "egyéb"
+    },
+    "tech": {
+      "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+      "library": "programkönyvtár",
+      "framework": "keretrendszer",
+      "language": "programozási nyelv",
+      "package": "telepíthető csomag (npm, pip)",
+      "component": "egy könyvtár konkrét komponense",
+      "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+      "api": "programozói interfész, amit szolgáltatásként hívnak",
+      "standard": "műszaki szabvány, specifikáció",
+      "feature": "egy szoftver funkciója",
+      "other": "egyéb"
+    },
+    "product": {
+      "dish": "étel vagy desszert az étlapon",
+      "ingredient": "alapanyag, tésztafajta",
+      "wine": "bor",
+      "drink": "ital, koktél",
+      "physical_good": "egyéb fizikai áru",
+      "other": "egyéb"
+    },
+    "concept": {
+      "method": "módszer, keretrendszer, eljárás",
+      "discipline": "szakterület",
+      "metric": "mérhető mennyiség, mutató",
+      "ui_pattern": "általános felületi minta",
+      "license": "licenc",
+      "designation": "eredetvédelmi vagy minőségi jelölés",
+      "other": "egyéb"
+    },
+    "place": {
+      "city": "város",
+      "region": "régió, tartomány",
+      "country": "ország",
+      "venue": "helyszín, épület",
+      "other": "egyéb"
+    },
+    "work": {
+      "article": "cikk",
+      "case_study": "esettanulmány",
+      "book": "könyv",
+      "course": "tanfolyam",
+      "other": "egyéb"
+    },
+    "event": {
+      "conference": "konferencia",
+      "webinar": "webinár",
+      "festival": "fesztivál",
+      "other": "egyéb"
+    },
+    "brand": {
+      "other": "egyéb"
+    },
+    "person": {}
   },
-  {
-   "id": "b214",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Placement"
-   ],
-   "text": "Placement"
-  },
-  {
-   "id": "b215",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Placement"
-   ],
-   "text": "Tooltip on top"
-  },
-  {
-   "id": "b216",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Placement"
-   ],
-   "text": "Tooltip on right"
-  },
-  {
-   "id": "b217",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Placement"
-   ],
-   "text": "Tooltip auto"
-  },
-  {
-   "id": "b218",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Placement"
-   ],
-   "text": "Tooltip on left"
-  },
-  {
-   "id": "b219",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Placement"
-   ],
-   "text": "Tooltip on bottom"
-  },
-  {
-   "id": "b220",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Disable adaptive position"
-   ],
-   "text": "Disable adaptive position"
-  },
-  {
-   "id": "b221",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Disable adaptive position"
-   ],
-   "text": "Tooltip on top"
-  },
-  {
-   "id": "b222",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Disable adaptive position"
-   ],
-   "text": "Tooltip on right"
-  },
-  {
-   "id": "b223",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Dismiss on next click"
-   ],
-   "text": "Dismiss on next click"
-  },
-  {
-   "id": "b224",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Dismiss on next click"
-   ],
-   "text": "Dismissible tooltip"
-  },
-  {
-   "id": "b225",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Dynamic Content"
-   ],
-   "text": "Dynamic Content"
-  },
-  {
-   "id": "b226",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Dynamic Content"
-   ],
-   "text": "Simple binding"
-  },
-  {
-   "id": "b227",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Custom content template"
-   ],
-   "text": "Custom content template"
-  },
-  {
-   "id": "b228",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Custom content template"
-   ],
-   "text": "TemplateRef binding"
-  },
-  {
-   "id": "b229",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Dynamic Html"
-   ],
-   "text": "Dynamic Html"
-  },
-  {
-   "id": "b230",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Dynamic Html"
-   ],
-   "text": "Show me tooltip with html"
-  },
-  {
-   "id": "b231",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Append to body"
-   ],
-   "text": "Append to body"
-  },
-  {
-   "id": "b232",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Append to body"
-   ],
-   "text": "Default tooltip"
-  },
-  {
-   "id": "b233",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Append to body"
-   ],
-   "text": "Tooltip appended to body"
-  },
-  {
-   "id": "b234",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Configuring defaults"
-   ],
-   "text": "Configuring defaults"
-  },
-  {
-   "id": "b235",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Configuring defaults"
-   ],
-   "text": "Preconfigured tooltip"
-  },
-  {
-   "id": "b236",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Custom triggers"
-   ],
-   "text": "Custom triggers"
-  },
-  {
-   "id": "b237",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Custom triggers"
-   ],
-   "text": "Desktop"
-  },
-  {
-   "id": "b238",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Custom triggers"
-   ],
-   "text": "Hover over me!"
-  },
-  {
-   "id": "b239",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Custom triggers"
-   ],
-   "text": "Mobile"
-  },
-  {
-   "id": "b240",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Custom triggers"
-   ],
-   "text": "Click on me!"
-  },
-  {
-   "id": "b241",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Manual triggering"
-   ],
-   "text": "Manual triggering"
-  },
-  {
-   "id": "b242",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Manual triggering"
-   ],
-   "text": "This text has attached tooltip"
-  },
-  {
-   "id": "b243",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Manual triggering"
-   ],
-   "text": "Show Hide Toggle"
-  },
-  {
-   "id": "b244",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Component level styling"
-   ],
-   "text": "Component level styling"
-  },
-  {
-   "id": "b245",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Component level styling"
-   ],
-   "text": "I have component level styling"
-  },
-  {
-   "id": "b246",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Custom class"
-   ],
-   "text": "Custom class"
-  },
-  {
-   "id": "b247",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Custom class"
-   ],
-   "text": "Demo with custom class"
-  },
-  {
-   "id": "b248",
-   "kind": "heading",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Tooltip with delay"
-   ],
-   "text": "Tooltip with delay"
-  },
-  {
-   "id": "b249",
-   "kind": "card",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Tooltip with delay"
-   ],
-   "text": "Tooltip with 0.5sec delay"
-  },
-  {
-   "id": "b250",
-   "kind": "other",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Tooltip with delay"
-   ],
-   "text": "components"
-  },
-  {
-   "id": "b251",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Tooltip with delay"
-   ],
-   "text": "TooltipDirective"
-  },
-  {
-   "id": "b252",
-   "kind": "list_item",
-   "heading_path": [
-    "Tooltip",
-    "Installation",
-    "Tooltip with delay"
-   ],
-   "text": "TooltipConfig"
+  "subtype_vocabulary": {
+    "service": [
+      "audit",
+      "implementation",
+      "consulting",
+      "reporting",
+      "training",
+      "other"
+    ],
+    "org": [
+      "company",
+      "restaurant",
+      "institution",
+      "team",
+      "other"
+    ],
+    "tech": [
+      "software",
+      "library",
+      "framework",
+      "language",
+      "package",
+      "component",
+      "api_symbol",
+      "api",
+      "standard",
+      "feature",
+      "other"
+    ],
+    "product": [
+      "dish",
+      "ingredient",
+      "wine",
+      "drink",
+      "physical_good",
+      "other"
+    ],
+    "concept": [
+      "method",
+      "discipline",
+      "metric",
+      "ui_pattern",
+      "license",
+      "designation",
+      "other"
+    ],
+    "place": [
+      "city",
+      "region",
+      "country",
+      "venue",
+      "other"
+    ],
+    "work": [
+      "article",
+      "case_study",
+      "book",
+      "course",
+      "other"
+    ],
+    "event": [
+      "conference",
+      "webinar",
+      "festival",
+      "other"
+    ],
+    "brand": [
+      "other"
+    ],
+    "person": []
   }
- ],
- "gold": {
-  "primary_entities": [],
-  "entities": [],
-  "optional": [],
-  "negatives": []
- },
- "gold_status": "sablon, annotálatlan",
- "annotation_notes": [],
- "rules": {
-  "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
-  "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
-  "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
-  "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
-  "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
-  "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
-  "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
-  "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
-  "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
-  "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
-  "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
-  "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service)."
- },
- "subtype_glossary": {
-  "service": {
-   "audit": "felmérés, átvilágítás",
-   "implementation": "beállítás, kiépítés, bevezetés",
-   "consulting": "tanácsadás",
-   "reporting": "riport, dashboard",
-   "training": "képzés, workshop",
-   "other": "egyéb"
-  },
-  "org": {
-   "company": "cég",
-   "restaurant": "étterem, vendéglátóhely",
-   "institution": "intézmény, szervezet",
-   "team": "csapat",
-   "other": "egyéb"
-  },
-  "tech": {
-   "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
-   "library": "programkönyvtár",
-   "framework": "keretrendszer",
-   "language": "programozási nyelv",
-   "package": "telepíthető csomag (npm, pip)",
-   "component": "egy könyvtár konkrét komponense",
-   "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
-   "api": "programozói interfész, amit szolgáltatásként hívnak",
-   "standard": "műszaki szabvány, specifikáció",
-   "feature": "egy szoftver funkciója",
-   "other": "egyéb"
-  },
-  "product": {
-   "dish": "étel vagy desszert az étlapon",
-   "ingredient": "alapanyag, tésztafajta",
-   "wine": "bor",
-   "drink": "ital, koktél",
-   "physical_good": "egyéb fizikai áru",
-   "other": "egyéb"
-  },
-  "concept": {
-   "method": "módszer, keretrendszer, eljárás",
-   "discipline": "szakterület",
-   "metric": "mérhető mennyiség, mutató",
-   "ui_pattern": "általános felületi minta",
-   "license": "licenc",
-   "designation": "eredetvédelmi vagy minőségi jelölés",
-   "other": "egyéb"
-  },
-  "place": {
-   "city": "város",
-   "region": "régió, tartomány",
-   "country": "ország",
-   "venue": "helyszín, épület",
-   "other": "egyéb"
-  },
-  "work": {
-   "article": "cikk",
-   "case_study": "esettanulmány",
-   "book": "könyv",
-   "course": "tanfolyam",
-   "other": "egyéb"
-  },
-  "event": {
-   "conference": "konferencia",
-   "webinar": "webinár",
-   "festival": "fesztivál",
-   "other": "egyéb"
-  },
-  "brand": {
-   "other": "egyéb"
-  },
-  "person": {}
- },
- "subtype_vocabulary": {
-  "service": [
-   "audit",
-   "implementation",
-   "consulting",
-   "reporting",
-   "training",
-   "other"
-  ],
-  "org": [
-   "company",
-   "restaurant",
-   "institution",
-   "team",
-   "other"
-  ],
-  "tech": [
-   "software",
-   "library",
-   "framework",
-   "language",
-   "package",
-   "component",
-   "api_symbol",
-   "api",
-   "standard",
-   "feature",
-   "other"
-  ],
-  "product": [
-   "dish",
-   "ingredient",
-   "wine",
-   "drink",
-   "physical_good",
-   "other"
-  ],
-  "concept": [
-   "method",
-   "discipline",
-   "metric",
-   "ui_pattern",
-   "license",
-   "designation",
-   "other"
-  ],
-  "place": [
-   "city",
-   "region",
-   "country",
-   "venue",
-   "other"
-  ],
-  "work": [
-   "article",
-   "case_study",
-   "book",
-   "course",
-   "other"
-  ],
-  "event": [
-   "conference",
-   "webinar",
-   "festival",
-   "other"
-  ],
-  "brand": [
-   "other"
-  ],
-  "person": []
- }
 }

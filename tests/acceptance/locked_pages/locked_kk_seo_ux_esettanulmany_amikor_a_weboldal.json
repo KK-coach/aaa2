@@ -1,721 +1,1759 @@
 {
- "page_id": "locked_kk_seo_ux_esettanulmany_amikor_a_weboldal",
- "set": "locked",
- "url": "https://kk.coach/hu/seo-ux-esettanulmany-amikor-a-weboldal-sebesseg-mar-nem-technikai-reszlet-hanem-beveteli-kerdes/",
- "lang": "hu-HU",
- "site_description": "This page belongs to the website kk.coach, whose home page is titled “SEO & AI-Driven Organic Growth Consultant | Kk.coach”.",
- "blocks": [
-  {
-   "id": "b0",
-   "kind": "title",
-   "heading_path": [],
-   "text": "SEO/UX Esettanulmány: Amikor A Weboldal Sebesség Már Nem Technikai Részlet, Hanem Bevételi Kérdés - KK"
-  },
-  {
-   "id": "b1",
-   "kind": "other",
-   "heading_path": [],
-   "text": "Kilépés a tartalomba"
-  },
-  {
-   "id": "b14",
-   "kind": "heading",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
-   ],
-   "text": "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
-  },
-  {
-   "id": "b15",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
-   ],
-   "text": "Utolsó jelentős módosítás: 2026-06-01"
-  },
-  {
-   "id": "b16",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
-   ],
-   "text": "publikálás: 2026-06-01"
-  },
-  {
-   "id": "b17",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
-   ],
-   "text": "szerző: Kiss Krisztian"
-  },
-  {
-   "id": "b18",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
-   ],
-   "text": "Egy nagy forgalmú magyar hardver webshopnak dolgoztam SEO és UX területen. A márkát nem nevezem meg, mert a projekt nem publikus, de a helyzet elég tipikus volt: erős organikus forgalom, sok termékoldal, nagy mobilhasználat, és egy olyan üzleti cél, ami nem a „legyen szebb az oldal” kategória volt."
-  },
-  {
-   "id": "b19",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
-   ],
-   "text": "Nem volt konkrétan meghatározva, hogy milyen SEO-beavatkozással kell eredményt elérni. A cél az organikus teljesítmény javítása volt, a „hogyan” pedig rám volt bízva. Több irány is szóba jöhetett volna: technikai SEO, tartalom, belső linkelés, kategóriaoldalak vagy strukturált adatok. Én viszont olyan területtel akartam kezdeni, amely nemcsak SEO-ban segíthet, hanem bevételi oldalon is nagyobb hozammal kecsegtet. Ezért került fókuszba a site speed. Nem a legkisebb munka, de nagy forgalmú webshopnál az egyik legjobb üzleti megtérülésű SEO/UX-beavatkozás lehet."
-  },
-  {
-   "id": "b20",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
-   ],
-   "text": "A kiinduló feltételezés egyszerű volt: a lassabb oldalak gyengébben konvertálnak . Ez önmagában nem különösebben új gondolat. A Deloitte és Google „Milliseconds Make Millions” kutatása például azt mutatta, hogy már 0,1 másodperc mobil site speed javulás is mérhető hatással lehet a funnel előrehaladására, retail környezetben pedig 8,4%-os konverziós és 9,2%-os átlagos kosárérték-növekedést figyeltek meg. A web.dev összefoglalója szerint a kutatás 37 európai és amerikai márkaoldal, több mint 30 millió user session és 30 napos mérési időszak alapján készült. A kérdés nálunk nem az volt, hogy „általában számít-e a sebesség”. Hanem az, hogy ezen a konkrét webshopon belül látszik-e üzleti hatás ."
-  },
-  {
-   "id": "b21",
-   "kind": "heading",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A probléma"
-   ],
-   "text": "A probléma"
-  },
-  {
-   "id": "b22",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A probléma"
-   ],
-   "text": "A webshop technikailag működött. Nem volt összeomolva, nem volt használhatatlan, és első ránézésre nem is tűnt tragikusan lassúnak. Ez a gyakorlatban sokszor veszélyesebb helyzet, mint amikor valami nyilvánvalóan rossz. Ha egy oldal egyértelműen törött, könnyű rábólintani a javításra. Ha viszont „csak” lassabb a kelleténél, akkor a site speed könnyen hátrasorolódik a fejlesztési listán. Itt is ez történt. Volt SEO backlog, UX backlog, fejlesztési backlog, kampányos igények, promóciós oldalak, termékoldali módosítások. A site speed egy volt a sok feladat közül. Ezért először nem optimalizálással kezdtünk, hanem méréssel."
-  },
-  {
-   "id": "b23",
-   "kind": "heading",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Hogyan mértük?"
-   ],
-   "text": "Hogyan mértük?"
-  },
-  {
-   "id": "b24",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Hogyan mértük?"
-   ],
-   "text": "A mérési logika lényege az volt, hogy ne csak oldalszinten nézzük a sebességet, hanem össze tudjuk kapcsolni a felhasználói viselkedéssel és a konverzióval. Google Tag Managerben beállítottunk egy site speed / Core Web Vitals jellegű adatgyűjtést, amely a mért sebességadatokat GA4-be továbbította. Ez hasonló logikára épült, mint amit Matthew Edgar is bemutat: GA4-ben alapból nincs klasszikus site speed riport, de GTM-en keresztül be lehet küldeni például page_load_time, content_load_time, dom_interactive_time, server_response_time, illetve Core Web Vitals jellegű értékeket. A GA4-ből az adatok BigQuery-be kerültek. Ott történt az adattisztítás, a hibás vagy extrém értékek kezelése, majd a sessionök sebesség szerinti csoportosítása. A cél az volt, hogy ne általános PageSpeed-pontszámokról beszéljünk, hanem erről:"
-  },
-  {
-   "id": "b25",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Hogyan mértük?"
-   ],
-   "text": "Azok a felhasználók, akik lassabb oldalbetöltést kaptak, rosszabb arányban vásároltak-e?"
-  },
-  {
-   "id": "b26",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Hogyan mértük?"
-   ],
-   "text": "A válasz igen volt."
-  },
-  {
-   "id": "b27",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Hogyan mértük?"
-   ],
-   "text": "A lineáris regresszió erős kapcsolatot mutatott a mobil betöltési sebesség és a konverziós arány között. A korreláció -0,81 lett. Az előjel azért negatív, mert itt a magasabb betöltési idő rosszabb érték: minél lassabb volt a felhasználói élmény, annál alacsonyabb volt a konverziós arány."
-  },
-  {
-   "id": "b28",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Hogyan mértük?"
-   ],
-   "text": "Fontos: ezt nem úgy kezeltük, hogy „a regresszió mindent bizonyít”. A korreláció nem ok-okozat. A gyakorlatban viszont sokszor nem is erre van szükség az első döntéshez. Arra van szükség, hogy elég erős jel legyen a priorizáláshoz.Itt az volt."
-  },
-  {
-   "id": "b29",
-   "kind": "heading",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit mutattak az adatok?"
-   ],
-   "text": "Mit mutattak az adatok?"
-  },
-  {
-   "id": "b30",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit mutattak az adatok?"
-   ],
-   "text": "A mobil átlagos betöltési idő a kiinduló állapotban körülbelül 5 másodperc volt. Ez nem hangzik drámainak, de ecommerce környezetben sok. Főleg mobilon, terméklista-oldalaknál, kategóriaoldalaknál és termékoldalaknál, ahol a felhasználó nem egy oldalt néz meg, hanem sok apró döntést hoz egymás után."
-  },
-  {
-   "id": "b31",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit mutattak az adatok?"
-   ],
-   "text": "A baseline konverziós arány 2,6% körül volt."
-  },
-  {
-   "id": "b32",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit mutattak az adatok?"
-   ],
-   "text": "A sebesség szegmensek összehasonlítása alapján az látszott, hogy a gyorsabb élményt kapó felhasználók jobb arányban jutottak el vásárlásig. Nem minden sor volt tökéletesen szép, nem minden bucket viselkedett tankönyvszerűen. Ilyen a valós adat. De az irány egyértelmű volt."
-  },
-  {
-   "id": "b33",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit mutattak az adatok?"
-   ],
-   "text": "Ezután a feladat már nem az volt, hogy „nézzük még egy hónapig”. Hanem az, hogy csökkentsük a site speed mutatókat."
-  },
-  {
-   "id": "b34",
-   "kind": "heading",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "A megoldás"
-  },
-  {
-   "id": "b35",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "A javítás több rétegből állt. Tapasztalatom szerint site speednél ritkán egyetlen nagy trükk hozza az eredményt. Inkább sok kisebb, egymást erősítő döntésből áll össze a különbség."
-  },
-  {
-   "id": "b36",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "Az első nagy terület a képek optimalizálása volt."
-  },
-  {
-   "id": "b37",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "A webshopnál rengeteg termék- és kategóriakép volt, ami természetes egy hardveres ecommerce oldalon. A gond nem az volt, hogy voltak képek, hanem az, hogy sok esetben nem a megfelelő méretben és formátumban jelentek meg, ezek jellemzően erősen befolyásolják az LCP (Legnagyobb vizuális tartalomválasz) eredményét."
-  },
-  {
-   "id": "b38",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "Bevezettünk egy olyan képlogikát, ahol feltöltéskor több méret készült ugyanabból a képből. A frontend nem ugyanazt a nagy képet szolgálta ki mindenkinek, hanem a felhasználó kijelzőméretéhez és eszközéhez igazodó verziót. Ahol lehetett, WebP és AVIF formátumot használtunk, fallback megoldással azoknak a böngészőknek, ahol erre szükség volt."
-  },
-  {
-   "id": "b39",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "Ez önmagában sokat számított, főleg mobilon."
-  },
-  {
-   "id": "b40",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "A második nagy terület a cache-rendszer volt."
-  },
-  {
-   "id": "b41",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "Egy egyedi fejlesztésű webshopnál ez ritkán annyit jelent, hogy bekapcsolunk egy gyorsító plugint, és kész. Itt is több réteget kellett összehangolni. Máshogy kellett kezelni a statikus fájlokat, a gyakran ismétlődő adatbázis-lekérdezéseket, és megint máshogy azokat az elemeket, amelyeknek mindig frissnek kellett maradniuk."
-  },
-  {
-   "id": "b42",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "Az erőforrásigényes lekérdezéseket alkalmazásszinten cache-eltük, a szerveroldali működésen OPcache és APCu segített, a képek, CSS- és JavaScript-fájlok kiszolgálása pedig CDN/reverse proxy rétegen keresztül gyorsult. Emellett a böngésző cache-szabályokat is rendbe kellett tenni, hogy a felhasználó ne töltsön le újra mindent minden egyes oldalon belüli kattintásnál."
-  },
-  {
-   "id": "b43",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "A nehézség nem maga a cache bekapcsolása volt, hanem az, hogy közben a webshop üzleti működése ne sérüljön. Az áraknak, készletadatoknak és kosárinformációknak mindig frissnek kellett maradniuk. Vagyis nem az volt a cél, hogy mindent agresszíven cache-eljünk, hanem hogy pontosan szétválasszuk, mi gyorsítható biztonságosan, és mi az, amihez nem szabad hozzányúlni."
-  },
-  {
-   "id": "b44",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "A harmadik terület a JavaScript és CSS refaktorálás volt."
-  },
-  {
-   "id": "b45",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "Itt az volt a cél, hogy ami nem kell az első renderhez, az ne blokkolja az első rendert. Kikerültek felesleges kódrészletek, csökkent a nem használt CSS, és a nem kritikus JavaScript késleltetve vagy feltételesen töltődött be. Ez főleg mobilon segített."
-  },
-  {
-   "id": "b46",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "A HTML, CSS és JS tömörítés is bekerült, de ezt nem érdemes túlértékelni. A HTML-minify ritkán az a tétel, ami önmagában megváltja a projektet. Hasznos, de a nagyobb javulást inkább a képek, a cache, a render-blokkoló erőforrások csökkentése és a felesleges frontend logika eltávolítása adta."
-  },
-  {
-   "id": "b47",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "A negyedik, kevésbé látványos rész a mérési és fejlesztési fegyelem volt."
-  },
-  {
-   "id": "b48",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "Nem egyszeri „site speed projektként” kezeltük a feladatot. Be kellett építeni a folyamatba, hogy egy új banner, új script, új tracking pixel vagy új frontend komponens ne rontsa vissza két hét alatt azt, amit korábban megjavítottunk."
-  },
-  {
-   "id": "b49",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "A megoldás"
-   ],
-   "text": "Ez a rész kevésbé izgalmas, de a gyakorlatban sokszor itt dől el, hogy a javítás tartós lesz-e."
-  },
-  {
-   "id": "b50",
-   "kind": "heading",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Az eredmény"
-   ],
-   "text": "Az eredmény"
-  },
-  {
-   "id": "b51",
-   "kind": "table_row",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Az eredmény"
-   ],
-   "text": "Mutató | Előtte | Utána",
-   "cells": [
+  "page_id": "locked_kk_seo_ux_esettanulmany_amikor_a_weboldal",
+  "set": "locked",
+  "url": "https://kk.coach/hu/seo-ux-esettanulmany-amikor-a-weboldal-sebesseg-mar-nem-technikai-reszlet-hanem-beveteli-kerdes/",
+  "lang": "hu-HU",
+  "site_description": "This page belongs to the website kk.coach, whose home page is titled “SEO & AI-Driven Organic Growth Consultant | Kk.coach”.",
+  "blocks": [
     {
-     "header": null,
-     "value": "Mutató"
+      "id": "b0",
+      "kind": "title",
+      "heading_path": [],
+      "text": "SEO/UX Esettanulmány: Amikor A Weboldal Sebesség Már Nem Technikai Részlet, Hanem Bevételi Kérdés - KK"
     },
     {
-     "header": null,
-     "value": "Előtte"
+      "id": "b1",
+      "kind": "other",
+      "heading_path": [],
+      "text": "Kilépés a tartalomba"
     },
     {
-     "header": null,
-     "value": "Utána"
+      "id": "b14",
+      "kind": "heading",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
+      ],
+      "text": "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
+    },
+    {
+      "id": "b15",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
+      ],
+      "text": "Utolsó jelentős módosítás: 2026-06-01"
+    },
+    {
+      "id": "b16",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
+      ],
+      "text": "publikálás: 2026-06-01"
+    },
+    {
+      "id": "b17",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
+      ],
+      "text": "szerző: Kiss Krisztian"
+    },
+    {
+      "id": "b18",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
+      ],
+      "text": "Egy nagy forgalmú magyar hardver webshopnak dolgoztam SEO és UX területen. A márkát nem nevezem meg, mert a projekt nem publikus, de a helyzet elég tipikus volt: erős organikus forgalom, sok termékoldal, nagy mobilhasználat, és egy olyan üzleti cél, ami nem a „legyen szebb az oldal” kategória volt."
+    },
+    {
+      "id": "b19",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
+      ],
+      "text": "Nem volt konkrétan meghatározva, hogy milyen SEO-beavatkozással kell eredményt elérni. A cél az organikus teljesítmény javítása volt, a „hogyan” pedig rám volt bízva. Több irány is szóba jöhetett volna: technikai SEO, tartalom, belső linkelés, kategóriaoldalak vagy strukturált adatok. Én viszont olyan területtel akartam kezdeni, amely nemcsak SEO-ban segíthet, hanem bevételi oldalon is nagyobb hozammal kecsegtet. Ezért került fókuszba a site speed. Nem a legkisebb munka, de nagy forgalmú webshopnál az egyik legjobb üzleti megtérülésű SEO/UX-beavatkozás lehet."
+    },
+    {
+      "id": "b20",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés"
+      ],
+      "text": "A kiinduló feltételezés egyszerű volt: a lassabb oldalak gyengébben konvertálnak . Ez önmagában nem különösebben új gondolat. A Deloitte és Google „Milliseconds Make Millions” kutatása például azt mutatta, hogy már 0,1 másodperc mobil site speed javulás is mérhető hatással lehet a funnel előrehaladására, retail környezetben pedig 8,4%-os konverziós és 9,2%-os átlagos kosárérték-növekedést figyeltek meg. A web.dev összefoglalója szerint a kutatás 37 európai és amerikai márkaoldal, több mint 30 millió user session és 30 napos mérési időszak alapján készült. A kérdés nálunk nem az volt, hogy „általában számít-e a sebesség”. Hanem az, hogy ezen a konkrét webshopon belül látszik-e üzleti hatás ."
+    },
+    {
+      "id": "b21",
+      "kind": "heading",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A probléma"
+      ],
+      "text": "A probléma"
+    },
+    {
+      "id": "b22",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A probléma"
+      ],
+      "text": "A webshop technikailag működött. Nem volt összeomolva, nem volt használhatatlan, és első ránézésre nem is tűnt tragikusan lassúnak. Ez a gyakorlatban sokszor veszélyesebb helyzet, mint amikor valami nyilvánvalóan rossz. Ha egy oldal egyértelműen törött, könnyű rábólintani a javításra. Ha viszont „csak” lassabb a kelleténél, akkor a site speed könnyen hátrasorolódik a fejlesztési listán. Itt is ez történt. Volt SEO backlog, UX backlog, fejlesztési backlog, kampányos igények, promóciós oldalak, termékoldali módosítások. A site speed egy volt a sok feladat közül. Ezért először nem optimalizálással kezdtünk, hanem méréssel."
+    },
+    {
+      "id": "b23",
+      "kind": "heading",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Hogyan mértük?"
+      ],
+      "text": "Hogyan mértük?"
+    },
+    {
+      "id": "b24",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Hogyan mértük?"
+      ],
+      "text": "A mérési logika lényege az volt, hogy ne csak oldalszinten nézzük a sebességet, hanem össze tudjuk kapcsolni a felhasználói viselkedéssel és a konverzióval. Google Tag Managerben beállítottunk egy site speed / Core Web Vitals jellegű adatgyűjtést, amely a mért sebességadatokat GA4-be továbbította. Ez hasonló logikára épült, mint amit Matthew Edgar is bemutat: GA4-ben alapból nincs klasszikus site speed riport, de GTM-en keresztül be lehet küldeni például page_load_time, content_load_time, dom_interactive_time, server_response_time, illetve Core Web Vitals jellegű értékeket. A GA4-ből az adatok BigQuery-be kerültek. Ott történt az adattisztítás, a hibás vagy extrém értékek kezelése, majd a sessionök sebesség szerinti csoportosítása. A cél az volt, hogy ne általános PageSpeed-pontszámokról beszéljünk, hanem erről:"
+    },
+    {
+      "id": "b25",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Hogyan mértük?"
+      ],
+      "text": "Azok a felhasználók, akik lassabb oldalbetöltést kaptak, rosszabb arányban vásároltak-e?"
+    },
+    {
+      "id": "b26",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Hogyan mértük?"
+      ],
+      "text": "A válasz igen volt."
+    },
+    {
+      "id": "b27",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Hogyan mértük?"
+      ],
+      "text": "A lineáris regresszió erős kapcsolatot mutatott a mobil betöltési sebesség és a konverziós arány között. A korreláció -0,81 lett. Az előjel azért negatív, mert itt a magasabb betöltési idő rosszabb érték: minél lassabb volt a felhasználói élmény, annál alacsonyabb volt a konverziós arány."
+    },
+    {
+      "id": "b28",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Hogyan mértük?"
+      ],
+      "text": "Fontos: ezt nem úgy kezeltük, hogy „a regresszió mindent bizonyít”. A korreláció nem ok-okozat. A gyakorlatban viszont sokszor nem is erre van szükség az első döntéshez. Arra van szükség, hogy elég erős jel legyen a priorizáláshoz.Itt az volt."
+    },
+    {
+      "id": "b29",
+      "kind": "heading",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit mutattak az adatok?"
+      ],
+      "text": "Mit mutattak az adatok?"
+    },
+    {
+      "id": "b30",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit mutattak az adatok?"
+      ],
+      "text": "A mobil átlagos betöltési idő a kiinduló állapotban körülbelül 5 másodperc volt. Ez nem hangzik drámainak, de ecommerce környezetben sok. Főleg mobilon, terméklista-oldalaknál, kategóriaoldalaknál és termékoldalaknál, ahol a felhasználó nem egy oldalt néz meg, hanem sok apró döntést hoz egymás után."
+    },
+    {
+      "id": "b31",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit mutattak az adatok?"
+      ],
+      "text": "A baseline konverziós arány 2,6% körül volt."
+    },
+    {
+      "id": "b32",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit mutattak az adatok?"
+      ],
+      "text": "A sebesség szegmensek összehasonlítása alapján az látszott, hogy a gyorsabb élményt kapó felhasználók jobb arányban jutottak el vásárlásig. Nem minden sor volt tökéletesen szép, nem minden bucket viselkedett tankönyvszerűen. Ilyen a valós adat. De az irány egyértelmű volt."
+    },
+    {
+      "id": "b33",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit mutattak az adatok?"
+      ],
+      "text": "Ezután a feladat már nem az volt, hogy „nézzük még egy hónapig”. Hanem az, hogy csökkentsük a site speed mutatókat."
+    },
+    {
+      "id": "b34",
+      "kind": "heading",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "A megoldás"
+    },
+    {
+      "id": "b35",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "A javítás több rétegből állt. Tapasztalatom szerint site speednél ritkán egyetlen nagy trükk hozza az eredményt. Inkább sok kisebb, egymást erősítő döntésből áll össze a különbség."
+    },
+    {
+      "id": "b36",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "Az első nagy terület a képek optimalizálása volt."
+    },
+    {
+      "id": "b37",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "A webshopnál rengeteg termék- és kategóriakép volt, ami természetes egy hardveres ecommerce oldalon. A gond nem az volt, hogy voltak képek, hanem az, hogy sok esetben nem a megfelelő méretben és formátumban jelentek meg, ezek jellemzően erősen befolyásolják az LCP (Legnagyobb vizuális tartalomválasz) eredményét."
+    },
+    {
+      "id": "b38",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "Bevezettünk egy olyan képlogikát, ahol feltöltéskor több méret készült ugyanabból a képből. A frontend nem ugyanazt a nagy képet szolgálta ki mindenkinek, hanem a felhasználó kijelzőméretéhez és eszközéhez igazodó verziót. Ahol lehetett, WebP és AVIF formátumot használtunk, fallback megoldással azoknak a böngészőknek, ahol erre szükség volt."
+    },
+    {
+      "id": "b39",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "Ez önmagában sokat számított, főleg mobilon."
+    },
+    {
+      "id": "b40",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "A második nagy terület a cache-rendszer volt."
+    },
+    {
+      "id": "b41",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "Egy egyedi fejlesztésű webshopnál ez ritkán annyit jelent, hogy bekapcsolunk egy gyorsító plugint, és kész. Itt is több réteget kellett összehangolni. Máshogy kellett kezelni a statikus fájlokat, a gyakran ismétlődő adatbázis-lekérdezéseket, és megint máshogy azokat az elemeket, amelyeknek mindig frissnek kellett maradniuk."
+    },
+    {
+      "id": "b42",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "Az erőforrásigényes lekérdezéseket alkalmazásszinten cache-eltük, a szerveroldali működésen OPcache és APCu segített, a képek, CSS- és JavaScript-fájlok kiszolgálása pedig CDN/reverse proxy rétegen keresztül gyorsult. Emellett a böngésző cache-szabályokat is rendbe kellett tenni, hogy a felhasználó ne töltsön le újra mindent minden egyes oldalon belüli kattintásnál."
+    },
+    {
+      "id": "b43",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "A nehézség nem maga a cache bekapcsolása volt, hanem az, hogy közben a webshop üzleti működése ne sérüljön. Az áraknak, készletadatoknak és kosárinformációknak mindig frissnek kellett maradniuk. Vagyis nem az volt a cél, hogy mindent agresszíven cache-eljünk, hanem hogy pontosan szétválasszuk, mi gyorsítható biztonságosan, és mi az, amihez nem szabad hozzányúlni."
+    },
+    {
+      "id": "b44",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "A harmadik terület a JavaScript és CSS refaktorálás volt."
+    },
+    {
+      "id": "b45",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "Itt az volt a cél, hogy ami nem kell az első renderhez, az ne blokkolja az első rendert. Kikerültek felesleges kódrészletek, csökkent a nem használt CSS, és a nem kritikus JavaScript késleltetve vagy feltételesen töltődött be. Ez főleg mobilon segített."
+    },
+    {
+      "id": "b46",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "A HTML, CSS és JS tömörítés is bekerült, de ezt nem érdemes túlértékelni. A HTML-minify ritkán az a tétel, ami önmagában megváltja a projektet. Hasznos, de a nagyobb javulást inkább a képek, a cache, a render-blokkoló erőforrások csökkentése és a felesleges frontend logika eltávolítása adta."
+    },
+    {
+      "id": "b47",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "A negyedik, kevésbé látványos rész a mérési és fejlesztési fegyelem volt."
+    },
+    {
+      "id": "b48",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "Nem egyszeri „site speed projektként” kezeltük a feladatot. Be kellett építeni a folyamatba, hogy egy új banner, új script, új tracking pixel vagy új frontend komponens ne rontsa vissza két hét alatt azt, amit korábban megjavítottunk."
+    },
+    {
+      "id": "b49",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "A megoldás"
+      ],
+      "text": "Ez a rész kevésbé izgalmas, de a gyakorlatban sokszor itt dől el, hogy a javítás tartós lesz-e."
+    },
+    {
+      "id": "b50",
+      "kind": "heading",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Az eredmény"
+      ],
+      "text": "Az eredmény"
+    },
+    {
+      "id": "b51",
+      "kind": "table_row",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Az eredmény"
+      ],
+      "text": "Mutató | Előtte | Utána",
+      "cells": [
+        {
+          "header": null,
+          "value": "Mutató"
+        },
+        {
+          "header": null,
+          "value": "Előtte"
+        },
+        {
+          "header": null,
+          "value": "Utána"
+        }
+      ]
+    },
+    {
+      "id": "b52",
+      "kind": "table_row",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Az eredmény"
+      ],
+      "text": "Mobil betöltési idő | kb. 5 mp | kb. 3 mp",
+      "cells": [
+        {
+          "header": null,
+          "value": "Mobil betöltési idő"
+        },
+        {
+          "header": null,
+          "value": "kb. 5 mp"
+        },
+        {
+          "header": null,
+          "value": "kb. 3 mp"
+        }
+      ]
+    },
+    {
+      "id": "b53",
+      "kind": "table_row",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Az eredmény"
+      ],
+      "text": "Konverziós arány | 2,6% | 2,73%",
+      "cells": [
+        {
+          "header": null,
+          "value": "Konverziós arány"
+        },
+        {
+          "header": null,
+          "value": "2,6%"
+        },
+        {
+          "header": null,
+          "value": "2,73%"
+        }
+      ]
+    },
+    {
+      "id": "b54",
+      "kind": "table_row",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Az eredmény"
+      ],
+      "text": "Relatív konverziós javulás | — | kb. 5%",
+      "cells": [
+        {
+          "header": null,
+          "value": "Relatív konverziós javulás"
+        },
+        {
+          "header": null,
+          "value": "—"
+        },
+        {
+          "header": null,
+          "value": "kb. 5%"
+        }
+      ]
+    },
+    {
+      "id": "b55",
+      "kind": "list_item",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Az eredmény"
+      ],
+      "text": "A mobil átlagos betöltési idő körülbelül 5 másodpercről 3 másodpercre csökkent. Ez nagyjából 40%-os javulás ."
+    },
+    {
+      "id": "b56",
+      "kind": "list_item",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Az eredmény"
+      ],
+      "text": "A konverziós arány 2,6%-ról 2,73%-ra nőtt. Ez relatív értelemben 5% növekedés . Ha 2,72%-kal számolnánk, az körülbelül 4,6%-os relatív növekedés lenne, tehát publikációban a 2,73% tisztább szám."
+    },
+    {
+      "id": "b57",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Az eredmény"
+      ],
+      "text": "Első ránézésre a 2,6% → 2,73% nem tűnik látványosnak. Ezért szoktam óvatos lenni azzal, amikor valaki csak százalékpontokban nézi a konverziós javulást. Nagy forgalmú webshopnál ez már más történet."
+    },
+    {
+      "id": "b58",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Az eredmény"
+      ],
+      "text": "A mellékelt mintaszámításban havi 500 000 sessionnel és 35 000 Ft-os átlagos kosárértékkel számolva a javulás körülbelül 22,75 millió Ft becsült havi többletbevételt jelentene. Ez természetesen nem könyvelési adat, hanem publikációs célú becslés, hogy mennyit számít a weboldal betöltődésének sebessége egy nagy forgalmú weboldalon."
+    },
+    {
+      "id": "b59",
+      "kind": "heading",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit tanultunk belőle?"
+      ],
+      "text": "Mit tanultunk belőle?"
+    },
+    {
+      "id": "b60",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit tanultunk belőle?"
+      ],
+      "text": "A site speedet sokan még mindig technikai SEO-feladatként kezelik. Részben az is. De egy nagy forgalmú webshopnál gyorsan kiderül, hogy ennél többről van szó. SEO oldalról számít a felfedezhetőség, a felhasználói élmény, a landing page-ek teljesítménye, és persze az is, hogy a Google milyen minőségű oldalt lát. De a felhasználót ezek közül egyik sem érdekli így, ebben a formában. Ő nem PageSpeed-pontszámot lát, hanem azt, hogy várnia kell."
+    },
+    {
+      "id": "b61",
+      "kind": "list_item",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit tanultunk belőle?"
+      ],
+      "text": "Lassan jön be a terméklista."
+    },
+    {
+      "id": "b62",
+      "kind": "list_item",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit tanultunk belőle?"
+      ],
+      "text": "Késik a kép."
+    },
+    {
+      "id": "b63",
+      "kind": "list_item",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit tanultunk belőle?"
+      ],
+      "text": "Megmozdul az oldal, mire kattintana."
+    },
+    {
+      "id": "b64",
+      "kind": "list_item",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit tanultunk belőle?"
+      ],
+      "text": "A kosárgomb nem akkor reagál, amikor várná."
+    },
+    {
+      "id": "b65",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit tanultunk belőle?"
+      ],
+      "text": "Ezek külön-külön nem tűnnek nagy hibának. Egy vásárlási folyamatban viszont összeadódnak. Főleg mobilon, ahol eleve türelmetlenebb a felhasználó, és sokszor nem ideális környezetben böngészik."
+    },
+    {
+      "id": "b66",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit tanultunk belőle?"
+      ],
+      "text": "Számomra ebben a projektben nem az volt a legfontosabb eredmény, hogy a mobil betöltési idő nagyjából 5 másodpercről 3 másodpercre csökkent. Ez fontos volt, de önmagában még mindig csak egy technikai mutató. A nagy különbséget az jelentette, hogy a sebességet sikerült üzleti nyelvre lefordítani. Nem arról beszéltünk, hogy „rossz a PageSpeed score”. Ez önmagában ritkán mozgat meg egy szervezetet. Arról beszéltünk, hogy a lassabb felhasználói élmény mérhetően gyengébb konverziós aránnyal járt együtt. És ha ezen javítunk, annak bevételi hatása lehet. Ez már egészen más beszélgetés. Azt is fontos hozzátenni, hogy ez nem egyszemélyes projekt volt. Az én feladatom elsősorban az volt, hogy összekössem az üzleti problémát, a SEO-szempontokat, a UX-hatásokat és a mérési adatokat. Ebből kellett olyan fejlesztési prioritást csinálni, ami nem csak szakmailag védhető, hanem üzletileg is értelmes. A megvalósítás viszont a belső fejlesztőcsapat nélkül nem ment volna. Ilyen típusú optimalizálásnál nagyon sok apró döntésen múlik az eredmény: mit lehet cache-elni, mit nem, hogyan kezeljük a képeket, mi törhető ki a CSS-ből vagy JavaScriptből, hol van valódi kockázat, és hol csak megszokásból maradt bent valami a rendszerben."
+    },
+    {
+      "id": "b67",
+      "kind": "paragraph",
+      "heading_path": [
+        "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+        "Mit tanultunk belőle?"
+      ],
+      "text": "Ezeket nem lehet kívülről, egy auditból „rámondani” az oldalra. Kell hozzá egy jó fejlesztői csapat, amelyik érti a rendszert, tudja, hol vannak a korlátok, és hajlandó a teljesítményt nem külön technikai feladatként, hanem üzleti célként kezelni. Nekem ez volt a projekt egyik legfontosabb tanulsága: a site speed optimalizálás akkor működik igazán, ha az adat, a SEO, a UX és a fejlesztés nem külön témaként fut, hanem ugyanarra a problémára dolgozik."
     }
-   ]
+  ],
+  "gold": {
+    "primary_entities": [
+      "site speed"
+    ],
+    "entities": [
+      {
+        "canonical": "site speed",
+        "type": "concept",
+        "subtype": "metric",
+        "aliases": [
+          "weboldal sebesség",
+          "oldalsebesség",
+          "betöltési sebesség",
+          "page speed"
+        ],
+        "note": "az oldal témája",
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Weboldal Sebesség"
+          },
+          {
+            "block": "b14",
+            "text": "weboldal sebesség"
+          },
+          {
+            "block": "b19",
+            "text": "site speed"
+          },
+          {
+            "block": "b20",
+            "text": "site speed"
+          },
+          {
+            "block": "b20",
+            "text": "sebesség"
+          },
+          {
+            "block": "b22",
+            "text": "site speed"
+          },
+          {
+            "block": "b24",
+            "text": "sebességet"
+          },
+          {
+            "block": "b24",
+            "text": "site speed"
+          },
+          {
+            "block": "b24",
+            "text": "sebességadatokat"
+          },
+          {
+            "block": "b24",
+            "text": "sebesség"
+          },
+          {
+            "block": "b27",
+            "text": "sebesség"
+          },
+          {
+            "block": "b32",
+            "text": "sebesség"
+          },
+          {
+            "block": "b33",
+            "text": "site speed"
+          },
+          {
+            "block": "b35",
+            "text": "site speednél"
+          },
+          {
+            "block": "b48",
+            "text": "site speed"
+          },
+          {
+            "block": "b58",
+            "text": "sebessége"
+          },
+          {
+            "block": "b60",
+            "text": "site speedet"
+          },
+          {
+            "block": "b66",
+            "text": "sebességet"
+          },
+          {
+            "block": "b67",
+            "text": "site speed"
+          }
+        ]
+      },
+      {
+        "canonical": "SEO",
+        "type": "concept",
+        "subtype": "discipline",
+        "aliases": [
+          "keresőoptimalizálás",
+          "search engine optimization"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "SEO/UX"
+          },
+          {
+            "block": "b14",
+            "text": "SEO/UX"
+          },
+          {
+            "block": "b18",
+            "text": "SEO"
+          },
+          {
+            "block": "b19",
+            "text": "SEO-beavatkozással"
+          },
+          {
+            "block": "b19",
+            "text": "SEO"
+          },
+          {
+            "block": "b19",
+            "text": "SEO-ban"
+          },
+          {
+            "block": "b19",
+            "text": "SEO/UX-beavatkozás"
+          },
+          {
+            "block": "b22",
+            "text": "SEO"
+          },
+          {
+            "block": "b60",
+            "text": "SEO-feladatként"
+          },
+          {
+            "block": "b60",
+            "text": "SEO"
+          },
+          {
+            "block": "b66",
+            "text": "SEO-szempontokat"
+          },
+          {
+            "block": "b67",
+            "text": "SEO"
+          }
+        ]
+      },
+      {
+        "canonical": "UX",
+        "type": "concept",
+        "subtype": "discipline",
+        "aliases": [
+          "user experience",
+          "felhasználói élmény"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "UX"
+          },
+          {
+            "block": "b14",
+            "text": "UX"
+          },
+          {
+            "block": "b18",
+            "text": "UX"
+          },
+          {
+            "block": "b19",
+            "text": "UX-beavatkozás"
+          },
+          {
+            "block": "b22",
+            "text": "UX"
+          },
+          {
+            "block": "b66",
+            "text": "UX-hatásokat"
+          },
+          {
+            "block": "b67",
+            "text": "UX"
+          }
+        ]
+      },
+      {
+        "canonical": "Kiss Krisztián",
+        "type": "person",
+        "aliases": [
+          "Kiss Krisztian",
+          "Krisztian Kiss"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b17",
+            "text": "Kiss Krisztian"
+          }
+        ]
+      },
+      {
+        "canonical": "Deloitte",
+        "type": "org",
+        "subtype": "company",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b20",
+            "text": "Deloitte"
+          }
+        ]
+      },
+      {
+        "canonical": "Google",
+        "type": "org",
+        "subtype": "company",
+        "note": "a Deloitte–Google kutatás és 'a Google milyen minőségű oldalt lát'",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b20",
+            "text": "Google"
+          },
+          {
+            "block": "b60",
+            "text": "Google"
+          }
+        ]
+      },
+      {
+        "canonical": "Milliseconds Make Millions",
+        "type": "work",
+        "subtype": "article",
+        "note": "Deloitte–Google kutatás",
+        "acceptable_types": [
+          "work"
+        ],
+        "acceptable_subtypes": [
+          "article",
+          "case_study",
+          "other"
+        ],
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b20",
+            "text": "Milliseconds Make Millions"
+          }
+        ]
+      },
+      {
+        "canonical": "web.dev",
+        "type": "work",
+        "subtype": "other",
+        "acceptable_types": [
+          "work",
+          "tech",
+          "org"
+        ],
+        "acceptable_subtypes": [
+          "other",
+          "software",
+          "company"
+        ],
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b20",
+            "text": "web.dev"
+          }
+        ]
+      },
+      {
+        "canonical": "Matthew Edgar",
+        "type": "person",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b24",
+            "text": "Matthew Edgar"
+          }
+        ]
+      },
+      {
+        "canonical": "Google Tag Manager",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [
+          "GTM"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b24",
+            "text": "Google Tag Managerben"
+          },
+          {
+            "block": "b24",
+            "text": "GTM-en"
+          }
+        ]
+      },
+      {
+        "canonical": "GA4",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [
+          "Google Analytics 4"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b24",
+            "text": "GA4-be"
+          },
+          {
+            "block": "b24",
+            "text": "GA4-ben"
+          },
+          {
+            "block": "b24",
+            "text": "GA4-ből"
+          }
+        ]
+      },
+      {
+        "canonical": "BigQuery",
+        "type": "tech",
+        "subtype": "software",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b24",
+            "text": "BigQuery-be"
+          }
+        ]
+      },
+      {
+        "canonical": "PageSpeed Insights",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [
+          "PageSpeed",
+          "Google PageSpeed Insights"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b24",
+            "text": "PageSpeed-pontszámokról"
+          },
+          {
+            "block": "b60",
+            "text": "PageSpeed-pontszámot"
+          },
+          {
+            "block": "b66",
+            "text": "PageSpeed"
+          }
+        ]
+      },
+      {
+        "canonical": "Core Web Vitals",
+        "type": "concept",
+        "subtype": "metric",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b24",
+            "text": "Core Web Vitals"
+          }
+        ]
+      },
+      {
+        "canonical": "LCP",
+        "type": "concept",
+        "subtype": "metric",
+        "aliases": [
+          "Largest Contentful Paint",
+          "Legnagyobb vizuális tartalomválasz"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b37",
+            "text": "LCP"
+          }
+        ]
+      },
+      {
+        "canonical": "konverziós arány",
+        "type": "concept",
+        "subtype": "metric",
+        "aliases": [
+          "conversion rate"
+        ],
+        "note": "az eredmény fő mutatója",
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b27",
+            "text": "konverziós arány"
+          },
+          {
+            "block": "b31",
+            "text": "konverziós arány"
+          },
+          {
+            "block": "b53",
+            "text": "Konverziós arány"
+          },
+          {
+            "block": "b56",
+            "text": "konverziós arány"
+          }
+        ]
+      },
+      {
+        "canonical": "lineáris regresszió",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "linear regression"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b27",
+            "text": "lineáris regresszió"
+          }
+        ]
+      },
+      {
+        "canonical": "cache",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "gyorsítótár",
+          "caching"
+        ],
+        "note": "a megoldás egyik fő eleme",
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b40",
+            "text": "cache-rendszer"
+          },
+          {
+            "block": "b42",
+            "text": "cache-eltük"
+          },
+          {
+            "block": "b42",
+            "text": "cache-szabályokat"
+          },
+          {
+            "block": "b43",
+            "text": "cache"
+          },
+          {
+            "block": "b43",
+            "text": "cache-eljünk"
+          },
+          {
+            "block": "b46",
+            "text": "cache"
+          },
+          {
+            "block": "b66",
+            "text": "cache-elni"
+          }
+        ]
+      },
+      {
+        "canonical": "WebP",
+        "type": "tech",
+        "subtype": "standard",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b38",
+            "text": "WebP"
+          }
+        ]
+      },
+      {
+        "canonical": "AVIF",
+        "type": "tech",
+        "subtype": "standard",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b38",
+            "text": "AVIF"
+          }
+        ]
+      },
+      {
+        "canonical": "OPcache",
+        "type": "tech",
+        "subtype": "software",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b42",
+            "text": "OPcache"
+          }
+        ]
+      },
+      {
+        "canonical": "APCu",
+        "type": "tech",
+        "subtype": "software",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b42",
+            "text": "APCu"
+          }
+        ]
+      },
+      {
+        "canonical": "CDN",
+        "type": "concept",
+        "subtype": "other",
+        "aliases": [
+          "content delivery network"
+        ],
+        "acceptable_types": [
+          "concept",
+          "tech"
+        ],
+        "acceptable_subtypes": [
+          "other",
+          "software",
+          "standard"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b42",
+            "text": "CDN"
+          }
+        ]
+      },
+      {
+        "canonical": "JavaScript",
+        "type": "tech",
+        "subtype": "language",
+        "aliases": [
+          "JS"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b42",
+            "text": "JavaScript-fájlok"
+          },
+          {
+            "block": "b44",
+            "text": "JavaScript"
+          },
+          {
+            "block": "b45",
+            "text": "JavaScript"
+          },
+          {
+            "block": "b46",
+            "text": "JS"
+          },
+          {
+            "block": "b66",
+            "text": "JavaScriptből"
+          }
+        ]
+      },
+      {
+        "canonical": "CSS",
+        "type": "tech",
+        "subtype": "language",
+        "aliases": [
+          "Cascading Style Sheets"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b42",
+            "text": "CSS"
+          },
+          {
+            "block": "b44",
+            "text": "CSS"
+          },
+          {
+            "block": "b45",
+            "text": "CSS"
+          },
+          {
+            "block": "b46",
+            "text": "CSS"
+          },
+          {
+            "block": "b66",
+            "text": "CSS-ből"
+          }
+        ]
+      },
+      {
+        "canonical": "HTML",
+        "type": "tech",
+        "subtype": "language",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b46",
+            "text": "HTML"
+          },
+          {
+            "block": "b46",
+            "text": "HTML-minify"
+          }
+        ]
+      }
+    ],
+    "optional": [
+      {
+        "canonical": "technikai SEO",
+        "type": "concept",
+        "subtype": "discipline",
+        "aliases": [
+          "technical SEO"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b19",
+            "text": "technikai SEO"
+          },
+          {
+            "block": "b60",
+            "text": "technikai SEO-feladatként"
+          }
+        ]
+      },
+      {
+        "canonical": "korreláció",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "correlation"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b27",
+            "text": "korreláció"
+          },
+          {
+            "block": "b28",
+            "text": "korreláció"
+          }
+        ]
+      },
+      {
+        "canonical": "reverse proxy",
+        "type": "concept",
+        "subtype": "other",
+        "acceptable_types": [
+          "concept",
+          "tech"
+        ],
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b42",
+            "text": "reverse proxy"
+          }
+        ]
+      },
+      {
+        "canonical": "minify",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "minification"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b46",
+            "text": "tömörítés"
+          },
+          {
+            "block": "b46",
+            "text": "HTML-minify"
+          }
+        ]
+      },
+      {
+        "canonical": "render-blokkoló erőforrás",
+        "type": "concept",
+        "subtype": "other",
+        "aliases": [
+          "render-blocking resources"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b46",
+            "text": "render-blokkoló erőforrások"
+          }
+        ]
+      },
+      {
+        "canonical": "belső linkelés",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "internal linking"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b19",
+            "text": "belső linkelés"
+          }
+        ]
+      },
+      {
+        "canonical": "strukturált adat",
+        "type": "concept",
+        "subtype": "other",
+        "aliases": [
+          "structured data"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b19",
+            "text": "strukturált adatok"
+          }
+        ]
+      },
+      {
+        "canonical": "kategóriaoldal",
+        "type": "concept",
+        "subtype": "other",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b19",
+            "text": "kategóriaoldalak"
+          },
+          {
+            "block": "b30",
+            "text": "kategóriaoldalaknál"
+          }
+        ]
+      },
+      {
+        "canonical": "funnel",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "tölcsér",
+          "értékesítési tölcsér"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b20",
+            "text": "funnel"
+          }
+        ]
+      },
+      {
+        "canonical": "baseline",
+        "type": "concept",
+        "subtype": "metric",
+        "aliases": [
+          "alapvonal"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b31",
+            "text": "baseline"
+          }
+        ]
+      },
+      {
+        "canonical": "átlagos kosárérték",
+        "type": "concept",
+        "subtype": "metric",
+        "aliases": [
+          "average order value",
+          "AOV"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b20",
+            "text": "kosárérték-növekedést"
+          },
+          {
+            "block": "b58",
+            "text": "kosárértékkel"
+          }
+        ]
+      },
+      {
+        "canonical": "landing page",
+        "type": "concept",
+        "subtype": "other",
+        "aliases": [
+          "céloldal"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b60",
+            "text": "landing page-ek"
+          }
+        ]
+      },
+      {
+        "canonical": "ecommerce",
+        "type": "concept",
+        "subtype": "discipline",
+        "aliases": [
+          "e-kereskedelem",
+          "webáruház"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b18",
+            "text": "webshopnak"
+          },
+          {
+            "block": "b19",
+            "text": "webshopnál"
+          },
+          {
+            "block": "b20",
+            "text": "webshopon"
+          },
+          {
+            "block": "b22",
+            "text": "webshop"
+          },
+          {
+            "block": "b30",
+            "text": "ecommerce"
+          },
+          {
+            "block": "b37",
+            "text": "webshopnál"
+          },
+          {
+            "block": "b37",
+            "text": "ecommerce"
+          },
+          {
+            "block": "b41",
+            "text": "webshopnál"
+          },
+          {
+            "block": "b43",
+            "text": "webshop"
+          },
+          {
+            "block": "b57",
+            "text": "webshopnál"
+          },
+          {
+            "block": "b60",
+            "text": "webshopnál"
+          }
+        ]
+      },
+      {
+        "canonical": "konverzió",
+        "type": "concept",
+        "subtype": "metric",
+        "aliases": [
+          "conversion"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b24",
+            "text": "konverzióval"
+          }
+        ]
+      },
+      {
+        "canonical": "tracking pixel",
+        "type": "concept",
+        "subtype": "other",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b48",
+            "text": "tracking pixel"
+          }
+        ]
+      },
+      {
+        "canonical": "page_load_time",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "GA4",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b24",
+            "text": "page_load_time"
+          }
+        ]
+      },
+      {
+        "canonical": "content_load_time",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "GA4",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b24",
+            "text": "content_load_time"
+          }
+        ]
+      },
+      {
+        "canonical": "dom_interactive_time",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "GA4",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b24",
+            "text": "dom_interactive_time"
+          }
+        ]
+      },
+      {
+        "canonical": "server_response_time",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "GA4",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b24",
+            "text": "server_response_time"
+          }
+        ]
+      },
+      {
+        "canonical": "SEO/UX esettanulmány",
+        "type": "work",
+        "subtype": "case_study",
+        "note": "az oldal saját cikke; a page_id-hoz kötve",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "SEO/UX Esettanulmány"
+          },
+          {
+            "block": "b14",
+            "text": "SEO/UX Esettanulmány"
+          }
+        ]
+      }
+    ],
+    "negatives": [
+      {
+        "text": "Kilépés a tartalomba"
+      },
+      {
+        "text": "Utolsó jelentős módosítás"
+      },
+      {
+        "text": "publikálás"
+      },
+      {
+        "text": "A probléma"
+      },
+      {
+        "text": "Hogyan mértük?"
+      },
+      {
+        "text": "Az eredmény"
+      },
+      {
+        "text": "Mutató"
+      },
+      {
+        "text": "Előtte"
+      },
+      {
+        "text": "Utána"
+      }
+    ]
   },
-  {
-   "id": "b52",
-   "kind": "table_row",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Az eredmény"
-   ],
-   "text": "Mobil betöltési idő | kb. 5 mp | kb. 3 mp",
-   "cells": [
-    {
-     "header": null,
-     "value": "Mobil betöltési idő"
+  "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+  "annotation_notes": [
+    "Esettanulmány: szolgáltatás nincs rajta, a főtéma a site speed.",
+    "A megoldás fő elemei (cache, képformátumok, JS/CSS) kötelezők; a SEO-részfogalmak (technikai SEO, belső linkelés, strukturált adat) opcionálisak.",
+    "A GA4-eseményparaméterek (page_load_time stb.) opcionális API-elemek.",
+    "A 'site speed' mintája bőkezű: a 'sebesség' szó minden előfordulását elfogadja felismerésként."
+  ],
+  "rules": {
+    "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+    "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+    "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
+    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
+    "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
+    "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
+    "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
+    "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
+    "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
+    "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
+    "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
+    "ambiguous_aliases": "a többértelmű rövidítés (pl. GTM) felismerésnek elég, de az elnevezés csak a kontextus szerinti teljes névvel helyes; site-szinten azonos rövidítés nem vonható össze automatikusan",
+    "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service)."
+  },
+  "subtype_glossary": {
+    "service": {
+      "audit": "felmérés, átvilágítás",
+      "implementation": "beállítás, kiépítés, bevezetés",
+      "consulting": "tanácsadás",
+      "reporting": "riport, dashboard",
+      "training": "képzés, workshop",
+      "other": "egyéb"
     },
-    {
-     "header": null,
-     "value": "kb. 5 mp"
+    "org": {
+      "company": "cég",
+      "restaurant": "étterem, vendéglátóhely",
+      "institution": "intézmény, szervezet",
+      "team": "csapat",
+      "other": "egyéb"
     },
-    {
-     "header": null,
-     "value": "kb. 3 mp"
-    }
-   ]
-  },
-  {
-   "id": "b53",
-   "kind": "table_row",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Az eredmény"
-   ],
-   "text": "Konverziós arány | 2,6% | 2,73%",
-   "cells": [
-    {
-     "header": null,
-     "value": "Konverziós arány"
+    "tech": {
+      "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+      "library": "programkönyvtár",
+      "framework": "keretrendszer",
+      "language": "programozási nyelv",
+      "package": "telepíthető csomag (npm, pip)",
+      "component": "egy könyvtár konkrét komponense",
+      "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+      "api": "programozói interfész, amit szolgáltatásként hívnak",
+      "standard": "műszaki szabvány, specifikáció",
+      "feature": "egy szoftver funkciója",
+      "other": "egyéb"
     },
-    {
-     "header": null,
-     "value": "2,6%"
+    "product": {
+      "dish": "étel vagy desszert az étlapon",
+      "ingredient": "alapanyag, tésztafajta",
+      "wine": "bor",
+      "drink": "ital, koktél",
+      "physical_good": "egyéb fizikai áru",
+      "other": "egyéb"
     },
-    {
-     "header": null,
-     "value": "2,73%"
-    }
-   ]
-  },
-  {
-   "id": "b54",
-   "kind": "table_row",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Az eredmény"
-   ],
-   "text": "Relatív konverziós javulás | — | kb. 5%",
-   "cells": [
-    {
-     "header": null,
-     "value": "Relatív konverziós javulás"
+    "concept": {
+      "method": "módszer, keretrendszer, eljárás",
+      "discipline": "szakterület",
+      "metric": "mérhető mennyiség, mutató",
+      "ui_pattern": "általános felületi minta",
+      "license": "licenc",
+      "designation": "eredetvédelmi vagy minőségi jelölés",
+      "other": "egyéb"
     },
-    {
-     "header": null,
-     "value": "—"
+    "place": {
+      "city": "város",
+      "region": "régió, tartomány",
+      "country": "ország",
+      "venue": "helyszín, épület",
+      "other": "egyéb"
     },
-    {
-     "header": null,
-     "value": "kb. 5%"
-    }
-   ]
+    "work": {
+      "article": "cikk",
+      "case_study": "esettanulmány",
+      "book": "könyv",
+      "course": "tanfolyam",
+      "other": "egyéb"
+    },
+    "event": {
+      "conference": "konferencia",
+      "webinar": "webinár",
+      "festival": "fesztivál",
+      "other": "egyéb"
+    },
+    "brand": {
+      "other": "egyéb"
+    },
+    "person": {}
   },
-  {
-   "id": "b55",
-   "kind": "list_item",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Az eredmény"
-   ],
-   "text": "A mobil átlagos betöltési idő körülbelül 5 másodpercről 3 másodpercre csökkent. Ez nagyjából 40%-os javulás ."
-  },
-  {
-   "id": "b56",
-   "kind": "list_item",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Az eredmény"
-   ],
-   "text": "A konverziós arány 2,6%-ról 2,73%-ra nőtt. Ez relatív értelemben 5% növekedés . Ha 2,72%-kal számolnánk, az körülbelül 4,6%-os relatív növekedés lenne, tehát publikációban a 2,73% tisztább szám."
-  },
-  {
-   "id": "b57",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Az eredmény"
-   ],
-   "text": "Első ránézésre a 2,6% → 2,73% nem tűnik látványosnak. Ezért szoktam óvatos lenni azzal, amikor valaki csak százalékpontokban nézi a konverziós javulást. Nagy forgalmú webshopnál ez már más történet."
-  },
-  {
-   "id": "b58",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Az eredmény"
-   ],
-   "text": "A mellékelt mintaszámításban havi 500 000 sessionnel és 35 000 Ft-os átlagos kosárértékkel számolva a javulás körülbelül 22,75 millió Ft becsült havi többletbevételt jelentene. Ez természetesen nem könyvelési adat, hanem publikációs célú becslés, hogy mennyit számít a weboldal betöltődésének sebessége egy nagy forgalmú weboldalon."
-  },
-  {
-   "id": "b59",
-   "kind": "heading",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit tanultunk belőle?"
-   ],
-   "text": "Mit tanultunk belőle?"
-  },
-  {
-   "id": "b60",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit tanultunk belőle?"
-   ],
-   "text": "A site speedet sokan még mindig technikai SEO-feladatként kezelik. Részben az is. De egy nagy forgalmú webshopnál gyorsan kiderül, hogy ennél többről van szó. SEO oldalról számít a felfedezhetőség, a felhasználói élmény, a landing page-ek teljesítménye, és persze az is, hogy a Google milyen minőségű oldalt lát. De a felhasználót ezek közül egyik sem érdekli így, ebben a formában. Ő nem PageSpeed-pontszámot lát, hanem azt, hogy várnia kell."
-  },
-  {
-   "id": "b61",
-   "kind": "list_item",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit tanultunk belőle?"
-   ],
-   "text": "Lassan jön be a terméklista."
-  },
-  {
-   "id": "b62",
-   "kind": "list_item",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit tanultunk belőle?"
-   ],
-   "text": "Késik a kép."
-  },
-  {
-   "id": "b63",
-   "kind": "list_item",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit tanultunk belőle?"
-   ],
-   "text": "Megmozdul az oldal, mire kattintana."
-  },
-  {
-   "id": "b64",
-   "kind": "list_item",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit tanultunk belőle?"
-   ],
-   "text": "A kosárgomb nem akkor reagál, amikor várná."
-  },
-  {
-   "id": "b65",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit tanultunk belőle?"
-   ],
-   "text": "Ezek külön-külön nem tűnnek nagy hibának. Egy vásárlási folyamatban viszont összeadódnak. Főleg mobilon, ahol eleve türelmetlenebb a felhasználó, és sokszor nem ideális környezetben böngészik."
-  },
-  {
-   "id": "b66",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit tanultunk belőle?"
-   ],
-   "text": "Számomra ebben a projektben nem az volt a legfontosabb eredmény, hogy a mobil betöltési idő nagyjából 5 másodpercről 3 másodpercre csökkent. Ez fontos volt, de önmagában még mindig csak egy technikai mutató. A nagy különbséget az jelentette, hogy a sebességet sikerült üzleti nyelvre lefordítani. Nem arról beszéltünk, hogy „rossz a PageSpeed score”. Ez önmagában ritkán mozgat meg egy szervezetet. Arról beszéltünk, hogy a lassabb felhasználói élmény mérhetően gyengébb konverziós aránnyal járt együtt. És ha ezen javítunk, annak bevételi hatása lehet. Ez már egészen más beszélgetés. Azt is fontos hozzátenni, hogy ez nem egyszemélyes projekt volt. Az én feladatom elsősorban az volt, hogy összekössem az üzleti problémát, a SEO-szempontokat, a UX-hatásokat és a mérési adatokat. Ebből kellett olyan fejlesztési prioritást csinálni, ami nem csak szakmailag védhető, hanem üzletileg is értelmes. A megvalósítás viszont a belső fejlesztőcsapat nélkül nem ment volna. Ilyen típusú optimalizálásnál nagyon sok apró döntésen múlik az eredmény: mit lehet cache-elni, mit nem, hogyan kezeljük a képeket, mi törhető ki a CSS-ből vagy JavaScriptből, hol van valódi kockázat, és hol csak megszokásból maradt bent valami a rendszerben."
-  },
-  {
-   "id": "b67",
-   "kind": "paragraph",
-   "heading_path": [
-    "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
-    "Mit tanultunk belőle?"
-   ],
-   "text": "Ezeket nem lehet kívülről, egy auditból „rámondani” az oldalra. Kell hozzá egy jó fejlesztői csapat, amelyik érti a rendszert, tudja, hol vannak a korlátok, és hajlandó a teljesítményt nem külön technikai feladatként, hanem üzleti célként kezelni. Nekem ez volt a projekt egyik legfontosabb tanulsága: a site speed optimalizálás akkor működik igazán, ha az adat, a SEO, a UX és a fejlesztés nem külön témaként fut, hanem ugyanarra a problémára dolgozik."
+  "subtype_vocabulary": {
+    "service": [
+      "audit",
+      "implementation",
+      "consulting",
+      "reporting",
+      "training",
+      "other"
+    ],
+    "org": [
+      "company",
+      "restaurant",
+      "institution",
+      "team",
+      "other"
+    ],
+    "tech": [
+      "software",
+      "library",
+      "framework",
+      "language",
+      "package",
+      "component",
+      "api_symbol",
+      "api",
+      "standard",
+      "feature",
+      "other"
+    ],
+    "product": [
+      "dish",
+      "ingredient",
+      "wine",
+      "drink",
+      "physical_good",
+      "other"
+    ],
+    "concept": [
+      "method",
+      "discipline",
+      "metric",
+      "ui_pattern",
+      "license",
+      "designation",
+      "other"
+    ],
+    "place": [
+      "city",
+      "region",
+      "country",
+      "venue",
+      "other"
+    ],
+    "work": [
+      "article",
+      "case_study",
+      "book",
+      "course",
+      "other"
+    ],
+    "event": [
+      "conference",
+      "webinar",
+      "festival",
+      "other"
+    ],
+    "brand": [
+      "other"
+    ],
+    "person": []
   }
- ],
- "gold": {
-  "primary_entities": [],
-  "entities": [],
-  "optional": [],
-  "negatives": []
- },
- "gold_status": "sablon, annotálatlan",
- "annotation_notes": [],
- "rules": {
-  "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
-  "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
-  "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
-  "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
-  "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
-  "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
-  "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
-  "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
-  "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
-  "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
-  "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
-  "ambiguous_aliases": "a többértelmű rövidítés (pl. GTM) felismerésnek elég, de az elnevezés csak a kontextus szerinti teljes névvel helyes; site-szinten azonos rövidítés nem vonható össze automatikusan",
-  "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service)."
- },
- "subtype_glossary": {
-  "service": {
-   "audit": "felmérés, átvilágítás",
-   "implementation": "beállítás, kiépítés, bevezetés",
-   "consulting": "tanácsadás",
-   "reporting": "riport, dashboard",
-   "training": "képzés, workshop",
-   "other": "egyéb"
-  },
-  "org": {
-   "company": "cég",
-   "restaurant": "étterem, vendéglátóhely",
-   "institution": "intézmény, szervezet",
-   "team": "csapat",
-   "other": "egyéb"
-  },
-  "tech": {
-   "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
-   "library": "programkönyvtár",
-   "framework": "keretrendszer",
-   "language": "programozási nyelv",
-   "package": "telepíthető csomag (npm, pip)",
-   "component": "egy könyvtár konkrét komponense",
-   "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
-   "api": "programozói interfész, amit szolgáltatásként hívnak",
-   "standard": "műszaki szabvány, specifikáció",
-   "feature": "egy szoftver funkciója",
-   "other": "egyéb"
-  },
-  "product": {
-   "dish": "étel vagy desszert az étlapon",
-   "ingredient": "alapanyag, tésztafajta",
-   "wine": "bor",
-   "drink": "ital, koktél",
-   "physical_good": "egyéb fizikai áru",
-   "other": "egyéb"
-  },
-  "concept": {
-   "method": "módszer, keretrendszer, eljárás",
-   "discipline": "szakterület",
-   "metric": "mérhető mennyiség, mutató",
-   "ui_pattern": "általános felületi minta",
-   "license": "licenc",
-   "designation": "eredetvédelmi vagy minőségi jelölés",
-   "other": "egyéb"
-  },
-  "place": {
-   "city": "város",
-   "region": "régió, tartomány",
-   "country": "ország",
-   "venue": "helyszín, épület",
-   "other": "egyéb"
-  },
-  "work": {
-   "article": "cikk",
-   "case_study": "esettanulmány",
-   "book": "könyv",
-   "course": "tanfolyam",
-   "other": "egyéb"
-  },
-  "event": {
-   "conference": "konferencia",
-   "webinar": "webinár",
-   "festival": "fesztivál",
-   "other": "egyéb"
-  },
-  "brand": {
-   "other": "egyéb"
-  },
-  "person": {}
- },
- "subtype_vocabulary": {
-  "service": [
-   "audit",
-   "implementation",
-   "consulting",
-   "reporting",
-   "training",
-   "other"
-  ],
-  "org": [
-   "company",
-   "restaurant",
-   "institution",
-   "team",
-   "other"
-  ],
-  "tech": [
-   "software",
-   "library",
-   "framework",
-   "language",
-   "package",
-   "component",
-   "api_symbol",
-   "api",
-   "standard",
-   "feature",
-   "other"
-  ],
-  "product": [
-   "dish",
-   "ingredient",
-   "wine",
-   "drink",
-   "physical_good",
-   "other"
-  ],
-  "concept": [
-   "method",
-   "discipline",
-   "metric",
-   "ui_pattern",
-   "license",
-   "designation",
-   "other"
-  ],
-  "place": [
-   "city",
-   "region",
-   "country",
-   "venue",
-   "other"
-  ],
-  "work": [
-   "article",
-   "case_study",
-   "book",
-   "course",
-   "other"
-  ],
-  "event": [
-   "conference",
-   "webinar",
-   "festival",
-   "other"
-  ],
-  "brand": [
-   "other"
-  ],
-  "person": []
- }
 }
