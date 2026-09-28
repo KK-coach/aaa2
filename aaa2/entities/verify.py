@@ -11,7 +11,7 @@ igen/nem kérdéssel, egy LLM-hívásban oldalanként.
 """
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from aaa2.entities.blocks import block_text
 from aaa2.entities.gate import STRUCTURAL_KINDS, SoftItem, soft_items
@@ -73,16 +73,19 @@ def verify_input(items: Sequence[SoftItem], blocks: Mapping[str, Mapping]) -> st
 
 
 def verify_record(client, record: Mapping, blocks: Mapping[str, Mapping],
-                  page_id: int | None = None) -> dict:
+                  page_id: int | None = None,
+                  select: Callable[[SoftItem], bool] | None = None) -> dict:
     """A rekord az ellenőrzés után. Mellette `verify_model`, `verify_call_id`, `call_ids` (az
     eddigiek és az ellenőrzésé), `verify_decisions` (név, típus, marad-e; válasz nélkül None),
-    `verify_missing`, `verify_error`."""
+    `verify_missing`, `verify_error`. `select`: csak ezek a tételek mennek a hívásba (a többi
+    változatlanul marad); ha nincs ilyen, nincs hívás."""
     out = dict(record)
     out.update(verify_model=client.model, verify_call_id=None, verify_decisions=[],
                verify_missing=0, verify_error=None,
                call_ids=list(record.get("call_ids")
                              or [i for i in [record.get("call_id")] if i is not None]))
-    items = soft_items(record.get("entities") or [], blocks)
+    items = [item for item in soft_items(record.get("entities") or [], blocks)
+             if select is None or select(item)]
     if not items:
         return out
     try:
