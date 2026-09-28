@@ -2,7 +2,9 @@
 
 Minden visszaérkezett válasz — a sémának nem megfelelő is — sort ír a site-adatbázis
 `llm_calls` táblájába és a főkönyvbe (ledger.py). Hívás előtt a keret-őr a főkönyvből összesíti
-a szolgáltató modelljeinek költségét; a leállási küszöb fölött nem hív. Átmeneti hibánál (408,
+a szolgáltató modelljeinek költségét, és hozzáadja a hívás legnagyobb költségét (a bemenet
+konzervatív becslése és a teljes `max_output_tokens`); ha ez a leállási küszöb fölé vinné, nem
+hív. Átmeneti hibánál (408,
 429, 5xx, kapcsolat) exponenciális várakozással és jitterrel újrapróbál; a kísérletek száma az
 `llm_calls.attempts`-be, az utolsó sikertelen kísérlet hibája a `last_error`-ba kerül. A kulcsok
 a környezetből vagy a `.env`-ből jönnek; kulcs nélkül a szolgáltató kimarad, nem hiba.
@@ -24,9 +26,11 @@ from pydantic import BaseModel, ValidationError
 
 from aaa2.llm import ledger
 from aaa2.llm.adapters import ADAPTERS, API_ERRORS, Reply, describe_error, is_transient
-from aaa2.llm.config import LLMConfig, ProviderConfig, load_config
+from aaa2.llm.config import LLMConfig, ProviderConfig, Usage, load_config
 
 ENV_PATH = Path(".env")
+# A költségőr bemenet-becslése: ennyi karakter egy token (konzervatív; a magyar szöveg ~3).
+CHARS_PER_TOKEN = 2
 
 
 class LLMError(Exception):
@@ -76,23 +80,38 @@ class Retry:
 class LLMClient:
     def __init__(self, con: duckdb.DuckDBPyConnection, adapter: Adapter, config: LLMConfig,
                  ledger_path: Path | None = None,
-                 clock: Callable[[], datetime] | None = None, retry: Retry | None = None):
+                 clock: Callable[[], datetime] | None = None, retry: Retry | None = None,
+                 model: str | None = None):
+        """`model`: a szolgáltató egy konfigurált modellje (`ProviderConfig.models`) az aktív
+        helyett."""
         self.con = con
         self.adapter = adapter
         self.config = config
         self.provider = adapter.config
+        if model is not None and model not in self.provider.models:
+            raise ValueError(f"{self.provider.name}: a {model} nincs a konfigurált modellek "
+                             f"között ({', '.join(self.provider.models)})")
+        self._model = model
         self.ledger_path = ledger_path
         self.clock = clock or _now
         self.retry = retry or Retry()
 
     @property
     def model(self) -> str:
-        return self.provider.active_model
+        return self._model or self.provider.active_model
 
     def spent_usd(self) -> float:
         """A szolgáltató konfigurált modelljeinek halmozott költsége a főkönyvből."""
         spent = ledger.spent_by_model(self.ledger_path)
         return sum(spent.get(model, 0.0) for model in self.provider.models)
+
+    def worst_case_usd(self, prompt: str, input: str, day) -> float:
+        """Egy hívás legnagyobb költsége: a bemenet konzervatív tokenbecslése
+        (`CHARS_PER_TOKEN` karakterenként egy token) és a teljes `max_output_tokens` a modell
+        árán, a hosszú-kontextus sávval együtt."""
+        tokens_in = -(-(len(prompt) + len(input)) // CHARS_PER_TOKEN)
+        usage = Usage(input=tokens_in, output=self.provider.max_output_tokens)
+        return self.config.price(self.model, day).cost_usd(usage)
 
     def extract[T: BaseModel](self, schema: type[T], prompt: str, input: str, *, domain: str,
                               purpose: str = "extract", page_id: int | None = None
@@ -100,10 +119,13 @@ class LLMClient:
         called_at = self.clock()
         price = self.config.price(self.model, called_at.date())
         spent = self.spent_usd()
-        if spent > self.provider.stop_usd:
+        worst = self.worst_case_usd(prompt, input, called_at.date())
+        if spent + worst > self.provider.stop_usd:
             raise BudgetExceeded(
-                f"{self.provider.name}: {spent:.4f} USD a {self.provider.stop_usd} USD leállási "
-                f"küszöb fölött (keret {self.provider.budget_usd} USD)")
+                f"{self.provider.name}: {spent:.4f} USD + ez a hívás legfeljebb {worst:.4f} USD "
+                f"(max_output_tokens {self.provider.max_output_tokens}) a "
+                f"{self.provider.stop_usd} USD leállási küszöb fölé vinné "
+                f"(keret {self.provider.budget_usd} USD)")
         reply, attempts, latency_ms, last_error = self._call(schema, prompt, input)
         cost = price.cost_usd(reply.usage)
         (call_id,) = self.con.execute(
@@ -163,8 +185,10 @@ def open_clients(con: duckdb.DuckDBPyConnection, *, config: LLMConfig | None = N
                  env_file: Path = ENV_PATH, ledger_path: Path | None = None,
                  base_urls: dict[str, str] | None = None,
                  clock: Callable[[], datetime] | None = None, retry: Retry | None = None,
+                 models: dict[str, str] | None = None,
                  ) -> tuple[dict[str, LLMClient], dict[str, str]]:
-    """A kulccsal rendelkező szolgáltatók kliensei, és a kimaradtak az okukkal."""
+    """A kulccsal rendelkező szolgáltatók kliensei, és a kimaradtak az okukkal. `models`:
+    szolgáltatónként egy konfigurált modell az aktív helyett."""
     config = config or load_config()
     clients, skipped = {}, {}
     for name, provider in config.providers.items():
@@ -173,7 +197,8 @@ def open_clients(con: duckdb.DuckDBPyConnection, *, config: LLMConfig | None = N
             skipped[name] = f"nincs {provider.key_env}"
             continue
         adapter = ADAPTERS[name](provider, key, (base_urls or {}).get(name))
-        clients[name] = LLMClient(con, adapter, config, ledger_path, clock, retry)
+        clients[name] = LLMClient(con, adapter, config, ledger_path, clock, retry,
+                                  (models or {}).get(name))
     return clients, skipped
 
 

@@ -1,0 +1,611 @@
+{
+  "page_id": "s6_calici_evento_it",
+  "lang": "it",
+  "synthetic": true,
+  "set": "generalization",
+  "site_description": "Calici d'Autunno — festa annuale del vino a Montalcino, in Toscana.",
+  "tests": [
+    "olasz nyelv",
+    "esemény mint főtéma",
+    "helynév önállóan (Montalcino a címben) és összetett nevekben (Fortezza di Montalcino, Brunello di Montalcino)",
+    "eredetvédett borok és alapanyag",
+    "helyszín (erőd, apátság)",
+    "közlekedési és jegyértékesítő szolgáltatók",
+    "szervezet névben szereplő helymelléknévvel (Banca Senese)",
+    "CTA és navigáció nem entitás"
+  ],
+  "blocks": [
+    {
+      "id": "b0",
+      "kind": "title",
+      "text": "Calici d'Autunno 2026 – Montalcino",
+      "heading_path": []
+    },
+    {
+      "id": "b1",
+      "kind": "heading",
+      "level": 1,
+      "text": "Calici d'Autunno 2026",
+      "heading_path": [
+        "Calici d'Autunno 2026"
+      ]
+    },
+    {
+      "id": "b2",
+      "kind": "paragraph",
+      "text": "Il 17 e 18 ottobre la Fortezza di Montalcino ospita la dodicesima edizione di Calici d'Autunno, la festa del Brunello di Montalcino e del Rosso di Montalcino.",
+      "heading_path": [
+        "Calici d'Autunno 2026"
+      ]
+    },
+    {
+      "id": "b3",
+      "kind": "heading",
+      "level": 2,
+      "text": "Il programma",
+      "heading_path": [
+        "Calici d'Autunno 2026",
+        "Il programma"
+      ]
+    },
+    {
+      "id": "b4",
+      "kind": "list_item",
+      "text": "Degustazione guidata di Sangiovese in purezza con i produttori della Val d'Orcia",
+      "heading_path": [
+        "Calici d'Autunno 2026",
+        "Il programma"
+      ]
+    },
+    {
+      "id": "b5",
+      "kind": "list_item",
+      "text": "Laboratorio di abbinamento con pecorino di Pienza a cura della chef Lucia Ferri",
+      "heading_path": [
+        "Calici d'Autunno 2026",
+        "Il programma"
+      ]
+    },
+    {
+      "id": "b6",
+      "kind": "list_item",
+      "text": "Passeggiata nel borgo e visita all'abbazia di Sant'Antimo",
+      "heading_path": [
+        "Calici d'Autunno 2026",
+        "Il programma"
+      ]
+    },
+    {
+      "id": "b7",
+      "kind": "heading",
+      "level": 2,
+      "text": "Come arrivare",
+      "heading_path": [
+        "Calici d'Autunno 2026",
+        "Come arrivare"
+      ]
+    },
+    {
+      "id": "b8",
+      "kind": "paragraph",
+      "text": "Navetta gratuita da Siena e da Firenze; i treni Trenitalia arrivano alla stazione di Buonconvento.",
+      "heading_path": [
+        "Calici d'Autunno 2026",
+        "Come arrivare"
+      ]
+    },
+    {
+      "id": "b9",
+      "kind": "heading",
+      "level": 2,
+      "text": "Biglietti",
+      "heading_path": [
+        "Calici d'Autunno 2026",
+        "Biglietti"
+      ]
+    },
+    {
+      "id": "b10",
+      "kind": "paragraph",
+      "text": "Biglietti su Eventbrite: 25 € con calice e sei degustazioni. Evento sostenuto da Banca Senese.",
+      "heading_path": [
+        "Calici d'Autunno 2026",
+        "Biglietti"
+      ]
+    },
+    {
+      "id": "b11",
+      "kind": "paragraph",
+      "text": "La Val d'Orcia è patrimonio UNESCO dal 2004.",
+      "heading_path": [
+        "Calici d'Autunno 2026",
+        "Biglietti"
+      ]
+    },
+    {
+      "id": "b12",
+      "kind": "cta",
+      "text": "Acquista il biglietto",
+      "heading_path": [
+        "Calici d'Autunno 2026",
+        "Biglietti"
+      ]
+    },
+    {
+      "id": "b13",
+      "kind": "nav",
+      "text": "Programma · Biglietti · Contatti",
+      "heading_path": [
+        "Calici d'Autunno 2026",
+        "Biglietti"
+      ]
+    }
+  ],
+  "gold": {
+    "primary_entities": [
+      "Calici d'Autunno"
+    ],
+    "entities": [
+      {
+        "canonical": "Calici d'Autunno",
+        "type": "event",
+        "subtype": "festival",
+        "aliases": [
+          "Calici d'Autunno 2026"
+        ],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Calici d'Autunno"
+          },
+          {
+            "block": "b1",
+            "text": "Calici d'Autunno"
+          },
+          {
+            "block": "b2",
+            "text": "Calici d'Autunno"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Montalcino",
+        "type": "place",
+        "subtype": "city",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Montalcino"
+          }
+        ],
+        "difficulty": "hard",
+        "note": "önálló helyutalás csak a címben; a b2 összetett nevei nem adnak külön említést"
+      },
+      {
+        "canonical": "Fortezza di Montalcino",
+        "type": "place",
+        "subtype": "venue",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Fortezza di Montalcino"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Brunello di Montalcino",
+        "type": "product",
+        "subtype": "wine",
+        "aliases": [
+          "Brunello"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Brunello di Montalcino"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Rosso di Montalcino",
+        "type": "product",
+        "subtype": "wine",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Rosso di Montalcino"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Sangiovese",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b4",
+            "text": "Sangiovese"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "szőlőfajta",
+        "acceptable_subtypes": [
+          "ingredient",
+          "other"
+        ]
+      },
+      {
+        "canonical": "Val d'Orcia",
+        "type": "place",
+        "subtype": "region",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b4",
+            "text": "Val d'Orcia"
+          },
+          {
+            "block": "b11",
+            "text": "Val d'Orcia"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "pecorino di Pienza",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "Pecorino di Pienza"
+        ],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "pecorino di Pienza"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Lucia Ferri",
+        "type": "person",
+        "subtype": null,
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "Lucia Ferri"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "abbazia di Sant'Antimo",
+        "type": "place",
+        "subtype": "venue",
+        "aliases": [
+          "Sant'Antimo",
+          "Abbazia di Sant'Antimo"
+        ],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "abbazia di Sant'Antimo"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Siena",
+        "type": "place",
+        "subtype": "city",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "Siena"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Firenze",
+        "type": "place",
+        "subtype": "city",
+        "aliases": [
+          "Florence"
+        ],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "Firenze"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Trenitalia",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "Trenitalia"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Buonconvento",
+        "type": "place",
+        "subtype": "city",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "Buonconvento"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "a vasútállomás helye"
+      },
+      {
+        "canonical": "Eventbrite",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b10",
+            "text": "Eventbrite"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Banca Senese",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b10",
+            "text": "Banca Senese"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "UNESCO",
+        "type": "org",
+        "subtype": "institution",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b11",
+            "text": "UNESCO"
+          }
+        ],
+        "difficulty": "easy"
+      }
+    ],
+    "optional": [
+      {
+        "canonical": "Pienza",
+        "type": "place",
+        "subtype": "city",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b5",
+            "text": "Pienza"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "eredetnév része"
+      },
+      {
+        "canonical": "patrimonio UNESCO",
+        "type": "concept",
+        "subtype": "designation",
+        "aliases": [
+          "UNESCO World Heritage"
+        ],
+        "surface_forms": [
+          {
+            "block": "b11",
+            "text": "patrimonio UNESCO"
+          }
+        ],
+        "difficulty": "easy"
+      }
+    ],
+    "negatives": [
+      {
+        "text": "Acquista il biglietto"
+      },
+      {
+        "text": "Contatti"
+      },
+      {
+        "text": "Navetta gratuita"
+      },
+      {
+        "text": "calice"
+      },
+      {
+        "text": "degustazioni"
+      },
+      {
+        "text": "Il programma"
+      },
+      {
+        "text": "Come arrivare"
+      }
+    ]
+  },
+  "rules": {
+    "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+    "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+    "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
+    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
+    "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
+    "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
+    "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
+    "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
+    "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
+    "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
+    "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes"
+  },
+  "subtype_glossary": {
+    "service": {
+      "audit": "felmérés, átvilágítás",
+      "implementation": "beállítás, kiépítés, bevezetés",
+      "consulting": "tanácsadás",
+      "reporting": "riport, dashboard",
+      "training": "képzés, workshop",
+      "other": "egyéb"
+    },
+    "org": {
+      "company": "cég",
+      "restaurant": "étterem, vendéglátóhely",
+      "institution": "intézmény, szervezet",
+      "team": "csapat",
+      "other": "egyéb"
+    },
+    "tech": {
+      "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+      "library": "programkönyvtár",
+      "framework": "keretrendszer",
+      "language": "programozási nyelv",
+      "package": "telepíthető csomag (npm, pip)",
+      "component": "egy könyvtár konkrét komponense",
+      "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+      "api": "programozói interfész, amit szolgáltatásként hívnak",
+      "standard": "műszaki szabvány, specifikáció",
+      "feature": "egy szoftver funkciója",
+      "other": "egyéb"
+    },
+    "product": {
+      "dish": "étel vagy desszert az étlapon",
+      "ingredient": "alapanyag, tésztafajta",
+      "wine": "bor",
+      "drink": "ital, koktél",
+      "physical_good": "egyéb fizikai áru",
+      "other": "egyéb"
+    },
+    "concept": {
+      "method": "módszer, keretrendszer, eljárás",
+      "discipline": "szakterület",
+      "metric": "mérhető mennyiség, mutató",
+      "ui_pattern": "általános felületi minta",
+      "license": "licenc",
+      "designation": "eredetvédelmi vagy minőségi jelölés",
+      "other": "egyéb"
+    },
+    "place": {
+      "city": "város",
+      "region": "régió, tartomány",
+      "country": "ország",
+      "venue": "helyszín, épület",
+      "other": "egyéb"
+    },
+    "work": {
+      "article": "cikk",
+      "case_study": "esettanulmány",
+      "book": "könyv",
+      "course": "tanfolyam",
+      "other": "egyéb"
+    },
+    "event": {
+      "conference": "konferencia",
+      "webinar": "webinár",
+      "festival": "fesztivál",
+      "other": "egyéb"
+    },
+    "brand": {
+      "other": "egyéb"
+    },
+    "person": {}
+  },
+  "subtype_vocabulary": {
+    "service": [
+      "audit",
+      "implementation",
+      "consulting",
+      "reporting",
+      "training",
+      "other"
+    ],
+    "org": [
+      "company",
+      "restaurant",
+      "institution",
+      "team",
+      "other"
+    ],
+    "tech": [
+      "software",
+      "library",
+      "framework",
+      "language",
+      "package",
+      "component",
+      "api_symbol",
+      "api",
+      "standard",
+      "feature",
+      "other"
+    ],
+    "product": [
+      "dish",
+      "ingredient",
+      "wine",
+      "drink",
+      "physical_good",
+      "other"
+    ],
+    "concept": [
+      "method",
+      "discipline",
+      "metric",
+      "ui_pattern",
+      "license",
+      "designation",
+      "other"
+    ],
+    "place": [
+      "city",
+      "region",
+      "country",
+      "venue",
+      "other"
+    ],
+    "work": [
+      "article",
+      "case_study",
+      "book",
+      "course",
+      "other"
+    ],
+    "event": [
+      "conference",
+      "webinar",
+      "festival",
+      "other"
+    ],
+    "brand": [
+      "other"
+    ],
+    "person": []
+  }
+}

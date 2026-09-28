@@ -381,12 +381,19 @@ def spend(path, model, usd):
     ledger.append({"model": model, "cost_usd": usd}, path)
 
 
-def test_budget_stops_above_threshold_without_calling(con, api, env, ledger_path):
-    spend(ledger_path, "claude-opus-5-5", 4.0)
+def test_budget_counts_the_worst_case_of_the_call_before_calling(con, api, env, ledger_path):
+    """A hívás legnagyobb költsége (Opus: 16 000 kimeneti token × 20 USD / 1M = 0,32 USD, plusz
+    a bemenet becslése) a halmozotthoz adva: ha a küszöb fölé vinné, nem hív, akkor sem, ha a
+    halmozott még a küszöb alatt van."""
     client = clients_for(con, api, env, ledger_path)["anthropic"]
-    client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")   # 4,0: még nem „felett”
-    assert client.spent_usd() == pytest.approx(4.014)
-    with pytest.raises(BudgetExceeded, match="4.0140 USD a 4.0 USD leállási küszöb fölött"):
+    worst = client.worst_case_usd("UTASÍTÁS", "OLDAL", NOON.date())
+    assert worst == pytest.approx((7 * 4 + 16_000 * 20) / 1e6)             # 13 karakter → 7 token
+    spend(ledger_path, "claude-opus-5-5", 9.6)
+    client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")   # 9,6 + 0,32 < 10
+    assert client.spent_usd() == pytest.approx(9.614)
+    spend(ledger_path, "claude-opus-5-5", 0.1)                           # 9,714 + 0,32 > 10
+    with pytest.raises(BudgetExceeded, match=r"9\.7140 USD \+ ez a hívás legfeljebb 0\.3200 USD "
+                                             r"\(max_output_tokens 16000\) a 10\.0 USD"):
         client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
     assert [route for route, _, _ in api.requests] == ["anthropic"]
 
@@ -435,7 +442,8 @@ def test_check_models_against_provider_lists(api, env, tmp_path, monkeypatch):
     checks = {c.model: c for c in check_models(env_file=env,
                                                base_urls=dict.fromkeys(PROVIDERS, api.base))}
     assert {m: c.found for m, c in checks.items()} == {
-        "claude-opus-5-5": True, "gpt-6-luna": True, "gpt-5.6-terra": False,
+        "claude-opus-5-5": True, "claude-sonnet-5": True, "claude-haiku-4-5-20251001": False,
+        "gpt-6-luna": True, "gpt-5.6-terra": False, "gpt-6-sol": False,
         "gemini-3.8-flash": True}
     assert checks["gemini-3.8-flash"].note == "2 modell a listán"
     api.replies["openai-models"] = (200, {"object": "list", "data": [
@@ -460,7 +468,7 @@ def test_status_prints_cumulative_usd_per_model(tmp_path, monkeypatch):
     assert result.exit_code == 0, result.output
     lines = [line.strip() for line in result.output.splitlines()]
     assert "claude-opus-5-5: 1.7500 USD" in lines
-    assert ("anthropic összesen 1.7500 USD; leállás 4.00 USD felett, keret 5.00 USD" in lines)
+    assert ("anthropic összesen 1.7500 USD; leállás 10.00 USD felett, keret 10.00 USD" in lines)
     assert "gpt-6-luna (aktív): 0.0000 USD" in lines
     assert "gpt-5.6-terra: 2.6000 USD" in lines
     assert ("openai összesen 2.6000 USD; leállás 2.50 USD felett, keret 3.00 USD; LEÁLLVA"

@@ -1,0 +1,685 @@
+{
+  "page_id": "s5_szemes_kave_hu",
+  "lang": "hu",
+  "synthetic": true,
+  "set": "generalization",
+  "site_description": "Szemes Pörkölde — budapesti kávépörkölő és webshop, specialty szemes kávékkal.",
+  "tests": [
+    "a termék maga a főtéma",
+    "ország és régió önállóan és a terméknévben is",
+    "feldolgozási és pörkölési fogalmak",
+    "tanúsítvány és szervezet rövidítéssel (SCA)",
+    "eszköz márkával a hivatalos névben (Hario V60)",
+    "futár- és fizetési szolgáltatók ragozva (Barionnal, Budapesten)",
+    "ízjegyek, szállítási és CTA-szöveg nem entitás"
+  ],
+  "blocks": [
+    {
+      "id": "b0",
+      "kind": "title",
+      "text": "Etiópia Yirgacheffe szemes kávé, 250 g – Szemes Pörkölde",
+      "heading_path": []
+    },
+    {
+      "id": "b1",
+      "kind": "heading",
+      "level": 1,
+      "text": "Etiópia Yirgacheffe szemes kávé",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé"
+      ]
+    },
+    {
+      "id": "b2",
+      "kind": "paragraph",
+      "text": "Világos pörkölésű, mosott eljárással feldolgozott kávé Etiópia déli részéről, a Yirgacheffe régióból. Heirloom fajták, 1900–2200 méteren termesztve.",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé"
+      ]
+    },
+    {
+      "id": "b3",
+      "kind": "heading",
+      "level": 2,
+      "text": "Ízjegyek",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Ízjegyek"
+      ]
+    },
+    {
+      "id": "b4",
+      "kind": "list_item",
+      "text": "bergamott, jázmin, citromhéj",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Ízjegyek"
+      ]
+    },
+    {
+      "id": "b5",
+      "kind": "heading",
+      "level": 2,
+      "text": "Minősítés",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Minősítés"
+      ]
+    },
+    {
+      "id": "b6",
+      "kind": "paragraph",
+      "text": "Az SCA protokollja szerint 86 pontos kávé, Fairtrade tanúsítvánnyal.",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Minősítés"
+      ]
+    },
+    {
+      "id": "b7",
+      "kind": "heading",
+      "level": 2,
+      "text": "Elkészítési javaslat",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Elkészítési javaslat"
+      ]
+    },
+    {
+      "id": "b8",
+      "kind": "card",
+      "text": "Filter – Hario V60-nal 15 g kávé 250 ml 94 °C-os vízhez, 3 perc.",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Elkészítési javaslat"
+      ]
+    },
+    {
+      "id": "b9",
+      "kind": "card",
+      "text": "AeroPress – rövidebb, 2 perces áztatással intenzívebb csészét ad.",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Elkészítési javaslat"
+      ]
+    },
+    {
+      "id": "b10",
+      "kind": "card",
+      "text": "Eszpresszó – nem ajánljuk, a világos pörkölés miatt savas lesz.",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Elkészítési javaslat"
+      ]
+    },
+    {
+      "id": "b11",
+      "kind": "heading",
+      "level": 2,
+      "text": "Szállítás",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Szállítás"
+      ]
+    },
+    {
+      "id": "b12",
+      "kind": "paragraph",
+      "text": "Budapesten másnapra kiszállítjuk; vidékre a GLS futárszolgálat vagy Foxpost automata viszi. Fizetés Barionnal vagy bankkártyával.",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Szállítás"
+      ]
+    },
+    {
+      "id": "b13",
+      "kind": "paragraph",
+      "text": "Pörkölte: Kelemen Ádám, a Szemes Pörkölde alapítója.",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Szállítás"
+      ]
+    },
+    {
+      "id": "b14",
+      "kind": "cta",
+      "text": "Kosárba",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Szállítás"
+      ]
+    },
+    {
+      "id": "b15",
+      "kind": "paragraph",
+      "text": "Raktáron. 15 000 Ft felett ingyenes szállítás.",
+      "heading_path": [
+        "Etiópia Yirgacheffe szemes kávé",
+        "Szállítás"
+      ]
+    }
+  ],
+  "gold": {
+    "primary_entities": [
+      "Etiópia Yirgacheffe szemes kávé"
+    ],
+    "entities": [
+      {
+        "canonical": "Etiópia Yirgacheffe szemes kávé",
+        "type": "product",
+        "subtype": "physical_good",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Etiópia Yirgacheffe szemes kávé"
+          },
+          {
+            "block": "b1",
+            "text": "Etiópia Yirgacheffe szemes kávé"
+          }
+        ],
+        "difficulty": "easy",
+        "acceptable_subtypes": [
+          "physical_good",
+          "drink",
+          "other"
+        ]
+      },
+      {
+        "canonical": "Etiópia",
+        "type": "place",
+        "subtype": "country",
+        "aliases": [
+          "Ethiopia"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Etiópia"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "a b2-ben önálló helyutalás"
+      },
+      {
+        "canonical": "Yirgacheffe",
+        "type": "place",
+        "subtype": "region",
+        "aliases": [
+          "Yirga Cheffe"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Yirgacheffe"
+          }
+        ],
+        "difficulty": "hard",
+        "note": "a b2-ben önálló helyutalás; a terméknévben nem külön"
+      },
+      {
+        "canonical": "világos pörkölés",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "light roast"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Világos pörkölésű"
+          },
+          {
+            "block": "b10",
+            "text": "világos pörkölés"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "mosott eljárás",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "washed process",
+          "nedves feldolgozás"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "mosott eljárással"
+          }
+        ],
+        "difficulty": "hard"
+      },
+      {
+        "canonical": "Heirloom",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "Ethiopian heirloom"
+        ],
+        "surface_forms": [
+          {
+            "block": "b2",
+            "text": "Heirloom"
+          }
+        ],
+        "difficulty": "easy",
+        "acceptable_subtypes": [
+          "ingredient",
+          "other"
+        ]
+      },
+      {
+        "canonical": "SCA",
+        "type": "org",
+        "subtype": "institution",
+        "aliases": [
+          "Specialty Coffee Association"
+        ],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "SCA"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Fairtrade",
+        "type": "concept",
+        "subtype": "designation",
+        "aliases": [
+          "Fair Trade"
+        ],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "Fairtrade"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Hario V60",
+        "type": "product",
+        "subtype": "physical_good",
+        "aliases": [
+          "V60"
+        ],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "Hario V60-nal"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "AeroPress",
+        "type": "product",
+        "subtype": "physical_good",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b9",
+            "text": "AeroPress"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "eszpresszó",
+        "type": "product",
+        "subtype": "drink",
+        "aliases": [
+          "espresso"
+        ],
+        "surface_forms": [
+          {
+            "block": "b10",
+            "text": "Eszpresszó"
+          }
+        ],
+        "difficulty": "easy",
+        "acceptable_types": [
+          "product",
+          "concept"
+        ],
+        "acceptable_subtypes": [
+          "drink",
+          "method"
+        ]
+      },
+      {
+        "canonical": "Budapest",
+        "type": "place",
+        "subtype": "city",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "Budapesten"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "GLS",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "GLS"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Foxpost",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "Foxpost"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Barion",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b12",
+            "text": "Barionnal"
+          }
+        ],
+        "difficulty": "easy",
+        "acceptable_types": [
+          "tech",
+          "org"
+        ],
+        "acceptable_subtypes": [
+          "software",
+          "company"
+        ]
+      },
+      {
+        "canonical": "Kelemen Ádám",
+        "type": "person",
+        "subtype": null,
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b13",
+            "text": "Kelemen Ádám"
+          }
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "canonical": "Szemes Pörkölde",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Szemes Pörkölde"
+          },
+          {
+            "block": "b13",
+            "text": "Szemes Pörkölde"
+          }
+        ],
+        "difficulty": "easy"
+      }
+    ],
+    "optional": [
+      {
+        "canonical": "Hario",
+        "type": "org",
+        "subtype": "company",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "Hario V60-nal"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "márka a hivatalos terméknévben"
+      },
+      {
+        "canonical": "filterkávé",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [
+          "filter coffee"
+        ],
+        "surface_forms": [
+          {
+            "block": "b8",
+            "text": "Filter"
+          }
+        ],
+        "difficulty": "easy",
+        "acceptable_types": [
+          "concept",
+          "product"
+        ],
+        "acceptable_subtypes": [
+          "method",
+          "drink"
+        ]
+      },
+      {
+        "canonical": "SCA protokoll",
+        "type": "concept",
+        "subtype": "method",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b6",
+            "text": "SCA"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "cupping protokoll"
+      }
+    ],
+    "negatives": [
+      {
+        "text": "Kosárba"
+      },
+      {
+        "text": "Raktáron"
+      },
+      {
+        "text": "ingyenes szállítás"
+      },
+      {
+        "text": "bergamott"
+      },
+      {
+        "text": "jázmin"
+      },
+      {
+        "text": "citromhéj"
+      },
+      {
+        "text": "bankkártyával"
+      },
+      {
+        "text": "futárszolgálat"
+      },
+      {
+        "text": "Ízjegyek"
+      }
+    ]
+  },
+  "rules": {
+    "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+    "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+    "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
+    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
+    "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
+    "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
+    "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
+    "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
+    "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
+    "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
+    "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes"
+  },
+  "subtype_glossary": {
+    "service": {
+      "audit": "felmérés, átvilágítás",
+      "implementation": "beállítás, kiépítés, bevezetés",
+      "consulting": "tanácsadás",
+      "reporting": "riport, dashboard",
+      "training": "képzés, workshop",
+      "other": "egyéb"
+    },
+    "org": {
+      "company": "cég",
+      "restaurant": "étterem, vendéglátóhely",
+      "institution": "intézmény, szervezet",
+      "team": "csapat",
+      "other": "egyéb"
+    },
+    "tech": {
+      "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+      "library": "programkönyvtár",
+      "framework": "keretrendszer",
+      "language": "programozási nyelv",
+      "package": "telepíthető csomag (npm, pip)",
+      "component": "egy könyvtár konkrét komponense",
+      "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+      "api": "programozói interfész, amit szolgáltatásként hívnak",
+      "standard": "műszaki szabvány, specifikáció",
+      "feature": "egy szoftver funkciója",
+      "other": "egyéb"
+    },
+    "product": {
+      "dish": "étel vagy desszert az étlapon",
+      "ingredient": "alapanyag, tésztafajta",
+      "wine": "bor",
+      "drink": "ital, koktél",
+      "physical_good": "egyéb fizikai áru",
+      "other": "egyéb"
+    },
+    "concept": {
+      "method": "módszer, keretrendszer, eljárás",
+      "discipline": "szakterület",
+      "metric": "mérhető mennyiség, mutató",
+      "ui_pattern": "általános felületi minta",
+      "license": "licenc",
+      "designation": "eredetvédelmi vagy minőségi jelölés",
+      "other": "egyéb"
+    },
+    "place": {
+      "city": "város",
+      "region": "régió, tartomány",
+      "country": "ország",
+      "venue": "helyszín, épület",
+      "other": "egyéb"
+    },
+    "work": {
+      "article": "cikk",
+      "case_study": "esettanulmány",
+      "book": "könyv",
+      "course": "tanfolyam",
+      "other": "egyéb"
+    },
+    "event": {
+      "conference": "konferencia",
+      "webinar": "webinár",
+      "festival": "fesztivál",
+      "other": "egyéb"
+    },
+    "brand": {
+      "other": "egyéb"
+    },
+    "person": {}
+  },
+  "subtype_vocabulary": {
+    "service": [
+      "audit",
+      "implementation",
+      "consulting",
+      "reporting",
+      "training",
+      "other"
+    ],
+    "org": [
+      "company",
+      "restaurant",
+      "institution",
+      "team",
+      "other"
+    ],
+    "tech": [
+      "software",
+      "library",
+      "framework",
+      "language",
+      "package",
+      "component",
+      "api_symbol",
+      "api",
+      "standard",
+      "feature",
+      "other"
+    ],
+    "product": [
+      "dish",
+      "ingredient",
+      "wine",
+      "drink",
+      "physical_good",
+      "other"
+    ],
+    "concept": [
+      "method",
+      "discipline",
+      "metric",
+      "ui_pattern",
+      "license",
+      "designation",
+      "other"
+    ],
+    "place": [
+      "city",
+      "region",
+      "country",
+      "venue",
+      "other"
+    ],
+    "work": [
+      "article",
+      "case_study",
+      "book",
+      "course",
+      "other"
+    ],
+    "event": [
+      "conference",
+      "webinar",
+      "festival",
+      "other"
+    ],
+    "brand": [
+      "other"
+    ],
+    "person": []
+  }
+}
