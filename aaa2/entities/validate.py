@@ -25,7 +25,7 @@
   találatok a shared.duckdb-be is; ismételt futásnál onnan jön, nincs újrahívás.
 - Minden kimenő kérés naplózva (`validation_calls`): státusz, kísérletek, késleltetés, hiba.
   429-nél, 5xx-nél és kapcsolati hibánál újrapróba (a `Retry-After` legalább annyi várakozás);
-  a Wikipedia-kérések között legalább `WIKI_MIN_INTERVAL` másodperc.
+  a Wikipedia- és a Wikidata-kérések között legalább `WIKI_MIN_INTERVAL` másodperc.
 """
 from __future__ import annotations
 
@@ -53,6 +53,7 @@ KG_KEY_ENV = "GOOGLE_KG_API_KEY"
 KG_LIMIT = 10
 KG_DAILY_QUOTA = 100_000
 WIKI_MIN_INTERVAL = 0.1
+THROTTLED = ("wikipedia", "wikidata")        # a kérések között WIKI_MIN_INTERVAL
 RECOGNIZED = ("high", "medium")
 NAVIGATIONAL_POSITIONS = ("anchor", "title")
 USER_AGENT = "aaa2/0.1 (+https://github.com/KK-coach/aaa2)"
@@ -218,7 +219,7 @@ class _Api:
         attempt, status, error = 0, None, None
         while True:
             attempt += 1
-            if service == "wikipedia":
+            if service in THROTTLED:
                 wait = WIKI_MIN_INTERVAL - (self.monotonic() - self.last_wiki)
                 if wait > 0:
                     self.retry.sleep(wait)
