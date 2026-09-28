@@ -26,7 +26,7 @@ def test_defaults():
         "claude-opus-5-5", "claude-sonnet-5", "claude-haiku-4-5-20251001")
     assert providers["gemini"].thinking_level == "low"
     assert [(p.budget_usd, p.stop_usd) for p in providers.values()] == [
-        (10.0, 10.0), (3.0, 2.5), (5.0, 4.0)]
+        (10.0, 10.0), (5.0, 4.5), (5.0, 4.0)]
     assert "gpt-6-astra" not in {p.model for p in CONFIG.prices}
     assert [p.max_output_tokens for p in providers.values()] == [16000, 32000, 16000]
 
@@ -84,12 +84,12 @@ def test_pipeline_steps_choose_their_models_independently(tmp_path):
 
 
 def test_stop_threshold_is_read_from_config(tmp_path):
-    config = load_config(variant(tmp_path, "stop_usd = 2.5", "stop_usd = 2.0"))
+    config = load_config(variant(tmp_path, "stop_usd = 4.5", "stop_usd = 2.0"))
     assert config.providers["openai"].stop_usd == 2.0
 
 
 @pytest.mark.parametrize(("old", "new", "message"), [
-    ("stop_usd = 2.5", "stop_usd = 3.5", r"\[openai\]: a leállási küszöb"),
+    ("stop_usd = 4.5", "stop_usd = 5.5", r"\[openai\]: a leállási küszöb"),
     ("stop_usd = 10.0", "stop_usd = 0", r"\[anthropic\]: a leállási küszöb"),
     ('fallback = "gpt-5.6-terra"\nalternatives = ["gpt-6-sol"]\nuse_fallback = false',
      "use_fallback = true",
