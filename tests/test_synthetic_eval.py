@@ -416,11 +416,13 @@ def test_targets_say_which_threshold_is_missed():
     perfect = [se.score_page(page, gold_as_output(page)) for page in PAGES.values()]
     lines = se.targets_markdown([("jó", se.rates(se.total_of(perfect))),
                                  ("gyenge", {"felismerés/megnevezett": 0.94,
-                                             "felismerés/fogalom": 0.95, "precizitás": 0.9,
-                                             "recall": None})])
+                                             "felismerés/fogalom": 0.95,
+                                             "precizitás/megnevezett": 0.9,
+                                             "precizitás/fogalom": 0.85, "recall": None})])
     assert lines[4].startswith("- **jó** (mind teljesül): felismerés/megnevezett 100.0 (≥ 95: ")
     assert "felismerés/megnevezett 94.0 (≥ 95: NEM)" in lines[5]
-    assert "precizitás 90.0 (≥ 90: teljesül); recall — (≥ 90: —)" in lines[5]
+    assert ("precizitás/megnevezett 90.0 (≥ 90: teljesül); precizitás/fogalom 85.0 (≥ 90: NEM); "
+            "recall — (≥ 90: —)") in lines[5]
     assert "(nem mind)" in lines[5]
 
 
@@ -476,10 +478,10 @@ def test_checkpoint_report_per_page_and_total(tmp_path):
     text = se.checkpoint_markdown("m", tmp_path, list(PAGES.values()), {"Tökéletes": "t"})
     assert "## Tökéletes (`t`)" in text
     assert ("| s1_lumen_meres_hu | 100.0 (19/19) | 100.0 (8/8) | 100.0 (27/27) | "
-            "100.0 · 100.0 · 100.0 (27/27) | 100.0 (27/27) | 100.0 (27/27) |") in text
+            "100.0 · 100.0 · 100.0 (27/27) | 100.0 (19/19) | 100.0 (8/8) | 100.0 (27/27) |") in text
     assert "| **összesen** | 100.0 (" in text
     assert "- **Tökéletes** (mind teljesül):" in text
-    assert "- **s1_lumen_meres_hu** (0): —" in text
+    assert "- **s1_lumen_meres_hu**\n  - kihagyás (0): —" in text
 
 
 def test_dictionary_form_text_only_and_term_status_rules_with_neutral_examples():
@@ -504,3 +506,30 @@ def test_dictionary_form_text_only_and_term_status_rules_with_neutral_examples()
         mention("b1", "c", "C", "tech", term_status="descriptive")])
     assert ([e["canonical_name"] for e in kept], [e["canonical_name"] for e in dropped]) == (
         ["B", "C"], ["A"])
+
+
+def test_descriptive_concepts_before_and_after_with_the_dropped_ones_placed(tmp_path):
+    """A leíró fogalom kiesik; a kiesettek a referenciához mérve (itt egy kötelező fogalmat is
+    eldob); a téves találatok megnevezett és fogalom bontásban, a fogalomnál a term_status."""
+    output = gold_as_output(S1)
+    concept = next(e for e in output["entities"] if e["canonical_name"] == "szerver oldali mérés")
+    concept["term_status"] = "descriptive"
+    output["entities"] += [
+        mention("b2", "Mérés", "Mérés", "concept", term_status="established"),
+        mention("b9", "beállítás", "Beállítási gond", "concept", term_status="descriptive"),
+        mention("b6", "Apple", "Apple Inc.", "org", "company")]
+    before = se.score_page(S1, output)
+    after = se.score_page(S1, output, drop_descriptive=True)
+    assert (before.found, after.found) == (27, 26)
+    assert after.dropped == [
+        ("szerver oldali mérés", "b2", "kötelező: szerver oldali mérés"),
+        ("Beállítási gond", "b9", "kötelező: Szerver oldali mérés beállítás")]
+    assert [f[:3] for f in after.false_hits] == [("Mérés", "concept", "established")]
+    (tmp_path / "synthetic").mkdir()
+    se.output_path(tmp_path, "s1_lumen_meres_hu", "m", "t").write_text(
+        json.dumps(output, ensure_ascii=False), encoding="utf-8")
+    text = se.checkpoint_markdown("m", tmp_path, [S1], {"Szűrt": "t"})
+    assert "| s1_lumen_meres_hu, előtt |" in text and "| **összesen, után** |" in text
+    assert "  - kiesett leíró fogalom (2, ebből a referenciában 2): szerver oldali mérés [b2]" \
+        in text
+    assert "  - téves találat, fogalom (1): Mérés (established; referencián kívül)" in text
