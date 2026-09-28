@@ -1335,8 +1335,8 @@
    "kind": "paragraph",
    "block_text": "Most organic growth initiatives fail to deliver on their potential due to poor integration of multiple projects, unclear goals, and lack of an accountability loop. This is how the operational model works and drives the entire ecosystem.",
    "reference": "referencián kívül",
-   "verdict": "valid",
-   "note": "az operating model szövegbeli alakja"
+   "verdict": "descriptive",
+   "note": "Claude (chat) felülvizsgálata: leíró"
   },
   {
    "page_id": "locked_kk_execution",
@@ -1346,8 +1346,8 @@
    "kind": "other",
    "block_text": "See the sprint model",
    "reference": "kötelező: sprint",
-   "verdict": "valid",
-   "note": "a site saját modellje (a CTA-ban álló név)"
+   "verdict": "descriptive",
+   "note": "Claude (chat) felülvizsgálata: leíró"
   },
   {
    "page_id": "locked_kk_execution",
