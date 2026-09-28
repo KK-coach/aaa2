@@ -1,582 +1,1586 @@
 {
- "page_id": "materia_etlap_hu",
- "set": "development-real",
- "url": "https://materia-tm.com/hu/etlap/",
- "lang": "hu-HU",
- "site_description": "This page belongs to the website materia-tm.com, whose home page is titled “Materia - Trattoria Moderna |”.",
- "blocks": [
-  {
-   "id": "b0",
-   "kind": "title",
-   "heading_path": [],
-   "text": "Étlap | Materia - Trattoria Moderna"
+  "page_id": "materia_etlap_hu",
+  "set": "development-real",
+  "url": "https://materia-tm.com/hu/etlap/",
+  "lang": "hu-HU",
+  "site_description": "This page belongs to the website materia-tm.com, whose home page is titled “Materia - Trattoria Moderna |”.",
+  "blocks": [
+    {
+      "id": "b0",
+      "kind": "title",
+      "heading_path": [],
+      "text": "Étlap | Materia - Trattoria Moderna"
+    },
+    {
+      "id": "b10",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap"
+      ],
+      "text": "Étlap"
+    },
+    {
+      "id": "b11",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Előételek"
+      ],
+      "text": "Előételek"
+    },
+    {
+      "id": "b12",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Előételek",
+        "Borjúfelsál rózsája tonhal krémmel"
+      ],
+      "text": "Borjúfelsál rózsája tonhal krémmel"
+    },
+    {
+      "id": "b13",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Előételek",
+        "Borjúfelsál rózsája tonhal krémmel",
+        "4.000,-"
+      ],
+      "text": "4.000,-"
+    },
+    {
+      "id": "b14",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Előételek",
+        "PREMIUM válogatás calabriai fekete sertés D.O.P. húskülönlegességeiből és calabriai D.O.P. sajtokból"
+      ],
+      "text": "PREMIUM válogatás calabriai fekete sertés D.O.P. húskülönlegességeiből és calabriai D.O.P. sajtokból"
+    },
+    {
+      "id": "b15",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Előételek",
+        "PREMIUM válogatás calabriai fekete sertés D.O.P. húskülönlegességeiből és calabriai D.O.P. sajtokból",
+        "7.000,-"
+      ],
+      "text": "7.000,-"
+    },
+    {
+      "id": "b16",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Előételek",
+        "Szicíliai vörös tonhal tatár avokádókrémmel, citromzesttel és édes-savanyú Tropea-hagymával"
+      ],
+      "text": "Szicíliai vörös tonhal tatár avokádókrémmel, citromzesttel és édes-savanyú Tropea-hagymával"
+    },
+    {
+      "id": "b17",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Előételek",
+        "Szicíliai vörös tonhal tatár avokádókrémmel, citromzesttel és édes-savanyú Tropea-hagymával",
+        "4.500,-"
+      ],
+      "text": "4.500,-"
+    },
+    {
+      "id": "b18",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Előételek",
+        "Paradicsomfondü szicíliai vörös garnélával, stracciatellával, zöldalma-zesttel és Masitto extra szűz olívaolajjal"
+      ],
+      "text": "Paradicsomfondü szicíliai vörös garnélával, stracciatellával, zöldalma-zesttel és Masitto extra szűz olívaolajjal"
+    },
+    {
+      "id": "b19",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Előételek",
+        "Paradicsomfondü szicíliai vörös garnélával, stracciatellával, zöldalma-zesttel és Masitto extra szűz olívaolajjal",
+        "4.500,-"
+      ],
+      "text": "4.500,-"
+    },
+    {
+      "id": "b20",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Előételek",
+        "Caprese D.O.P. bivalymozzarellával, ökörszív-paradicsommal, bazsalikommal és Masitto extra szűz olívaolajjal"
+      ],
+      "text": "Caprese D.O.P. bivalymozzarellával, ökörszív-paradicsommal, bazsalikommal és Masitto extra szűz olívaolajjal"
+    },
+    {
+      "id": "b21",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Előételek",
+        "Caprese D.O.P. bivalymozzarellával, ökörszív-paradicsommal, bazsalikommal és Masitto extra szűz olívaolajjal",
+        "3.500,-"
+      ],
+      "text": "3.500,-"
+    },
+    {
+      "id": "b22",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P."
+      ],
+      "text": "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P."
+    },
+    {
+      "id": "b23",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
+        "Kézzel készített pappardelle feketekagylóval, vadédesköménnyel, cannellini babkrémen"
+      ],
+      "text": "Kézzel készített pappardelle feketekagylóval, vadédesköménnyel, cannellini babkrémen"
+    },
+    {
+      "id": "b24",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
+        "Kézzel készített pappardelle feketekagylóval, vadédesköménnyel, cannellini babkrémen",
+        "5.500,-"
+      ],
+      "text": "5.500,-"
+    },
+    {
+      "id": "b25",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
+        "Spaghettone szicíliai vörös garnéla tatár, friss újhagymával, vadédesköménnyel és citromzesttel"
+      ],
+      "text": "Spaghettone szicíliai vörös garnéla tatár, friss újhagymával, vadédesköménnyel és citromzesttel"
+    },
+    {
+      "id": "b26",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
+        "Spaghettone szicíliai vörös garnéla tatár, friss újhagymával, vadédesköménnyel és citromzesttel",
+        "7.500,-"
+      ],
+      "text": "7.500,-"
+    },
+    {
+      "id": "b27",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
+        "Spaghettone alla carbonara Nebrodi-guancialéval és Pecorino Romano D.O.P. sajttal"
+      ],
+      "text": "Spaghettone alla carbonara Nebrodi-guancialéval és Pecorino Romano D.O.P. sajttal"
+    },
+    {
+      "id": "b28",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
+        "Spaghettone alla carbonara Nebrodi-guancialéval és Pecorino Romano D.O.P. sajttal",
+        "6.000,-"
+      ],
+      "text": "6.000,-"
+    },
+    {
+      "id": "b29",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
+        "Candele alla Norma San Marzano paradicsomszósszal, padlizsánnal, bazsalikommal és szicíliai ricotta salatával"
+      ],
+      "text": "Candele alla Norma San Marzano paradicsomszósszal, padlizsánnal, bazsalikommal és szicíliai ricotta salatával"
+    },
+    {
+      "id": "b30",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
+        "Candele alla Norma San Marzano paradicsomszósszal, padlizsánnal, bazsalikommal és szicíliai ricotta salatával",
+        "5.500,-"
+      ],
+      "text": "5.500,-"
+    },
+    {
+      "id": "b31",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
+        "Kézzel készített gnocchi Caciocavallo Silano D.O.P. fondüvel és ‘Nduja di Spilinga D.O.P. krémmel (a Séf kézjegye)"
+      ],
+      "text": "Kézzel készített gnocchi Caciocavallo Silano D.O.P. fondüvel és ‘Nduja di Spilinga D.O.P. krémmel (a Séf kézjegye)"
+    },
+    {
+      "id": "b32",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
+        "Kézzel készített gnocchi Caciocavallo Silano D.O.P. fondüvel és ‘Nduja di Spilinga D.O.P. krémmel (a Séf kézjegye)",
+        "7.000,-"
+      ],
+      "text": "7.000,-"
+    },
+    {
+      "id": "b33",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Főételek"
+      ],
+      "text": "Főételek"
+    },
+    {
+      "id": "b34",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Főételek",
+        "Vörösmárnafilé mediterrán fűszernövényekkel, Pecorino Romano D.O.P. sajttal, konfitált koktélparadicsommal és marinált cukkinivel"
+      ],
+      "text": "Vörösmárnafilé mediterrán fűszernövényekkel, Pecorino Romano D.O.P. sajttal, konfitált koktélparadicsommal és marinált cukkinivel"
+    },
+    {
+      "id": "b35",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Főételek",
+        "Vörösmárnafilé mediterrán fűszernövényekkel, Pecorino Romano D.O.P. sajttal, konfitált koktélparadicsommal és marinált cukkinivel",
+        "7.500,-"
+      ],
+      "text": "7.500,-"
+    },
+    {
+      "id": "b36",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Főételek",
+        "Ördöghalfalatok cseresznyeparadicsommal, olívabogyóval és oregánóval"
+      ],
+      "text": "Ördöghalfalatok cseresznyeparadicsommal, olívabogyóval és oregánóval"
+    },
+    {
+      "id": "b37",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Főételek",
+        "Ördöghalfalatok cseresznyeparadicsommal, olívabogyóval és oregánóval",
+        "8.000,-"
+      ],
+      "text": "8.000,-"
+    },
+    {
+      "id": "b38",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Főételek",
+        "Baccalà édespaprika-krémen, konfitált paradicsommal és friss mentucciával"
+      ],
+      "text": "Baccalà édespaprika-krémen, konfitált paradicsommal és friss mentucciával"
+    },
+    {
+      "id": "b39",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Főételek",
+        "Baccalà édespaprika-krémen, konfitált paradicsommal és friss mentucciával",
+        "7.000,-"
+      ],
+      "text": "7.000,-"
+    },
+    {
+      "id": "b40",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Főételek",
+        "Scottona marhahúsgolyók San Marzano paradicsomszósszal, Pecorino Romano D.O.P. sajttal és Masitto extra szűz olívaolajja"
+      ],
+      "text": "Scottona marhahúsgolyók San Marzano paradicsomszósszal, Pecorino Romano D.O.P. sajttal és Masitto extra szűz olívaolajja"
+    },
+    {
+      "id": "b41",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Főételek",
+        "Scottona marhahúsgolyók San Marzano paradicsomszósszal, Pecorino Romano D.O.P. sajttal és Masitto extra szűz olívaolajja",
+        "6.000,-"
+      ],
+      "text": "6.000,-"
+    },
+    {
+      "id": "b42",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Főételek",
+        "Chianina Toscana ribeye toszkán vörösbor-redukcióval és rozmaringos sült burgonyával"
+      ],
+      "text": "Chianina Toscana ribeye toszkán vörösbor-redukcióval és rozmaringos sült burgonyával"
+    },
+    {
+      "id": "b43",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Főételek",
+        "Chianina Toscana ribeye toszkán vörösbor-redukcióval és rozmaringos sült burgonyával",
+        "14.000,-"
+      ],
+      "text": "14.000,-"
+    },
+    {
+      "id": "b44",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Köretek"
+      ],
+      "text": "Köretek"
+    },
+    {
+      "id": "b45",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Köretek",
+        "Sütőben sült burgonya, friss rozmaring"
+      ],
+      "text": "Sütőben sült burgonya, friss rozmaring"
+    },
+    {
+      "id": "b46",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Köretek",
+        "Sütőben sült burgonya, friss rozmaring",
+        "2.500,-"
+      ],
+      "text": "2.500,-"
+    },
+    {
+      "id": "b47",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Köretek",
+        "Szezonális grillezett zöldségek"
+      ],
+      "text": "Szezonális grillezett zöldségek"
+    },
+    {
+      "id": "b48",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Köretek",
+        "Szezonális grillezett zöldségek",
+        "3.000,-"
+      ],
+      "text": "3.000,-"
+    },
+    {
+      "id": "b49",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Köretek",
+        "Szezonális saláta"
+      ],
+      "text": "Szezonális saláta"
+    },
+    {
+      "id": "b50",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Köretek",
+        "Szezonális saláta",
+        "2.500,-"
+      ],
+      "text": "2.500,-"
+    },
+    {
+      "id": "b51",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Desszert"
+      ],
+      "text": "Desszert"
+    },
+    {
+      "id": "b52",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Desszert",
+        "Pan brioche brontei pisztáciafagylalttal"
+      ],
+      "text": "Pan brioche brontei pisztáciafagylalttal"
+    },
+    {
+      "id": "b53",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Desszert",
+        "Pan brioche brontei pisztáciafagylalttal",
+        "3.500,-"
+      ],
+      "text": "3.500,-"
+    },
+    {
+      "id": "b54",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Desszert",
+        "Hagyományos tiramisù"
+      ],
+      "text": "Hagyományos tiramisù"
+    },
+    {
+      "id": "b55",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Desszert",
+        "Hagyományos tiramisù",
+        "3.000,-"
+      ],
+      "text": "3.000,-"
+    },
+    {
+      "id": "b56",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Desszert",
+        "Saját készítésű friss gyümölcssorbet"
+      ],
+      "text": "Saját készítésű friss gyümölcssorbet"
+    },
+    {
+      "id": "b57",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Desszert",
+        "Saját készítésű friss gyümölcssorbet",
+        "2.500,-"
+      ],
+      "text": "2.500,-"
+    },
+    {
+      "id": "b58",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Desszert",
+        "Sgroppino (Belvedere , Franciacorta és citromsorbet)"
+      ],
+      "text": "Sgroppino (Belvedere , Franciacorta és citromsorbet)"
+    },
+    {
+      "id": "b59",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Desszert",
+        "Sgroppino (Belvedere , Franciacorta és citromsorbet)",
+        "4.000,-"
+      ],
+      "text": "4.000,-"
+    },
+    {
+      "id": "b60",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Desszert",
+        "Chef:"
+      ],
+      "text": "Chef:"
+    },
+    {
+      "id": "b61",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Gianfranco Brusco"
+      ],
+      "text": "Gianfranco Brusco"
+    },
+    {
+      "id": "b62",
+      "kind": "heading",
+      "heading_path": [
+        "Étlap",
+        "Order Online"
+      ],
+      "text": "Order Online"
+    },
+    {
+      "id": "b63",
+      "kind": "other",
+      "heading_path": [
+        "Étlap",
+        "Order Online"
+      ],
+      "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec sed finibus nisi, sed dictum eros. Quisque aliquet velit sit amet sem interdum faucibus. In feugiat aliquet mollis etiam tincidunt ligula."
+    },
+    {
+      "id": "b64",
+      "kind": "other",
+      "heading_path": [
+        "Étlap",
+        "Order Online"
+      ],
+      "text": "Order Now"
+    }
+  ],
+  "gold": {
+    "primary_entities": [],
+    "entities": [
+      {
+        "canonical": "Materia - Trattoria Moderna",
+        "type": "org",
+        "subtype": "restaurant",
+        "aliases": [
+          "Materia"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Materia - Trattoria Moderna"
+          }
+        ]
+      },
+      {
+        "canonical": "calabriai fekete sertés D.O.P.",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "Suino Nero di Calabria",
+          "Suino Nero di Calabria D.O.P."
+        ],
+        "difficulty": "hard",
+        "surface_forms": [
+          {
+            "block": "b14",
+            "text": "calabriai fekete sertés D.O.P."
+          }
+        ]
+      },
+      {
+        "canonical": "Tropea-hagyma",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "Cipolla di Tropea",
+          "Tropea onion"
+        ],
+        "difficulty": "easy",
+        "note": "alapanyag, nem hely",
+        "surface_forms": [
+          {
+            "block": "b16",
+            "text": "Tropea-hagymával"
+          }
+        ]
+      },
+      {
+        "canonical": "stracciatella",
+        "type": "product",
+        "subtype": "ingredient",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b18",
+            "text": "stracciatellával"
+          }
+        ]
+      },
+      {
+        "canonical": "Masitto",
+        "type": "brand",
+        "subtype": "other",
+        "difficulty": "easy",
+        "note": "olívaolaj-márka",
+        "acceptable_types": [
+          "brand",
+          "org"
+        ],
+        "acceptable_subtypes": [
+          "other",
+          "company"
+        ],
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b18",
+            "text": "Masitto"
+          },
+          {
+            "block": "b20",
+            "text": "Masitto"
+          },
+          {
+            "block": "b40",
+            "text": "Masitto"
+          }
+        ]
+      },
+      {
+        "canonical": "caprese",
+        "type": "product",
+        "subtype": "dish",
+        "aliases": [
+          "insalata caprese"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b20",
+            "text": "Caprese"
+          }
+        ]
+      },
+      {
+        "canonical": "Mozzarella di Bufala Campana D.O.P.",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "bivalymozzarella",
+          "Mozzarella di Bufala Campana",
+          "bivaly mozzarella"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b20",
+            "text": "bivalymozzarellával"
+          }
+        ]
+      },
+      {
+        "canonical": "Pastificio dei Campi",
+        "type": "org",
+        "subtype": "company",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b22",
+            "text": "Pastificio dei Campi"
+          }
+        ]
+      },
+      {
+        "canonical": "Pasta di Gragnano I.G.P.",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "Pasta di Gragnano"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b22",
+            "text": "Pasta di Gragnano I.G.P."
+          }
+        ]
+      },
+      {
+        "canonical": "pappardelle",
+        "type": "product",
+        "subtype": "ingredient",
+        "difficulty": "easy",
+        "acceptable_subtypes": [
+          "ingredient",
+          "dish"
+        ],
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b23",
+            "text": "pappardelle"
+          }
+        ]
+      },
+      {
+        "canonical": "spaghettone",
+        "type": "product",
+        "subtype": "ingredient",
+        "difficulty": "easy",
+        "acceptable_subtypes": [
+          "ingredient",
+          "dish"
+        ],
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b25",
+            "text": "Spaghettone"
+          },
+          {
+            "block": "b27",
+            "text": "Spaghettone"
+          }
+        ]
+      },
+      {
+        "canonical": "carbonara",
+        "type": "product",
+        "subtype": "dish",
+        "aliases": [
+          "alla carbonara",
+          "spaghettone alla carbonara"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b27",
+            "text": "alla carbonara"
+          }
+        ]
+      },
+      {
+        "canonical": "guanciale",
+        "type": "product",
+        "subtype": "ingredient",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b27",
+            "text": "Nebrodi-guancialéval"
+          }
+        ]
+      },
+      {
+        "canonical": "Pecorino Romano D.O.P.",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "Pecorino Romano"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b27",
+            "text": "Pecorino Romano D.O.P."
+          },
+          {
+            "block": "b34",
+            "text": "Pecorino Romano D.O.P."
+          },
+          {
+            "block": "b40",
+            "text": "Pecorino Romano D.O.P."
+          }
+        ]
+      },
+      {
+        "canonical": "alla Norma",
+        "type": "product",
+        "subtype": "dish",
+        "aliases": [
+          "pasta alla Norma",
+          "Candele alla Norma"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b29",
+            "text": "alla Norma"
+          }
+        ]
+      },
+      {
+        "canonical": "San Marzano paradicsom",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "pomodoro San Marzano",
+          "San Marzano tomato"
+        ],
+        "difficulty": "easy",
+        "note": "alapanyag, nem hely",
+        "surface_forms": [
+          {
+            "block": "b29",
+            "text": "San Marzano paradicsomszósszal"
+          },
+          {
+            "block": "b40",
+            "text": "San Marzano paradicsomszósszal"
+          }
+        ]
+      },
+      {
+        "canonical": "ricotta salata",
+        "type": "product",
+        "subtype": "ingredient",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b29",
+            "text": "ricotta salatával"
+          }
+        ]
+      },
+      {
+        "canonical": "gnocchi",
+        "type": "product",
+        "subtype": "dish",
+        "difficulty": "easy",
+        "acceptable_subtypes": [
+          "dish",
+          "ingredient"
+        ],
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b31",
+            "text": "gnocchi"
+          }
+        ]
+      },
+      {
+        "canonical": "Caciocavallo Silano D.O.P.",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "Caciocavallo Silano"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b31",
+            "text": "Caciocavallo Silano D.O.P."
+          }
+        ]
+      },
+      {
+        "canonical": "'Nduja di Spilinga D.O.P.",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "nduja",
+          "'nduja",
+          "‘Nduja di Spilinga"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b31",
+            "text": "‘Nduja di Spilinga D.O.P."
+          }
+        ]
+      },
+      {
+        "canonical": "baccalà",
+        "type": "product",
+        "subtype": "ingredient",
+        "difficulty": "easy",
+        "acceptable_subtypes": [
+          "ingredient",
+          "dish"
+        ],
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b38",
+            "text": "Baccalà"
+          }
+        ]
+      },
+      {
+        "canonical": "Chianina",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "Chianina Toscana"
+        ],
+        "difficulty": "easy",
+        "note": "marhafajta",
+        "surface_forms": [
+          {
+            "block": "b42",
+            "text": "Chianina"
+          }
+        ]
+      },
+      {
+        "canonical": "pan brioche",
+        "type": "product",
+        "subtype": "dish",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b52",
+            "text": "Pan brioche"
+          }
+        ]
+      },
+      {
+        "canonical": "Pistacchio di Bronte",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "brontei pisztácia",
+          "Bronte pistachio"
+        ],
+        "difficulty": "hard",
+        "surface_forms": [
+          {
+            "block": "b52",
+            "text": "brontei pisztáciafagylalttal"
+          }
+        ]
+      },
+      {
+        "canonical": "tiramisù",
+        "type": "product",
+        "subtype": "dish",
+        "aliases": [
+          "tiramisu"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b54",
+            "text": "tiramisù"
+          }
+        ]
+      },
+      {
+        "canonical": "sgroppino",
+        "type": "product",
+        "subtype": "dish",
+        "difficulty": "easy",
+        "acceptable_subtypes": [
+          "dish",
+          "drink"
+        ],
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b58",
+            "text": "Sgroppino"
+          }
+        ]
+      },
+      {
+        "canonical": "Belvedere",
+        "type": "brand",
+        "subtype": "other",
+        "difficulty": "easy",
+        "note": "vodkamárka",
+        "acceptable_types": [
+          "brand",
+          "org",
+          "product"
+        ],
+        "acceptable_subtypes": [
+          "other",
+          "company",
+          "drink"
+        ],
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b58",
+            "text": "Belvedere"
+          }
+        ]
+      },
+      {
+        "canonical": "Franciacorta",
+        "type": "product",
+        "subtype": "wine",
+        "difficulty": "hard",
+        "note": "bor, nem hely",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b58",
+            "text": "Franciacorta"
+          }
+        ]
+      },
+      {
+        "canonical": "Gianfranco Brusco",
+        "type": "person",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b61",
+            "text": "Gianfranco Brusco"
+          }
+        ]
+      }
+    ],
+    "optional": [
+      {
+        "canonical": "Calabria",
+        "type": "place",
+        "subtype": "region",
+        "aliases": [
+          "Kalábria"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b14",
+            "text": "calabriai"
+          }
+        ]
+      },
+      {
+        "canonical": "Szicília",
+        "type": "place",
+        "subtype": "region",
+        "aliases": [
+          "Sicily"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b16",
+            "text": "Szicíliai"
+          },
+          {
+            "block": "b18",
+            "text": "szicíliai"
+          },
+          {
+            "block": "b25",
+            "text": "szicíliai"
+          },
+          {
+            "block": "b29",
+            "text": "szicíliai"
+          }
+        ]
+      },
+      {
+        "canonical": "Gragnano",
+        "type": "place",
+        "subtype": "city",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b22",
+            "text": "Gragnano"
+          }
+        ]
+      },
+      {
+        "canonical": "Nebrodi",
+        "type": "place",
+        "subtype": "region",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b27",
+            "text": "Nebrodi-guancialéval"
+          }
+        ]
+      },
+      {
+        "canonical": "Spilinga",
+        "type": "place",
+        "subtype": "city",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b31",
+            "text": "Spilinga"
+          }
+        ]
+      },
+      {
+        "canonical": "Bronte",
+        "type": "place",
+        "subtype": "city",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b52",
+            "text": "brontei"
+          }
+        ]
+      },
+      {
+        "canonical": "Toscana",
+        "type": "place",
+        "subtype": "region",
+        "aliases": [
+          "Tuscany"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b42",
+            "text": "Toscana"
+          },
+          {
+            "block": "b42",
+            "text": "toszkán"
+          }
+        ]
+      },
+      {
+        "canonical": "ökörszív-paradicsom",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "cuore di bue"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b20",
+            "text": "ökörszív-paradicsommal"
+          }
+        ]
+      },
+      {
+        "canonical": "cannellini bab",
+        "type": "product",
+        "subtype": "ingredient",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b23",
+            "text": "cannellini"
+          }
+        ]
+      },
+      {
+        "canonical": "vörös garnéla",
+        "type": "product",
+        "subtype": "ingredient",
+        "aliases": [
+          "gambero rosso"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b18",
+            "text": "vörös garnélával"
+          },
+          {
+            "block": "b25",
+            "text": "vörös garnéla"
+          }
+        ]
+      },
+      {
+        "canonical": "mentuccia",
+        "type": "product",
+        "subtype": "ingredient",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b38",
+            "text": "mentucciával"
+          }
+        ]
+      },
+      {
+        "canonical": "Scottona",
+        "type": "product",
+        "subtype": "ingredient",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b40",
+            "text": "Scottona"
+          }
+        ]
+      },
+      {
+        "canonical": "tonhal tatár",
+        "type": "product",
+        "subtype": "dish",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b16",
+            "text": "tonhal tatár"
+          }
+        ]
+      },
+      {
+        "canonical": "extra szűz olívaolaj",
+        "type": "concept",
+        "subtype": "designation",
+        "difficulty": "easy",
+        "acceptable_types": [
+          "concept",
+          "product"
+        ],
+        "acceptable_subtypes": [
+          "designation",
+          "ingredient"
+        ],
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b18",
+            "text": "extra szűz olívaolajjal"
+          },
+          {
+            "block": "b20",
+            "text": "extra szűz olívaolajjal"
+          },
+          {
+            "block": "b40",
+            "text": "extra szűz olívaolajja"
+          }
+        ]
+      },
+      {
+        "canonical": "konfitálás",
+        "type": "concept",
+        "subtype": "method",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b34",
+            "text": "konfitált"
+          },
+          {
+            "block": "b38",
+            "text": "konfitált"
+          }
+        ]
+      },
+      {
+        "canonical": "candele",
+        "type": "product",
+        "subtype": "ingredient",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b29",
+            "text": "Candele"
+          }
+        ]
+      },
+      {
+        "canonical": "D.O.P.",
+        "type": "concept",
+        "subtype": "designation",
+        "aliases": [
+          "DOP"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b14",
+            "text": "D.O.P."
+          },
+          {
+            "block": "b20",
+            "text": "D.O.P."
+          },
+          {
+            "block": "b27",
+            "text": "D.O.P."
+          },
+          {
+            "block": "b31",
+            "text": "D.O.P."
+          },
+          {
+            "block": "b34",
+            "text": "D.O.P."
+          },
+          {
+            "block": "b40",
+            "text": "D.O.P."
+          }
+        ]
+      },
+      {
+        "canonical": "I.G.P.",
+        "type": "concept",
+        "subtype": "designation",
+        "aliases": [
+          "IGP"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b22",
+            "text": "I.G.P."
+          }
+        ]
+      }
+    ],
+    "negatives": [
+      {
+        "text": "Étlap"
+      },
+      {
+        "text": "Előételek"
+      },
+      {
+        "text": "Főételek"
+      },
+      {
+        "text": "Köretek"
+      },
+      {
+        "text": "Desszert"
+      },
+      {
+        "text": "Order Online"
+      },
+      {
+        "text": "Order Now"
+      },
+      {
+        "text": "Lorem ipsum"
+      },
+      {
+        "text": "Sütőben sült burgonya"
+      },
+      {
+        "text": "Szezonális saláta"
+      },
+      {
+        "text": "Szezonális grillezett zöldségek"
+      },
+      {
+        "text": "gyümölcssorbet"
+      },
+      {
+        "text": "citromsorbet"
+      },
+      {
+        "text": "bazsalikommal"
+      },
+      {
+        "text": "padlizsánnal"
+      },
+      {
+        "text": "Chef:"
+      }
+    ]
   },
-  {
-   "id": "b10",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap"
-   ],
-   "text": "Étlap"
+  "gold_status": "draft (Claude), Krisztián véglegesíti",
+  "annotation_notes": [
+    "Étlapoldal: a site neve nem főtéma, a főtéma-lista üres (ugyanaz a szabály, mint az s2-n).",
+    "Nevesített étel (carbonara, alla Norma, caprese, tiramisù) és eredetvédett vagy nevesített alapanyag kötelező; a puszta leíró tételek (sült burgonya, szezonális saláta) negatívak.",
+    "A terméknévben szereplő hely (calabriai, Gragnano, Bronte) opcionális, a D.O.P./I.G.P. jelölés is."
+  ],
+  "rules": {
+    "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+    "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+    "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
+    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
+    "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
+    "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
+    "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
+    "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
+    "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
+    "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
+    "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes"
   },
-  {
-   "id": "b11",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Előételek"
-   ],
-   "text": "Előételek"
+  "subtype_glossary": {
+    "service": {
+      "audit": "felmérés, átvilágítás",
+      "implementation": "beállítás, kiépítés, bevezetés",
+      "consulting": "tanácsadás",
+      "reporting": "riport, dashboard",
+      "training": "képzés, workshop",
+      "other": "egyéb"
+    },
+    "org": {
+      "company": "cég",
+      "restaurant": "étterem, vendéglátóhely",
+      "institution": "intézmény, szervezet",
+      "team": "csapat",
+      "other": "egyéb"
+    },
+    "tech": {
+      "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+      "library": "programkönyvtár",
+      "framework": "keretrendszer",
+      "language": "programozási nyelv",
+      "package": "telepíthető csomag (npm, pip)",
+      "component": "egy könyvtár konkrét komponense",
+      "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+      "api": "programozói interfész, amit szolgáltatásként hívnak",
+      "standard": "műszaki szabvány, specifikáció",
+      "feature": "egy szoftver funkciója",
+      "other": "egyéb"
+    },
+    "product": {
+      "dish": "étel vagy desszert az étlapon",
+      "ingredient": "alapanyag, tésztafajta",
+      "wine": "bor",
+      "drink": "ital, koktél",
+      "physical_good": "egyéb fizikai áru",
+      "other": "egyéb"
+    },
+    "concept": {
+      "method": "módszer, keretrendszer, eljárás",
+      "discipline": "szakterület",
+      "metric": "mérhető mennyiség, mutató",
+      "ui_pattern": "általános felületi minta",
+      "license": "licenc",
+      "designation": "eredetvédelmi vagy minőségi jelölés",
+      "other": "egyéb"
+    },
+    "place": {
+      "city": "város",
+      "region": "régió, tartomány",
+      "country": "ország",
+      "venue": "helyszín, épület",
+      "other": "egyéb"
+    },
+    "work": {
+      "article": "cikk",
+      "case_study": "esettanulmány",
+      "book": "könyv",
+      "course": "tanfolyam",
+      "other": "egyéb"
+    },
+    "event": {
+      "conference": "konferencia",
+      "webinar": "webinár",
+      "festival": "fesztivál",
+      "other": "egyéb"
+    },
+    "brand": {
+      "other": "egyéb"
+    },
+    "person": {}
   },
-  {
-   "id": "b12",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Előételek",
-    "Borjúfelsál rózsája tonhal krémmel"
-   ],
-   "text": "Borjúfelsál rózsája tonhal krémmel"
-  },
-  {
-   "id": "b13",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Előételek",
-    "Borjúfelsál rózsája tonhal krémmel",
-    "4.000,-"
-   ],
-   "text": "4.000,-"
-  },
-  {
-   "id": "b14",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Előételek",
-    "PREMIUM válogatás calabriai fekete sertés D.O.P. húskülönlegességeiből és calabriai D.O.P. sajtokból"
-   ],
-   "text": "PREMIUM válogatás calabriai fekete sertés D.O.P. húskülönlegességeiből és calabriai D.O.P. sajtokból"
-  },
-  {
-   "id": "b15",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Előételek",
-    "PREMIUM válogatás calabriai fekete sertés D.O.P. húskülönlegességeiből és calabriai D.O.P. sajtokból",
-    "7.000,-"
-   ],
-   "text": "7.000,-"
-  },
-  {
-   "id": "b16",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Előételek",
-    "Szicíliai vörös tonhal tatár avokádókrémmel, citromzesttel és édes-savanyú Tropea-hagymával"
-   ],
-   "text": "Szicíliai vörös tonhal tatár avokádókrémmel, citromzesttel és édes-savanyú Tropea-hagymával"
-  },
-  {
-   "id": "b17",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Előételek",
-    "Szicíliai vörös tonhal tatár avokádókrémmel, citromzesttel és édes-savanyú Tropea-hagymával",
-    "4.500,-"
-   ],
-   "text": "4.500,-"
-  },
-  {
-   "id": "b18",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Előételek",
-    "Paradicsomfondü szicíliai vörös garnélával, stracciatellával, zöldalma-zesttel és Masitto extra szűz olívaolajjal"
-   ],
-   "text": "Paradicsomfondü szicíliai vörös garnélával, stracciatellával, zöldalma-zesttel és Masitto extra szűz olívaolajjal"
-  },
-  {
-   "id": "b19",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Előételek",
-    "Paradicsomfondü szicíliai vörös garnélával, stracciatellával, zöldalma-zesttel és Masitto extra szűz olívaolajjal",
-    "4.500,-"
-   ],
-   "text": "4.500,-"
-  },
-  {
-   "id": "b20",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Előételek",
-    "Caprese D.O.P. bivalymozzarellával, ökörszív-paradicsommal, bazsalikommal és Masitto extra szűz olívaolajjal"
-   ],
-   "text": "Caprese D.O.P. bivalymozzarellával, ökörszív-paradicsommal, bazsalikommal és Masitto extra szűz olívaolajjal"
-  },
-  {
-   "id": "b21",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Előételek",
-    "Caprese D.O.P. bivalymozzarellával, ökörszív-paradicsommal, bazsalikommal és Masitto extra szűz olívaolajjal",
-    "3.500,-"
-   ],
-   "text": "3.500,-"
-  },
-  {
-   "id": "b22",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P."
-   ],
-   "text": "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P."
-  },
-  {
-   "id": "b23",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
-    "Kézzel készített pappardelle feketekagylóval, vadédesköménnyel, cannellini babkrémen"
-   ],
-   "text": "Kézzel készített pappardelle feketekagylóval, vadédesköménnyel, cannellini babkrémen"
-  },
-  {
-   "id": "b24",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
-    "Kézzel készített pappardelle feketekagylóval, vadédesköménnyel, cannellini babkrémen",
-    "5.500,-"
-   ],
-   "text": "5.500,-"
-  },
-  {
-   "id": "b25",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
-    "Spaghettone szicíliai vörös garnéla tatár, friss újhagymával, vadédesköménnyel és citromzesttel"
-   ],
-   "text": "Spaghettone szicíliai vörös garnéla tatár, friss újhagymával, vadédesköménnyel és citromzesttel"
-  },
-  {
-   "id": "b26",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
-    "Spaghettone szicíliai vörös garnéla tatár, friss újhagymával, vadédesköménnyel és citromzesttel",
-    "7.500,-"
-   ],
-   "text": "7.500,-"
-  },
-  {
-   "id": "b27",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
-    "Spaghettone alla carbonara Nebrodi-guancialéval és Pecorino Romano D.O.P. sajttal"
-   ],
-   "text": "Spaghettone alla carbonara Nebrodi-guancialéval és Pecorino Romano D.O.P. sajttal"
-  },
-  {
-   "id": "b28",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
-    "Spaghettone alla carbonara Nebrodi-guancialéval és Pecorino Romano D.O.P. sajttal",
-    "6.000,-"
-   ],
-   "text": "6.000,-"
-  },
-  {
-   "id": "b29",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
-    "Candele alla Norma San Marzano paradicsomszósszal, padlizsánnal, bazsalikommal és szicíliai ricotta salatával"
-   ],
-   "text": "Candele alla Norma San Marzano paradicsomszósszal, padlizsánnal, bazsalikommal és szicíliai ricotta salatával"
-  },
-  {
-   "id": "b30",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
-    "Candele alla Norma San Marzano paradicsomszósszal, padlizsánnal, bazsalikommal és szicíliai ricotta salatával",
-    "5.500,-"
-   ],
-   "text": "5.500,-"
-  },
-  {
-   "id": "b31",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
-    "Kézzel készített gnocchi Caciocavallo Silano D.O.P. fondüvel és ‘Nduja di Spilinga D.O.P. krémmel (a Séf kézjegye)"
-   ],
-   "text": "Kézzel készített gnocchi Caciocavallo Silano D.O.P. fondüvel és ‘Nduja di Spilinga D.O.P. krémmel (a Séf kézjegye)"
-  },
-  {
-   "id": "b32",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Pasta del Pastificio dei Campi – Pasta di Gragnano I.G.P.",
-    "Kézzel készített gnocchi Caciocavallo Silano D.O.P. fondüvel és ‘Nduja di Spilinga D.O.P. krémmel (a Séf kézjegye)",
-    "7.000,-"
-   ],
-   "text": "7.000,-"
-  },
-  {
-   "id": "b33",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Főételek"
-   ],
-   "text": "Főételek"
-  },
-  {
-   "id": "b34",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Főételek",
-    "Vörösmárnafilé mediterrán fűszernövényekkel, Pecorino Romano D.O.P. sajttal, konfitált koktélparadicsommal és marinált cukkinivel"
-   ],
-   "text": "Vörösmárnafilé mediterrán fűszernövényekkel, Pecorino Romano D.O.P. sajttal, konfitált koktélparadicsommal és marinált cukkinivel"
-  },
-  {
-   "id": "b35",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Főételek",
-    "Vörösmárnafilé mediterrán fűszernövényekkel, Pecorino Romano D.O.P. sajttal, konfitált koktélparadicsommal és marinált cukkinivel",
-    "7.500,-"
-   ],
-   "text": "7.500,-"
-  },
-  {
-   "id": "b36",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Főételek",
-    "Ördöghalfalatok cseresznyeparadicsommal, olívabogyóval és oregánóval"
-   ],
-   "text": "Ördöghalfalatok cseresznyeparadicsommal, olívabogyóval és oregánóval"
-  },
-  {
-   "id": "b37",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Főételek",
-    "Ördöghalfalatok cseresznyeparadicsommal, olívabogyóval és oregánóval",
-    "8.000,-"
-   ],
-   "text": "8.000,-"
-  },
-  {
-   "id": "b38",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Főételek",
-    "Baccalà édespaprika-krémen, konfitált paradicsommal és friss mentucciával"
-   ],
-   "text": "Baccalà édespaprika-krémen, konfitált paradicsommal és friss mentucciával"
-  },
-  {
-   "id": "b39",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Főételek",
-    "Baccalà édespaprika-krémen, konfitált paradicsommal és friss mentucciával",
-    "7.000,-"
-   ],
-   "text": "7.000,-"
-  },
-  {
-   "id": "b40",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Főételek",
-    "Scottona marhahúsgolyók San Marzano paradicsomszósszal, Pecorino Romano D.O.P. sajttal és Masitto extra szűz olívaolajja"
-   ],
-   "text": "Scottona marhahúsgolyók San Marzano paradicsomszósszal, Pecorino Romano D.O.P. sajttal és Masitto extra szűz olívaolajja"
-  },
-  {
-   "id": "b41",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Főételek",
-    "Scottona marhahúsgolyók San Marzano paradicsomszósszal, Pecorino Romano D.O.P. sajttal és Masitto extra szűz olívaolajja",
-    "6.000,-"
-   ],
-   "text": "6.000,-"
-  },
-  {
-   "id": "b42",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Főételek",
-    "Chianina Toscana ribeye toszkán vörösbor-redukcióval és rozmaringos sült burgonyával"
-   ],
-   "text": "Chianina Toscana ribeye toszkán vörösbor-redukcióval és rozmaringos sült burgonyával"
-  },
-  {
-   "id": "b43",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Főételek",
-    "Chianina Toscana ribeye toszkán vörösbor-redukcióval és rozmaringos sült burgonyával",
-    "14.000,-"
-   ],
-   "text": "14.000,-"
-  },
-  {
-   "id": "b44",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Köretek"
-   ],
-   "text": "Köretek"
-  },
-  {
-   "id": "b45",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Köretek",
-    "Sütőben sült burgonya, friss rozmaring"
-   ],
-   "text": "Sütőben sült burgonya, friss rozmaring"
-  },
-  {
-   "id": "b46",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Köretek",
-    "Sütőben sült burgonya, friss rozmaring",
-    "2.500,-"
-   ],
-   "text": "2.500,-"
-  },
-  {
-   "id": "b47",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Köretek",
-    "Szezonális grillezett zöldségek"
-   ],
-   "text": "Szezonális grillezett zöldségek"
-  },
-  {
-   "id": "b48",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Köretek",
-    "Szezonális grillezett zöldségek",
-    "3.000,-"
-   ],
-   "text": "3.000,-"
-  },
-  {
-   "id": "b49",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Köretek",
-    "Szezonális saláta"
-   ],
-   "text": "Szezonális saláta"
-  },
-  {
-   "id": "b50",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Köretek",
-    "Szezonális saláta",
-    "2.500,-"
-   ],
-   "text": "2.500,-"
-  },
-  {
-   "id": "b51",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Desszert"
-   ],
-   "text": "Desszert"
-  },
-  {
-   "id": "b52",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Desszert",
-    "Pan brioche brontei pisztáciafagylalttal"
-   ],
-   "text": "Pan brioche brontei pisztáciafagylalttal"
-  },
-  {
-   "id": "b53",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Desszert",
-    "Pan brioche brontei pisztáciafagylalttal",
-    "3.500,-"
-   ],
-   "text": "3.500,-"
-  },
-  {
-   "id": "b54",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Desszert",
-    "Hagyományos tiramisù"
-   ],
-   "text": "Hagyományos tiramisù"
-  },
-  {
-   "id": "b55",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Desszert",
-    "Hagyományos tiramisù",
-    "3.000,-"
-   ],
-   "text": "3.000,-"
-  },
-  {
-   "id": "b56",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Desszert",
-    "Saját készítésű friss gyümölcssorbet"
-   ],
-   "text": "Saját készítésű friss gyümölcssorbet"
-  },
-  {
-   "id": "b57",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Desszert",
-    "Saját készítésű friss gyümölcssorbet",
-    "2.500,-"
-   ],
-   "text": "2.500,-"
-  },
-  {
-   "id": "b58",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Desszert",
-    "Sgroppino (Belvedere , Franciacorta és citromsorbet)"
-   ],
-   "text": "Sgroppino (Belvedere , Franciacorta és citromsorbet)"
-  },
-  {
-   "id": "b59",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Desszert",
-    "Sgroppino (Belvedere , Franciacorta és citromsorbet)",
-    "4.000,-"
-   ],
-   "text": "4.000,-"
-  },
-  {
-   "id": "b60",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Desszert",
-    "Chef:"
-   ],
-   "text": "Chef:"
-  },
-  {
-   "id": "b61",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Gianfranco Brusco"
-   ],
-   "text": "Gianfranco Brusco"
-  },
-  {
-   "id": "b62",
-   "kind": "heading",
-   "heading_path": [
-    "Étlap",
-    "Order Online"
-   ],
-   "text": "Order Online"
-  },
-  {
-   "id": "b63",
-   "kind": "other",
-   "heading_path": [
-    "Étlap",
-    "Order Online"
-   ],
-   "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec sed finibus nisi, sed dictum eros. Quisque aliquet velit sit amet sem interdum faucibus. In feugiat aliquet mollis etiam tincidunt ligula."
-  },
-  {
-   "id": "b64",
-   "kind": "other",
-   "heading_path": [
-    "Étlap",
-    "Order Online"
-   ],
-   "text": "Order Now"
+  "subtype_vocabulary": {
+    "service": [
+      "audit",
+      "implementation",
+      "consulting",
+      "reporting",
+      "training",
+      "other"
+    ],
+    "org": [
+      "company",
+      "restaurant",
+      "institution",
+      "team",
+      "other"
+    ],
+    "tech": [
+      "software",
+      "library",
+      "framework",
+      "language",
+      "package",
+      "component",
+      "api_symbol",
+      "api",
+      "standard",
+      "feature",
+      "other"
+    ],
+    "product": [
+      "dish",
+      "ingredient",
+      "wine",
+      "drink",
+      "physical_good",
+      "other"
+    ],
+    "concept": [
+      "method",
+      "discipline",
+      "metric",
+      "ui_pattern",
+      "license",
+      "designation",
+      "other"
+    ],
+    "place": [
+      "city",
+      "region",
+      "country",
+      "venue",
+      "other"
+    ],
+    "work": [
+      "article",
+      "case_study",
+      "book",
+      "course",
+      "other"
+    ],
+    "event": [
+      "conference",
+      "webinar",
+      "festival",
+      "other"
+    ],
+    "brand": [
+      "other"
+    ],
+    "person": []
   }
- ],
- "gold": {
-  "primary_entities": [],
-  "entities": [],
-  "optional": [],
-  "negatives": []
- }
 }

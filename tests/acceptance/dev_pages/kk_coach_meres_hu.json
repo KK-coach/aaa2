@@ -2780,7 +2780,8 @@
     "subtype": "method",
     "aliases": [
      "Attribution Modeling",
-     "attribution modeling"
+     "attribution modeling",
+     "attribúciós modell"
     ],
     "difficulty": "easy",
     "surface_forms": [
@@ -2812,7 +2813,9 @@
     "subtype": "method",
     "aliases": [
      "last-click attribution",
-     "last-click"
+     "last-click",
+     "utolsó kattintásos attribúció",
+     "utolsó kattintás"
     ],
     "difficulty": "easy",
     "surface_forms": [
@@ -2831,6 +2834,10 @@
      {
       "block": "b82",
       "text": "last-click"
+     },
+     {
+      "block": "b197",
+      "text": "utolsó kattintásnak"
      }
     ]
    },
@@ -3117,7 +3124,9 @@
     "type": "concept",
     "subtype": "other",
     "aliases": [
-     "third-party cookie"
+     "third-party cookie",
+     "harmadik féltől származó cookie-k",
+     "third-party cookies"
     ],
     "difficulty": "easy",
     "surface_forms": [
@@ -3252,7 +3261,10 @@
     "type": "tech",
     "subtype": "feature",
     "difficulty": "easy",
-    "aliases": [],
+    "aliases": [
+     "Google Tag Manager Server-Side",
+     "server-side container"
+    ],
     "surface_forms": [
      {
       "block": "b76",
@@ -3311,7 +3323,9 @@
      "concept",
      "tech"
     ],
-    "aliases": [],
+    "aliases": [
+     "adblockerek"
+    ],
     "surface_forms": [
      {
       "block": "b23",
@@ -3373,7 +3387,10 @@
     "type": "concept",
     "subtype": "method",
     "difficulty": "easy",
-    "aliases": [],
+    "aliases": [
+     "értékesítési tölcsér",
+     "marketingtölcsér"
+    ],
     "surface_forms": [
      {
       "block": "b36",
@@ -3406,7 +3423,11 @@
     "type": "concept",
     "subtype": "other",
     "difficulty": "easy",
-    "aliases": [],
+    "aliases": [
+     "first-party adatgyűjtés",
+     "first-party adatréteg",
+     "first-party infrastruktúra"
+    ],
     "surface_forms": [
      {
       "block": "b102",
@@ -3427,7 +3448,9 @@
     "type": "concept",
     "subtype": "discipline",
     "difficulty": "easy",
-    "aliases": [],
+    "aliases": [
+     "generatív mesterséges intelligencia"
+    ],
     "surface_forms": [
      {
       "block": "b210",
@@ -3486,7 +3509,9 @@
      "concept",
      "tech"
     ],
-    "aliases": [],
+    "aliases": [
+     "adattárház és konszolidáció"
+    ],
     "surface_forms": [
      {
       "block": "b84",
@@ -3520,7 +3545,9 @@
     "type": "concept",
     "subtype": "metric",
     "difficulty": "easy",
-    "aliases": [],
+    "aliases": [
+     "hiúsági mutatók"
+    ],
     "surface_forms": [
      {
       "block": "b148",
@@ -3533,7 +3560,9 @@
     "type": "concept",
     "subtype": "method",
     "difficulty": "easy",
-    "aliases": [],
+    "aliases": [
+     "sprintalapú működés"
+    ],
     "surface_forms": [
      {
       "block": "b159",
@@ -3579,7 +3608,9 @@
     "type": "concept",
     "subtype": "metric",
     "difficulty": "easy",
-    "aliases": [],
+    "aliases": [
+     "vezető és késleltetett indikátorok"
+    ],
     "surface_forms": [
      {
       "block": "b148",
@@ -3593,7 +3624,9 @@
     "subtype": "company",
     "difficulty": "easy",
     "note": "logó-szöveg",
-    "aliases": [],
+    "aliases": [
+     "kk"
+    ],
     "surface_forms": [
      {
       "block": "b28",
@@ -3752,6 +3785,57 @@
      {
       "block": "b158",
       "text": "Folyamatos minőségellenőrzés"
+     }
+    ]
+   },
+   {
+    "canonical": "ügyfélút",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b80",
+      "text": "ügyfélúton"
+     },
+     {
+      "block": "b197",
+      "text": "ügyfélúton"
+     }
+    ]
+   },
+   {
+    "canonical": "egyetlen igazságforrás",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [
+     "single source of truth"
+    ],
+    "surface_forms": [
+     {
+      "block": "b50",
+      "text": "egyetlen igazságforrás"
+     },
+     {
+      "block": "b129",
+      "text": "Egyetlen igazságforrás"
+     }
+    ]
+   },
+   {
+    "canonical": "konverziókövetés",
+    "type": "concept",
+    "subtype": "method",
+    "difficulty": "easy",
+    "aliases": [
+     "conversion tracking"
+    ],
+    "surface_forms": [
+     {
+      "block": "b125",
+      "text": "konverziókövetés"
      }
     ]
    }
