@@ -92,3 +92,50 @@ def test_locked_page_ids_and_sources():
     assert len(sources) == 6
     assert {db for _, db, _, _ in sources} == set(LOCKED_SITES)
     assert all(pid.startswith("locked_") for pid, _, _, _ in sources)
+
+
+GOLD_PAGE = {
+    "page_id": "p", "lang": "hu", "blocks": BLOCKS,
+    "gold": {"primary_entities": [], "negatives": [], "optional": [], "entities": [
+        {"canonical": "Bérszámfejtés Csomag", "type": "service", "aliases": [],
+         "surface_forms": [{"block": "b1", "text": "Bérszámfejtés Csomag"}]},
+        {"canonical": "Éves zárás", "type": "service", "aliases": [],
+         "surface_forms": [{"block": "b2", "text": "Éves zárás"}]},
+        {"canonical": "Számlázó", "type": "tech", "aliases": [],
+         "surface_forms": [{"block": "b3", "text": "Számlázóval"}]},
+        {"canonical": "készletforgás", "type": "concept", "aliases": [],
+         "surface_forms": [{"block": "b4", "text": "készletforgás"}]},
+    ]}}
+
+
+def test_scoring_named_services_concepts_and_the_rule(tmp_path):
+    from tests.acceptance.v3_eval import (
+        export_v3_verdicts,
+        report_markdown,
+        score_v3,
+        total,
+    )
+    out = apply_v3(RECORD, PAGE, None, lambda names, lang: None)
+    out["entities"] = [e for e in out["entities"] if e["canonical_name"] != "Éves zárás"]
+    verdicts = {("p", "berszamfejtes csomag", "service"): "valid",
+                ("p", "berszamfejtes", "concept"): "valid",
+                ("p", "keszletforgas", "concept"): "descriptive"}
+    score = score_v3(GOLD_PAGE, out, verdicts, source=RECORD)
+    assert (score.named, score.named_recognized, score.named_found) == (1, 1, 1)
+    assert (score.good_hard, score.wrong_hard) == (1, 0)
+    assert (score.services, score.services_found, score.service_verdicts) == (2, 1, ["valid"])
+    assert (score.concepts, score.concepts_recognized) == (1, 1)
+    assert score.top[10] == ["valid", "descriptive", None]
+    assert score.missed == [("Éves zárás", "service", "felismerési")]
+    assert score.rule_dropped == [("Éves zárás", "kötelező: Éves zárás")]
+    text = report_markdown([("zárolt oldalak", [score]), ("fejlesztési oldalak", [])])
+    assert "| **zárolt oldalak** | 100.0 (1/1) | 100.0 (1/1) | 100.0 (1/1) | 50.0 (1/2) | " \
+           "100.0 (1/1) | 100.0 (1/1) | 50.0 (1/2) | 50.0 (1/2) | 1 |" in text
+    assert "- saját ajánlat recall: 50.0 (1/2) (≥ 90: NEM)" in text
+    assert total([score, score], "x").services == 4
+    path = tmp_path / "v.json"
+    assert export_v3_verdicts([GOLD_PAGE], {"p": out}, path) == 4
+    items = json.loads(path.read_text(encoding="utf-8"))["items"]
+    assert [(i["canonical"], i["type"]) for i in items] == [
+        ("Bérszámfejtés Csomag", "service"), ("Cash-flow", "concept"),
+        ("Készletforgás", "concept"), ("Bérszámfejtés", "concept")]
