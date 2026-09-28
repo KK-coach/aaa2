@@ -54,9 +54,9 @@ def client_for(con, replies, tmp_path, provider="gemini"):
                      Retry(sleep=lambda _: None)), adapter
 
 
-def mention(block, surface, name, kind, subtype=None, description="leírás", term_status=None):
+def mention(block, surface, name, kind, subtype=None, description="leírás"):
     return {"block_id": block, "surface_form": surface, "canonical_name": name, "type": kind,
-            "subtype": subtype, "term_status": term_status, "description": description}
+            "subtype": subtype, "description": description}
 
 
 def reply(*mentions, primary=()):
@@ -481,11 +481,3 @@ def test_a_failed_chunk_keeps_the_others(tmp_path):
     assert (run.llm_calls, run.rows, run.skipped) == (2, 1, {"chunk_schema_mismatch": 1})
 
 
-def test_descriptive_concepts_are_dropped_and_counted(tmp_path):
-    con = one_page()
-    client, _ = client_for(con, [reply(
-        mention("b3", "Csapat", "csapat", "concept", term_status="descriptive"),
-        mention("b4", "Kiss Anna", "Kiss Anna", "person"))], tmp_path)
-    run = run_llm(con, client)
-    assert (run.rows, run.skipped) == (1, {"descriptive_concept": 1})
-    assert [row[0] for row in mentions(con)] == ["Kiss Anna"]

@@ -60,7 +60,7 @@ from pathlib import Path
 import duckdb
 
 from aaa2.db.connect import DATA_DIR, connect
-from aaa2.entities.blocks import check_surface, split_descriptive, surface_spans
+from aaa2.entities.blocks import check_surface, surface_spans
 from aaa2.entities.extract import extract_page
 from aaa2.entities.naming import name_record
 from aaa2.entities.rules import alias_key
@@ -218,7 +218,6 @@ class Group:
     canonical: str
     type: str
     subtype: str | None
-    term_status: str | None = None
     surfaces: list[str] = field(default_factory=list)
     blocks: list[str] = field(default_factory=list)
 
@@ -261,8 +260,7 @@ class PageScore:
     wrong_blocks: list = field(default_factory=list)        # (kanonikus, blokk)
     negatives_hit: list = field(default_factory=list)       # (modell neve, negatív tétel)
     unlisted: list = field(default_factory=list)            # (modell neve, típus)
-    false_hits: list = field(default_factory=list)          # (név, típus, term_status, ok)
-    dropped: list = field(default_factory=list)             # (név, blokk, a referenciában)
+    false_hits: list = field(default_factory=list)          # (név, típus, ok)
     fabricated: list = field(default_factory=list)          # (kanonikus, szöveg, blokk)
     extra_primary: list = field(default_factory=list)
     cost_usd: float = 0.0
@@ -290,22 +288,14 @@ def _overlap(a: tuple[int, int], b: tuple[int, int]) -> bool:
     return a[0] < b[1] and b[0] < a[1]
 
 
-def score_page(page: dict, record: dict, call_row: tuple | None = None,
-               drop_descriptive: bool = False) -> PageScore:
+def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageScore:
     """`call_row`: (cost_usd, tokens_in, tokens_out) az `llm_calls`-ból (a rekord hívásainak
-    összege), ha van. `drop_descriptive`: a `descriptive` concept-említések kiesnek (mint az
-    LLM-körben), és a `dropped` mutatja, mi esett ki, a referenciához mérve."""
+    összege), ha van."""
     gold = page["gold"]
     required, optional = _items(gold["entities"]), _items(gold.get("optional", []))
     negatives = {alias_key(n["text"]): n["text"] for n in gold.get("negatives", [])}
     blocks = {b["id"]: b for b in page["blocks"]}
     score = PageScore(page["page_id"], required=len(required))
-    if drop_descriptive:
-        kept, dropped = split_descriptive(record.get("entities") or [])
-        record = {**record, "entities": kept}
-        score.dropped = [(raw["canonical_name"], raw["block_id"],
-                          _where(raw, gold, required, optional, negatives, blocks))
-                         for raw in dropped]
     if call_row:
         score.cost_usd, score.tokens_in, score.tokens_out = (call_row[0] or 0.0,
                                                              call_row[1] or 0, call_row[2] or 0)
@@ -319,8 +309,7 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None,
             score.fabricated.append((entity.canonical_name, entity.surface_form, entity.block_id))
             continue
         key = alias_key(entity.canonical_name)
-        group = groups.setdefault(key, Group(entity.canonical_name, entity.type, entity.subtype,
-                                             raw.get("term_status")))
+        group = groups.setdefault(key, Group(entity.canonical_name, entity.type, entity.subtype))
         group.surfaces.append(entity.surface_form)
         group.blocks.append(entity.block_id)
         spans += [(entity.block_id, span, key, alias_key(entity.surface_form))
@@ -350,12 +339,10 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None,
             score.wrong_named += 1
         if negative := next((negatives[k] for k in keys if k in negatives), None):
             score.negatives_hit.append((group.canonical, negative))
-            score.false_hits.append((group.canonical, group.type, group.term_status,
-                                     f"negatív „{negative}”"))
+            score.false_hits.append((group.canonical, group.type, f"negatív „{negative}”"))
         else:
             score.unlisted.append((group.canonical, group.type))
-            score.false_hits.append((group.canonical, group.type, group.term_status,
-                                     "referencián kívül"))
+            score.false_hits.append((group.canonical, group.type, "referencián kívül"))
     for item, entry in zip(required, gold["entities"], strict=True):
         tally = score.by_difficulty.setdefault(item.difficulty or "?", [0, 0])
         tally[1] += 1
@@ -579,8 +566,8 @@ def report_markdown(model: str, scores: list[PageScore]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def measure(model: str, data_dir: Path, pages: list[dict], tag: str = "",
-            drop_descriptive: bool = False) -> list[PageScore]:
+def measure(model: str, data_dir: Path, pages: list[dict], tag: str = ""
+            ) -> list[PageScore]:
     scores = []
     db = data_dir / "synthetic.duckdb"
     con = duckdb.connect(str(db), read_only=True) if db.exists() else None
@@ -594,7 +581,7 @@ def measure(model: str, data_dir: Path, pages: list[dict], tag: str = "",
             row = con.execute("SELECT sum(cost_usd), sum(tokens_in), sum(tokens_out) "
                               "FROM llm_calls WHERE list_contains(?, call_id)",
                               [ids]).fetchone() if con is not None and ids else None
-            scores.append(score_page(page, record, row, drop_descriptive))
+            scores.append(score_page(page, record, row))
     finally:
         if con is not None:
             con.close()
@@ -766,54 +753,32 @@ def checkpoint_markdown(model: str, data_dir: Path, pages: list[dict],
                         series: dict[str, str]) -> str:
     """Sorozatonként (név → címke) oldalanként és összesítve: felismerés (megnevezett, fogalom),
     elnevezési pontosság, végső recall, precizitás (megnevezett, fogalom), típus- és
-    altípus-pontosság, főtéma, költség/oldal; a leíró fogalmak szűrése előtt és után, ha a
-    kimenetben van `term_status`. A célok a szűrés utáni összesítettre. Utána oldalanként a
-    kiesett leíró fogalmak a referenciához mérve, a kihagyások (felismerési vagy elnevezési
-    hiba), és a téves találatok, megnevezett és fogalom külön, a fogalmaknál a
-    `term_status`-szal."""
+    altípus-pontosság, főtéma, költség/oldal; a célok az összesítettre; oldalanként a
+    kihagyások (felismerési vagy elnevezési hiba) és a téves találatok, megnevezett és fogalom
+    külön."""
     lines = [f"# Ellenőrzőpont-mérés: `{model}` kinyerés", "",
              ("Pontozás hálózat nélkül a tárolt kimenetekből, a jelenlegi szabályokkal (recall "
               "a referencia blokkjában; az `ambiguous_aliases` felismerésnek elég, elnevezésnek "
-              "nem). A költség egy oldalra: a kinyerő hívás(ok) és az elnevezés. „Előtt”: a "
-              "leíró (`descriptive`) fogalmakkal; „után”: nélkülük, ahogy az LLM-kör tárolja."), ""]
+              "nem). A költség egy oldalra: a kinyerő hívás(ok) és az elnevezés."), ""]
     goals: list[tuple[str, dict]] = []
     details: list[str] = []
     for label, tag in series.items():
-        before = measure(model, data_dir, pages, tag)
-        after = measure(model, data_dir, pages, tag, drop_descriptive=True)
-        filtered = any(s.dropped for s in after)
+        scores = measure(model, data_dir, pages, tag)
         lines += [f"## {label} (`{tag}`)", "", CHECKPOINT_HEADER, CHECKPOINT_RULE]
-        for b, a in zip(before, after, strict=True):
-            if filtered:
-                lines += [checkpoint_row(f"{b.page_id}, előtt", [b]),
-                          checkpoint_row(f"{a.page_id}, után", [a])]
-            else:
-                lines.append(checkpoint_row(a.page_id, [a]))
-        if filtered:
-            lines += [checkpoint_row("**összesen, előtt**", before),
-                      checkpoint_row("**összesen, után**", after)]
-        else:
-            lines.append(checkpoint_row("**összesen**", after))
-        lines.append("")
-        goals.append((label, rates(total_of(after))))
+        lines += [checkpoint_row(s.page_id, [s]) for s in scores]
+        lines += [checkpoint_row("**összesen**", scores), ""]
+        goals.append((label, rates(total_of(scores))))
         details += [f"### {label}", ""]
-        for s in after:
+        for s in scores:
             details.append(f"- **{s.page_id}**")
-            if filtered:
-                good = [d for d in s.dropped if d[2].startswith(("kötelező", "opcionális"))]
-                details.append(f"  - kiesett leíró fogalom ({len(s.dropped)}, ebből a "
-                               f"referenciában {len(good)}): " + (", ".join(
-                                   f"{name} [{block}] → {where}"
-                                   for name, block, where in s.dropped) or "—"))
             missed = ", ".join(f"{name} ({kind}, {why})" for name, _, kind, why in s.missed)
             details.append(f"  - kihagyás ({len(s.missed)}): {missed or '—'}")
             named = [f for f in s.false_hits if f[1] != "concept"]
             concepts = [f for f in s.false_hits if f[1] == "concept"]
             details.append(f"  - téves találat, megnevezett ({len(named)}): " + (", ".join(
-                f"{name} ({kind}; {why})" for name, kind, _, why in named) or "—"))
+                f"{name} ({kind}; {why})" for name, kind, why in named) or "—"))
             details.append(f"  - téves találat, fogalom ({len(concepts)}): " + (", ".join(
-                f"{name} ({status or 'nincs term_status'}; {why})"
-                for name, _, status, why in concepts) or "—"))
+                f"{name} ({why})" for name, _, why in concepts) or "—"))
         details.append("")
     return "\n".join(lines + targets_markdown(goals) + ["## Részletek oldalanként", "",
                                                          *details])
