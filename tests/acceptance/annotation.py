@@ -25,7 +25,9 @@ from __future__ import annotations
 import argparse
 import difflib
 import json
+import re
 from pathlib import Path
+from urllib.parse import parse_qsl, urlsplit
 
 import duckdb
 import zstandard
@@ -43,6 +45,13 @@ PAGES = (
      "https://valor-software.com/ngx-bootstrap/components/accordion"),
 )
 EMPTY_GOLD = {"primary_entities": [], "entities": [], "optional": [], "negatives": []}
+LOCKED_DIR = Path(__file__).parent / "locked_pages"
+LOCKED_FILE = Path(__file__).parent / "locked_pages.json"
+LOCKED_SITES = {"kk-coach-crawl": ("kk", "kk_coach_meres_hu"),
+                "ngx-bootstrap-crawl": ("ngx", "ngx_accordion_en")}
+CONCEPT_SCOPE = ("kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi "
+                 "témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, "
+                 "person, product, place) és a site saját ajánlata (service).")
 
 
 def template(page_id: str, db: Path, url: str) -> dict:
@@ -147,11 +156,62 @@ def markdown(page: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def locked_page_id(prefix: str, url: str) -> str:
+    """`locked_<site>_<az útvonal utolsó része>[_<fül>]`, kisbetűvel, egész szavakkal,
+    legfeljebb 40 jellel."""
+    parts = urlsplit(url)
+    slug = [s for s in parts.path.split("/") if s][-1] if parts.path.strip("/") else "home"
+    tab = dict(parse_qsl(parts.query)).get("tab")
+    kept: list[str] = []
+    for word in re.findall(r"[a-z0-9]+", f"{slug} {tab or ''}".lower()):
+        if kept and len("_".join([*kept, word])) > 40:
+            break
+        kept.append(word)
+    return f"locked_{prefix}_" + "_".join(kept)
+
+
+def locked_sources(path: Path = LOCKED_FILE) -> list[tuple[str, str, str, str]]:
+    """A zárolt lista kk.coach és ngx oldalai: (page_id, adatbázis, URL, fejlesztési oldal)."""
+    sites = json.loads(path.read_text(encoding="utf-8"))["sites"]
+    return [(locked_page_id(prefix, url), db, url, dev)
+            for db, (prefix, dev) in LOCKED_SITES.items() for url in sites[db]["urls"]]
+
+
+def locked_template(page_id: str, db: Path, url: str, dev_page: Path) -> dict:
+    """A zárolt oldal sablonja: a fejlesztési oldal formája, a site-jának szabályaival és
+    szókészletével, üres referencialistával."""
+    page = template(page_id, db, url)
+    dev = json.loads(dev_page.read_text(encoding="utf-8"))
+    return {**page, "set": "locked", "gold_status": "sablon, annotálatlan",
+            "annotation_notes": [], "rules": {**dev["rules"], "concept_scope": CONCEPT_SCOPE},
+            "subtype_glossary": dev["subtype_glossary"],
+            "subtype_vocabulary": dev["subtype_vocabulary"]}
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--data-dir", type=Path, default=DATA_DIR / "compare")
-    parser.add_argument("--out", type=Path, default=OUT_DIR)
+    parser.add_argument("--out", type=Path, default=None)
+    parser.add_argument("--locked", action="store_true",
+                        help="a zárolt lista kk.coach és ngx oldalai (tests/acceptance/"
+                             "locked_pages/); meglévő sablont nem ír felül")
     args = parser.parse_args(argv)
+    if args.locked:
+        out = args.out or LOCKED_DIR
+        out.mkdir(parents=True, exist_ok=True)
+        for page_id, name, url, dev in locked_sources():
+            target = out / f"{page_id}.json"
+            if target.exists():
+                print(f"{page_id}: megvan, marad")
+                continue
+            page = locked_template(page_id, args.data_dir / f"{name}.duckdb", url,
+                                   OUT_DIR / f"{dev}.json")
+            target.write_text(json.dumps(page, ensure_ascii=False, indent=1) + "\n",
+                              encoding="utf-8")
+            (out / f"{page_id}.md").write_text(markdown(page), encoding="utf-8")
+            print(f"{page_id}: {len(page['blocks'])} blokk")
+        return
+    args.out = args.out or OUT_DIR
     args.out.mkdir(parents=True, exist_ok=True)
     for page_id, name, url in PAGES:
         page = template(page_id, args.data_dir / f"{name}.duckdb", url)

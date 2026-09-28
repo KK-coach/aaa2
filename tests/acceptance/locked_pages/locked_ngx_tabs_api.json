@@ -1,0 +1,3158 @@
+{
+ "page_id": "locked_ngx_tabs_api",
+ "set": "locked",
+ "url": "https://valor-software.com/ngx-bootstrap/components/tabs?tab=api",
+ "lang": "en",
+ "site_description": "This page belongs to the website valor-software.com, whose home page is titled “Angular Bootstrap”.",
+ "blocks": [
+  {
+   "id": "b0",
+   "kind": "title",
+   "heading_path": [],
+   "text": "Angular Bootstrap"
+  },
+  {
+   "id": "b74",
+   "kind": "list_item",
+   "heading_path": [],
+   "text": "Home"
+  },
+  {
+   "id": "b75",
+   "kind": "list_item",
+   "heading_path": [],
+   "text": "/ components"
+  },
+  {
+   "id": "b76",
+   "kind": "list_item",
+   "heading_path": [],
+   "text": "/ tabs"
+  },
+  {
+   "id": "b77",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs"
+   ],
+   "text": "Tabs"
+  },
+  {
+   "id": "b78",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs"
+   ],
+   "text": "Add quick, dynamic tab functionality to transition through panes of local content, even via dropdown menus. Nested tabs are not supported."
+  },
+  {
+   "id": "b79",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs"
+   ],
+   "text": "The easiest way to add the tabs component to your app (will be added to the root module)"
+  },
+  {
+   "id": "b80",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs"
+   ],
+   "text": "Overview"
+  },
+  {
+   "id": "b81",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs"
+   ],
+   "text": "API"
+  },
+  {
+   "id": "b82",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs"
+   ],
+   "text": "Examples"
+  },
+  {
+   "id": "b83",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Basic"
+   ],
+   "text": "Basic"
+  },
+  {
+   "id": "b84",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Basic"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b85",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Basic"
+   ],
+   "text": "Basic title"
+  },
+  {
+   "id": "b86",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Basic"
+   ],
+   "text": "Basic Title 1"
+  },
+  {
+   "id": "b87",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Basic"
+   ],
+   "text": "Basic Title 2"
+  },
+  {
+   "id": "b88",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Basic"
+   ],
+   "text": "Basic content"
+  },
+  {
+   "id": "b89",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Basic"
+   ],
+   "text": "Basic content 1"
+  },
+  {
+   "id": "b90",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Basic"
+   ],
+   "text": "Basic content 2"
+  },
+  {
+   "id": "b91",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Basic"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b92",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Basic"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b93",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Basic"
+   ],
+   "text": "<div>\n<tabset>\n<tab heading = \"Basic title\" id = \"tab1\" > Basic content </tab>\n<tab heading = \"Basic Title 1\" > Basic content 1 </tab>\n<tab heading = \"Basic Title 2\" > Basic content 2 </tab>\n</tabset>\n</div>"
+  },
+  {
+   "id": "b94",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Basic"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tabs-basic' ,\ntemplateUrl : './basic.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTabsBasicComponent {}"
+  },
+  {
+   "id": "b95",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "Manual selection"
+  },
+  {
+   "id": "b96",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b97",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "You can select tabs directly from component"
+  },
+  {
+   "id": "b98",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "Select second tab Select third tab"
+  },
+  {
+   "id": "b99",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "Static title"
+  },
+  {
+   "id": "b100",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "Static Title 1"
+  },
+  {
+   "id": "b101",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "Static Title 2"
+  },
+  {
+   "id": "b102",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "Static Title 3"
+  },
+  {
+   "id": "b103",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "Static content"
+  },
+  {
+   "id": "b104",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "Static content 1"
+  },
+  {
+   "id": "b105",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "Static content 2"
+  },
+  {
+   "id": "b106",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "Static content 3"
+  },
+  {
+   "id": "b107",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b108",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b109",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "<div>\n<p> You can select tabs directly from component </p>\n<p>\n<button type = \"button\" class = \"btn btn-primary btn-sm\" ( click ) = \"selectTab(1)\" > Select second tab </button>\n<button type = \"button\" class = \"btn btn-primary btn-sm\" ( click ) = \"selectTab(2)\" > Select third tab </button>\n</p>\n<hr/>\n<tabset # staticTabs >\n<tab heading = \"Static title\" > Static content </tab>\n<tab heading = \"Static Title 1\" > Static content 1 </tab>\n<tab heading = \"Static Title 2\" > Static content 2 </tab>\n<tab heading = \"Static Title 3\" > Static content 3 </tab>\n</tabset>\n</div>"
+  },
+  {
+   "id": "b110",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Manual selection"
+   ],
+   "text": "import { Component , ViewChild , ChangeDetectionStrategy } from '@angular/core' ;\nimport { TabsetComponent } from 'ngx-bootstrap/tabs' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tabs-manual-selection' ,\ntemplateUrl : './manual-selection.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTabsManualSelectionComponent {\n@ViewChild ( 'staticTabs' , { static : false }) staticTabs ?: TabsetComponent ;\n\nselectTab ( tabId : number ) {\nif ( this . staticTabs ?. tabs [ tabId ]) {\nthis . staticTabs . tabs [ tabId ]. active = true ;\n}\n}\n}"
+  },
+  {
+   "id": "b111",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "Disabled tabs"
+  },
+  {
+   "id": "b112",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b113",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "Tabs can be enabled or disabled by changing disabled input property"
+  },
+  {
+   "id": "b114",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "Enable / Disable third tab"
+  },
+  {
+   "id": "b115",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "Static title"
+  },
+  {
+   "id": "b116",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "Static Title 1"
+  },
+  {
+   "id": "b117",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "Static Title 2"
+  },
+  {
+   "id": "b118",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "Static Title 3"
+  },
+  {
+   "id": "b119",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "Static content"
+  },
+  {
+   "id": "b120",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "Static content 1"
+  },
+  {
+   "id": "b121",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "Static content 2"
+  },
+  {
+   "id": "b122",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "Static content 3"
+  },
+  {
+   "id": "b123",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b124",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b125",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "<div>\n<p> Tabs can be enabled or disabled by changing <code> disabled </code> input property </p>\n<p>\n<button type = \"button\" class = \"btn btn-primary btn-sm\" ( click ) = \"disableEnable()\" >\nEnable / Disable third tab\n</button>\n</p>\n<hr/>\n<tabset # staticTabs >\n<tab heading = \"Static title\" > Static content </tab>\n<tab heading = \"Static Title 1\" > Static content 1 </tab>\n<tab heading = \"Static Title 2\" > Static content 2 </tab>\n<tab heading = \"Static Title 3\" > Static content 3 </tab>\n</tabset>\n</div>"
+  },
+  {
+   "id": "b126",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Disabled tabs"
+   ],
+   "text": "import { Component , ViewChild , ChangeDetectionStrategy } from '@angular/core' ;\nimport { TabsetComponent } from 'ngx-bootstrap/tabs' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tabs-disabled' ,\ntemplateUrl : './disabled.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTabsDisabledComponent {\n@ViewChild ( 'staticTabs' , { static : false }) staticTabs ?: TabsetComponent ;\n\ndisableEnable () {\nif ( this . staticTabs ?. tabs [ 2 ]) {\nthis . staticTabs . tabs [ 2 ]. disabled = ! this . staticTabs . tabs [ 2 ]. disabled ;\n}\n}\n}"
+  },
+  {
+   "id": "b127",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic tabs"
+  },
+  {
+   "id": "b128",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b129",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "Change quantity of tabs by manipulating tabs array"
+  },
+  {
+   "id": "b130",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "Add new tab Remove all tabs"
+  },
+  {
+   "id": "b131",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "Static title"
+  },
+  {
+   "id": "b132",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic Title 1"
+  },
+  {
+   "id": "b133",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic Title 2"
+  },
+  {
+   "id": "b134",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic Title 3 ❌"
+  },
+  {
+   "id": "b135",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "Static content"
+  },
+  {
+   "id": "b136",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic content 1"
+  },
+  {
+   "id": "b137",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic content 2"
+  },
+  {
+   "id": "b138",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic content 3"
+  },
+  {
+   "id": "b139",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b140",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b141",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "<div ( click ) = \"$event.preventDefault()\" >\n<p> Change quantity of tabs by manipulating tabs array </p>\n<button type = \"button\" class = \"btn btn-primary btn-sm\" ( click ) = \"addNewTab()\" >\nAdd new tab\n</button>\n@if (tabs.length) {\n<button type = \"button\" class = \"btn btn-primary btn-sm\" ( click ) = \"tabs = []\" >\nRemove all tabs\n</button>\n}\n<hr/>\n<tabset>\n<tab heading = \"Static title\" > Static content </tab>\n@for (tabz of tabs; track tabz) {\n<tab\n[ heading ] = \"tabz.title\"\n[ active ] = \"tabz.active\"\n( selectTab ) = \"tabz.active = true\"\n( deselect ) = \"tabz.active = false\"\n[ disabled ] = \"tabz.disabled\"\n[ removable ] = \"tabz.removable\"\n( removed ) = \"removeTabHandler(tabz)\"\n[ customClass ] = \"tabz.customClass\" >\n{{tabz?.content}}\n</tab>\n}\n</tabset>\n</div>"
+  },
+  {
+   "id": "b142",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Dynamic tabs"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\ninterface ITab {\ntitle : string ;\ncontent : string ;\nremovable : boolean ;\ndisabled : boolean ;\nactive ?: boolean ;\ncustomClass ?: string ;\n}\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tabs-dynamic' ,\nchangeDetection : ChangeDetectionStrategy . OnPush ,\ntemplateUrl : './dynamic.html' ,\nstandalone : false\n})\nexport class DemoTabsDynamicComponent {\ntabs : ITab [] = [\n{ title : 'Dynamic Title 1' , content : 'Dynamic content 1' , removable : false , disabled : false },\n{ title : 'Dynamic Title 2' , content : 'Dynamic content 2' , removable : false , disabled : false , active : true },\n{ title : 'Dynamic Title 3' , content : 'Dynamic content 3' , removable : true , disabled : false }\n];\n\naddNewTab (): void {\nconst newTabIndex = this . tabs . length + 1 ;\nthis . tabs . push ({\ntitle : ` Dynamic Title $ { newTabIndex }`,\ncontent : ` Dynamic content $ { newTabIndex }`,\ndisabled : false ,\nremovable : true\n});\n}\n\nremoveTabHandler ( tab : ITab ): void {\nthis . tabs . splice ( this . tabs . indexOf ( tab ), 1 );\nconsole . log ( 'Remove Tab handler' );\n}\n\nonTabSelect ( tab : ITab ): void {\nthis . tabs . forEach ( t => t . active = false );\ntab . active = true ;\n}\n\nonTabDeselect ( tab : ITab ): void {\ntab . active = false ;\n}\n}"
+  },
+  {
+   "id": "b143",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Pills"
+   ],
+   "text": "Pills"
+  },
+  {
+   "id": "b144",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Pills"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b145",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Pills"
+   ],
+   "text": "Pills 1"
+  },
+  {
+   "id": "b146",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Pills"
+   ],
+   "text": "Pills 2"
+  },
+  {
+   "id": "b147",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Pills"
+   ],
+   "text": "Pills content 1"
+  },
+  {
+   "id": "b148",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Pills"
+   ],
+   "text": "Pills content 2"
+  },
+  {
+   "id": "b149",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Pills"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b150",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Pills"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b151",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Pills"
+   ],
+   "text": "<tabset type = \"pills\" >\n<tab heading = \"Pills 1\" > Pills content 1 </tab>\n<tab heading = \"Pills 2\" > Pills content 2 </tab>\n</tabset>"
+  },
+  {
+   "id": "b152",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Pills"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tabs-pills' ,\ntemplateUrl : './pills.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTabsPillsComponent {}"
+  },
+  {
+   "id": "b153",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Vertical Pills"
+   ],
+   "text": "Vertical Pills"
+  },
+  {
+   "id": "b154",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Vertical Pills"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b155",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Vertical Pills"
+   ],
+   "text": "Vertical 1"
+  },
+  {
+   "id": "b156",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Vertical Pills"
+   ],
+   "text": "Vertical 2"
+  },
+  {
+   "id": "b157",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Vertical Pills"
+   ],
+   "text": "Vertical content 1"
+  },
+  {
+   "id": "b158",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Vertical Pills"
+   ],
+   "text": "Vertical content 2"
+  },
+  {
+   "id": "b159",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Vertical Pills"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b160",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Vertical Pills"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b161",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Vertical Pills"
+   ],
+   "text": "<tabset [ vertical ] = \"true\" type = \"pills\" >\n<tab heading = \"Vertical 1\" > Vertical content 1 </tab>\n<tab heading = \"Vertical 2\" > Vertical content 2 </tab>\n</tabset>"
+  },
+  {
+   "id": "b162",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Vertical Pills"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tabs-vertical-pills' ,\ntemplateUrl : './vertical-pills.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTabsVerticalPillsComponent {}"
+  },
+  {
+   "id": "b163",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "Justified"
+  },
+  {
+   "id": "b164",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b165",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "Bootstrap 4 doesn't have justified classes"
+  },
+  {
+   "id": "b166",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "Justified"
+  },
+  {
+   "id": "b167",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "SJ"
+  },
+  {
+   "id": "b168",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "Long Justified"
+  },
+  {
+   "id": "b169",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "Justified content"
+  },
+  {
+   "id": "b170",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "Short Labeled Justified content"
+  },
+  {
+   "id": "b171",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "Long Labeled Justified content"
+  },
+  {
+   "id": "b172",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b173",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b174",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "<tabset [ justified ] = \"true\" >\n<tab heading = \"Justified\" > Justified content </tab>\n<tab heading = \"SJ\" > Short Labeled Justified content </tab>\n<tab heading = \"Long Justified\" > Long Labeled Justified content </tab>\n</tabset>"
+  },
+  {
+   "id": "b175",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Justified"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tabs-justified' ,\ntemplateUrl : './justified.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTabsJustifiedComponent {}"
+  },
+  {
+   "id": "b176",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Custom class"
+   ],
+   "text": "Custom class"
+  },
+  {
+   "id": "b177",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Custom class"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b178",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Custom class"
+   ],
+   "text": "Static title"
+  },
+  {
+   "id": "b179",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Custom class"
+   ],
+   "text": "Dynamic Title 1"
+  },
+  {
+   "id": "b180",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Custom class"
+   ],
+   "text": "Dynamic Title 2"
+  },
+  {
+   "id": "b181",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Custom class"
+   ],
+   "text": "Static content"
+  },
+  {
+   "id": "b182",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Custom class"
+   ],
+   "text": "Dynamic content 1"
+  },
+  {
+   "id": "b183",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Custom class"
+   ],
+   "text": "Dynamic content 2"
+  },
+  {
+   "id": "b184",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Custom class"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b185",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Custom class"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b186",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Custom class"
+   ],
+   "text": "<tabset>\n<tab heading = \"Static title\" customClass = \"customClass\" > Static content </tab>\n@for (tabz of tabs; track tabz) {\n<tab\n[ heading ] = \"tabz.title\"\n[ customClass ] = \"tabz.customClass\" >\n{{tabz?.content}}\n</tab>\n}\n</tabset>"
+  },
+  {
+   "id": "b187",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Custom class"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\ninterface ITab {\ntitle : string ;\ncontent : string ;\nremovable ?: boolean ;\ndisabled ?: boolean ;\nactive ?: boolean ;\ncustomClass ?: string ;\n}\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tabs-custom-class' ,\ntemplateUrl : './custom-class.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTabsCustomClassComponent {\ntabs : ITab [] = [\n{\ntitle : 'Dynamic Title 1' ,\ncontent : 'Dynamic content 1' ,\ncustomClass : 'customClass'\n},\n{\ntitle : 'Dynamic Title 2' ,\ncontent : 'Dynamic content 2' ,\ncustomClass : 'customClass'\n}\n];\n}"
+  },
+  {
+   "id": "b188",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Select event"
+   ],
+   "text": "Select event"
+  },
+  {
+   "id": "b189",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Select event"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b190",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Select event"
+   ],
+   "text": "You can subscribe to tab's select event"
+  },
+  {
+   "id": "b191",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Select event"
+   ],
+   "text": "Event select is fired. The heading of the selected tab is: First tab"
+  },
+  {
+   "id": "b192",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Select event"
+   ],
+   "text": "First tab"
+  },
+  {
+   "id": "b193",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Select event"
+   ],
+   "text": "Second tab"
+  },
+  {
+   "id": "b194",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Select event",
+    "Title"
+   ],
+   "text": "Title"
+  },
+  {
+   "id": "b195",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Select event",
+    "Title"
+   ],
+   "text": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book."
+  },
+  {
+   "id": "b196",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Select event",
+    "Title 2"
+   ],
+   "text": "Title 2"
+  },
+  {
+   "id": "b197",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Select event",
+    "Title 2"
+   ],
+   "text": "It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages"
+  },
+  {
+   "id": "b198",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Select event",
+    "Title 2"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b199",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Select event",
+    "Title 2"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b200",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Select event",
+    "Title 2"
+   ],
+   "text": "<div class = \"mb-3\" >\n@if (value) {\n<pre class = \"card card-block card-header\" > Event select is fired. The heading of the selected tab is: {{value}} </pre>\n}\n</div>\n<tabset>\n<tab heading = \"First tab\" class = \"mt-2\" ( selectTab ) = \"onSelect($event)\" >\n<h4> Title </h4>\n<p> Lorem Ipsum is simply dummy text of the printing and typesetting industry.\nLorem Ipsum has been the industry's standard dummy text ever since the 1500s,\nwhen an unknown printer took a galley of type and scrambled it to make a type specimen book. </p>\n</tab>\n<tab heading = \"Second tab\" class = \"mt-2\" ( selectTab ) = \"onSelect($event)\" >\n<h4> Title 2 </h4>\n<p> It has survived not only five centuries, but also the leap into electronic typesetting,\nremaining essentially unchanged. It was popularised in the 1960s with the release of\nLetraset sheets containing Lorem Ipsum passages </p>\n</tab>\n</tabset>"
+  },
+  {
+   "id": "b201",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Select event",
+    "Title 2"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\nimport { TabDirective } from 'ngx-bootstrap/tabs' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tabs-select-event' ,\ntemplateUrl : './select-event.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTabsSelectEventComponent {\nvalue ?: string ;\nonSelect ( data : TabDirective ): void {\nthis . value = data . heading ();\n}\n}"
+  },
+  {
+   "id": "b202",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Configuring defaults"
+   ],
+   "text": "Configuring defaults"
+  },
+  {
+   "id": "b203",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Configuring defaults"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b204",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Configuring defaults"
+   ],
+   "text": "Config 1"
+  },
+  {
+   "id": "b205",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Configuring defaults"
+   ],
+   "text": "Config 2"
+  },
+  {
+   "id": "b206",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Configuring defaults"
+   ],
+   "text": "Config content 1"
+  },
+  {
+   "id": "b207",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Configuring defaults"
+   ],
+   "text": "Config content 2"
+  },
+  {
+   "id": "b208",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Configuring defaults"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b209",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Configuring defaults"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b210",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Configuring defaults"
+   ],
+   "text": "<tabset>\n<tab heading = \"Config 1\" > Config content 1 </tab>\n<tab heading = \"Config 2\" > Config content 2 </tab>\n</tabset>"
+  },
+  {
+   "id": "b211",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Configuring defaults"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\nimport { TabsetConfig } from 'ngx-bootstrap/tabs' ;\n\n// such override allows to keep some initial values\n\nexport function getTabsetConfig (): TabsetConfig {\nreturn Object . assign ( new TabsetConfig (), { type : 'pills' , isKeysAllowed : true });\n}\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tabs-config' ,\ntemplateUrl : './config.html' ,\nproviders : [{ provide : TabsetConfig , useFactory : getTabsetConfig }],\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTabsConfigComponent {}"
+  },
+  {
+   "id": "b212",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Custom template"
+   ],
+   "text": "Custom template"
+  },
+  {
+   "id": "b213",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Custom template"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b214",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Custom template"
+   ],
+   "text": "Static"
+  },
+  {
+   "id": "b215",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Custom template"
+   ],
+   "text": "Heading"
+  },
+  {
+   "id": "b216",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Custom template"
+   ],
+   "text": "Tab 3"
+  },
+  {
+   "id": "b217",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Custom template"
+   ],
+   "text": "Tab 1"
+  },
+  {
+   "id": "b218",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Custom template"
+   ],
+   "text": "I've got an HTML heading. Pretty cool!"
+  },
+  {
+   "id": "b219",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Custom template"
+   ],
+   "text": "Tab with html tags in heading"
+  },
+  {
+   "id": "b220",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Custom template"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b221",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Custom template"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b222",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Custom template"
+   ],
+   "text": "<div>\n<tabset>\n<tab heading = \"Static\" >\nTab 1\n</tab>\n<tab>\n<ng-template tabHeading >\n<span class = \"badge badge-secondary bg-secondary\" > Heading </span>\n</ng-template>\nI've got an HTML heading. Pretty cool!\n</tab>\n<tab>\n<ng-template tabHeading >\n<i><b> Tab 3 </b></i>\n</ng-template>\nTab with html tags in heading\n</tab>\n</tabset>\n</div>"
+  },
+  {
+   "id": "b223",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Custom template"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-tabs-custom-template' ,\ntemplateUrl : './custom-template.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoTabsCustomComponent {}"
+  },
+  {
+   "id": "b224",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Dynamic content rendering"
+   ],
+   "text": "Dynamic content rendering"
+  },
+  {
+   "id": "b225",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Dynamic content rendering"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b226",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Dynamic content rendering"
+   ],
+   "text": "The Component inside the Tab is rendered, when the tab is activated and destroyed when the tab is left."
+  },
+  {
+   "id": "b227",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Dynamic content rendering"
+   ],
+   "text": "Sub-Component A activated"
+  },
+  {
+   "id": "b228",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Dynamic content rendering"
+   ],
+   "text": "Tab A"
+  },
+  {
+   "id": "b229",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Dynamic content rendering"
+   ],
+   "text": "Tab B"
+  },
+  {
+   "id": "b230",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Dynamic content rendering"
+   ],
+   "text": "Tab C"
+  },
+  {
+   "id": "b231",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Dynamic content rendering"
+   ],
+   "text": "Sub-Component A"
+  },
+  {
+   "id": "b232",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Dynamic content rendering"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b233",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Dynamic content rendering"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b234",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Dynamic content rendering"
+   ],
+   "text": "<p> The Component inside the Tab is rendered, when the tab is activated and destroyed when the tab is left. </p>\n<ul class = \"eventlist\" >\n@for (message of messages; track message) {\n<li> {{ message }} </li>\n}\n</ul>\n<tabset>\n<tab heading = \"Tab A\" # tabA = \"tab\" >\n@if (tabA.active) {\n<sub-component\nname = \"A\"\n( onInit ) = \"message('Sub-Component A activated')\"\n( onDestroy ) = \"message('Sub-Component A destroyed')\"\n></sub-component>\n}\n</tab>\n\n<tab heading = \"Tab B\" # tabB = \"tab\" >\n@if (tabB.active) {\n<sub-component\nname = \"B\"\n( onInit ) = \"message('Sub-Component B activated')\"\n( onDestroy ) = \"message('Sub-Component B destroyed')\"\n></sub-component>\n}\n</tab>\n\n<tab heading = \"Tab C\" # tabC = \"tab\" >\n@if (tabC.active) {\n<sub-component\nname = \"C\"\n( onInit ) = \"message('Sub-Component C activated')\"\n( onDestroy ) = \"message('Sub-Component C destroyed')\"\n></sub-component>\n}\n</tab>\n</tabset>"
+  },
+  {
+   "id": "b235",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Dynamic content rendering"
+   ],
+   "text": "import { ChangeDetectionStrategy , Component } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'dynamic-content-rendering' ,\nchangeDetection : ChangeDetectionStrategy . OnPush ,\ntemplateUrl : './dynamic-content-rendering.html' ,\nstyleUrls : [ './dynamic-content-rendering.css' ],\nstandalone : false\n})\nexport class DynamicContentRenderingComponent {\n\nmessages : string [] = [];\n\nmessage ( s : string ) {\nthis . messages . push ( s );\n}\n\n}"
+  },
+  {
+   "id": "b236",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Accessibility"
+   ],
+   "text": "Accessibility"
+  },
+  {
+   "id": "b237",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Accessibility"
+   ],
+   "text": "Note that tabs can be given role=\"tablist\" , role=\"tab\" and role=\"tabpanel\" attributes. These are appropriate for tabbed interfaces, as described in the WAI ARIA Authoring Practices ."
+  },
+  {
+   "id": "b238",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Accessibility"
+   ],
+   "text": "If your control element is targeting a single collapsible element - you should add the aria-controls attribute to the control element, containing the id of the collapsible element."
+  },
+  {
+   "id": "b239",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Accessibility"
+   ],
+   "text": "To confirm the tab content opening you should use aria-selected property. If aria-selected=\"true\" it indicates the tab control is activated and its associated panel is displayed."
+  },
+  {
+   "id": "b240",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Accessibility"
+   ],
+   "text": "If you use a visible text element on the page as a label for a focusable element - you should add aria-labelledby . It refers to the tab element that controls the panel."
+  },
+  {
+   "id": "b241",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Accessibility",
+    "Keyboard interaction"
+   ],
+   "text": "Keyboard interaction"
+  },
+  {
+   "id": "b242",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Accessibility",
+    "Keyboard interaction"
+   ],
+   "text": "LEFT_ARROW | Move focus to previous tab",
+   "cells": [
+    {
+     "header": null,
+     "value": "LEFT_ARROW"
+    },
+    {
+     "header": null,
+     "value": "Move focus to previous tab"
+    }
+   ]
+  },
+  {
+   "id": "b243",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Accessibility",
+    "Keyboard interaction"
+   ],
+   "text": "RIGHT_ARROW | Move focus to next tab",
+   "cells": [
+    {
+     "header": null,
+     "value": "RIGHT_ARROW"
+    },
+    {
+     "header": null,
+     "value": "Move focus to next tab"
+    }
+   ]
+  },
+  {
+   "id": "b244",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Accessibility",
+    "Keyboard interaction"
+   ],
+   "text": "HOME | Move focus to first tab",
+   "cells": [
+    {
+     "header": null,
+     "value": "HOME"
+    },
+    {
+     "header": null,
+     "value": "Move focus to first tab"
+    }
+   ]
+  },
+  {
+   "id": "b245",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Accessibility",
+    "Keyboard interaction"
+   ],
+   "text": "END | Move focus to last tab",
+   "cells": [
+    {
+     "header": null,
+     "value": "END"
+    },
+    {
+     "header": null,
+     "value": "Move focus to last tab"
+    }
+   ]
+  },
+  {
+   "id": "b246",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Accessibility",
+    "Keyboard interaction"
+   ],
+   "text": "SPACE or ENTER | Switch to focused tab",
+   "cells": [
+    {
+     "header": null,
+     "value": "SPACE or ENTER"
+    },
+    {
+     "header": null,
+     "value": "Switch to focused tab"
+    }
+   ]
+  },
+  {
+   "id": "b247",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Disable key navigations"
+   ],
+   "text": "Disable key navigations"
+  },
+  {
+   "id": "b248",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Disable key navigations"
+   ],
+   "text": "#"
+  },
+  {
+   "id": "b249",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Disable key navigations"
+   ],
+   "text": "Tab1"
+  },
+  {
+   "id": "b250",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Disable key navigations"
+   ],
+   "text": "Tab2"
+  },
+  {
+   "id": "b251",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Disable key navigations"
+   ],
+   "text": "Tab1"
+  },
+  {
+   "id": "b252",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Disable key navigations"
+   ],
+   "text": "Tab2"
+  },
+  {
+   "id": "b253",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Disable key navigations"
+   ],
+   "text": "template"
+  },
+  {
+   "id": "b254",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Disable key navigations"
+   ],
+   "text": "component"
+  },
+  {
+   "id": "b255",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Disable key navigations"
+   ],
+   "text": "<tabset>\n<tab heading = \"Tab1\" > Tab1 </tab>\n<tab heading = \"Tab2\" > Tab2 </tab>\n</tabset>"
+  },
+  {
+   "id": "b256",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Disable key navigations"
+   ],
+   "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\nimport { TabsetConfig } from 'ngx-bootstrap/tabs' ;\n\nexport function getTabsetConfig (): TabsetConfig {\nreturn Object . assign ( new TabsetConfig (), { type : 'tabs' , isKeysAllowed : false });\n}\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-disabled-key-navigations' ,\ntemplateUrl : './disabled-key-navigations.html' ,\nproviders : [{ provide : TabsetConfig , useFactory : getTabsetConfig }],\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoDisabledKeyNavigationsComponent {\n}"
+  },
+  {
+   "id": "b257",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation"
+   ],
+   "text": "Installation"
+  },
+  {
+   "id": "b258",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Installation"
+   ],
+   "text": "ng add ngx-bootstrap  --component tabs"
+  },
+  {
+   "id": "b259",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Installation"
+   ],
+   "text": "### Standalone component usage\nimport { TabsModule } from 'ngx-bootstrap/tabs';\n\n@Component({\n  standalone: true,\n  imports: [TabsModule,...]\n})\nexport class AppComponent(){}\n\n### Module usage\nimport { TabsModule } from 'ngx-bootstrap/tabs';\n\n@NgModule({\n  imports: [TabsModule,...]\n})\nexport class AppModule(){}"
+  },
+  {
+   "id": "b260",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Installation"
+   ],
+   "text": "Selector",
+   "cells": [
+    {
+     "header": null,
+     "value": "Selector"
+    }
+   ]
+  },
+  {
+   "id": "b261",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Installation"
+   ],
+   "text": "Selector",
+   "cells": [
+    {
+     "header": null,
+     "value": "Selector"
+    }
+   ]
+  },
+  {
+   "id": "b262",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "TabHeadingDirective"
+   ],
+   "text": "TabHeadingDirective"
+  },
+  {
+   "id": "b263",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "TabHeadingDirective"
+   ],
+   "text": "Should be used to mark"
+  },
+  {
+   "id": "b264",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "TabHeadingDirective"
+   ],
+   "text": "element as a template for tab heading"
+  },
+  {
+   "id": "b265",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "TabHeadingDirective"
+   ],
+   "text": "Selector",
+   "cells": [
+    {
+     "header": null,
+     "value": "Selector"
+    }
+   ]
+  },
+  {
+   "id": "b266",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Basic"
+   ],
+   "text": "Basic"
+  },
+  {
+   "id": "b267",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Basic"
+   ],
+   "text": "Basic title"
+  },
+  {
+   "id": "b268",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Basic"
+   ],
+   "text": "Basic Title 1"
+  },
+  {
+   "id": "b269",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Basic"
+   ],
+   "text": "Basic Title 2"
+  },
+  {
+   "id": "b270",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Basic"
+   ],
+   "text": "Basic content"
+  },
+  {
+   "id": "b271",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Basic"
+   ],
+   "text": "Basic content 1"
+  },
+  {
+   "id": "b272",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Basic"
+   ],
+   "text": "Basic content 2"
+  },
+  {
+   "id": "b273",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Manual selection"
+   ],
+   "text": "Manual selection"
+  },
+  {
+   "id": "b274",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Manual selection"
+   ],
+   "text": "You can select tabs directly from component"
+  },
+  {
+   "id": "b275",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Manual selection"
+   ],
+   "text": "Select second tab Select third tab"
+  },
+  {
+   "id": "b276",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Manual selection"
+   ],
+   "text": "Static title"
+  },
+  {
+   "id": "b277",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Manual selection"
+   ],
+   "text": "Static Title 1"
+  },
+  {
+   "id": "b278",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Manual selection"
+   ],
+   "text": "Static Title 2"
+  },
+  {
+   "id": "b279",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Manual selection"
+   ],
+   "text": "Static Title 3"
+  },
+  {
+   "id": "b280",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Manual selection"
+   ],
+   "text": "Static content"
+  },
+  {
+   "id": "b281",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Manual selection"
+   ],
+   "text": "Static content 1"
+  },
+  {
+   "id": "b282",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Manual selection"
+   ],
+   "text": "Static content 2"
+  },
+  {
+   "id": "b283",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Manual selection"
+   ],
+   "text": "Static content 3"
+  },
+  {
+   "id": "b284",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disabled tabs"
+   ],
+   "text": "Disabled tabs"
+  },
+  {
+   "id": "b285",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disabled tabs"
+   ],
+   "text": "Tabs can be enabled or disabled by changing disabled input property"
+  },
+  {
+   "id": "b286",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disabled tabs"
+   ],
+   "text": "Enable / Disable third tab"
+  },
+  {
+   "id": "b287",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disabled tabs"
+   ],
+   "text": "Static title"
+  },
+  {
+   "id": "b288",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disabled tabs"
+   ],
+   "text": "Static Title 1"
+  },
+  {
+   "id": "b289",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disabled tabs"
+   ],
+   "text": "Static Title 2"
+  },
+  {
+   "id": "b290",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disabled tabs"
+   ],
+   "text": "Static Title 3"
+  },
+  {
+   "id": "b291",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disabled tabs"
+   ],
+   "text": "Static content"
+  },
+  {
+   "id": "b292",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disabled tabs"
+   ],
+   "text": "Static content 1"
+  },
+  {
+   "id": "b293",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disabled tabs"
+   ],
+   "text": "Static content 2"
+  },
+  {
+   "id": "b294",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disabled tabs"
+   ],
+   "text": "Static content 3"
+  },
+  {
+   "id": "b295",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic tabs"
+  },
+  {
+   "id": "b296",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic tabs"
+   ],
+   "text": "Change quantity of tabs by manipulating tabs array"
+  },
+  {
+   "id": "b297",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic tabs"
+   ],
+   "text": "Add new tab Remove all tabs"
+  },
+  {
+   "id": "b298",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic tabs"
+   ],
+   "text": "Static title"
+  },
+  {
+   "id": "b299",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic Title 1"
+  },
+  {
+   "id": "b300",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic Title 2"
+  },
+  {
+   "id": "b301",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic Title 3 ❌"
+  },
+  {
+   "id": "b302",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic tabs"
+   ],
+   "text": "Static content"
+  },
+  {
+   "id": "b303",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic content 1"
+  },
+  {
+   "id": "b304",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic content 2"
+  },
+  {
+   "id": "b305",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic tabs"
+   ],
+   "text": "Dynamic content 3"
+  },
+  {
+   "id": "b306",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Pills"
+   ],
+   "text": "Pills"
+  },
+  {
+   "id": "b307",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Pills"
+   ],
+   "text": "Pills 1"
+  },
+  {
+   "id": "b308",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Pills"
+   ],
+   "text": "Pills 2"
+  },
+  {
+   "id": "b309",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Pills"
+   ],
+   "text": "Pills content 1"
+  },
+  {
+   "id": "b310",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Pills"
+   ],
+   "text": "Pills content 2"
+  },
+  {
+   "id": "b311",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Vertical Pills"
+   ],
+   "text": "Vertical Pills"
+  },
+  {
+   "id": "b312",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Vertical Pills"
+   ],
+   "text": "Vertical 1"
+  },
+  {
+   "id": "b313",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Vertical Pills"
+   ],
+   "text": "Vertical 2"
+  },
+  {
+   "id": "b314",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Vertical Pills"
+   ],
+   "text": "Vertical content 1"
+  },
+  {
+   "id": "b315",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Vertical Pills"
+   ],
+   "text": "Vertical content 2"
+  },
+  {
+   "id": "b316",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Justified"
+   ],
+   "text": "Justified"
+  },
+  {
+   "id": "b317",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Justified"
+   ],
+   "text": "Justified"
+  },
+  {
+   "id": "b318",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Justified"
+   ],
+   "text": "SJ"
+  },
+  {
+   "id": "b319",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Justified"
+   ],
+   "text": "Long Justified"
+  },
+  {
+   "id": "b320",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Justified"
+   ],
+   "text": "Justified content"
+  },
+  {
+   "id": "b321",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Justified"
+   ],
+   "text": "Short Labeled Justified content"
+  },
+  {
+   "id": "b322",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Justified"
+   ],
+   "text": "Long Labeled Justified content"
+  },
+  {
+   "id": "b323",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom class"
+   ],
+   "text": "Custom class"
+  },
+  {
+   "id": "b324",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom class"
+   ],
+   "text": "Static title"
+  },
+  {
+   "id": "b325",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom class"
+   ],
+   "text": "Dynamic Title 1"
+  },
+  {
+   "id": "b326",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom class"
+   ],
+   "text": "Dynamic Title 2"
+  },
+  {
+   "id": "b327",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom class"
+   ],
+   "text": "Static content"
+  },
+  {
+   "id": "b328",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom class"
+   ],
+   "text": "Dynamic content 1"
+  },
+  {
+   "id": "b329",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom class"
+   ],
+   "text": "Dynamic content 2"
+  },
+  {
+   "id": "b330",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Select event"
+   ],
+   "text": "Select event"
+  },
+  {
+   "id": "b331",
+   "kind": "code",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Select event"
+   ],
+   "text": "Event select is fired. The heading of the selected tab is: First tab"
+  },
+  {
+   "id": "b332",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Select event"
+   ],
+   "text": "First tab"
+  },
+  {
+   "id": "b333",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Select event"
+   ],
+   "text": "Second tab"
+  },
+  {
+   "id": "b334",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Select event",
+    "Title"
+   ],
+   "text": "Title"
+  },
+  {
+   "id": "b335",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Select event",
+    "Title"
+   ],
+   "text": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book."
+  },
+  {
+   "id": "b336",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Select event",
+    "Title 2"
+   ],
+   "text": "Title 2"
+  },
+  {
+   "id": "b337",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Select event",
+    "Title 2"
+   ],
+   "text": "It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages"
+  },
+  {
+   "id": "b338",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Configuring defaults"
+   ],
+   "text": "Configuring defaults"
+  },
+  {
+   "id": "b339",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Configuring defaults"
+   ],
+   "text": "Config 1"
+  },
+  {
+   "id": "b340",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Configuring defaults"
+   ],
+   "text": "Config 2"
+  },
+  {
+   "id": "b341",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Configuring defaults"
+   ],
+   "text": "Config content 1"
+  },
+  {
+   "id": "b342",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Configuring defaults"
+   ],
+   "text": "Config content 2"
+  },
+  {
+   "id": "b343",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom template"
+   ],
+   "text": "Custom template"
+  },
+  {
+   "id": "b344",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom template"
+   ],
+   "text": "Static"
+  },
+  {
+   "id": "b345",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom template"
+   ],
+   "text": "Heading"
+  },
+  {
+   "id": "b346",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom template"
+   ],
+   "text": "Tab 3"
+  },
+  {
+   "id": "b347",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom template"
+   ],
+   "text": "Tab 1"
+  },
+  {
+   "id": "b348",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom template"
+   ],
+   "text": "I've got an HTML heading. Pretty cool!"
+  },
+  {
+   "id": "b349",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Custom template"
+   ],
+   "text": "Tab with html tags in heading"
+  },
+  {
+   "id": "b350",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic content rendering"
+   ],
+   "text": "Dynamic content rendering"
+  },
+  {
+   "id": "b351",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic content rendering"
+   ],
+   "text": "The Component inside the Tab is rendered, when the tab is activated and destroyed when the tab is left."
+  },
+  {
+   "id": "b352",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic content rendering"
+   ],
+   "text": "Sub-Component A activated"
+  },
+  {
+   "id": "b353",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic content rendering"
+   ],
+   "text": "Tab A"
+  },
+  {
+   "id": "b354",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic content rendering"
+   ],
+   "text": "Tab B"
+  },
+  {
+   "id": "b355",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic content rendering"
+   ],
+   "text": "Tab C"
+  },
+  {
+   "id": "b356",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Dynamic content rendering"
+   ],
+   "text": "Sub-Component A"
+  },
+  {
+   "id": "b357",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Accessibility"
+   ],
+   "text": "Accessibility"
+  },
+  {
+   "id": "b358",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Accessibility"
+   ],
+   "text": "Note that tabs can be given role=\"tablist\" , role=\"tab\" and role=\"tabpanel\" attributes. These are appropriate for tabbed interfaces, as described in the WAI ARIA Authoring Practices ."
+  },
+  {
+   "id": "b359",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Accessibility"
+   ],
+   "text": "If your control element is targeting a single collapsible element - you should add the aria-controls attribute to the control element, containing the id of the collapsible element."
+  },
+  {
+   "id": "b360",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Accessibility"
+   ],
+   "text": "To confirm the tab content opening you should use aria-selected property. If aria-selected=\"true\" it indicates the tab control is activated and its associated panel is displayed."
+  },
+  {
+   "id": "b361",
+   "kind": "paragraph",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Accessibility"
+   ],
+   "text": "If you use a visible text element on the page as a label for a focusable element - you should add aria-labelledby . It refers to the tab element that controls the panel."
+  },
+  {
+   "id": "b362",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Accessibility",
+    "Keyboard interaction"
+   ],
+   "text": "Keyboard interaction"
+  },
+  {
+   "id": "b363",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Accessibility",
+    "Keyboard interaction"
+   ],
+   "text": "LEFT_ARROW | Move focus to previous tab",
+   "cells": [
+    {
+     "header": null,
+     "value": "LEFT_ARROW"
+    },
+    {
+     "header": null,
+     "value": "Move focus to previous tab"
+    }
+   ]
+  },
+  {
+   "id": "b364",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Accessibility",
+    "Keyboard interaction"
+   ],
+   "text": "RIGHT_ARROW | Move focus to next tab",
+   "cells": [
+    {
+     "header": null,
+     "value": "RIGHT_ARROW"
+    },
+    {
+     "header": null,
+     "value": "Move focus to next tab"
+    }
+   ]
+  },
+  {
+   "id": "b365",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Accessibility",
+    "Keyboard interaction"
+   ],
+   "text": "HOME | Move focus to first tab",
+   "cells": [
+    {
+     "header": null,
+     "value": "HOME"
+    },
+    {
+     "header": null,
+     "value": "Move focus to first tab"
+    }
+   ]
+  },
+  {
+   "id": "b366",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Accessibility",
+    "Keyboard interaction"
+   ],
+   "text": "END | Move focus to last tab",
+   "cells": [
+    {
+     "header": null,
+     "value": "END"
+    },
+    {
+     "header": null,
+     "value": "Move focus to last tab"
+    }
+   ]
+  },
+  {
+   "id": "b367",
+   "kind": "table_row",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Accessibility",
+    "Keyboard interaction"
+   ],
+   "text": "SPACE or ENTER | Switch to focused tab",
+   "cells": [
+    {
+     "header": null,
+     "value": "SPACE or ENTER"
+    },
+    {
+     "header": null,
+     "value": "Switch to focused tab"
+    }
+   ]
+  },
+  {
+   "id": "b368",
+   "kind": "heading",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disable key navigations"
+   ],
+   "text": "Disable key navigations"
+  },
+  {
+   "id": "b369",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disable key navigations"
+   ],
+   "text": "Tab1"
+  },
+  {
+   "id": "b370",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disable key navigations"
+   ],
+   "text": "Tab2"
+  },
+  {
+   "id": "b371",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disable key navigations"
+   ],
+   "text": "Tab1"
+  },
+  {
+   "id": "b372",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disable key navigations"
+   ],
+   "text": "Tab2"
+  },
+  {
+   "id": "b373",
+   "kind": "other",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disable key navigations"
+   ],
+   "text": "components"
+  },
+  {
+   "id": "b374",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disable key navigations"
+   ],
+   "text": "TabsetComponent"
+  },
+  {
+   "id": "b375",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disable key navigations"
+   ],
+   "text": "TabDirective"
+  },
+  {
+   "id": "b376",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disable key navigations"
+   ],
+   "text": "TabHeadingDirective"
+  },
+  {
+   "id": "b377",
+   "kind": "list_item",
+   "heading_path": [
+    "Tabs",
+    "Installation",
+    "Disable key navigations"
+   ],
+   "text": "TabsetConfig"
+  }
+ ],
+ "gold": {
+  "primary_entities": [],
+  "entities": [],
+  "optional": [],
+  "negatives": []
+ },
+ "gold_status": "sablon, annotálatlan",
+ "annotation_notes": [],
+ "rules": {
+  "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+  "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+  "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
+  "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
+  "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
+  "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
+  "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
+  "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
+  "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
+  "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
+  "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
+  "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service)."
+ },
+ "subtype_glossary": {
+  "service": {
+   "audit": "felmérés, átvilágítás",
+   "implementation": "beállítás, kiépítés, bevezetés",
+   "consulting": "tanácsadás",
+   "reporting": "riport, dashboard",
+   "training": "képzés, workshop",
+   "other": "egyéb"
+  },
+  "org": {
+   "company": "cég",
+   "restaurant": "étterem, vendéglátóhely",
+   "institution": "intézmény, szervezet",
+   "team": "csapat",
+   "other": "egyéb"
+  },
+  "tech": {
+   "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+   "library": "programkönyvtár",
+   "framework": "keretrendszer",
+   "language": "programozási nyelv",
+   "package": "telepíthető csomag (npm, pip)",
+   "component": "egy könyvtár konkrét komponense",
+   "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+   "api": "programozói interfész, amit szolgáltatásként hívnak",
+   "standard": "műszaki szabvány, specifikáció",
+   "feature": "egy szoftver funkciója",
+   "other": "egyéb"
+  },
+  "product": {
+   "dish": "étel vagy desszert az étlapon",
+   "ingredient": "alapanyag, tésztafajta",
+   "wine": "bor",
+   "drink": "ital, koktél",
+   "physical_good": "egyéb fizikai áru",
+   "other": "egyéb"
+  },
+  "concept": {
+   "method": "módszer, keretrendszer, eljárás",
+   "discipline": "szakterület",
+   "metric": "mérhető mennyiség, mutató",
+   "ui_pattern": "általános felületi minta",
+   "license": "licenc",
+   "designation": "eredetvédelmi vagy minőségi jelölés",
+   "other": "egyéb"
+  },
+  "place": {
+   "city": "város",
+   "region": "régió, tartomány",
+   "country": "ország",
+   "venue": "helyszín, épület",
+   "other": "egyéb"
+  },
+  "work": {
+   "article": "cikk",
+   "case_study": "esettanulmány",
+   "book": "könyv",
+   "course": "tanfolyam",
+   "other": "egyéb"
+  },
+  "event": {
+   "conference": "konferencia",
+   "webinar": "webinár",
+   "festival": "fesztivál",
+   "other": "egyéb"
+  },
+  "brand": {
+   "other": "egyéb"
+  },
+  "person": {}
+ },
+ "subtype_vocabulary": {
+  "service": [
+   "audit",
+   "implementation",
+   "consulting",
+   "reporting",
+   "training",
+   "other"
+  ],
+  "org": [
+   "company",
+   "restaurant",
+   "institution",
+   "team",
+   "other"
+  ],
+  "tech": [
+   "software",
+   "library",
+   "framework",
+   "language",
+   "package",
+   "component",
+   "api_symbol",
+   "api",
+   "standard",
+   "feature",
+   "other"
+  ],
+  "product": [
+   "dish",
+   "ingredient",
+   "wine",
+   "drink",
+   "physical_good",
+   "other"
+  ],
+  "concept": [
+   "method",
+   "discipline",
+   "metric",
+   "ui_pattern",
+   "license",
+   "designation",
+   "other"
+  ],
+  "place": [
+   "city",
+   "region",
+   "country",
+   "venue",
+   "other"
+  ],
+  "work": [
+   "article",
+   "case_study",
+   "book",
+   "course",
+   "other"
+  ],
+  "event": [
+   "conference",
+   "webinar",
+   "festival",
+   "other"
+  ],
+  "brand": [
+   "other"
+  ],
+  "person": []
+ }
+}
