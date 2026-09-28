@@ -147,3 +147,30 @@ def test_report_main_row_regression_row_conditions_and_dropped(tmp_path, monkeyp
 def test_pages_split_into_main_and_regression():
     assert set(ge.MAIN) | set(ge.REGRESSION) == {
         p["page_id"] for p in se.load_pages(page_set=se.REAL)}
+
+
+def test_realign_moves_mentions_keeps_fabricated_ones_and_updates_verdict_blocks(tmp_path):
+    old = [block(0, "title", "Árazás"), block(1, "paragraph", "Project"),
+           block(2, "paragraph", "Bérszámfejtés Csomag"), block(3, "paragraph", "120 Ft"),
+           block(4, "paragraph", "Törölt")]
+    new = [block(0, "title", "Árazás"),
+           {"id": "b1", "kind": "table_row", "heading_path": [], "text": "Project"},
+           {"id": "b2", "kind": "table_row", "heading_path": [],
+            "text": "Bérszámfejtés Csomag | 120 Ft"}]
+    record = {"entities": [
+        mention("b2", "Bérszámfejtés Csomag", "Bérszámfejtés Csomag", "service"),
+        mention("b1", "nincs itt", "Kitalált"),
+        mention("b4", "Törölt", "Törölt")]}
+    moved, changes = ge.realign_record(record, old, new)
+    assert [(e["canonical_name"], e["block_id"]) for e in moved["entities"]] == [
+        ("Bérszámfejtés Csomag", "b2"), ("Kitalált", "b1")]
+    assert changes == ["Törölt: b4 kimarad"]
+    path = tmp_path / "v.json"
+    path.write_text(json.dumps({"items": [
+        {"page_id": "p", "canonical": "Bérszámfejtés Csomag", "type": "service", "block": "b2",
+         "kind": "paragraph", "block_text": "Bérszámfejtés Csomag", "verdict": "valid"}]}),
+        encoding="utf-8")
+    assert ge.realign_verdicts(path, {"page_id": "p", "blocks": new}, moved) == 1
+    entry = json.loads(path.read_text(encoding="utf-8"))["items"][0]
+    assert (entry["block"], entry["kind"], entry["block_text"], entry["verdict"]) == (
+        "b2", "table_row", "Bérszámfejtés Csomag | 120 Ft", "valid")

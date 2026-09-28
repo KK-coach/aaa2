@@ -47,7 +47,7 @@ import zstandard
 
 import tests.acceptance.synthetic_eval as se
 from aaa2.db.connect import DATA_DIR, connect
-from aaa2.entities.blocks import block_text
+from aaa2.entities.blocks import block_text, surface_spans
 from aaa2.entities.dom import parse_blocks
 from aaa2.entities.gate import (
     PROMINENT_KINDS,
@@ -64,6 +64,7 @@ from aaa2.entities.verify import item_block, verify_record
 from aaa2.llm.client import Retry
 from aaa2.llm.config import load_config
 from tests.acceptance.annotation import PAGES as CRAWLED
+from tests.acceptance.annotation import block_mapping
 
 VERDICTS_FILE = Path(__file__).parent / "verdicts" / "verdicts.json"
 VERDICTS = ("valid", "descriptive", "wrong_name", "wrong_type")
@@ -472,9 +473,55 @@ def report_markdown(model: str, data_dir: Path, pages: list[dict], series: dict[
     return "\n".join(lines) + "\n"
 
 
+def realign_record(record: Mapping, old: list[dict], new: list[dict]
+                   ) -> tuple[dict, list[str]]:
+    """A rekord említései az új blokk-azonosítókkal (`annotation.block_mapping`); ami eltűnt
+    blokkra mutat, vagy a szöveg szerinti alakja nem áll az új blokkban, kimarad. A már a régi
+    blokkokon is kitalált említés (a szöveg nincs a megadott blokkban) marad, kitaláltként."""
+    mapping = block_mapping(old, new)
+    blocks, before = {b["id"]: b for b in new}, {b["id"]: b for b in old}
+    out, changes = dict(record), []
+    entities = []
+    for raw in record.get("entities") or []:
+        target = mapping.get(raw["block_id"])
+        source = before.get(raw["block_id"])
+        if source is None or not surface_spans(raw["surface_form"], source):
+            entities.append({**raw, "block_id": target or raw["block_id"]})
+            continue
+        if target is None or not surface_spans(raw["surface_form"], blocks[target]):
+            changes.append(f"{raw['canonical_name']}: {raw['block_id']} kimarad")
+            continue
+        entities.append({**raw, "block_id": target})
+    if record.get("entities") is not None:
+        out["entities"] = entities
+    return out, changes
+
+
+def realign_verdicts(path: Path, page: Mapping, record: Mapping) -> int:
+    """A verdiktfájl tételeinek blokkja (`item_block`) az oldal új blokkjai szerint; a verdikt
+    nem változik. Visszaad: hány tétel blokkja változott."""
+    data = load_verdicts(path)
+    blocks = {b["id"]: b for b in page["blocks"]}
+    items = {(i.key, i.type): i for i in soft_items(record.get("entities") or [], blocks)}
+    changed = 0
+    for entry in data["items"]:
+        item = items.get((alias_key(entry["canonical"]), entry["type"]))
+        if entry["page_id"] != page["page_id"] or item is None:
+            continue
+        block = item_block(item, blocks)
+        new = {"block": block["id"], "kind": block.get("kind"), "block_text": block_text(block)}
+        if any(entry.get(k) != v for k, v in new.items()):
+            entry.update(new)
+            changed += 1
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    return changed
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["e1", "e2", "verdicts", "report"])
+    parser.add_argument("command", choices=["e1", "e2", "verdicts", "report", "realign"])
+    parser.add_argument("--old-pages-dir", type=Path, default=None,
+                        help="realign: a régi blokkok oldalai")
     parser.add_argument("--model", default=None)
     parser.add_argument("--from", dest="source", default="")
     parser.add_argument("--tag", default="")
@@ -488,7 +535,7 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     model = args.model or load_config().pipeline["extraction"]
     pages = load_real_pages(args.pages_dir, args.page)
-    if args.command in ("e1", "e2") and (not args.source or not args.tag
+    if args.command in ("e1", "e2", "realign") and (not args.source or not args.tag
                                          or args.source == args.tag):
         raise SystemExit(f"{args.command}: --from és egy tőle eltérő --tag kell")
     if args.command == "e1":
@@ -497,6 +544,20 @@ def main(argv: list[str] | None = None) -> None:
         if not args.verify_model:
             raise SystemExit("e2: --verify-model kell")
         run_e2(model, args.data_dir, pages, args.source, args.tag, args.verify_model)
+    elif args.command == "realign":
+        old_pages = {p["page_id"]: p for p in load_real_pages(args.old_pages_dir, args.page)}
+        for page in pages:
+            record = read_record(args.data_dir, page["page_id"], model, args.source)
+            if record is None:
+                continue
+            moved, changes = realign_record(record, old_pages[page["page_id"]]["blocks"],
+                                            page["blocks"])
+            write_record(args.data_dir, page["page_id"], model, args.tag, moved)
+            changed = realign_verdicts(VERDICTS_FILE, page, moved)
+            print(f"{page['page_id']}: {args.source} → {args.tag}: {len(changes)} említés "
+                  f"kimarad, {changed} verdikt-tétel blokkja változott")
+            for change in changes:
+                print(f"  {change}")
     elif args.command == "verdicts":
         added = export_verdicts(model, args.data_dir, pages,
                                 [s.split("=", 1)[-1] for s in args.series])
