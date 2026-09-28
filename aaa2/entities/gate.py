@@ -170,9 +170,9 @@ def base_language(lang: str | None) -> str:
     return (lang or "en").split("-")[0].lower() or "en"
 
 
-def wikidata_match(body: Mapping | None, name: str, lang: str) -> str | None:
-    """Az első találat azonosítója, amelynek a címkéje vagy aliasa (`lang` nyelven) a kulcs
-    szerint egyezik a névvel, és nem egyértelműsítő lap."""
+def wikidata_hit(body: Mapping | None, name: str, lang: str) -> dict | None:
+    """Az első találat (`id`, `match`: label / alias, `text`), amelynek a címkéje vagy aliasa
+    (`lang` nyelven) a kulcs szerint egyezik a névvel, és nem egyértelműsítő lap."""
     key = alias_key(name)
     for hit in (body or {}).get("search") or []:
         match = hit.get("match") or {}
@@ -182,20 +182,32 @@ def wikidata_match(body: Mapping | None, name: str, lang: str) -> str | None:
             continue
         if any(word in (hit.get("description") or "").lower() for word in DISAMBIGUATION):
             continue
-        return hit.get("id")
+        return {"id": hit.get("id"), "match": match["type"], "text": match.get("text")}
     return None
 
 
-def wikipedia_title(body: Mapping | None) -> str | None:
-    """A lekérdezett címek közül az első létező, nem egyértelműsítő lap címe (átirányítás
-    után)."""
-    for page in ((body or {}).get("query") or {}).get("pages") or []:
+def wikidata_match(body: Mapping | None, name: str, lang: str) -> str | None:
+    hit = wikidata_hit(body, name, lang)
+    return hit["id"] if hit else None
+
+
+def wikipedia_page(body: Mapping | None) -> dict | None:
+    """A lekérdezett címek közül az első létező, nem egyértelműsítő lap (`title`, és
+    `redirect`: átirányításon át ért-e oda)."""
+    query = (body or {}).get("query") or {}
+    redirected = {r.get("to") for r in query.get("redirects") or []}
+    for page in query.get("pages") or []:
         if page.get("missing") or page.get("invalid"):
             continue
         if "disambiguation" in (page.get("pageprops") or {}):
             continue
-        return page.get("title")
+        return {"title": page.get("title"), "redirect": page.get("title") in redirected}
     return None
+
+
+def wikipedia_title(body: Mapping | None) -> str | None:
+    page = wikipedia_page(body)
+    return page["title"] if page else None
 
 
 def title_variants(name: str) -> list[str]:
@@ -212,21 +224,26 @@ class KnowledgeBase:
     def __init__(self, get: Callable[[str, str, list[tuple[str, str]]], tuple[str, dict | None]]):
         self.get = get
 
+    def wikidata(self, name: str, code: str) -> dict | None:
+        _, body = self.get("wikidata", WIKIDATA_API, [
+            ("action", "wbsearchentities"), ("format", "json"), ("search", name),
+            ("language", code), ("strictlanguage", "1"), ("type", "item"), ("limit", "10")])
+        return wikidata_hit(body, name, code)
+
+    def wikipedia(self, name: str, code: str) -> dict | None:
+        _, body = self.get("wikipedia", WIKI_API.format(lang=code), [
+            ("action", "query"), ("format", "json"), ("formatversion", "2"),
+            ("titles", "|".join(title_variants(name))), ("redirects", "1"),
+            ("prop", "pageprops"), ("ppprop", "disambiguation"), ("maxlag", "5")])
+        return wikipedia_page(body)
+
     def __call__(self, names: Sequence[str], lang: str) -> str | None:
         langs = list(dict.fromkeys([base_language(lang), "en"]))
         for name in names:
             for code in langs:
-                _, body = self.get("wikidata", WIKIDATA_API, [
-                    ("action", "wbsearchentities"), ("format", "json"), ("search", name),
-                    ("language", code), ("strictlanguage", "1"), ("type", "item"),
-                    ("limit", "10")])
-                if found := wikidata_match(body, name, code):
-                    return f"wikidata:{code}:{found} ({name})"
+                if found := self.wikidata(name, code):
+                    return f"wikidata:{code}:{found['id']} ({name})"
             for code in langs:
-                _, body = self.get("wikipedia", WIKI_API.format(lang=code), [
-                    ("action", "query"), ("format", "json"), ("formatversion", "2"),
-                    ("titles", "|".join(title_variants(name))), ("redirects", "1"),
-                    ("prop", "pageprops"), ("ppprop", "disambiguation"), ("maxlag", "5")])
-                if found := wikipedia_title(body):
-                    return f"wikipedia:{code}:{found} ({name})"
+                if found := self.wikipedia(name, code):
+                    return f"wikipedia:{code}:{found['title']} ({name})"
         return None
