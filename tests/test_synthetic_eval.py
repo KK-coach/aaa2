@@ -36,9 +36,9 @@ EVERY_PAGE = {page["page_id"]: page for page in se.load_pages(page_set="all")}
 S1 = PAGES["s1_lumen_meres_hu"]
 
 
-def mention(block, surface, canonical, kind, subtype=None):
+def mention(block, surface, canonical, kind, subtype=None, term_status=None):
     return {"block_id": block, "surface_form": surface, "canonical_name": canonical,
-            "type": kind, "subtype": subtype, "description": "d"}
+            "type": kind, "subtype": subtype, "term_status": term_status, "description": "d"}
 
 
 def gold_as_output(page):
@@ -480,3 +480,27 @@ def test_checkpoint_report_per_page_and_total(tmp_path):
     assert "| **összesen** | 100.0 (" in text
     assert "- **Tökéletes** (mind teljesül):" in text
     assert "- **s1_lumen_meres_hu** (0): —" in text
+
+
+def test_dictionary_form_text_only_and_term_status_rules_with_neutral_examples():
+    from aaa2.entities.blocks import split_descriptive
+
+    for phrase in ("canonical_name is the dictionary form: singular and nominative",
+                   "canonical_name is a phrase that stands in the text",
+                   "  - established: an established professional term",
+                   "  - site_specific: the site's own concept",
+                   "  - descriptive: a merely descriptive phrase",
+                   "  - term_status: as defined above for a concept; null for every other type"):
+        assert phrase in BLOCK_PROMPT
+    examples = ["ügyfélszolgálati jegy", "Net Promoter Score", "hírlevél-feliratkozás",
+                "e-mail marketing", "kosárelhagyás", "raktárkészlet-gond"]
+    real = se.load_pages(page_set="development-real")
+    for page in [*EVERY_PAGE.values(), *real]:
+        text = "\n".join(block_text(b) for b in page["blocks"]).casefold()
+        assert [e for e in examples if e.casefold() in text] == [], page["page_id"]
+    kept, dropped = split_descriptive([
+        mention("b1", "a", "A", "concept", term_status="descriptive"),
+        mention("b1", "b", "B", "concept", term_status="established"),
+        mention("b1", "c", "C", "tech", term_status="descriptive")])
+    assert ([e["canonical_name"] for e in kept], [e["canonical_name"] for e in dropped]) == (
+        ["B", "C"], ["A"])

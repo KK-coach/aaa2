@@ -6,6 +6,8 @@ from typing import Literal, get_args
 
 from pydantic import BaseModel, Field
 
+# A concept szakszó-státusza: bevett szakkifejezés, a site saját fogalma, csak leíró kifejezés.
+TermStatus = Literal["established", "site_specific", "descriptive"]
 EntityType = Literal[
     "brand", "product", "service", "work", "event", "person", "org", "place", "tech", "concept",
 ]
@@ -83,6 +85,9 @@ class BlockEntity(BaseModel):
     type: EntityType
     subtype: Subtype | None = Field(description="One value from the subtype list of the "
                                                 "entity's type; null for a person.")
+    term_status: TermStatus | None = Field(description="For a concept: established, "
+                                                       "site_specific or descriptive; null for "
+                                                       "every other type.")
     description: str = Field(description="What the entity is in this text, at most 10 words.")
 
 
