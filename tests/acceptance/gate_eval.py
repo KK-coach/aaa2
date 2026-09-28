@@ -64,7 +64,7 @@ from aaa2.entities.verify import item_block, verify_record
 from aaa2.llm.client import Retry
 from aaa2.llm.config import load_config
 from tests.acceptance.annotation import PAGES as CRAWLED
-from tests.acceptance.annotation import block_mapping
+from tests.acceptance.annotation import block_mapping, locked_sources
 
 VERDICTS_FILE = Path(__file__).parent / "verdicts" / "verdicts.json"
 VERDICTS = ("valid", "descriptive", "wrong_name", "wrong_type")
@@ -96,7 +96,8 @@ def page_context(page: Mapping, data_dir: Path) -> PageContext:
     rögzített készlet renderelt DOM-jából."""
     chrome: list[str] = []
     anchors: list[str] = []
-    source = next((c for c in CRAWLED if c[0] == page["page_id"]), None)
+    sources = [*CRAWLED, *((pid, db, url) for pid, db, url, _ in locked_sources())]
+    source = next((c for c in sources if c[0] == page["page_id"]), None)
     if source is not None and (data_dir / f"{source[1]}.duckdb").exists():
         _, db, url = source
         con = duckdb.connect(str(data_dir / f"{db}.duckdb"), read_only=True)

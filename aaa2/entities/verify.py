@@ -7,11 +7,12 @@ igen/nem kérdéssel, egy LLM-hívásban oldalanként.
 - Kimenet tételenként: marad vagy kiesik. A kieső tétel minden említése kiesik; a válasz nélküli
   tétel marad (számolva). Hibás hívásnál minden marad, a hiba a rekordban.
 - A prompt állandó; a példapárjai (fogalom kontra leíró kifejezés, megnevezett ajánlat kontra
-  tevékenység-leírás) nem a teszt- és fejlesztési oldalakról valók. A hívás `purpose = verify`.
+  tevékenység-leírás) nem a teszt- és fejlesztési oldalakról valók. A hívás `purpose = verify`,
+  saját kimeneti plafonnal (`VERIFY_MAX_OUTPUT_TOKENS`), a költségőr is ezzel számol.
 """
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from aaa2.entities.blocks import block_text
 from aaa2.entities.gate import STRUCTURAL_KINDS, SoftItem, soft_items
@@ -20,6 +21,7 @@ from aaa2.llm.client import LLMError, SchemaMismatch
 from aaa2.llm.schemas import VerifyResult
 
 BLOCK_LIMIT = 600                 # a blokk szövegéből ennyi karakter megy a bemenetbe
+VERIFY_MAX_OUTPUT_TOKENS = 4000   # az ellenőrző hívás kimeneti plafonja (a költségőr is ezzel)
 
 VERIFY_PROMPT = (
     "You check candidate entities extracted from one web page. Each candidate has an id, a "
@@ -73,21 +75,25 @@ def verify_input(items: Sequence[SoftItem], blocks: Mapping[str, Mapping]) -> st
 
 
 def verify_record(client, record: Mapping, blocks: Mapping[str, Mapping],
-                  page_id: int | None = None) -> dict:
+                  page_id: int | None = None,
+                  select: Callable[[SoftItem], bool] | None = None) -> dict:
     """A rekord az ellenőrzés után. Mellette `verify_model`, `verify_call_id`, `call_ids` (az
     eddigiek és az ellenőrzésé), `verify_decisions` (név, típus, marad-e; válasz nélkül None),
-    `verify_missing`, `verify_error`."""
+    `verify_missing`, `verify_error`. `select`: csak ezek a tételek mennek a hívásba (a többi
+    változatlanul marad); ha nincs ilyen, nincs hívás."""
     out = dict(record)
     out.update(verify_model=client.model, verify_call_id=None, verify_decisions=[],
                verify_missing=0, verify_error=None,
                call_ids=list(record.get("call_ids")
                              or [i for i in [record.get("call_id")] if i is not None]))
-    items = soft_items(record.get("entities") or [], blocks)
+    items = [item for item in soft_items(record.get("entities") or [], blocks)
+             if select is None or select(item)]
     if not items:
         return out
     try:
         result = client.extract(VerifyResult, VERIFY_PROMPT, verify_input(items, blocks),
-                                domain="entity", purpose="verify", page_id=page_id)
+                                domain="entity", purpose="verify", page_id=page_id,
+                                max_output_tokens=VERIFY_MAX_OUTPUT_TOKENS)
     except SchemaMismatch as exc:
         out.update(verify_call_id=exc.call_id, verify_error=f"schema_mismatch: {exc}"[:500])
         out["call_ids"].append(exc.call_id)

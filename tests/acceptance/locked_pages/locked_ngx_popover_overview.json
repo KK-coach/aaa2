@@ -1,0 +1,3430 @@
+{
+  "page_id": "locked_ngx_popover_overview",
+  "set": "locked",
+  "url": "https://valor-software.com/ngx-bootstrap/components/popover?tab=overview",
+  "lang": "en",
+  "site_description": "This page belongs to the website valor-software.com, whose home page is titled “Angular Bootstrap”.",
+  "blocks": [
+    {
+      "id": "b0",
+      "kind": "title",
+      "heading_path": [],
+      "text": "Angular Bootstrap"
+    },
+    {
+      "id": "b74",
+      "kind": "list_item",
+      "heading_path": [],
+      "text": "Home"
+    },
+    {
+      "id": "b75",
+      "kind": "list_item",
+      "heading_path": [],
+      "text": "/ components"
+    },
+    {
+      "id": "b76",
+      "kind": "list_item",
+      "heading_path": [],
+      "text": "/ popover"
+    },
+    {
+      "id": "b77",
+      "kind": "heading",
+      "heading_path": [
+        "Popover"
+      ],
+      "text": "Popover"
+    },
+    {
+      "id": "b78",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover"
+      ],
+      "text": "Add small overlay content, like those found in iOS, to any element for housing secondary information."
+    },
+    {
+      "id": "b79",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover"
+      ],
+      "text": "The easiest way to add the popover component to your app (will be added to the root module)"
+    },
+    {
+      "id": "b80",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover"
+      ],
+      "text": "Overview"
+    },
+    {
+      "id": "b81",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover"
+      ],
+      "text": "API"
+    },
+    {
+      "id": "b82",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover"
+      ],
+      "text": "Examples"
+    },
+    {
+      "id": "b83",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Basic"
+      ],
+      "text": "Basic"
+    },
+    {
+      "id": "b84",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Basic"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b85",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Basic"
+      ],
+      "text": "Live demo"
+    },
+    {
+      "id": "b86",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Basic"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b87",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Basic"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b88",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Basic"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-primary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\" >\nLive demo\n</button>"
+    },
+    {
+      "id": "b89",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Basic"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-basic' ,\ntemplateUrl : './basic.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverBasicComponent {}"
+    },
+    {
+      "id": "b90",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Placement"
+      ],
+      "text": "Placement"
+    },
+    {
+      "id": "b91",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Placement"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b92",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Placement"
+      ],
+      "text": "Four base positioning options are available: top , right , bottom , and left . Besides that, auto option may be used to detect a position that fits the component on screen."
+    },
+    {
+      "id": "b93",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Placement"
+      ],
+      "text": "Popover on top"
+    },
+    {
+      "id": "b94",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Placement"
+      ],
+      "text": "Popover on right"
+    },
+    {
+      "id": "b95",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Placement"
+      ],
+      "text": "Popover auto"
+    },
+    {
+      "id": "b96",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Placement"
+      ],
+      "text": "Popover on left"
+    },
+    {
+      "id": "b97",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Placement"
+      ],
+      "text": "Popover on bottom"
+    },
+    {
+      "id": "b98",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Placement"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b99",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Placement"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b100",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Placement"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-default btn-secondary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\"\npopoverTitle = \"Popover on top\"\nplacement = \"top\" >\nPopover on top\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\"\npopoverTitle = \"Popover on right\"\nplacement = \"right\" >\nPopover on right\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\"\npopoverTitle = \"Popover auto\"\nplacement = \"auto\" >\nPopover auto\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\"\npopoverTitle = \"Popover on left\"\nplacement = \"left\" >\nPopover on left\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\"\npopoverTitle = \"Popover on bottom\"\nplacement = \"bottom\" >\nPopover on bottom\n</button>"
+    },
+    {
+      "id": "b101",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Placement"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-placement' ,\ntemplateUrl : './placement.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverPlacementComponent {}"
+    },
+    {
+      "id": "b102",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Corner placement"
+      ],
+      "text": "Corner placement"
+    },
+    {
+      "id": "b103",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Corner placement"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b104",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Corner placement"
+      ],
+      "text": "Placement property of a popover can contain \"corner placement\" specifier following the base positioning. Thus, in addition to the four base positioning options, namely top , right , bottom , and left , eight more positioning options are available: top left , top right , right top , right bottom , bottom right , bottom left , left bottom , and left top ."
+    },
+    {
+      "id": "b105",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Corner placement"
+      ],
+      "text": "top left top right right top right bottom bottom right bottom left left bottom left top"
+    },
+    {
+      "id": "b106",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Corner placement"
+      ],
+      "text": "Popover on top left"
+    },
+    {
+      "id": "b107",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Corner placement"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b108",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Corner placement"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b109",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Corner placement"
+      ],
+      "text": "<p>\n<select [( ngModel )] = \"placement\" class = \"form-control\" >\n@for (placement of placements; track placement) {\n<option\n[ value ] = \"placement\" >\n{{ placement }}\n</option>\n}\n</select>\n</p>\n<button type = \"button\" class = \"btn btn-default btn-secondary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\"\n[ popoverTitle ] = \"'Popover on ' + placement\"\n[ placement ] = \"placement\" >\n{{ 'Popover on ' + placement }}\n</button>"
+    },
+    {
+      "id": "b110",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Corner placement"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-corner-placement' ,\ntemplateUrl : './corner-placement.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverCornerPlacementComponent {\nplacements = [\n'top left' ,\n'top right' ,\n'right top' ,\n'right bottom' ,\n'bottom right' ,\n'bottom left' ,\n'left bottom' ,\n'left top'\n];\nplacement : \"top\" | \"bottom\" | \"left\" | \"right\" | \"auto\" | \"top left\" | \"top right\" | \"right top\" | \"right bottom\" | \"bottom right\" | \"bottom left\" | \"left bottom\" | \"left top\" = 'top left' ;\n}"
+    },
+    {
+      "id": "b111",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Disable adaptive position"
+      ],
+      "text": "Disable adaptive position"
+    },
+    {
+      "id": "b112",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Disable adaptive position"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b113",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Disable adaptive position"
+      ],
+      "text": "You can disable adaptive position via adaptivePosition input or config option"
+    },
+    {
+      "id": "b114",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Disable adaptive position"
+      ],
+      "text": "Popover on top"
+    },
+    {
+      "id": "b115",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Disable adaptive position"
+      ],
+      "text": "Popover on right"
+    },
+    {
+      "id": "b116",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Disable adaptive position"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b117",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Disable adaptive position"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b118",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Disable adaptive position"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-default btn-secondary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\"\npopoverTitle = \"Popover on top\"\n[ adaptivePosition ] = \"false\"\nplacement = \"top\" >\nPopover on top\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\"\npopoverTitle = \"Popover on right\"\n[ adaptivePosition ] = \"false\"\nplacement = \"right\" >\nPopover on right\n</button>"
+    },
+    {
+      "id": "b119",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Disable adaptive position"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-adaptive-position' ,\ntemplateUrl : './adaptive-position.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverAdaptivePositionComponent {}"
+    },
+    {
+      "id": "b120",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Adaptive position with overflow boundary"
+      ],
+      "text": "Adaptive position with overflow boundary"
+    },
+    {
+      "id": "b121",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Adaptive position with overflow boundary"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b122",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Adaptive position with overflow boundary"
+      ],
+      "text": "You can control the popover boundaries via boundariesElement input or config option. boundariesElement property of a popover can contain boundaries namely viewport, scrollParent, window ."
+    },
+    {
+      "id": "b123",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Adaptive position with overflow boundary"
+      ],
+      "text": "Popover on top"
+    },
+    {
+      "id": "b124",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Adaptive position with overflow boundary"
+      ],
+      "text": "Popover on bottom"
+    },
+    {
+      "id": "b125",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Adaptive position with overflow boundary"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b126",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Adaptive position with overflow boundary"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b127",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Adaptive position with overflow boundary"
+      ],
+      "text": "<div class = \"container\" >\n\n<div class = \"btn-padding\" >\n<button type = \"button\" class = \"btn btn-default btn-secondary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\" popoverTitle = \"Popover on top\"\n[ adaptivePosition ] = \"true\" container = \"body\" boundariesElement = \"viewport\" placement = \"top\" >\nPopover on top\n</button>\n\n<button type = \"button\" class = \"btn btn-default btn-secondary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\" popoverTitle = \"Popover on bottom\"\n[ adaptivePosition ] = \"true\" container = \"body\" boundariesElement = \"viewport\" placement = \"bottom\" >\nPopover on bottom\n</button>\n</div>\n\n</div>"
+    },
+    {
+      "id": "b128",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Adaptive position with overflow boundary"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-adaptive-position-overflow-boundary' ,\ntemplateUrl : './adaptive-position-overflow-boundary.html' ,\nstyleUrls : [ './adaptive-position-overflow-boundary.css' ],\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoAdaptivePositionOverflowBoundaryComponent {}"
+    },
+    {
+      "id": "b129",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Dismiss on next click"
+      ],
+      "text": "Dismiss on next click"
+    },
+    {
+      "id": "b130",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Dismiss on next click"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b131",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Dismiss on next click"
+      ],
+      "text": "Use the focus trigger to dismiss popovers on the next click that the user makes."
+    },
+    {
+      "id": "b132",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Dismiss on next click"
+      ],
+      "text": "Dismissible popover"
+    },
+    {
+      "id": "b133",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Dismiss on next click"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b134",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Dismiss on next click"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b135",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Dismiss on next click"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-success\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\"\npopoverTitle = \"Dismissible popover\"\ntriggers = \"focus\" >\nDismissible popover\n</button>"
+    },
+    {
+      "id": "b136",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Dismiss on next click"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-dismiss' ,\ntemplateUrl : './dismiss.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverDismissComponent {}"
+    },
+    {
+      "id": "b137",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Dynamic content"
+      ],
+      "text": "Dynamic content"
+    },
+    {
+      "id": "b138",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Dynamic content"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b139",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Dynamic content"
+      ],
+      "text": "Pass a string as popover content."
+    },
+    {
+      "id": "b140",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Dynamic content"
+      ],
+      "text": "Simple binding"
+    },
+    {
+      "id": "b141",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Dynamic content"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b142",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Dynamic content"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b143",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Dynamic content"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-info\"\n[ popover ] = \"content\" [ popoverTitle ] = \"title\" >\nSimple binding\n</button>"
+    },
+    {
+      "id": "b144",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Dynamic content"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-dynamic' ,\ntemplateUrl : './dynamic.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverDynamicComponent {\ntitle = 'Welcome word' ;\ncontent = 'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.' ;\n}"
+    },
+    {
+      "id": "b145",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Custom content template"
+      ],
+      "text": "Custom content template"
+    },
+    {
+      "id": "b146",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Custom content template"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b147",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Custom content template"
+      ],
+      "text": "Create <ng-template #myId> with any html allowed by Angular, and provide template ref [popover]=\"myId\" as popover content."
+    },
+    {
+      "id": "b148",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Custom content template"
+      ],
+      "text": "TemplateRef binding"
+    },
+    {
+      "id": "b149",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Custom content template"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b150",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Custom content template"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b151",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Custom content template"
+      ],
+      "text": "<ng-template # popTemplate > Just another: {{content}} </ng-template>\n<button type = \"button\" class = \"btn btn-warning\"\n[ popover ] = \"popTemplate\" popoverTitle = \"Template ref content inside\" >\nTemplateRef binding\n</button>"
+    },
+    {
+      "id": "b152",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Custom content template"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-custom-content' ,\ntemplateUrl : './custom-content.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverCustomContentComponent {\ntitle = 'Welcome word' ;\ncontent = 'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.' ;\n}"
+    },
+    {
+      "id": "b153",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Dynamic Html"
+      ],
+      "text": "Dynamic Html"
+    },
+    {
+      "id": "b154",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Dynamic Html"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b155",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Dynamic Html"
+      ],
+      "text": "By using [innerHtml] inside ng-template you can display any dynamic html"
+    },
+    {
+      "id": "b156",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Dynamic Html"
+      ],
+      "text": "Show me popover with html"
+    },
+    {
+      "id": "b157",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Dynamic Html"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b158",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Dynamic Html"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b159",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Dynamic Html"
+      ],
+      "text": "<ng-template # popTemplate > Here we go: <div [ innerHtml ] = \"html\" ></div></ng-template>\n<button type = \"button\" class = \"btn btn-success\"\n[ popover ] = \"popTemplate\" popoverTitle = \"Dynamic html inside\" >\nShow me popover with html\n</button>"
+    },
+    {
+      "id": "b160",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Dynamic Html"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-dynamic-html' ,\ntemplateUrl : './dynamic-html.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverDynamicHtmlComponent {\nhtml = `< span class = \"btn btn-danger\" > Never trust not sanitized HTML !!!</ span >`;\n}"
+    },
+    {
+      "id": "b161",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Append to body"
+      ],
+      "text": "Append to body"
+    },
+    {
+      "id": "b162",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Append to body"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b163",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Append to body"
+      ],
+      "text": "When you have any styles on a parent element that interfere with a popover, you’ll want to specify a container=\"body\" so that the popover’s HTML will be appended to body. This will help to avoid rendering problems in more complex components (like input groups, button groups, etc) or inside elements with overflow: hidden"
+    },
+    {
+      "id": "b164",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Append to body"
+      ],
+      "text": "Default popover"
+    },
+    {
+      "id": "b165",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Append to body"
+      ],
+      "text": "Popover appended to body"
+    },
+    {
+      "id": "b166",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Append to body"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b167",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Append to body"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b168",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Append to body"
+      ],
+      "text": "<div class = \"row panel\" style = \" position : relative ; overflow : hidden ; \" >\n<div class = \"card-block panel-body\" >\n<button type = \"button\" class = \"btn btn-danger\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\" >\nDefault popover\n</button>\n<button type = \"button\" class = \"btn btn-success\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\"\ncontainer = \"body\" >\nPopover appended to body\n</button>\n</div>\n</div>"
+    },
+    {
+      "id": "b169",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Append to body"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-container' ,\ntemplateUrl : './container.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverContainerComponent {}"
+    },
+    {
+      "id": "b170",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Visibility events"
+      ],
+      "text": "Visibility events"
+    },
+    {
+      "id": "b171",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Visibility events"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b172",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Visibility events"
+      ],
+      "text": "Live demo"
+    },
+    {
+      "id": "b173",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Visibility events"
+      ],
+      "text": "Event:"
+    },
+    {
+      "id": "b174",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Visibility events"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b175",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Visibility events"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b176",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Visibility events"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-primary\"\n( onShown ) = \"onShown()\" ( onHidden ) = \"onHidden()\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\" >\nLive demo\n</button>\n<br>\n<br>\n<pre class = \"card card-block card-header mb-3\" > Event: {{message}} </pre>"
+    },
+    {
+      "id": "b177",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Visibility events"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-events' ,\ntemplateUrl : './events.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverEventsComponent {\nmessage ?: string ;\n\nonShown (): void {\nthis . message = 'shown' ;\n}\n\nonHidden (): void {\nthis . message = 'hidden' ;\n}\n}"
+    },
+    {
+      "id": "b178",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Configuring defaults"
+      ],
+      "text": "Configuring defaults"
+    },
+    {
+      "id": "b179",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Configuring defaults"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b180",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Configuring defaults"
+      ],
+      "text": "Preconfigured popover"
+    },
+    {
+      "id": "b181",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Configuring defaults"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b182",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Configuring defaults"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b183",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Configuring defaults"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-primary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\" >\nPreconfigured popover\n</button>"
+    },
+    {
+      "id": "b184",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Configuring defaults"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\nimport { PopoverConfig } from 'ngx-bootstrap/popover' ;\n\n// such override allows to keep some initial values\n\nexport function getPopoverConfig (): PopoverConfig {\nreturn Object . assign ( new PopoverConfig (), {\nplacement : 'right' ,\ncontainer : 'body' ,\ntriggers : 'focus' ,\ndelay : 500\n});\n}\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-config' ,\ntemplateUrl : './config.html' ,\nproviders : [{ provide : PopoverConfig , useFactory : getPopoverConfig }],\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverConfigComponent {}"
+    },
+    {
+      "id": "b185",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Outside click"
+      ],
+      "text": "Outside click"
+    },
+    {
+      "id": "b186",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Outside click"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b187",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Outside click"
+      ],
+      "text": "Live demo"
+    },
+    {
+      "id": "b188",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Outside click"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b189",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Outside click"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b190",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Outside click"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-primary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\"\n[ outsideClick ] = \"true\" >\nLive demo\n</button>"
+    },
+    {
+      "id": "b191",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Outside click"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-outside-click' ,\ntemplateUrl : './outside-click.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverOutsideClickComponent {}"
+    },
+    {
+      "id": "b192",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Custom triggers"
+      ],
+      "text": "Custom triggers"
+    },
+    {
+      "id": "b193",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Custom triggers"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b194",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Custom triggers"
+      ],
+      "text": "Hover over me!"
+    },
+    {
+      "id": "b195",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Custom triggers"
+      ],
+      "text": "Double click me!"
+    },
+    {
+      "id": "b196",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Custom triggers"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b197",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Custom triggers"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b198",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Custom triggers"
+      ],
+      "text": "<div class = \"row\" >\n<div class = \"col-md-2\" >\n<button type = \"button\" class = \"btn btn-info\"\n[ popover ] = \"'I will hide on blur'\"\ntriggers = \"mouseenter:mouseleave\" >\nHover over me!\n</button>\n</div>\n<div class = \"col-md-2\" >\n<button type = \"button\" class = \"btn btn-info\"\n[ popover ] = \"'Double click one more time'\"\ntriggers = \"dblclick\" >\nDouble click me!\n</button>\n</div>\n<div class = \"col-md-3\" >\n<input type = \"text\"\nclass = \"form-control\"\nplaceholder = \"Show popover on input change\"\n[ popover ] = \"'I will hide on blur'\"\ntriggers = \"keypress:focusout\" >\n</div>\n</div>"
+    },
+    {
+      "id": "b199",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Custom triggers"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-triggers-custom' ,\ntemplateUrl : './triggers-custom.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverTriggersCustomComponent {}"
+    },
+    {
+      "id": "b200",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Manual triggering"
+      ],
+      "text": "Manual triggering"
+    },
+    {
+      "id": "b201",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Manual triggering"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b202",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Manual triggering"
+      ],
+      "text": "This demo shows manipulating popover by show , hide and toggle methods"
+    },
+    {
+      "id": "b203",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Manual triggering"
+      ],
+      "text": "This text has attached popover"
+    },
+    {
+      "id": "b204",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Manual triggering"
+      ],
+      "text": "Show Hide Toggle"
+    },
+    {
+      "id": "b205",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Manual triggering"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b206",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Manual triggering"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b207",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Manual triggering"
+      ],
+      "text": "<p>\n<span [ popover ] = \"'Hello there! I was triggered manually'\"\ntriggers = \"\" # pop = \"bs-popover\" >\nThis text has attached popover\n</span>\n</p>\n\n<button type = \"button\" class = \"btn btn-success\" ( click ) = \"pop.show()\" >\nShow\n</button>\n<button type = \"button\" class = \"btn btn-warning\" ( click ) = \"pop.hide()\" >\nHide\n</button>\n<button type = \"button\" class = \"btn btn-info\" ( click ) = \"pop.toggle()\" >\nToggle\n</button>"
+    },
+    {
+      "id": "b208",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Manual triggering"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-triggers-manual' ,\ntemplateUrl : './triggers-manual.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverTriggersManualComponent {}"
+    },
+    {
+      "id": "b209",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Trigger by isOpen property"
+      ],
+      "text": "Trigger by isOpen property"
+    },
+    {
+      "id": "b210",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Trigger by isOpen property"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b211",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Trigger by isOpen property"
+      ],
+      "text": "You can show/hide popover by switching isOpen property"
+    },
+    {
+      "id": "b212",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Trigger by isOpen property"
+      ],
+      "text": "This text has attached popover"
+    },
+    {
+      "id": "b213",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Trigger by isOpen property"
+      ],
+      "text": "Toggle"
+    },
+    {
+      "id": "b214",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Trigger by isOpen property"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b215",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Trigger by isOpen property"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b216",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Trigger by isOpen property"
+      ],
+      "text": "<p>\n<span [ popover ] = \"'Hello there! I was triggered by changing isOpen property'\"\ntriggers = \"\" [( isOpen )] = \"isOpen\" >\nThis text has attached popover\n</span>\n</p>\n<button type = \"button\" class = \"btn btn-primary\"\n( click ) = \"isOpen = !isOpen\" >\nToggle\n</button>"
+    },
+    {
+      "id": "b217",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Trigger by isOpen property"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-trigger-by-isopen' ,\ntemplateUrl : './trigger-by-isopen-property.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverByIsOpenPropComponent {\nisOpen = false ;\n}"
+    },
+    {
+      "id": "b218",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Component level styling"
+      ],
+      "text": "Component level styling"
+    },
+    {
+      "id": "b219",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Component level styling"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b220",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Component level styling"
+      ],
+      "text": "I have component level styling"
+    },
+    {
+      "id": "b221",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Component level styling"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b222",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Component level styling"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b223",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Component level styling"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-info\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\" >\nI have component level styling\n</button>"
+    },
+    {
+      "id": "b224",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Component level styling"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-styling-local' ,\ntemplateUrl : './styling-local.html' ,\nstyles : [\n`\n: host . popover {\nbackground - color : # 009688 ;\ncolor : # fff ;\n}\n: host . popover >. arrow : after {\nborder - top - color : # 009688 ;\n}\n`\n],\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverStylingLocalComponent {}"
+    },
+    {
+      "id": "b225",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Custom class"
+      ],
+      "text": "Custom class"
+    },
+    {
+      "id": "b226",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Custom class"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b227",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Custom class"
+      ],
+      "text": "Custom class demo"
+    },
+    {
+      "id": "b228",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Custom class"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b229",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Custom class"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b230",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Custom class"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-primary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\" containerClass = \"customClass\" >\nCustom class demo\n</button>"
+    },
+    {
+      "id": "b231",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Custom class"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-class' ,\ntemplateUrl : './class.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverClassComponent {}"
+    },
+    {
+      "id": "b232",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Popover context"
+      ],
+      "text": "Popover context"
+    },
+    {
+      "id": "b233",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Popover context"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b234",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Popover context"
+      ],
+      "text": "Open popover with custom context"
+    },
+    {
+      "id": "b235",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Popover context"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b236",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Popover context"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b237",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Popover context"
+      ],
+      "text": "<ng-template # popTemplate let-message = \"message\" > {{ message }} </ng-template>\n<button type = \"button\" class = \"btn btn-primary\"\n[ popover ] = \"popTemplate\" [ popoverContext ] = \"context\" >\nOpen popover with custom context\n</button>"
+    },
+    {
+      "id": "b238",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Popover context"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-context' ,\ntemplateUrl : './popover-context.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverContextComponent {\ncontext = {\nmessage : 'Hello there!'\n};\n}"
+    },
+    {
+      "id": "b239",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Popover with delay"
+      ],
+      "text": "Popover with delay"
+    },
+    {
+      "id": "b240",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Popover with delay"
+      ],
+      "text": "#"
+    },
+    {
+      "id": "b241",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Popover with delay"
+      ],
+      "text": "Click on the button to see popover delayed for 0,5 second"
+    },
+    {
+      "id": "b242",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Popover with delay"
+      ],
+      "text": "Popover with 0.5sec delay"
+    },
+    {
+      "id": "b243",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Popover with delay"
+      ],
+      "text": "template"
+    },
+    {
+      "id": "b244",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Popover with delay"
+      ],
+      "text": "component"
+    },
+    {
+      "id": "b245",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Popover with delay"
+      ],
+      "text": "<button type = \"button\" class = \"btn btn-primary\"\n[ popover ] = \"'Vivamus sagittis lacus vel augue laoreet rutrum faucibus.'\" [ delay ] = \"500\" >\nPopover with 0.5sec delay\n</button>"
+    },
+    {
+      "id": "b246",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Popover with delay"
+      ],
+      "text": "import { Component , ChangeDetectionStrategy } from '@angular/core' ;\n\n@Component ({\n// eslint-disable-next-line @angular-eslint/component-selector\nselector : 'demo-popover-delay' ,\ntemplateUrl : './delay.html' ,\nchangeDetection : ChangeDetectionStrategy . Eager ,\nstandalone : false\n})\nexport class DemoPopoverDelayComponent {}"
+    },
+    {
+      "id": "b247",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Installation"
+      ],
+      "text": "Installation"
+    },
+    {
+      "id": "b248",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Installation"
+      ],
+      "text": "ng add ngx-bootstrap  --component popover"
+    },
+    {
+      "id": "b249",
+      "kind": "code",
+      "heading_path": [
+        "Popover",
+        "Installation"
+      ],
+      "text": "### Standalone component usage\nimport { PopoverModule } from 'ngx-bootstrap/popover';\n\n@Component({\n  standalone: true,\n  imports: [PopoverModule,...]\n})\nexport class AppComponent(){}\n\n### Module usage\nimport { PopoverModule } from 'ngx-bootstrap/popover';\n\n@NgModule({\n  imports: [PopoverModule,...]\n})\nexport class AppModule(){}"
+    },
+    {
+      "id": "b250",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "PopoverDirective"
+      ],
+      "text": "PopoverDirective"
+    },
+    {
+      "id": "b251",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "PopoverDirective"
+      ],
+      "text": "A lightweight, extensible directive for fancy popover creation."
+    },
+    {
+      "id": "b252",
+      "kind": "table_row",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "PopoverDirective"
+      ],
+      "text": "Selector",
+      "cells": [
+        {
+          "header": null,
+          "value": "Selector"
+        }
+      ]
+    },
+    {
+      "id": "b253",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "PopoverConfig"
+      ],
+      "text": "PopoverConfig"
+    },
+    {
+      "id": "b254",
+      "kind": "paragraph",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "PopoverConfig"
+      ],
+      "text": "Configuration service for the Popover directive. You can inject this service, typically in your root component, and customize the values of its properties in order to provide default values for all the popovers used in the application."
+    },
+    {
+      "id": "b255",
+      "kind": "heading",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Properties"
+    },
+    {
+      "id": "b256",
+      "kind": "table_row",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "adaptivePosition | Type: boolean Default value: true sets disable adaptive position",
+      "cells": [
+        {
+          "header": null,
+          "value": "adaptivePosition"
+        },
+        {
+          "header": null,
+          "value": "Type: boolean Default value: true sets disable adaptive position"
+        }
+      ]
+    },
+    {
+      "id": "b257",
+      "kind": "table_row",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "container | Type: string | undefined A selector specifying the element the popover should be appended to.",
+      "cells": [
+        {
+          "header": null,
+          "value": "container"
+        },
+        {
+          "header": null,
+          "value": "Type: string | undefined A selector specifying the element the popover should be appended to."
+        }
+      ]
+    },
+    {
+      "id": "b258",
+      "kind": "table_row",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "delay | Type: number Default value: 0 delay before showing the tooltip",
+      "cells": [
+        {
+          "header": null,
+          "value": "delay"
+        },
+        {
+          "header": null,
+          "value": "Type: number Default value: 0 delay before showing the tooltip"
+        }
+      ]
+    },
+    {
+      "id": "b259",
+      "kind": "table_row",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "placement | Type: string Default value: top Placement of a popover. Accepts: \"top\", \"bottom\", \"left\", \"right\", \"auto\"",
+      "cells": [
+        {
+          "header": null,
+          "value": "placement"
+        },
+        {
+          "header": null,
+          "value": "Type: string Default value: top Placement of a popover. Accepts: \"top\", \"bottom\", \"left\", \"right\", \"auto\""
+        }
+      ]
+    },
+    {
+      "id": "b260",
+      "kind": "table_row",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "triggers | Type: string Default value: click Specifies events that should trigger. Supports a space separated list of event names.",
+      "cells": [
+        {
+          "header": null,
+          "value": "triggers"
+        },
+        {
+          "header": null,
+          "value": "Type: string Default value: click Specifies events that should trigger. Supports a space separated list of event names."
+        }
+      ]
+    },
+    {
+      "id": "b261",
+      "kind": "other",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "components"
+    },
+    {
+      "id": "b262",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Basic"
+    },
+    {
+      "id": "b263",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Placement"
+    },
+    {
+      "id": "b264",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Corner placement"
+    },
+    {
+      "id": "b265",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Disable adaptive position"
+    },
+    {
+      "id": "b266",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Adaptive position with overflow boundary"
+    },
+    {
+      "id": "b267",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Dismiss on next click"
+    },
+    {
+      "id": "b268",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Dynamic content"
+    },
+    {
+      "id": "b269",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Custom content template"
+    },
+    {
+      "id": "b270",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Dynamic Html"
+    },
+    {
+      "id": "b271",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Append to body"
+    },
+    {
+      "id": "b272",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Visibility events"
+    },
+    {
+      "id": "b273",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Configuring defaults"
+    },
+    {
+      "id": "b274",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Outside click"
+    },
+    {
+      "id": "b275",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Custom triggers"
+    },
+    {
+      "id": "b276",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Manual triggering"
+    },
+    {
+      "id": "b277",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Trigger by isOpen property"
+    },
+    {
+      "id": "b278",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Component level styling"
+    },
+    {
+      "id": "b279",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Custom class"
+    },
+    {
+      "id": "b280",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Popover context"
+    },
+    {
+      "id": "b281",
+      "kind": "list_item",
+      "heading_path": [
+        "Popover",
+        "Installation",
+        "Properties"
+      ],
+      "text": "Popover with delay"
+    }
+  ],
+  "gold": {
+    "primary_entities": [
+      "Popover"
+    ],
+    "entities": [
+      {
+        "canonical": "ngx-bootstrap",
+        "type": "tech",
+        "subtype": "library",
+        "aliases": [
+          "Angular Bootstrap"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Angular Bootstrap"
+          },
+          {
+            "block": "b184",
+            "text": "ngx-bootstrap"
+          },
+          {
+            "block": "b248",
+            "text": "ngx-bootstrap"
+          },
+          {
+            "block": "b249",
+            "text": "ngx-bootstrap"
+          }
+        ]
+      },
+      {
+        "canonical": "Popover",
+        "type": "tech",
+        "subtype": "component",
+        "aliases": [
+          "popover component"
+        ],
+        "note": "az oldal témája",
+        "namespace": "ngx-bootstrap",
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b76",
+            "text": "popover"
+          },
+          {
+            "block": "b77",
+            "text": "Popover"
+          },
+          {
+            "block": "b79",
+            "text": "popover"
+          },
+          {
+            "block": "b88",
+            "text": "popover"
+          },
+          {
+            "block": "b93",
+            "text": "Popover"
+          },
+          {
+            "block": "b94",
+            "text": "Popover"
+          },
+          {
+            "block": "b95",
+            "text": "Popover"
+          },
+          {
+            "block": "b96",
+            "text": "Popover"
+          },
+          {
+            "block": "b97",
+            "text": "Popover"
+          },
+          {
+            "block": "b100",
+            "text": "popover"
+          },
+          {
+            "block": "b100",
+            "text": "Popover"
+          },
+          {
+            "block": "b104",
+            "text": "popover"
+          },
+          {
+            "block": "b106",
+            "text": "Popover"
+          },
+          {
+            "block": "b109",
+            "text": "popover"
+          },
+          {
+            "block": "b109",
+            "text": "Popover"
+          },
+          {
+            "block": "b114",
+            "text": "Popover"
+          },
+          {
+            "block": "b115",
+            "text": "Popover"
+          },
+          {
+            "block": "b118",
+            "text": "popover"
+          },
+          {
+            "block": "b118",
+            "text": "Popover"
+          },
+          {
+            "block": "b122",
+            "text": "popover"
+          },
+          {
+            "block": "b123",
+            "text": "Popover"
+          },
+          {
+            "block": "b124",
+            "text": "Popover"
+          },
+          {
+            "block": "b127",
+            "text": "popover"
+          },
+          {
+            "block": "b127",
+            "text": "Popover"
+          },
+          {
+            "block": "b132",
+            "text": "popover"
+          },
+          {
+            "block": "b135",
+            "text": "popover"
+          },
+          {
+            "block": "b139",
+            "text": "popover"
+          },
+          {
+            "block": "b143",
+            "text": "popover"
+          },
+          {
+            "block": "b147",
+            "text": "popover"
+          },
+          {
+            "block": "b151",
+            "text": "popover"
+          },
+          {
+            "block": "b156",
+            "text": "popover"
+          },
+          {
+            "block": "b159",
+            "text": "popover"
+          },
+          {
+            "block": "b163",
+            "text": "popover"
+          },
+          {
+            "block": "b164",
+            "text": "popover"
+          },
+          {
+            "block": "b165",
+            "text": "Popover"
+          },
+          {
+            "block": "b168",
+            "text": "popover"
+          },
+          {
+            "block": "b168",
+            "text": "Popover"
+          },
+          {
+            "block": "b176",
+            "text": "popover"
+          },
+          {
+            "block": "b180",
+            "text": "popover"
+          },
+          {
+            "block": "b183",
+            "text": "popover"
+          },
+          {
+            "block": "b184",
+            "text": "popover"
+          },
+          {
+            "block": "b190",
+            "text": "popover"
+          },
+          {
+            "block": "b198",
+            "text": "popover"
+          },
+          {
+            "block": "b202",
+            "text": "popover"
+          },
+          {
+            "block": "b203",
+            "text": "popover"
+          },
+          {
+            "block": "b207",
+            "text": "popover"
+          },
+          {
+            "block": "b211",
+            "text": "popover"
+          },
+          {
+            "block": "b212",
+            "text": "popover"
+          },
+          {
+            "block": "b216",
+            "text": "popover"
+          },
+          {
+            "block": "b223",
+            "text": "popover"
+          },
+          {
+            "block": "b224",
+            "text": "popover"
+          },
+          {
+            "block": "b230",
+            "text": "popover"
+          },
+          {
+            "block": "b232",
+            "text": "Popover"
+          },
+          {
+            "block": "b234",
+            "text": "popover"
+          },
+          {
+            "block": "b237",
+            "text": "popover"
+          },
+          {
+            "block": "b239",
+            "text": "Popover"
+          },
+          {
+            "block": "b241",
+            "text": "popover"
+          },
+          {
+            "block": "b242",
+            "text": "Popover"
+          },
+          {
+            "block": "b245",
+            "text": "popover"
+          },
+          {
+            "block": "b245",
+            "text": "Popover"
+          },
+          {
+            "block": "b248",
+            "text": "popover"
+          },
+          {
+            "block": "b249",
+            "text": "popover"
+          },
+          {
+            "block": "b251",
+            "text": "popover"
+          },
+          {
+            "block": "b254",
+            "text": "Popover"
+          },
+          {
+            "block": "b257",
+            "text": "popover"
+          },
+          {
+            "block": "b259",
+            "text": "popover"
+          },
+          {
+            "block": "b280",
+            "text": "Popover"
+          },
+          {
+            "block": "b281",
+            "text": "Popover"
+          }
+        ]
+      },
+      {
+        "canonical": "iOS",
+        "type": "tech",
+        "subtype": "software",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b78",
+            "text": "iOS"
+          }
+        ]
+      },
+      {
+        "canonical": "Angular",
+        "type": "tech",
+        "subtype": "framework",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b147",
+            "text": "Angular"
+          }
+        ]
+      },
+      {
+        "canonical": "@angular/core",
+        "type": "tech",
+        "subtype": "package",
+        "namespace": "npm",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b89",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b101",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b110",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b119",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b128",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b136",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b144",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b152",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b160",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b169",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b177",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b184",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b191",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b199",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b208",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b217",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b224",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b231",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b238",
+            "text": "@angular/core"
+          },
+          {
+            "block": "b246",
+            "text": "@angular/core"
+          }
+        ]
+      },
+      {
+        "canonical": "PopoverDirective",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b250",
+            "text": "PopoverDirective"
+          }
+        ]
+      },
+      {
+        "canonical": "PopoverConfig",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b184",
+            "text": "PopoverConfig"
+          },
+          {
+            "block": "b253",
+            "text": "PopoverConfig"
+          }
+        ]
+      },
+      {
+        "canonical": "PopoverModule",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b249",
+            "text": "PopoverModule"
+          }
+        ]
+      }
+    ],
+    "optional": [
+      {
+        "canonical": "ng-template",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "@angular/core",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b147",
+            "text": "ng-template"
+          },
+          {
+            "block": "b151",
+            "text": "ng-template"
+          },
+          {
+            "block": "b155",
+            "text": "ng-template"
+          },
+          {
+            "block": "b159",
+            "text": "ng-template"
+          },
+          {
+            "block": "b237",
+            "text": "ng-template"
+          }
+        ]
+      },
+      {
+        "canonical": "TemplateRef",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "@angular/core",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b148",
+            "text": "TemplateRef"
+          },
+          {
+            "block": "b151",
+            "text": "TemplateRef"
+          }
+        ]
+      },
+      {
+        "canonical": "innerHtml",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "@angular/core",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b155",
+            "text": "innerHtml"
+          },
+          {
+            "block": "b159",
+            "text": "innerHtml"
+          }
+        ]
+      },
+      {
+        "canonical": "adaptivePosition",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b113",
+            "text": "adaptivePosition"
+          },
+          {
+            "block": "b118",
+            "text": "adaptivePosition"
+          },
+          {
+            "block": "b127",
+            "text": "adaptivePosition"
+          },
+          {
+            "block": "b256",
+            "text": "adaptivePosition"
+          }
+        ]
+      },
+      {
+        "canonical": "boundariesElement",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b122",
+            "text": "boundariesElement"
+          },
+          {
+            "block": "b127",
+            "text": "boundariesElement"
+          }
+        ]
+      },
+      {
+        "canonical": "container",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b257",
+            "text": "container"
+          }
+        ]
+      },
+      {
+        "canonical": "delay",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b258",
+            "text": "delay"
+          }
+        ]
+      },
+      {
+        "canonical": "placement",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b259",
+            "text": "placement"
+          }
+        ]
+      },
+      {
+        "canonical": "triggers",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b260",
+            "text": "triggers"
+          }
+        ]
+      },
+      {
+        "canonical": "outsideClick",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b190",
+            "text": "outsideClick"
+          }
+        ]
+      },
+      {
+        "canonical": "isOpen",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b209",
+            "text": "isOpen"
+          },
+          {
+            "block": "b211",
+            "text": "isOpen"
+          },
+          {
+            "block": "b216",
+            "text": "isOpen"
+          },
+          {
+            "block": "b217",
+            "text": "isOpen"
+          },
+          {
+            "block": "b277",
+            "text": "isOpen"
+          }
+        ]
+      },
+      {
+        "canonical": "containerClass",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b230",
+            "text": "containerClass"
+          }
+        ]
+      },
+      {
+        "canonical": "popoverTitle",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b100",
+            "text": "popoverTitle"
+          },
+          {
+            "block": "b109",
+            "text": "popoverTitle"
+          },
+          {
+            "block": "b118",
+            "text": "popoverTitle"
+          },
+          {
+            "block": "b127",
+            "text": "popoverTitle"
+          },
+          {
+            "block": "b135",
+            "text": "popoverTitle"
+          },
+          {
+            "block": "b143",
+            "text": "popoverTitle"
+          },
+          {
+            "block": "b151",
+            "text": "popoverTitle"
+          },
+          {
+            "block": "b159",
+            "text": "popoverTitle"
+          }
+        ]
+      },
+      {
+        "canonical": "onShown",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b176",
+            "text": "onShown"
+          },
+          {
+            "block": "b177",
+            "text": "onShown"
+          }
+        ]
+      },
+      {
+        "canonical": "onHidden",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "ngx-bootstrap/popover",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b176",
+            "text": "onHidden"
+          },
+          {
+            "block": "b177",
+            "text": "onHidden"
+          }
+        ]
+      },
+      {
+        "canonical": "Component",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "@angular/core",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b89",
+            "text": "@Component"
+          },
+          {
+            "block": "b101",
+            "text": "@Component"
+          },
+          {
+            "block": "b110",
+            "text": "@Component"
+          },
+          {
+            "block": "b119",
+            "text": "@Component"
+          },
+          {
+            "block": "b128",
+            "text": "@Component"
+          },
+          {
+            "block": "b136",
+            "text": "@Component"
+          },
+          {
+            "block": "b144",
+            "text": "@Component"
+          },
+          {
+            "block": "b152",
+            "text": "@Component"
+          },
+          {
+            "block": "b160",
+            "text": "@Component"
+          },
+          {
+            "block": "b169",
+            "text": "@Component"
+          },
+          {
+            "block": "b177",
+            "text": "@Component"
+          },
+          {
+            "block": "b184",
+            "text": "@Component"
+          },
+          {
+            "block": "b191",
+            "text": "@Component"
+          },
+          {
+            "block": "b199",
+            "text": "@Component"
+          },
+          {
+            "block": "b208",
+            "text": "@Component"
+          },
+          {
+            "block": "b217",
+            "text": "@Component"
+          },
+          {
+            "block": "b224",
+            "text": "@Component"
+          },
+          {
+            "block": "b231",
+            "text": "@Component"
+          },
+          {
+            "block": "b238",
+            "text": "@Component"
+          },
+          {
+            "block": "b246",
+            "text": "@Component"
+          },
+          {
+            "block": "b249",
+            "text": "@Component"
+          }
+        ]
+      },
+      {
+        "canonical": "ChangeDetectionStrategy",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "@angular/core",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b89",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b101",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b110",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b119",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b128",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b136",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b144",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b152",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b160",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b169",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b177",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b184",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b191",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b199",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b208",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b217",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b224",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b231",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b238",
+            "text": "ChangeDetectionStrategy"
+          },
+          {
+            "block": "b246",
+            "text": "ChangeDetectionStrategy"
+          }
+        ]
+      },
+      {
+        "canonical": "ngModel",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "namespace": "@angular/forms",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b109",
+            "text": "ngModel"
+          }
+        ]
+      },
+      {
+        "canonical": "ngx-bootstrap/popover",
+        "type": "tech",
+        "subtype": "package",
+        "namespace": "npm",
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b184",
+            "text": "ngx-bootstrap/popover"
+          },
+          {
+            "block": "b249",
+            "text": "ngx-bootstrap/popover"
+          }
+        ]
+      },
+      {
+        "canonical": "Angular CLI",
+        "type": "tech",
+        "subtype": "software",
+        "aliases": [
+          "ng add"
+        ],
+        "difficulty": "easy",
+        "surface_forms": [
+          {
+            "block": "b248",
+            "text": "ng add"
+          }
+        ]
+      },
+      {
+        "canonical": "root module",
+        "type": "concept",
+        "subtype": "other",
+        "acceptable_types": [
+          "concept",
+          "tech"
+        ],
+        "difficulty": "easy",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b79",
+            "text": "root module"
+          }
+        ]
+      },
+      {
+        "canonical": "show",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b202",
+            "text": "show"
+          },
+          {
+            "block": "b207",
+            "text": "show()"
+          },
+          {
+            "block": "b211",
+            "text": "show"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "ngx-bootstrap/popover"
+      },
+      {
+        "canonical": "hide",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b198",
+            "text": "hide"
+          },
+          {
+            "block": "b202",
+            "text": "hide"
+          },
+          {
+            "block": "b207",
+            "text": "hide()"
+          },
+          {
+            "block": "b211",
+            "text": "hide"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "ngx-bootstrap/popover"
+      },
+      {
+        "canonical": "toggle",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b202",
+            "text": "toggle"
+          },
+          {
+            "block": "b207",
+            "text": "toggle()"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "ngx-bootstrap/popover"
+      },
+      {
+        "canonical": "bs-popover",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b207",
+            "text": "bs-popover"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "ngx-bootstrap/popover"
+      },
+      {
+        "canonical": "Bootstrap",
+        "type": "tech",
+        "subtype": "framework",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Bootstrap"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális"
+      },
+      {
+        "canonical": "HTML",
+        "type": "tech",
+        "subtype": "language",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b89",
+            "text": "html"
+          },
+          {
+            "block": "b101",
+            "text": "html"
+          },
+          {
+            "block": "b110",
+            "text": "html"
+          },
+          {
+            "block": "b119",
+            "text": "html"
+          },
+          {
+            "block": "b128",
+            "text": "html"
+          },
+          {
+            "block": "b136",
+            "text": "html"
+          },
+          {
+            "block": "b144",
+            "text": "html"
+          },
+          {
+            "block": "b147",
+            "text": "html"
+          },
+          {
+            "block": "b152",
+            "text": "html"
+          },
+          {
+            "block": "b153",
+            "text": "Html"
+          },
+          {
+            "block": "b155",
+            "text": "html"
+          },
+          {
+            "block": "b156",
+            "text": "html"
+          },
+          {
+            "block": "b159",
+            "text": "html"
+          },
+          {
+            "block": "b160",
+            "text": "demo-popover-dynamic-html"
+          },
+          {
+            "block": "b160",
+            "text": "dynamic-html"
+          },
+          {
+            "block": "b160",
+            "text": "html"
+          },
+          {
+            "block": "b160",
+            "text": "HTML"
+          },
+          {
+            "block": "b163",
+            "text": "HTML"
+          },
+          {
+            "block": "b169",
+            "text": "html"
+          },
+          {
+            "block": "b177",
+            "text": "html"
+          },
+          {
+            "block": "b184",
+            "text": "html"
+          },
+          {
+            "block": "b191",
+            "text": "html"
+          },
+          {
+            "block": "b199",
+            "text": "html"
+          },
+          {
+            "block": "b208",
+            "text": "html"
+          },
+          {
+            "block": "b217",
+            "text": "html"
+          },
+          {
+            "block": "b224",
+            "text": "html"
+          },
+          {
+            "block": "b231",
+            "text": "html"
+          },
+          {
+            "block": "b238",
+            "text": "html"
+          },
+          {
+            "block": "b246",
+            "text": "html"
+          },
+          {
+            "block": "b270",
+            "text": "Html"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális"
+      },
+      {
+        "canonical": "NgModule",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b249",
+            "text": "NgModule"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "@angular/core"
+      }
+    ],
+    "negatives": [
+      {
+        "text": "Home"
+      },
+      {
+        "text": "Overview"
+      },
+      {
+        "text": "Examples"
+      },
+      {
+        "text": "Live demo"
+      },
+      {
+        "text": "Vivamus sagittis"
+      },
+      {
+        "text": "Hover over me!"
+      },
+      {
+        "text": "Double click me!"
+      },
+      {
+        "text": "Custom class demo"
+      },
+      {
+        "text": "Dismissible popover"
+      },
+      {
+        "text": "This text has attached popover"
+      }
+    ]
+  },
+  "gold_status": "final (Krisztián jóváhagyta, 2026-09-28)",
+  "annotation_notes": [
+    "A prózában és az API-referenciában dokumentált elemek kötelezők (PopoverDirective, PopoverConfig, PopoverModule), a konfigurációs tulajdonságok és a példák inputjai opcionálisak (mint az ngx Accordion-on).",
+    "Az iOS és az Angular prózában szerepel, ezért kötelező."
+  ],
+  "rules": {
+    "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+    "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+    "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
+    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
+    "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
+    "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
+    "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
+    "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
+    "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
+    "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
+    "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
+    "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service).",
+    "docs_rule": "dokumentációs oldalon: a prózában vagy API-referenciában dokumentált osztály, modul, direktíva, konfigurációs szolgáltatás kötelező; a dokumentált API-tag (input, output, metódus, tulajdonság), a template-szelektor és az exportAs-név opcionális; a csak a címben vagy csomagnévben említett keretrendszer (Angular, Bootstrap) és az általános webes technológia (HTML, NgModule) opcionális; a példakódban deklarált azonosító és a példák demószövege negatív"
+  },
+  "subtype_glossary": {
+    "service": {
+      "audit": "felmérés, átvilágítás",
+      "implementation": "beállítás, kiépítés, bevezetés",
+      "consulting": "tanácsadás",
+      "reporting": "riport, dashboard",
+      "training": "képzés, workshop",
+      "other": "egyéb"
+    },
+    "org": {
+      "company": "cég",
+      "restaurant": "étterem, vendéglátóhely",
+      "institution": "intézmény, szervezet",
+      "team": "csapat",
+      "other": "egyéb"
+    },
+    "tech": {
+      "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+      "library": "programkönyvtár",
+      "framework": "keretrendszer",
+      "language": "programozási nyelv",
+      "package": "telepíthető csomag (npm, pip)",
+      "component": "egy könyvtár konkrét komponense",
+      "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+      "api": "programozói interfész, amit szolgáltatásként hívnak",
+      "standard": "műszaki szabvány, specifikáció",
+      "feature": "egy szoftver funkciója",
+      "other": "egyéb"
+    },
+    "product": {
+      "dish": "étel vagy desszert az étlapon",
+      "ingredient": "alapanyag, tésztafajta",
+      "wine": "bor",
+      "drink": "ital, koktél",
+      "physical_good": "egyéb fizikai áru",
+      "other": "egyéb"
+    },
+    "concept": {
+      "method": "módszer, keretrendszer, eljárás",
+      "discipline": "szakterület",
+      "metric": "mérhető mennyiség, mutató",
+      "ui_pattern": "általános felületi minta",
+      "license": "licenc",
+      "designation": "eredetvédelmi vagy minőségi jelölés",
+      "other": "egyéb"
+    },
+    "place": {
+      "city": "város",
+      "region": "régió, tartomány",
+      "country": "ország",
+      "venue": "helyszín, épület",
+      "other": "egyéb"
+    },
+    "work": {
+      "article": "cikk",
+      "case_study": "esettanulmány",
+      "book": "könyv",
+      "course": "tanfolyam",
+      "other": "egyéb"
+    },
+    "event": {
+      "conference": "konferencia",
+      "webinar": "webinár",
+      "festival": "fesztivál",
+      "other": "egyéb"
+    },
+    "brand": {
+      "other": "egyéb"
+    },
+    "person": {}
+  },
+  "subtype_vocabulary": {
+    "service": [
+      "audit",
+      "implementation",
+      "consulting",
+      "reporting",
+      "training",
+      "other"
+    ],
+    "org": [
+      "company",
+      "restaurant",
+      "institution",
+      "team",
+      "other"
+    ],
+    "tech": [
+      "software",
+      "library",
+      "framework",
+      "language",
+      "package",
+      "component",
+      "api_symbol",
+      "api",
+      "standard",
+      "feature",
+      "other"
+    ],
+    "product": [
+      "dish",
+      "ingredient",
+      "wine",
+      "drink",
+      "physical_good",
+      "other"
+    ],
+    "concept": [
+      "method",
+      "discipline",
+      "metric",
+      "ui_pattern",
+      "license",
+      "designation",
+      "other"
+    ],
+    "place": [
+      "city",
+      "region",
+      "country",
+      "venue",
+      "other"
+    ],
+    "work": [
+      "article",
+      "case_study",
+      "book",
+      "course",
+      "other"
+    ],
+    "event": [
+      "conference",
+      "webinar",
+      "festival",
+      "other"
+    ],
+    "brand": [
+      "other"
+    ],
+    "person": []
+  }
+}

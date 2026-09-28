@@ -73,6 +73,7 @@ from aaa2.llm.schemas import BlockEntity
 
 PAGES_DIR = Path(__file__).parent / "synthetic"
 DEV_PAGES_DIR = Path(__file__).parent / "dev_pages"
+LOCKED_DIR = Path(__file__).parent / "locked_pages"
 OUT_DIR = Path(__file__).parent / "out" / "synthetic"
 TARGETS = (                     # (mérték, küszöb): AAAV2-42, M2 spec B
     ("felismerés/megnevezett", 0.95), ("felismerés/fogalom", 0.90),
@@ -82,13 +83,15 @@ TARGETS = (                     # (mérték, küszöb): AAAV2-42, M2 spec B
 
 DEVELOPMENT = "development"
 REAL = "development-real"
-SETS = (DEVELOPMENT, "generalization", REAL, "all")
+LOCKED = "locked"
+SETS = (DEVELOPMENT, "generalization", REAL, LOCKED, "all")
 
 
 def load_pages(pages_dir: Path | None = None, page_set: str = DEVELOPMENT) -> list[dict]:
     """A `page_set` oldalai (`all`: a mesterségesek mind); a `set` mező nélküli oldal
-    fejlesztési. A valódi fejlesztési oldalak (`development-real`) a `dev_pages/` alól."""
-    pages_dir = pages_dir or (DEV_PAGES_DIR if page_set == REAL else PAGES_DIR)
+    fejlesztési. A valódi fejlesztési oldalak (`development-real`) a `dev_pages/`, a zárolt
+    tesztoldalak (`locked`) a `locked_pages/` alól."""
+    pages_dir = pages_dir or {REAL: DEV_PAGES_DIR, LOCKED: LOCKED_DIR}.get(page_set, PAGES_DIR)
     pages = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(pages_dir.glob("*.json"))]
     return [page for page in pages
             if page_set == "all" or page.get("set", DEVELOPMENT) == page_set]

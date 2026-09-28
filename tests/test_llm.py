@@ -400,12 +400,29 @@ def test_budget_counts_the_worst_case_of_the_call_before_calling(con, api, env, 
     assert [route for route, _, _ in api.requests] == ["anthropic"]
 
 
+def test_a_call_with_its_own_output_limit_is_budgeted_and_sent_with_it(con, api, env,
+                                                                      ledger_path):
+    """Saját kimeneti plafonnal (4000 token × 20 USD / 1M = 0,08 USD) a hívás belefér ott is,
+    ahol a szolgáltató plafonjával (0,32 USD) nem; a kérés ezzel a plafonnal megy."""
+    client = clients_for(con, api, env, ledger_path)["anthropic"]
+    assert client.worst_case_usd("UTASÍTÁS", "OLDAL", NOON.date(), 4000) == pytest.approx(
+        (7 * 4 + 4000 * 20) / 1e6)
+    assert client.output_limit(4000) == 4000 and client.output_limit(99_000) == 16_000
+    spend(ledger_path, "claude-opus-5-5", 9.8)                            # 9,8 + 0,32 > 10
+    with pytest.raises(BudgetExceeded, match=r"\(max_output_tokens 16000\)"):
+        client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
+    client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity",
+                   max_output_tokens=4000)                               # 9,8 + 0,08 < 10
+    assert [(route, body["max_tokens"]) for route, _, body in api.requests] == [
+        ("anthropic", 4000)]
+
+
 def test_budget_counts_every_model_of_the_provider(con, api, env, ledger_path):
-    spend(ledger_path, "gpt-5.6-terra", 2.4)
+    spend(ledger_path, "gpt-5.6-terra", 4.4)
     spend(ledger_path, "gpt-6-luna", 0.11)
     spend(ledger_path, "gemini-3.8-flash", 3.9)
     clients = clients_for(con, api, env, ledger_path)
-    with pytest.raises(BudgetExceeded, match="openai: 2.5100 USD"):
+    with pytest.raises(BudgetExceeded, match="openai: 4.5100 USD"):
         clients["openai"].extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
     clients["gemini"].extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
     assert [route for route, _, _ in api.requests] == ["gemini"]
@@ -464,7 +481,7 @@ def test_status_prints_cumulative_usd_per_model(tmp_path, monkeypatch):
     monkeypatch.setattr(connect_module, "DATA_DIR", tmp_path)
     spend(ledger.default_path(), "claude-opus-5-5", 1.25)
     spend(ledger.default_path(), "claude-opus-5-5", 0.5)
-    spend(ledger.default_path(), "gpt-5.6-terra", 2.6)
+    spend(ledger.default_path(), "gpt-5.6-terra", 4.6)
     spend(ledger.default_path(), "gpt-6-astra", 0.01)
     result = CliRunner().invoke(app, ["status"])
     assert result.exit_code == 0, result.output
@@ -472,8 +489,8 @@ def test_status_prints_cumulative_usd_per_model(tmp_path, monkeypatch):
     assert "claude-opus-5-5: 1.7500 USD" in lines
     assert ("anthropic összesen 1.7500 USD; leállás 10.00 USD felett, keret 10.00 USD" in lines)
     assert "gpt-6-luna (aktív): 0.0000 USD" in lines
-    assert "gpt-5.6-terra: 2.6000 USD" in lines
-    assert ("openai összesen 2.6000 USD; leállás 2.50 USD felett, keret 3.00 USD; LEÁLLVA"
+    assert "gpt-5.6-terra: 4.6000 USD" in lines
+    assert ("openai összesen 4.6000 USD; leállás 4.50 USD felett, keret 5.00 USD; LEÁLLVA"
             in lines)
     assert "gemini-3.8-flash: 0.0000 USD" in lines
     assert "gpt-6-astra (nincs a konfigurációban): 0.0100 USD" in lines

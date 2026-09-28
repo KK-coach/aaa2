@@ -1,0 +1,226 @@
+# locked_kk_execution
+
+- URL: https://kk.coach/solutions/execution/
+- nyelv: en-US
+- site: This page belongs to the website kk.coach, whose home page is titled “SEO & AI-Driven Organic Growth Consultant | Kk.coach”.
+- blokkok (content régió): 217
+
+Blokkonként: azonosító, típus, heading-útvonal, szöveg (táblázatsornál a cellák az oszlopfejléccel).
+
+- **b0** `title`: Execution Model — Sprint-Based Organic Growth Delivery · Kk.coach
+- **b1** `other`: Skip to content
+- **b14** `paragraph`: — Solutions — Layer 05
+- **b15** `heading`: Ideas don’t create growth. Execution does.
+- **b16** `paragraph` (Ideas don’t create growth. Execution does.): Most organic growth initiatives fail to deliver on their potential due to poor integration of multiple projects, unclear goals, and lack of an accountability loop. This is how the operational model works and drives the entire ecosystem.
+- **b17** `other` (Ideas don’t create growth. Execution does.): See the sprint model
+- **b18** `other` (Ideas don’t create growth. Execution does.): Sprint-based delivery · Direct implementation · Entity Architecture · Structured oversight · WordPress / WooCommerce · Prioritization logic
+- **b19** `paragraph` (Ideas don’t create growth. Execution does.): Signs execution is the bottleneck
+- **b20** `paragraph` (Ideas don’t create growth. Execution does.): ×
+- **b21** `paragraph` (Ideas don’t create growth. Execution does.): The backlog keeps growing
+- **b22** `paragraph` (Ideas don’t create growth. Execution does.): This is how you create an operating model which provides motion in your organization.
+- **b23** `paragraph` (Ideas don’t create growth. Execution does.): ×
+- **b24** `paragraph` (Ideas don’t create growth. Execution does.): Priorities change every week
+- **b25** `paragraph` (Ideas don’t create growth. Execution does.): No stable sequence. The team reacts instead of builds
+- **b26** `paragraph` (Ideas don’t create growth. Execution does.): ×
+- **b27** `paragraph` (Ideas don’t create growth. Execution does.): Improvements exist in documents
+- **b28** `paragraph` (Ideas don’t create growth. Execution does.): Audits and reports sit unimplemented. The gap between plan and live is wide.
+- **b29** `paragraph` (Ideas don’t create growth. Execution does.): ×
+- **b30** `paragraph` (Ideas don’t create growth. Execution does.): No feedback loop after shipping
+- **b31** `paragraph` (Ideas don’t create growth. Execution does.): Changes go live, but impact is never measured or connected back to decisions.
+- **b32** `paragraph` (Ideas don’t create growth. Execution does.): kk
+- **b33** `paragraph` (Ideas don’t create growth. Execution does.): — Why Growth Stalls
+- **b34** `heading`: Strategy is rarely the problem. Implementation is.
+- **b35** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is.): The same pattern appears across companies of different sizes: clear diagnosis, a reasonable plan — and then months of scattered activity with no compounding effect. The cause is almost always structural.
+- **b36** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is.): 01
+- **b37** `heading`: No prioritization discipline
+- **b38** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › No prioritization discipline): Everything feels equally urgent. The highest-impact work competes with low-effort requests. Resources scatter across ten half-finished initiatives.
+- **b39** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › No prioritization discipline): Result: effort without momentum
+- **b40** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › No prioritization discipline): 02
+- **b41** `heading`: Shipping without measuring
+- **b42** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Shipping without measuring): Changes go live, but there’s no defined measure of success. Nobody knows if the change worked. The next decision is made with the same uncertainty as the last.
+- **b43** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Shipping without measuring): Result: iteration without learning
+- **b44** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Shipping without measuring): 03
+- **b45** `heading`: Work lives in documents
+- **b46** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Work lives in documents): Audits, roadmaps, and recommendations accumulate in folders. The gap between “we know what to fix” and “it’s live and measured” never closes.
+- **b47** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Work lives in documents): Result: knowledge without impact
+- **b48** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Work lives in documents): 04
+- **b49** `heading`: Ownership is diffuse
+- **b50** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Ownership is diffuse): SEO, development, content, and analytics each wait for someone else to move first. No single person owns the outcome — so nobody fully owns the problem.
+- **b51** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Ownership is diffuse): Result: coordination without execution
+- **b52** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Ownership is diffuse): 05
+- **b53** `heading`: Velocity collapses after kickoff
+- **b54** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Velocity collapses after kickoff): The first sprint moves fast. Then reviews multiply, approvals stack up, scope creeps. By week six, the cadence has collapsed and momentum is gone.
+- **b55** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Velocity collapses after kickoff): Result: enthusiasm without delivery
+- **b56** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Velocity collapses after kickoff): 06
+- **b57** `heading`: Strategy resets instead of iterates
+- **b58** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Strategy resets instead of iterates): When results are slow, the instinct is to start over: new approach, new tool, new partner. The problem is rarely the strategy. It is almost always the execution.
+- **b59** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Strategy resets instead of iterates): Result: change without compounding
+- **b60** `paragraph` (Ideas don’t create growth. Execution does. › Strategy is rarely the problem. Implementation is. › Strategy resets instead of iterates): — The Operating Model
+- **b61** `heading`: Four phases. One disciplined loop.
+- **b62** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop.): Every sprint — whether two weeks or one — moves through the same four phases. The sequence is not flexible. Each phase has a defined output. The loop repeats until performance compounds.
+- **b63** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop.): Sprint loop — repeating cycle
+- **b64** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop.): Every sprint, every time
+- **b65** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop.): Phase 01
+- **b66** `heading`: Diagnose
+- **b67** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Diagnose): Map current state. Find where authority leaks, where friction blocks decisions, where effort isn’t translating to impact.
+- **b68** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Diagnose): Technical health check
+- **b69** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Diagnose): Conversion drop-off map
+- **b70** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Diagnose): Intent coverage gaps
+- **b71** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Diagnose): Authority leak detection
+- **b72** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Diagnose): Phase 02
+- **b73** `heading`: Prioritize
+- **b74** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Prioritize): Score every candidate initiative by impact, effort, and risk. Only the highest-leverage work enters the sprint. Everything else waits.
+- **b75** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Prioritize): ICE-scored task list
+- **b76** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Prioritize): Sprint scope definition
+- **b77** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Prioritize): Clear success criteria
+- **b78** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Prioritize): Backlog triage
+- **b79** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Prioritize): Phase 03
+- **b80** `heading`: Ship
+- **b81** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Ship): Implement the defined scope. Direct build in WordPress / WooCommerce, or structured coordination with your internal team. No scope creep. No mid-sprint pivots.
+- **b82** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Ship): Live changes, not drafts
+- **b83** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Ship): QA before publishing
+- **b84** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Ship): Tracking instrumented
+- **b85** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Ship): Handover documented
+- **b86** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Ship): Phase 01
+- **b87** `heading`: Measure
+- **b88** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Measure): Evaluate what changed. Connect the change to the metric. If it moved — understand why. If it didn’t — adjust before the next sprint begins.
+- **b89** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Measure): Before/after comparison
+- **b90** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Measure): Impact attribution
+- **b91** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Measure): Learning documentation
+- **b92** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Measure): Next sprint brief
+- **b93** `paragraph` (Ideas don’t create growth. Execution does. › Four phases. One disciplined loop. › Measure): — Sprint Cadence
+- **b94** `heading`: What a sprint actually looks like.
+- **b95** `paragraph` (Ideas don’t create growth. Execution does. › What a sprint actually looks like.): A standard engagement runs in two-week sprints. Each has a defined shape: slow at the start (orient, assess), fast in the middle (build, ship), reflective at the end (measure, brief next). Here is the week-by-week breakdown.
+- **b96** `paragraph` (Ideas don’t create growth. Execution does. › What a sprint actually looks like.): Phase 01
+- **b97** `paragraph` (Ideas don’t create growth. Execution does. › What a sprint actually looks like.): ~1-2 day
+- **b98** `heading`: Review & Prioritize
+- **b99** `paragraph` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Review & Prioritize): What moved since the last sprint? What’s new in the data? Every candidate task is scored and ranked. The highest-leverage items form the sprint scope.
+- **b100** `list_item` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Review & Prioritize): Data review — GSC, GA4, Clarity, Bing webmaster tools, Screaming frog, Semrush
+- **b101** `list_item` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Review & Prioritize): ICE-scored task list
+- **b102** `list_item` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Review & Prioritize): Draft sprint brief
+- **b103** `paragraph` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Review & Prioritize): Phase 02
+- **b104** `paragraph` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Review & Prioritize): ~1 hour meeting
+- **b105** `heading`: Brief & Sign-off
+- **b106** `paragraph` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Brief & Sign-off): The prioritized task list is walked through together. Scope is confirmed, success criteria agreed, questions answered before work begins. No mid-sprint surprises.
+- **b107** `list_item` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Brief & Sign-off): Scope confirmed
+- **b108** `list_item` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Brief & Sign-off): Success metrics defined
+- **b109** `list_item` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Brief & Sign-off): Sprint brief signed off
+- **b110** `paragraph` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Brief & Sign-off): Phase 03
+- **b111** `paragraph` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Brief & Sign-off): ~2 weeks
+- **b112** `heading`: Execute
+- **b113** `paragraph` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Execute): Changes are built and shipped. Either directly by me, or coordinated with your team. Scope is fixed. Tracking is instrumented. Nothing goes live without QA.
+- **b114** `list_item` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Execute): Live changes, not drafts
+- **b115** `list_item` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Execute): QA before publish
+- **b116** `list_item` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Execute): Tracking verified
+- **b117** `list_item` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Execute): Results feed next sprint
+- **b118** `paragraph` (Ideas don’t create growth. Execution does. › What a sprint actually looks like. › Execute): — Engagement Modes
+- **b119** `heading`: Two ways to work. Same operating discipline.
+- **b120** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline.): The model adapts to your environment. The sprint cadence, the prioritization logic, and the measurement layer are the same. What differs is who holds the keyboard.
+- **b121** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline.): Mode 01
+- **b122** `heading`: Direct Implementation
+- **b123** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Direct Implementation): I handle both strategy and build. Decisions are made, work is done, and changes are live — without waiting for handoffs or developer cycles.
+- **b124** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Direct Implementation): Best for
+- **b125** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Direct Implementation): →
+- **b126** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Direct Implementation): Lean teams without in-house developers
+- **b127** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Direct Implementation): →
+- **b128** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Direct Implementation): WordPress and WooCommerce environments
+- **b129** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Direct Implementation): →
+- **b130** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Direct Implementation): Companies where speed of shipping matters
+- **b131** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Direct Implementation): →
+- **b132** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Direct Implementation): Engagements where strategic and technical ownership should be unified
+- **b133** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Direct Implementation): Mode 02
+- **b134** `heading`: Structured Oversight
+- **b135** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Structured Oversight): I own prioritization, direction, and quality control. Your internal team executes. I remove ambiguity and ensure accountability without replacing your developers.
+- **b136** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Structured Oversight): Best for
+- **b137** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Structured Oversight): →
+- **b138** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Structured Oversight): Companies with existing development teams
+- **b139** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Structured Oversight): →
+- **b140** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Structured Oversight): Multi-stakeholder environments needing a single decision owner
+- **b141** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Structured Oversight): →
+- **b142** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Structured Oversight): Larger operational setups with complex approval structures
+- **b143** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Structured Oversight): →
+- **b144** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Structured Oversight): Teams that need a strategic layer above their execution capacity
+- **b145** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Structured Oversight): When a consultant is not the right choice: if you need a large content production team, multi-market simultaneous rollout, or a dedicated account manager for internal stakeholder reporting — a larger agency structure is likely the better fit. I’ll tell you this upfront.
+- **b146** `paragraph` (Ideas don’t create growth. Execution does. › Two ways to work. Same operating discipline. › Structured Oversight): — What to Expect
+- **b147** `heading`: The first 30 days. Concrete, not aspirational.
+- **b148** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational.): Month one is about orientation and momentum — not promises. You should leave the first sprint with a functioning measurement layer, a prioritized roadmap, and at least one meaningful improvement shipped and measured.
+- **b149** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational.): Week 1–2 / Sprint 1
+- **b150** `heading`: Orient & fix the foundations
+- **b151** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › Orient & fix the foundations): → Full system baseline — technical, content, conversion, measurement
+- **b152** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › Orient & fix the foundations): → Tracking audit and instrumentation fix
+- **b153** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › Orient & fix the foundations): → ICE-scored priority list, sprint brief agreed
+- **b154** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › Orient & fix the foundations): → First high-impact item shipped (technical fix or page structure)
+- **b155** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › Orient & fix the foundations): → Measurement baseline established
+- **b156** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › Orient & fix the foundations): Week 3–4 / Sprint 2
+- **b157** `heading`: Build momentum
+- **b158** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › Build momentum): → Sprint 1 impact reviewed and documented
+- **b159** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › Build momentum): → Backlog re-scored with new data
+- **b160** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › Build momentum): → Second sprint scope defined — typically SEO structure, UX, or content architecture
+- **b161** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › Build momentum): → Second batch of improvements shipped and measured
+- **b162** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › Build momentum): → Pattern emerging: which layer needs most attention
+- **b163** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › Build momentum): End of month 1
+- **b164** `heading`: What you have
+- **b165** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › What you have): → A clean, structured measurement layer that reflects actual business intent
+- **b166** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › What you have): → Two shipped and measured improvement cycles
+- **b167** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › What you have): → A prioritized roadmap with a clear next three sprints
+- **b168** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › What you have): → An operating cadence — not a document, but a running system
+- **b169** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › What you have): → Evidence of what works and what to adjust
+- **b170** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › What you have): What you will not get: a 60-page PDF with 200 recommendations. A long roadmap meeting with no follow-up. A month of “strategy” with nothing shipped. The first sprint ends with something live, measured, and informing the next decision.
+- **b171** `paragraph` (Ideas don’t create growth. Execution does. › The first 30 days. Concrete, not aspirational. › What you have): — Prioritization Logic
+- **b172** `heading`: Not everything deserves action. The framework that decides.
+- **b173** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): Every candidate task is scored before it enters a sprint. The scoring model prevents gut-feel prioritization and ensures that constrained time always goes toward the highest-leverage work.
+- **b174** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): ICE Scoring Model
+- **b175** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): I
+- **b176** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): Impact
+- **b177** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): x
+- **b178** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): C
+- **b179** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): Confidence
+- **b180** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): x
+- **b181** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): E
+- **b182** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): Ease
+- **b183** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): =
+- **b184** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): Score
+- **b185** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): Priority rank
+- **b186** `paragraph` (Ideas don’t create growth. Execution does. › Not everything deserves action. The framework that decides.): — Pricing
+- **b187** `heading`: Flat hourly rate. No retainer lock-in on first engagement.
+- **b188** `paragraph` (Ideas don’t create growth. Execution does. › Flat hourly rate. No retainer lock-in on first engagement.): All work is billed at a single flat rate of €40 / hour . No packages, no tiers. The hours below reflect typical engagement scope — actual hours depend on complexity.
+- **b189** `table_row` (Ideas don’t create growth. Execution does. › Flat hourly rate. No retainer lock-in on first engagement.): Engagement type; Est. hours; Est. cost
+- **b190** `table_row` (Ideas don’t create growth. Execution does. › Flat hourly rate. No retainer lock-in on first engagement.): Engagement type: Direct Implementation · WordPress, WoCommerce; Est. hours: 20-160h; Est. cost: €800–6400
+- **b191** `table_row` (Ideas don’t create growth. Execution does. › Flat hourly rate. No retainer lock-in on first engagement.): Engagement type: Two-Week Sprint (Structured Oversight) · Full WooCommerce checkout flow, category page intent alignment, product page trust layer, cart abandonment reduction. Includes Core Web Vitals check.; Est. hours: 10–20h; Est. cost: €400–800
+- **b192** `other` (Ideas don’t create growth. Execution does. › Flat hourly rate. No retainer lock-in on first engagement.): Rate: €40 / hour ·
+- **b193** `paragraph` (Ideas don’t create growth. Execution does. › Flat hourly rate. No retainer lock-in on first engagement.): Sprint: 2 or 4 weeks
+- **b194** `paragraph` (Ideas don’t create growth. Execution does. › Flat hourly rate. No retainer lock-in on first engagement.): — Common Questions
+- **b195** `heading`: What people ask before starting an engagement.
+- **b196** `other` (Ideas don’t create growth. Execution does. › What people ask before starting an engagement.): How involved do I need to be in a sprint?
+- **b197** `paragraph` (Ideas don’t create growth. Execution does. › What people ask before starting an engagement.): Minimal, but structured. The sprint brief requires one alignment conversation at the start — typically 30–45 minutes. During the sprint, you should expect brief async updates (not meetings) and a review at the end. The goal is to respect your time while keeping you fully informed.
+- **b198** `other` (Ideas don’t create growth. Execution does. › What people ask before starting an engagement.): What if I already have an internal development team?
+- **b199** `paragraph` (Ideas don’t create growth. Execution does. › What people ask before starting an engagement.): That’s the Structured Oversight mode. I own the prioritization, sprint brief, QA logic, and measurement design — your team executes. This removes the strategic ambiguity that typically slows internal teams down, without replacing their capacity.
+- **b200** `other` (Ideas don’t create growth. Execution does. › What people ask before starting an engagement.): What is the minimum commitment?
+- **b201** `paragraph` (Ideas don’t create growth. Execution does. › What people ask before starting an engagement.): One sprint (two weeks) plus the kickoff baseline. That gives enough time to orient, prioritize, ship something meaningful, and measure. Ongoing retainers are available after the first sprint, but there is no requirement to commit beyond the initial engagement.
+- **b202** `other` (Ideas don’t create growth. Execution does. › What people ask before starting an engagement.): How do we measure whether a sprint was successful?
+- **b203** `paragraph` (Ideas don’t create growth. Execution does. › What people ask before starting an engagement.): Success criteria are defined before the sprint begins — not after. Each sprint brief includes a “what does success look like” section tied to the specific tasks in scope. At the end of the sprint, we compare before and after against those defined criteria. If something didn’t move, we document why and adjust.
+- **b204** `other` (Ideas don’t create growth. Execution does. › What people ask before starting an engagement.): Does AI replace human decision-making in the sprint process?
+- **b205** `paragraph` (Ideas don’t create growth. Execution does. › What people ask before starting an engagement.): No. AI accelerates the diagnostic and scoring work — pattern detection in data, anomaly identification, content gap analysis. But every sprint brief, prioritization decision, and success criteria is defined by business judgment, not generated output. AI provides speed and coverage; the strategy remains human.
+- **b206** `paragraph` (Ideas don’t create growth. Execution does. › What people ask before starting an engagement.): — The Role of Execution
+- **b207** `heading`: Strategy without execution is theory.
+- **b208** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory.): Execution is not the last layer in the stack — it is the operating layer that runs through every other layer. Measurement insights drive sprint briefs. SEO and GEO findings become sprint tasks. UX hypotheses are shipped and measured in cycles.
+- **b209** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory.): How execution connects to the full organic growth stack
+- **b210** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory.): Layer 01
+- **b211** `heading`: Measurement & Data Architecture
+- **b212** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory. › Measurement & Data Architecture): Attribution clarity and decision-level KPIs that make SEO impact visible and defensible.
+- **b213** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory. › Measurement & Data Architecture): Explore Measurement
+- **b214** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory. › Measurement & Data Architecture): Layer 02
+- **b215** `heading`: SEO
+- **b216** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory. › SEO): Baseline measurement, technical health, authority gaps, conversion leaks. No decisions before the picture is clear.
+- **b217** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory. › SEO): Explore SEO
+- **b218** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory. › SEO): Layer 03
+- **b219** `heading`: GEO – AI Visibility
+- **b220** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory. › GEO – AI Visibility): Entity architecture and knowledge graph structuring for citasion in generative AI systems.
+- **b221** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory. › GEO – AI Visibility): Explore GEO — AI Visibility GEO
+- **b222** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory. › GEO – AI Visibility): Layer 04
+- **b223** `heading`: UX & Conversion
+- **b224** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory. › UX & Conversion): Decision architecture and friction remove that turns measured traffic info measurable revenue.
+- **b225** `paragraph` (Ideas don’t create growth. Execution does. › Strategy without execution is theory. › UX & Conversion): Explore UX
+- **b226** `heading`: If growth lives in documents instead of in production —
+- **b227** `paragraph` (Ideas don’t create growth. Execution does. › If growth lives in documents instead of in production —): Let’s identify the highest-leverage starting point and run a focused first sprint. No lock-in. One sprint, with something shipped and measured by the end.
+- **b228** `other` (Ideas don’t create growth. Execution does. › If growth lives in documents instead of in production —): start a conversation

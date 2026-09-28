@@ -61,10 +61,11 @@ class AnthropicAdapter:
         self.config = config
         self.client = anthropic.Anthropic(api_key=api_key, base_url=base_url, max_retries=0)
 
-    def call(self, model: str, schema: type[BaseModel], prompt: str, input: str) -> Reply:
+    def call(self, model: str, schema: type[BaseModel], prompt: str, input: str,
+             max_output_tokens: int | None = None) -> Reply:
         message = self.client.messages.create(
             model=model,
-            max_tokens=self.config.max_output_tokens,
+            max_tokens=max_output_tokens or self.config.max_output_tokens,
             system=prompt,
             messages=[{"role": "user", "content": input}],
             output_config={"format": {"type": "json_schema",
@@ -90,13 +91,14 @@ class OpenAIAdapter:
         self.config = config
         self.client = openai.OpenAI(api_key=api_key, base_url=base_url, max_retries=0)
 
-    def call(self, model: str, schema: type[BaseModel], prompt: str, input: str) -> Reply:
+    def call(self, model: str, schema: type[BaseModel], prompt: str, input: str,
+             max_output_tokens: int | None = None) -> Reply:
         raw = self.client.responses.with_raw_response.parse(
             model=model,
             instructions=prompt,
             input=input,
             text_format=schema,
-            max_output_tokens=self.config.max_output_tokens,
+            max_output_tokens=max_output_tokens or self.config.max_output_tokens,
             store=False,
         )
         body = raw.http_response.json()
@@ -137,7 +139,8 @@ class GeminiAdapter:
         options = types.HttpOptions(base_url=base_url) if base_url else None
         self.client = genai.Client(api_key=api_key, vertexai=False, http_options=options)
 
-    def call(self, model: str, schema: type[BaseModel], prompt: str, input: str) -> Reply:
+    def call(self, model: str, schema: type[BaseModel], prompt: str, input: str,
+             max_output_tokens: int | None = None) -> Reply:
         level = self.config.thinking_level
         thinking = (types.ThinkingConfig(thinking_level=types.ThinkingLevel(level.upper()))
                     if level else None)
@@ -148,7 +151,7 @@ class GeminiAdapter:
                 system_instruction=prompt,
                 response_mime_type="application/json",
                 response_schema=schema,
-                max_output_tokens=self.config.max_output_tokens,
+                max_output_tokens=max_output_tokens or self.config.max_output_tokens,
                 thinking_config=thinking,
                 automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
             ),
