@@ -136,7 +136,7 @@ def report(pages: Sequence[Mapping], responses: Mapping, records: Mapping) -> st
         salient = sorted(v1.get("entities") or [], key=lambda e: -(e.get("salience") or 0))
         typed = salient or (v2.get("entities") or [])
         lines += ["", "Entitások (v1 salience szerint, ha van; különben a v2 sorrendje):", ""]
-        lines += [f"{i + 1}. {e.get('name')} — {e.get('type')}"
+        lines += [f"{i + 1}. {' '.join((e.get('name') or '').split())} — {e.get('type')}"
                   + (f" — {e['salience']:.4f}" if "salience" in e else "")
                   + (f" — {e['metadata']['wikipedia_url']}"
                      if (e.get("metadata") or {}).get("wikipedia_url") else "")
