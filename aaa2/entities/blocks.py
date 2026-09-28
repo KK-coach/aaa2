@@ -30,8 +30,7 @@ def _subtype_lines() -> str:
 
 
 def block_prompt() -> str:
-    """A blokkos prompt: a mesterséges oldalak 3a változata, a szótári alak, a csak szövegben
-    álló név és a fogalmak szakszó-státusza (`term_status`) szabályával."""
+    """A blokkos prompt (a mesterséges oldalak 3a változata, rögzítve)."""
     return (
         "Extract every entity the page is about or mentions: named things, offered products or "
         "services, and definable professional concepts. A single mention is enough. Generic "
@@ -57,17 +56,6 @@ def block_prompt() -> str:
         "sonka” is a product; the place is an entity only where the text refers to the "
         "place itself.\n"
         "- The titles of this site's own pages are not works.\n"
-        "- canonical_name is the dictionary form: singular and nominative (“ügyfélszolgálati "
-        "jegyek” → ügyfélszolgálati jegy).\n"
-        "- canonical_name is a phrase that stands in the text. An abbreviation may be expanded, "
-        "and so may a phrase explained in brackets on the page (“NPS (Net Promoter Score)” → "
-        "Net Promoter Score); a translation or a more general term that is not in the text may "
-        "not (“hírlevél-feliratkozás” is not “e-mail marketing”).\n"
-        "- term_status, for a concept only:\n"
-        "  - established: an established professional term that a professional glossary would "
-        "contain (“kosárelhagyás”, “Net Promoter Score”);\n"
-        "  - site_specific: the site's own concept, or an element of its own framework;\n"
-        "  - descriptive: a merely descriptive phrase, not a term (“raktárkészlet-gond”).\n"
         "- Return nothing that is not on the page.\n\n"
         "Return:\n"
         "- primary_entities: the canonical names of the entities the page is mainly about (the "
@@ -80,7 +68,6 @@ def block_prompt() -> str:
         "translated;\n"
         "  - type: one of the types defined below;\n"
         "  - subtype: one value from the subtype list of that type (null for a person);\n"
-        "  - term_status: as defined above for a concept; null for every other type;\n"
         "  - description: what the entity is in this text, at most 10 words.\n\n"
         "Types:\n" + "\n".join(f"- {kind}: {text}" for kind, text in TYPE_DEFINITIONS.items())
         + "\n\nSubtypes by type, each with its meaning:\n" + _subtype_lines()
@@ -88,16 +75,6 @@ def block_prompt() -> str:
 
 
 BLOCK_PROMPT = block_prompt()
-
-
-def split_descriptive(entities: Sequence[Mapping]) -> tuple[list[Mapping], list[Mapping]]:
-    """(megtartott, kiesett): a `descriptive` szakszó-státuszú concept-említés kiesik."""
-    kept, dropped = [], []
-    for entity in entities:
-        descriptive = entity.get("type") == "concept" \
-            and entity.get("term_status") == "descriptive"
-        (dropped if descriptive else kept).append(entity)
-    return kept, dropped
 
 
 def block_text(block: Mapping) -> str:

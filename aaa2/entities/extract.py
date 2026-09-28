@@ -9,8 +9,6 @@ entitásaival összevonva.
   darabonként egy hívás (`blocks.chunk_blocks`: a felső szintű headingek mentén, legfeljebb 80
   blokk, mindegyik a title-lel és a site-leíró mondattal); a darabok említései és főtémái
   összefésülve (`extract_page`).
-- Szakszó-státusz: a `descriptive` concept (csak leíró kifejezés) kiesik
-  (`blocks.split_descriptive`), számolva (`descriptive_concept`).
 - Ellenőrzés: a `surface_form` a megadott blokk szövegében áll-e, szóhatárral, kis-nagybetű- és
   whitespace-érzéketlenül (`surface_offsets`); ha nem, kitalált: eldobva, és az
   `llm_calls.fabricated_count`, az `entity_runs.fabricated` számolja. Az első előfordulás adja a
@@ -42,7 +40,7 @@ from datetime import UTC, datetime
 
 import duckdb
 
-from aaa2.entities.blocks import BLOCK_PROMPT, block_input, chunk_blocks, split_descriptive
+from aaa2.entities.blocks import BLOCK_PROMPT, block_input, chunk_blocks
 from aaa2.entities.dom import build_blocks, page_blocks
 from aaa2.entities.llm import site_line
 from aaa2.entities.naming import name_record
@@ -195,9 +193,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                 "DELETE FROM page_entities WHERE page_id = ? AND mention_id NOT IN "
                 "(SELECT mention_id FROM mention_sources)", [page_id])
             written: set[int] = set()
-            kept, dropped = split_descriptive(record["entities"] or [])
-            skipped["descriptive_concept"] += len(dropped)
-            for raw in kept:
+            for raw in record["entities"] or []:
                 block = by_id.get(raw.get("block_id"))
                 offsets = surface_offsets(raw.get("surface_form", ""), block["text"]) \
                     if block else []
