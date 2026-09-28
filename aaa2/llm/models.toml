@@ -31,7 +31,7 @@ fallback = "gpt-5.6-terra"
 alternatives = ["gpt-6-sol"]
 use_fallback = false           # true: a fallback modell hív; a gpt-6-astra nem használható
 key_env = "OPENAI_API_KEY"
-max_output_tokens = 16000
+max_output_tokens = 32000      # tartalék a hosszú oldalak blokkonkénti említéslistájához
 budget_usd = 3.0
 stop_usd = 2.5
 

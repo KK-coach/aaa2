@@ -5,7 +5,10 @@ entitásaival összevonva.
 
 - Bemenet: a site-ról szóló mondat (`llm.site_line`), utána a content-régió blokkjai sorszám
   szerint, `[b<sorszám>]` azonosítóval (`blocks.block_input`); a chrome-régió nem kerül bele. A
-  site entitásai és a determinisztikus kör találatai sosem kerülnek bele.
+  site entitásai és a determinisztikus kör találatai sosem kerülnek bele. Hosszú oldalon
+  darabonként egy hívás (`blocks.chunk_blocks`: a felső szintű headingek mentén, legfeljebb 80
+  blokk, mindegyik a title-lel és a site-leíró mondattal); a darabok említései és főtémái
+  összefésülve (`extract_page`).
 - Ellenőrzés: a `surface_form` a megadott blokk szövegében áll-e, szóhatárral, kis-nagybetű- és
   whitespace-érzéketlenül (`surface_offsets`); ha nem, kitalált: eldobva, és az
   `llm_calls.fabricated_count`, az `entity_runs.fabricated` számolja. Az első előfordulás adja a
@@ -37,7 +40,7 @@ from datetime import UTC, datetime
 
 import duckdb
 
-from aaa2.entities.blocks import BLOCK_PROMPT, block_input
+from aaa2.entities.blocks import BLOCK_PROMPT, block_input, chunk_blocks
 from aaa2.entities.dom import build_blocks, page_blocks
 from aaa2.entities.llm import site_line
 from aaa2.entities.naming import name_record
@@ -72,6 +75,47 @@ def surface_offsets(surface: str, text: str) -> list[tuple[int, int]]:
     pattern = re.compile(r"(?<![^\W\d_])" + r"\s+".join(re.escape(w) for w in words)
                          + r"(?![^\W\d_])", re.IGNORECASE)
     return [(m.start(), m.end()) for m in pattern.finditer(text or "")]
+
+
+@dataclass
+class PageExtraction:
+    """Egy oldal kinyerése, a darabok összefésülve: az említések dokumentum-sorrendben, a
+    főtémák kulcs szerint egyszer, a hívások, és a sikertelen darabok (ok, hívás)."""
+
+    entities: list[dict]
+    primary_entities: list[str]
+    call_ids: list[int]
+    chunks: int
+    failures: list[tuple[str, int | None]]
+
+
+def extract_page(client: LLMClient, site: str, blocks: Sequence[dict],
+                 page_id: int | None = None) -> PageExtraction:
+    """A blokkos kinyerés egy oldalra, darabonként egy hívással; a `BudgetExceeded` továbbmegy,
+    a többi hiba a sikertelen darabok közé kerül."""
+    result = PageExtraction([], [], [], 0, [])
+    seen: set[str] = set()
+    for chunk in chunk_blocks(blocks):
+        result.chunks += 1
+        try:
+            reply = client.extract(BlockExtraction, BLOCK_PROMPT, block_input(site, chunk),
+                                   domain="entity", page_id=page_id)
+        except SchemaMismatch as exc:
+            result.call_ids.append(exc.call_id)
+            result.failures.append(("schema_mismatch", exc.call_id))
+            continue
+        except BudgetExceeded:
+            raise
+        except LLMError:
+            result.failures.append(("call_error", None))
+            continue
+        result.call_ids.append(reply.call_id)
+        result.entities += [entity.model_dump() for entity in reply.parsed.entities]
+        for name in reply.parsed.primary_entities:
+            if alias_key(name) not in seen:
+                seen.add(alias_key(name))
+                result.primary_entities.append(name)
+    return result
 
 
 def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
@@ -113,31 +157,29 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
             continue
         done += 1
         try:
-            result = client.extract(BlockExtraction, BLOCK_PROMPT, block_input(site, blocks),
-                                    domain="entity", page_id=page_id)
+            page = extract_page(client, site, blocks, page_id)
         except BudgetExceeded:
             done -= 1
             skipped["budget_stopped_pages"] = len(pages) - number
             break
-        except SchemaMismatch as exc:
-            call_ids.append(exc.call_id)
-            skipped["schema_mismatch"] += 1
+        call_ids += page.call_ids
+        if len(page.failures) == page.chunks:
+            skipped[page.failures[0][0]] += 1
             continue
-        except LLMError:
-            skipped["call_error"] += 1
-            continue
-        call_ids.append(result.call_id)
+        for reason, _ in page.failures:
+            skipped[f"chunk_{reason}"] += 1
+        extract_call = next(i for i in page.call_ids
+                            if i not in {c for _, c in page.failures})
         by_id = {block["id"]: block for block in blocks}
-        record = {"call_id": result.call_id,
-                  "primary_entities": result.parsed.primary_entities,
-                  "entities": [entity.model_dump() for entity in result.parsed.entities]}
+        record = {"call_id": extract_call, "call_ids": list(page.call_ids),
+                  "primary_entities": page.primary_entities, "entities": page.entities}
         if naming_client is not None:
             try:
                 record = name_record(naming_client, record, by_id, page_id=page_id)
             except BudgetExceeded:
                 skipped["naming_budget_stopped"] += 1
             else:
-                call_ids += [i for i in record["call_ids"] if i != result.call_id]
+                call_ids += [i for i in record["call_ids"] if i not in page.call_ids]
                 if record.get("naming_error"):
                     skipped["naming_error"] += 1
         page_rows = page_fabricated = 0
@@ -170,12 +212,12 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                 written.add(mention_id)
                 con.execute(
                     "INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id) "
-                    "VALUES (?, 'llm', ?, ?)", [mention_id, run_id, result.call_id])
+                    "VALUES (?, 'llm', ?, ?)", [mention_id, run_id, extract_call])
                 by_position[position] += 1
                 entity_ids.add(entity_id)
                 page_rows += 1
             con.execute("UPDATE llm_calls SET fabricated_count = ? WHERE call_id = ?",
-                        [page_fabricated, result.call_id])
+                        [page_fabricated, extract_call])
             index.write_votes(con)
             con.commit()
         except Exception:

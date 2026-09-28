@@ -57,12 +57,13 @@ from pathlib import Path
 import duckdb
 
 from aaa2.db.connect import DATA_DIR, connect
-from aaa2.entities.blocks import BLOCK_PROMPT, block_input, check_surface, surface_spans
+from aaa2.entities.blocks import check_surface, surface_spans
+from aaa2.entities.extract import extract_page
 from aaa2.entities.naming import name_record
 from aaa2.entities.rules import alias_key
-from aaa2.llm.client import LLMError, SchemaMismatch, open_clients
+from aaa2.llm.client import LLMError, open_clients
 from aaa2.llm.config import load_config
-from aaa2.llm.schemas import BlockEntity, BlockExtraction
+from aaa2.llm.schemas import BlockEntity
 
 PAGES_DIR = Path(__file__).parent / "synthetic"
 DEV_PAGES_DIR = Path(__file__).parent / "dev_pages"
@@ -147,19 +148,28 @@ def name_run(model: str, data_dir: Path, pages: list[dict], source: str, tag: st
 
 
 def call(client, page: dict) -> dict:
-    record = {"page_id": page["page_id"], "model": client.model,
-              "call_id": None, "primary_entities": None, "entities": None, "error": None}
-    text = block_input(page["site_description"], page["blocks"])
+    """Egy oldal kinyerése, hosszú oldalon darabolva (`extract.extract_page`). A rekord
+    `call_id`-je az első sikeres hívás, a `call_ids` mind (a költséghez), `chunks` a darabok
+    száma, a sikertelen darabok a `chunk_errors`-ban; `error` csak akkor, ha egy darab sem
+    sikerült."""
+    record = {"page_id": page["page_id"], "model": client.model, "call_id": None,
+              "call_ids": [], "chunks": 0, "chunk_errors": [], "primary_entities": None,
+              "entities": None, "error": None}
     try:
-        result = client.extract(BlockExtraction, BLOCK_PROMPT, text, domain="entity")
-    except SchemaMismatch as exc:
-        record.update(call_id=exc.call_id, error=f"schema_mismatch: {exc}"[:500])
-        return record
+        result = extract_page(client, page["site_description"], page["blocks"])
     except LLMError as exc:
         record.update(error=f"call_error: {exc}"[:500])
         return record
-    record.update(call_id=result.call_id, primary_entities=result.parsed.primary_entities,
-                  entities=[entity.model_dump() for entity in result.parsed.entities])
+    failed = {call_id for _, call_id in result.failures}
+    succeeded = [i for i in result.call_ids if i not in failed]
+    record.update(call_ids=result.call_ids, chunks=result.chunks,
+                  chunk_errors=[f"{reason}: call {call_id}" for reason, call_id in result.failures])
+    if not succeeded:
+        record.update(call_id=result.call_ids[0] if result.call_ids else None,
+                      error="; ".join(record["chunk_errors"]))
+        return record
+    record.update(call_id=succeeded[0], primary_entities=result.primary_entities,
+                  entities=result.entities)
     return record
 
 

@@ -14,6 +14,7 @@ lista) és egy rövid leírás, továbbá a `primary_entities` lista.
 from __future__ import annotations
 
 import re
+from collections import Counter
 from collections.abc import Mapping, Sequence
 
 from aaa2.entities.llm import TYPE_DEFINITIONS, normalize_text
@@ -88,6 +89,82 @@ def block_text(block: Mapping) -> str:
 
 def _searchable(block: Mapping) -> str:
     return normalize_text(f"{block_text(block)}\n{block.get('text') or ''}")
+
+
+CHUNK_MAX_BLOCKS = 80
+
+
+def chunk_blocks(blocks: Sequence[Mapping], max_blocks: int = CHUNK_MAX_BLOCKS
+                 ) -> list[list[Mapping]]:
+    """Darabolás hosszú oldalra: ha a blokkok száma legfeljebb `max_blocks`, egy darab. Különben
+    a title-blokkon kívüli blokkok szakaszokra a legfelső, legalább kétszer előforduló
+    heading-mélység mentén (a heading-útvonal hossza); a célméretnél (a blokkszám egyenletesen
+    elosztva a legkevesebb szükséges darabra) nagyobb szakasz a következő mélységen, ennek
+    híján a célméretenként vágva. A szakaszok sorrendben a legkevesebb olyan darabba, amelyek
+    egyike sem lépi át a `max_blocks`-ot (a title-lel együtt), és ezen belül a legnagyobb darab
+    a lehető legkisebb. Minden darab elején a title-blokk."""
+    if len(blocks) <= max_blocks:
+        return [list(blocks)]
+    title = [b for b in blocks if b.get("kind") == "title"]
+    body = [b for b in blocks if b.get("kind") != "title"]
+    size = max_blocks - len(title)
+    target = -(-len(body) // -(-len(body) // size))
+    sections = _sections(body, target, 0)
+    return [title + [block for section in group for block in section]
+            for group in _balanced(sections, size)]
+
+
+def _balanced(sections: list[list[Mapping]], size: int) -> list[list[list[Mapping]]]:
+    """A szakaszok a legkevesebb, legfeljebb `size` blokkos darabba, a legnagyobb darabot
+    minimalizálva (sorrendtartó felosztás)."""
+    lengths = [len(s) for s in sections]
+    count, current = 1, 0
+    for length in lengths:
+        if current and current + length > size:
+            count, current = count + 1, 0
+        current += length
+    prefix = [0]
+    for length in lengths:
+        prefix.append(prefix[-1] + length)
+    n = len(lengths)
+    inf = float("inf")
+    best = [[inf] * (n + 1) for _ in range(count + 1)]
+    cut = [[0] * (n + 1) for _ in range(count + 1)]
+    best[0][0] = 0
+    for parts in range(1, count + 1):
+        for end in range(1, n + 1):
+            for start in range(parts - 1, end):
+                value = max(best[parts - 1][start], prefix[end] - prefix[start])
+                if value < best[parts][end]:
+                    best[parts][end], cut[parts][end] = value, start
+    groups: list[list[list[Mapping]]] = []
+    end = n
+    for parts in range(count, 0, -1):
+        start = cut[parts][end]
+        groups.insert(0, sections[start:end])
+        end = start
+    return groups
+
+
+def _sections(blocks: list[Mapping], size: int, below: int) -> list[list[Mapping]]:
+    depths = Counter(len(b.get("heading_path") or []) for b in blocks
+                     if b.get("kind") == "heading")
+    levels = sorted(d for d, n in depths.items() if n >= 2 and d > below)
+    if not levels:
+        return [blocks[i:i + size] for i in range(0, len(blocks), size)]
+    level = levels[0]
+    sections: list[list[Mapping]] = []
+    for block in blocks:
+        if block.get("kind") == "heading" and len(block.get("heading_path") or []) == level \
+                and sections and sections[-1]:
+            sections.append([])
+        if not sections:
+            sections.append([])
+        sections[-1].append(block)
+    out: list[list[Mapping]] = []
+    for section in sections:
+        out += _sections(section, size, level) if len(section) > size else [section]
+    return out
 
 
 def block_input(site_description: str, blocks: Sequence[Mapping]) -> str:
