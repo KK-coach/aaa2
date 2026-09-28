@@ -982,7 +982,7 @@
       }
     ]
   },
-  "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+  "gold_status": "final (Krisztián jóváhagyta, 2026-09-28)",
   "annotation_notes": [
     "Jogi oldal: főtéma nincs (üres lista).",
     "A GDPR-jogok (hozzáférés, törlés stb.) és az adatvédelmi fogalmak opcionálisak; a GDPR, a cookie és a privacy policy kötelező, mert headingben/title-ben állnak.",

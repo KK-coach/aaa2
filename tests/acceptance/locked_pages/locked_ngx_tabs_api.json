@@ -3865,6 +3865,289 @@
             "text": "key navigations"
           }
         ]
+      },
+      {
+        "canonical": "tabset",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b93",
+            "text": "tabset"
+          },
+          {
+            "block": "b109",
+            "text": "tabset"
+          },
+          {
+            "block": "b125",
+            "text": "tabset"
+          },
+          {
+            "block": "b141",
+            "text": "tabset"
+          },
+          {
+            "block": "b151",
+            "text": "tabset"
+          },
+          {
+            "block": "b161",
+            "text": "tabset"
+          },
+          {
+            "block": "b174",
+            "text": "tabset"
+          },
+          {
+            "block": "b186",
+            "text": "tabset"
+          },
+          {
+            "block": "b200",
+            "text": "tabset"
+          },
+          {
+            "block": "b210",
+            "text": "tabset"
+          },
+          {
+            "block": "b222",
+            "text": "tabset"
+          },
+          {
+            "block": "b234",
+            "text": "tabset"
+          },
+          {
+            "block": "b255",
+            "text": "tabset"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "ngx-bootstrap/tabs"
+      },
+      {
+        "canonical": "tab",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b93",
+            "text": "<tab"
+          },
+          {
+            "block": "b109",
+            "text": "<tab"
+          },
+          {
+            "block": "b125",
+            "text": "<tab"
+          },
+          {
+            "block": "b141",
+            "text": "<tab"
+          },
+          {
+            "block": "b151",
+            "text": "<tab"
+          },
+          {
+            "block": "b161",
+            "text": "<tab"
+          },
+          {
+            "block": "b174",
+            "text": "<tab"
+          },
+          {
+            "block": "b186",
+            "text": "<tab"
+          },
+          {
+            "block": "b200",
+            "text": "<tab"
+          },
+          {
+            "block": "b210",
+            "text": "<tab"
+          },
+          {
+            "block": "b222",
+            "text": "<tab"
+          },
+          {
+            "block": "b234",
+            "text": "<tab"
+          },
+          {
+            "block": "b255",
+            "text": "<tab"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "ngx-bootstrap/tabs"
+      },
+      {
+        "canonical": "selectTab",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b109",
+            "text": "selectTab"
+          },
+          {
+            "block": "b110",
+            "text": "selectTab"
+          },
+          {
+            "block": "b141",
+            "text": "selectTab"
+          },
+          {
+            "block": "b200",
+            "text": "selectTab"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "ngx-bootstrap/tabs"
+      },
+      {
+        "canonical": "tabHeading",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b222",
+            "text": "tabHeading"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "ngx-bootstrap/tabs"
+      },
+      {
+        "canonical": "Angular",
+        "type": "tech",
+        "subtype": "framework",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Angular"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális"
+      },
+      {
+        "canonical": "HTML",
+        "type": "tech",
+        "subtype": "language",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b94",
+            "text": "html"
+          },
+          {
+            "block": "b110",
+            "text": "html"
+          },
+          {
+            "block": "b126",
+            "text": "html"
+          },
+          {
+            "block": "b142",
+            "text": "html"
+          },
+          {
+            "block": "b152",
+            "text": "html"
+          },
+          {
+            "block": "b162",
+            "text": "html"
+          },
+          {
+            "block": "b175",
+            "text": "html"
+          },
+          {
+            "block": "b187",
+            "text": "html"
+          },
+          {
+            "block": "b201",
+            "text": "html"
+          },
+          {
+            "block": "b211",
+            "text": "html"
+          },
+          {
+            "block": "b218",
+            "text": "HTML"
+          },
+          {
+            "block": "b219",
+            "text": "html"
+          },
+          {
+            "block": "b222",
+            "text": "HTML"
+          },
+          {
+            "block": "b222",
+            "text": "html"
+          },
+          {
+            "block": "b223",
+            "text": "html"
+          },
+          {
+            "block": "b235",
+            "text": "html"
+          },
+          {
+            "block": "b256",
+            "text": "html"
+          },
+          {
+            "block": "b348",
+            "text": "HTML"
+          },
+          {
+            "block": "b349",
+            "text": "html"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális"
+      },
+      {
+        "canonical": "NgModule",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b259",
+            "text": "NgModule"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "@angular/core"
       }
     ],
     "negatives": [
@@ -3906,7 +4189,7 @@
       }
     ]
   },
-  "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+  "gold_status": "final (Krisztián jóváhagyta, 2026-09-28)",
   "annotation_notes": [
     "A dokumentált API-elemek (TabsetComponent, TabDirective, TabHeadingDirective, TabsetConfig, TabsModule) kötelezők; a Bootstrap 4 és a WAI-ARIA Authoring Practices prózában szerepel, ezért kötelező.",
     "A demószöveg (Lorem Ipsum, Letraset) negatív: példatartalom, nem az oldal entitása.",
@@ -3924,7 +4207,8 @@
     "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
     "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
     "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
-    "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service)."
+    "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service).",
+    "docs_rule": "dokumentációs oldalon: a prózában vagy API-referenciában dokumentált osztály, modul, direktíva, konfigurációs szolgáltatás kötelező; a dokumentált API-tag (input, output, metódus, tulajdonság), a template-szelektor és az exportAs-név opcionális; a csak a címben vagy csomagnévben említett keretrendszer (Angular, Bootstrap) és az általános webes technológia (HTML, NgModule) opcionális; a példakódban deklarált azonosító és a példák demószövege negatív"
   },
   "subtype_glossary": {
     "service": {

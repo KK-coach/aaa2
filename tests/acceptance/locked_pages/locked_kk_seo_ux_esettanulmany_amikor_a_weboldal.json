@@ -1592,7 +1592,7 @@
       }
     ]
   },
-  "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+  "gold_status": "final (Krisztián jóváhagyta, 2026-09-28)",
   "annotation_notes": [
     "Esettanulmány: szolgáltatás nincs rajta, a főtéma a site speed.",
     "A megoldás fő elemei (cache, képformátumok, JS/CSS) kötelezők; a SEO-részfogalmak (technikai SEO, belső linkelés, strukturált adat) opcionálisak.",

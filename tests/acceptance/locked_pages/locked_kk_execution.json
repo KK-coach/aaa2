@@ -3122,7 +3122,7 @@
       }
     ]
   },
-  "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+  "gold_status": "final (Krisztián jóváhagyta, 2026-09-28)",
   "annotation_notes": [
     "Saját ajánlatok: az Execution réteg, a két munkamód (Direct Implementation, Structured Oversight), a Two-Week Sprint és a keretrendszer rétegei.",
     "Az eszközök (GSC, GA4, Clarity, Bing, Screaming Frog, Semrush) a b100 listában kötelezők.",

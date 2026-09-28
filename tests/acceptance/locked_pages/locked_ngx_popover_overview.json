@@ -2987,6 +2987,249 @@
             "text": "root module"
           }
         ]
+      },
+      {
+        "canonical": "show",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b202",
+            "text": "show"
+          },
+          {
+            "block": "b207",
+            "text": "show()"
+          },
+          {
+            "block": "b211",
+            "text": "show"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "ngx-bootstrap/popover"
+      },
+      {
+        "canonical": "hide",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b198",
+            "text": "hide"
+          },
+          {
+            "block": "b202",
+            "text": "hide"
+          },
+          {
+            "block": "b207",
+            "text": "hide()"
+          },
+          {
+            "block": "b211",
+            "text": "hide"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "ngx-bootstrap/popover"
+      },
+      {
+        "canonical": "toggle",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b202",
+            "text": "toggle"
+          },
+          {
+            "block": "b207",
+            "text": "toggle()"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "ngx-bootstrap/popover"
+      },
+      {
+        "canonical": "bs-popover",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b207",
+            "text": "bs-popover"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "ngx-bootstrap/popover"
+      },
+      {
+        "canonical": "Bootstrap",
+        "type": "tech",
+        "subtype": "framework",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b0",
+            "text": "Bootstrap"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális"
+      },
+      {
+        "canonical": "HTML",
+        "type": "tech",
+        "subtype": "language",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b89",
+            "text": "html"
+          },
+          {
+            "block": "b101",
+            "text": "html"
+          },
+          {
+            "block": "b110",
+            "text": "html"
+          },
+          {
+            "block": "b119",
+            "text": "html"
+          },
+          {
+            "block": "b128",
+            "text": "html"
+          },
+          {
+            "block": "b136",
+            "text": "html"
+          },
+          {
+            "block": "b144",
+            "text": "html"
+          },
+          {
+            "block": "b147",
+            "text": "html"
+          },
+          {
+            "block": "b152",
+            "text": "html"
+          },
+          {
+            "block": "b153",
+            "text": "Html"
+          },
+          {
+            "block": "b155",
+            "text": "html"
+          },
+          {
+            "block": "b156",
+            "text": "html"
+          },
+          {
+            "block": "b159",
+            "text": "html"
+          },
+          {
+            "block": "b160",
+            "text": "demo-popover-dynamic-html"
+          },
+          {
+            "block": "b160",
+            "text": "dynamic-html"
+          },
+          {
+            "block": "b160",
+            "text": "html"
+          },
+          {
+            "block": "b160",
+            "text": "HTML"
+          },
+          {
+            "block": "b163",
+            "text": "HTML"
+          },
+          {
+            "block": "b169",
+            "text": "html"
+          },
+          {
+            "block": "b177",
+            "text": "html"
+          },
+          {
+            "block": "b184",
+            "text": "html"
+          },
+          {
+            "block": "b191",
+            "text": "html"
+          },
+          {
+            "block": "b199",
+            "text": "html"
+          },
+          {
+            "block": "b208",
+            "text": "html"
+          },
+          {
+            "block": "b217",
+            "text": "html"
+          },
+          {
+            "block": "b224",
+            "text": "html"
+          },
+          {
+            "block": "b231",
+            "text": "html"
+          },
+          {
+            "block": "b238",
+            "text": "html"
+          },
+          {
+            "block": "b246",
+            "text": "html"
+          },
+          {
+            "block": "b270",
+            "text": "Html"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális"
+      },
+      {
+        "canonical": "NgModule",
+        "type": "tech",
+        "subtype": "api_symbol",
+        "aliases": [],
+        "surface_forms": [
+          {
+            "block": "b249",
+            "text": "NgModule"
+          }
+        ],
+        "difficulty": "easy",
+        "note": "dokumentációs szabály szerint opcionális",
+        "namespace": "@angular/core"
       }
     ],
     "negatives": [
@@ -3022,7 +3265,7 @@
       }
     ]
   },
-  "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+  "gold_status": "final (Krisztián jóváhagyta, 2026-09-28)",
   "annotation_notes": [
     "A prózában és az API-referenciában dokumentált elemek kötelezők (PopoverDirective, PopoverConfig, PopoverModule), a konfigurációs tulajdonságok és a példák inputjai opcionálisak (mint az ngx Accordion-on).",
     "Az iOS és az Angular prózában szerepel, ezért kötelező."
@@ -3039,7 +3282,8 @@
     "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
     "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
     "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
-    "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service)."
+    "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service).",
+    "docs_rule": "dokumentációs oldalon: a prózában vagy API-referenciában dokumentált osztály, modul, direktíva, konfigurációs szolgáltatás kötelező; a dokumentált API-tag (input, output, metódus, tulajdonság), a template-szelektor és az exportAs-név opcionális; a csak a címben vagy csomagnévben említett keretrendszer (Angular, Bootstrap) és az általános webes technológia (HTML, NgModule) opcionális; a példakódban deklarált azonosító és a példák demószövege negatív"
   },
   "subtype_glossary": {
     "service": {
