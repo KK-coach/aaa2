@@ -1,16 +1,14 @@
-"""Párhuzamos modellteszt: ugyanaz a prompt, séma és bemenet mindhárom modellnek, 30 oldalon a
-három rögzített készletből (`SAMPLE`); a kimenetek egymás mellett a `page_entities`-ben, az
-`llm_call_id` különbözteti meg őket.
+"""Párhuzamos modellteszt (M2/5, 1. kör): ugyanaz az oldalszintű v1 prompt, séma és bemenet
+mindhárom modellnek, 30 oldalon a három rögzített készletből (`SAMPLE`).
 
-    python -m tests.acceptance.llm_compare run [--providers gemini,openai,anthropic]
-                                               [--missing-only]
     python -m tests.acceptance.llm_compare report
 
-`run` (élő, költséges): készletenként a felvett crawl visszajátszása egy fájl-adatbázisba
-(`data/compare/<készlet>.duckdb`, egyszer) és a szabály-kör; modellenként az LLM-kör a mintán;
-végül a validálás (KG és Wikipedia, a site- és a shared-cache-sel). A modellek nyers kimenete,
-az eldobott sorokkal együtt, `data/compare/<készlet>.<szolgáltató>.jsonl`-be kerül, oldalanként
-egy sor (a hiba is).
+A futás (élő) megszűnt: az LLM-kör blokkos lett (`entities.extract`), a v1 evidence blokkhoz és
+pozícióhoz nem köthető. A felvett kimenetek maradnak: a modellek nyers kimenete, az eldobott
+sorokkal együtt, `data/compare/<készlet>.<szolgáltató>.jsonl`-ben, oldalanként egy sor (a hiba
+is); a futáskori sorok a készlet-adatbázis `page_entities_v1` táblájában (a 012-es migráció
+előtti `page_entities`). A készlet-adatbázist (`data/compare/<készlet>.duckdb`) a `prepare`
+állítja elő a felvett crawlból, a szabály-körrel.
 
 `report` (hálózat nélkül) a `tests/acceptance/out/llm-compare/` alá ír:
 
@@ -40,11 +38,10 @@ from pathlib import Path
 
 import duckdb
 
-from aaa2.db.connect import DATA_DIR, connect, shared_path
-from aaa2.entities.llm import check_evidence, name_in_evidence, normalize_text, run_llm
+from aaa2.db.connect import DATA_DIR, connect
+from aaa2.entities.llm import check_evidence, name_in_evidence, normalize_text
 from aaa2.entities.rules import alias_key, run_rules
-from aaa2.entities.validate import RECOGNIZED, validate_entities
-from aaa2.llm.client import LLMError, SchemaMismatch, open_clients
+from aaa2.entities.validate import RECOGNIZED
 
 PROVIDERS = ("gemini", "openai", "anthropic")
 LABELS = {"gemini": "Gemini", "openai": "OpenAI", "anthropic": "Anthropic"}
@@ -108,34 +105,6 @@ SPOTCHECK: list[tuple[str, str]] = [
 # ---------------------------------------------------------------------------
 
 
-class Recorder:
-    """Az LLM-kliens, a nyers kimenet (és a hiba) oldalankénti rögzítésével."""
-
-    def __init__(self, client, provider: str):
-        self.client, self.provider = client, provider
-        self.records: list[dict] = []
-
-    @property
-    def model(self) -> str:
-        return self.client.model
-
-    def extract(self, schema, prompt, input, **kwargs):
-        record = {"provider": self.provider, "model": self.model, "page_id": kwargs.get("page_id"),
-                  "call_id": None, "entities": None, "error": None}
-        self.records.append(record)
-        try:
-            result = self.client.extract(schema, prompt, input, **kwargs)
-        except SchemaMismatch as exc:
-            record.update(call_id=exc.call_id, error=f"schema_mismatch: {exc}"[:500])
-            raise
-        except LLMError as exc:
-            record.update(error=f"call_error: {exc}"[:500])
-            raise
-        record.update(call_id=result.call_id,
-                      entities=[entity.model_dump() for entity in result.parsed.entities])
-        return result
-
-
 def sample_page_ids(con: duckdb.DuckDBPyConnection, name: str) -> dict[str, int]:
     """A minta URL-jei → page_id; hiányzó URL-nél kivétel."""
     urls = [url for url, _ in SAMPLE[name]]
@@ -168,41 +137,6 @@ def prepare(name: str, data_dir: Path) -> Path:
     run_rules(con)
     con.close()
     return path
-
-
-def run(providers: list[str], data_dir: Path, missing_only: bool = False) -> None:
-    """`missing_only`: modellenként csak a még kimenet nélküli mintaoldalak; a meglévő
-    kimenetek maradnak."""
-    shared = connect(shared_path())
-    try:
-        for name in SAMPLE:
-            con = connect(prepare(name, data_dir))
-            ids = sample_page_ids(con, name)
-            clients, skipped = open_clients(con)
-            for provider in providers:
-                if provider not in clients:
-                    print(f"{name}: {provider} kihagyva ({skipped.get(provider)})")
-                    continue
-                path = data_dir / f"{name}.{provider}.jsonl"
-                kept = [r for r in read_jsonl(path) if r["entities"] is not None] \
-                    if missing_only else []
-                done = {r["page_id"] for r in kept}
-                todo = [page_id for page_id in ids.values() if page_id not in done]
-                if not todo:
-                    print(f"{name}: {provider} mind a {len(ids)} oldalon van kimenet")
-                    continue
-                recorder = Recorder(clients[provider], provider)
-                result = run_llm(con, recorder, page_ids=todo)
-                write_jsonl(path, kept + recorder.records)
-                print(f"{name}: {provider} {result.model}: {result.pages} oldal, "
-                      f"{result.rows} sor, fabrikált {result.fabricated}, "
-                      f"{result.cost_usd:.4f} USD, kimaradt {result.skipped}")
-            validation = validate_entities(con, shared)
-            print(f"{name}: validálás {validation.statuses}, navigációs {validation.navigational}, "
-                  f"hiba {validation.errors}")
-            con.close()
-    finally:
-        shared.close()
 
 
 def write_jsonl(path: Path, records: list[dict]) -> None:
@@ -309,7 +243,7 @@ def collect(con: duckdb.DuckDBPyConnection, name: str, records: list[dict],
             stats.retried += 1
             stats.retry_errors[last_error or "?"] += 1
     for page_id, entity_id, status in con.execute(
-        "SELECT pe.page_id, pe.entity_id, e.kg_status FROM page_entities pe "
+        "SELECT pe.page_id, pe.entity_id, e.kg_status FROM page_entities_v1 pe "
         "JOIN entities e USING (entity_id) WHERE list_contains(?, pe.llm_call_id)", [call_ids],
     ).fetchall():
         stats.pairs.add((name, page_id, entity_id))
@@ -500,19 +434,10 @@ def report(data_dir: Path, out_dir: Path) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["run", "report"])
-    parser.add_argument("--providers", default=",".join(PROVIDERS))
-    parser.add_argument("--missing-only", action="store_true",
-                        help="csak a még kimenet nélküli mintaoldalak (run)")
+    parser.add_argument("command", choices=["report"])
     parser.add_argument("--data-dir", type=Path, default=DATA_DIR / "compare")
     parser.add_argument("--out", type=Path, default=OUT_DIR)
     args = parser.parse_args(argv)
-    if args.command == "run":
-        providers = [p for p in args.providers.split(",") if p]
-        unknown = set(providers) - set(PROVIDERS)
-        if unknown:
-            parser.error(f"ismeretlen szolgáltató: {sorted(unknown)}")
-        run(providers, args.data_dir, args.missing_only)
     report(args.data_dir, args.out)
 
 

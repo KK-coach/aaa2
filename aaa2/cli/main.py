@@ -15,7 +15,7 @@ from aaa2.engine.crawl import CrawlOptions, run_crawl
 from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
-from aaa2.entities.llm import run_llm
+from aaa2.entities.extract import run_llm
 from aaa2.entities.rules import run_rules
 from aaa2.entities.validate import KG_DAILY_QUOTA, validate_entities
 from aaa2.llm import ledger
@@ -26,7 +26,7 @@ app = typer.Typer(no_args_is_help=True, help="AAA v2 — sitewide SEO/GEO elemz�
 
 EXPORT_TABLES = (
     "pages", "links", "headings", "schema_blocks", "crawl_queue", "crawl_runs", "site",
-    "entities", "page_entities", "llm_calls", "entity_runs",
+    "entities", "page_entities", "mention_sources", "blocks", "llm_calls", "entity_runs",
 )
 ENTITY_RUN_COLUMNS = (
     "run_id, method, model, finished_at, pages, pages_with_entities, entities, row_count, "
@@ -146,27 +146,31 @@ def status(
 @app.command()
 def entities(
     domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
-    llm: Annotated[bool, typer.Option(help="a szabályok után LLM-kinyerés a main contentre")
+    llm: Annotated[bool, typer.Option(help="a szabályok után LLM-kinyerés a blokkokra")
                    ] = False,
-    provider: Annotated[str, typer.Option(help="anthropic | openai | gemini")] = "gemini",
+    extraction_model: Annotated[str | None, typer.Option(
+        help="a kinyerés modellje (alapból a models.toml [pipeline] extraction)")] = None,
+    naming_model: Annotated[str | None, typer.Option(
+        help="az elnevezés modellje (alapból a [pipeline] naming); none: elnevezés nélkül")
+    ] = None,
     limit: Annotated[int | None, typer.Option(help="legfeljebb ennyi oldal az LLM-körben")
                      ] = None,
 ) -> None:
-    """Entitás-kör: a determinisztikus szabályok (JSON-LD, a site neve a title-ben és a
-    H1-ben, legalább 3 oldalon azonos anchorok), `--llm`-mel utána oldalanként egy LLM-hívás a
-    main contentre, fabrikáció-szűréssel és összevonással."""
+    """Entitás-kör: a hiányzó blokkok felépítése a renderelt DOM-ból, a determinisztikus
+    szabályok (JSON-LD, a site neve a title-ben és a H1-ben, legalább 3 oldalon azonos
+    anchorok), `--llm`-mel utána oldalanként egy kinyerő hívás a content-régió blokkjaira és egy
+    elnevezési hívás, a kitalált említések kiszűrésével és összevonással."""
     con = _open(domain)
-    client = None
+    client = naming = None
     if llm:
-        clients, skipped = open_clients(con)
-        client = clients.get(provider)
-        if client is None:
-            typer.echo(f"nincs {provider}-kliens: {skipped.get(provider, 'ismeretlen')}",
-                       err=True)
-            raise typer.Exit(code=1)
+        pipeline = load_config().pipeline
+        client = _pipeline_client(con, extraction_model or pipeline["extraction"])
+        chosen = naming_model or pipeline["naming"]
+        if chosen != "none":
+            naming = client if chosen == client.model else _pipeline_client(con, chosen)
     runs = [run_rules(con).run_id]
     if client is not None:
-        runs.append(run_llm(con, client, limit=limit).run_id)
+        runs.append(run_llm(con, client, naming_client=naming, limit=limit).run_id)
     for run_id in runs:
         entity_run = con.execute(
             f"SELECT {ENTITY_RUN_COLUMNS} FROM entity_runs WHERE run_id = ?", [run_id]
@@ -185,6 +189,18 @@ def entities(
         "GROUP BY e.type ORDER BY count(DISTINCT e.entity_id) DESC, e.type"
     ).fetchall():
         typer.echo(f"  {kind}: {count} entitás, {rows} sor")
+
+
+def _pipeline_client(con, model: str):
+    provider = load_config().provider_of(model)
+    if provider is None:
+        typer.echo(f"a {model} nincs a konfigurált modellek között", err=True)
+        raise typer.Exit(code=1)
+    clients, skipped = open_clients(con, models={provider: model})
+    if provider not in clients:
+        typer.echo(f"nincs {model}-kliens: {skipped.get(provider, 'ismeretlen')}", err=True)
+        raise typer.Exit(code=1)
+    return clients[provider]
 
 
 @app.command()

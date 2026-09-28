@@ -260,10 +260,12 @@ def test_call_id_links_page_entities(con, api, env, ledger_path):
     con.execute("INSERT INTO pages (url) VALUES ('https://materia-tm.com/')")
     con.execute("INSERT INTO entities (name, lang, type) VALUES ('Materia', 'hu', 'brand')")
     con.execute(
-        "INSERT INTO page_entities (page_id, entity_id, position, evidence, source, llm_call_id) "
-        "VALUES (1, 1, 'body', 'a Materia', 'llm', ?)", [result.call_id])
+        "INSERT INTO page_entities (page_id, entity_id, block_id, char_start, char_end, "
+        "surface_form, position) VALUES (1, 1, 1, 2, 9, 'Materia', 'body')")
+    con.execute("INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id) "
+                "VALUES (1, 'llm', 1, ?)", [result.call_id])
     assert con.execute(
-        "SELECT c.model FROM page_entities pe JOIN llm_calls c ON c.call_id = pe.llm_call_id"
+        "SELECT c.model FROM mention_sources s JOIN llm_calls c ON c.call_id = s.llm_call_id"
     ).fetchall() == [("gemini-3.8-flash",)]
 
 
@@ -507,5 +509,5 @@ def test_duckdb_rejects_unknown_call_id(con):
     con.execute("INSERT INTO pages (url) VALUES ('https://x.hu/')")
     con.execute("INSERT INTO entities (name, type) VALUES ('X', 'brand')")
     with pytest.raises(duckdb.ConstraintException, match="foreign key"):
-        con.execute("INSERT INTO page_entities (page_id, entity_id, position, evidence, source, "
-                    "llm_call_id) VALUES (1, 1, 'body', 'X', 'llm', 99)")
+        con.execute("INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id) "
+                    "VALUES (1, 'llm', 1, 99)")

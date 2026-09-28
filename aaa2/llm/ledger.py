@@ -1,7 +1,7 @@
 """Az LLM-hívások főkönyve: data/llm_ledger.jsonl, soronként egy hívás, minden site-ról.
 
 A keret-őr és az `aaa status` modellenkénti halmozott költsége ebből számol. Az `llm_calls` sor a
-site-adatbázisban marad (page_id, page_entities.llm_call_id); a főkönyv sora hivatkozik rá
+site-adatbázisban marad (page_id, mention_sources.llm_call_id); a főkönyv sora hivatkozik rá
 (db, call_id).
 """
 from __future__ import annotations

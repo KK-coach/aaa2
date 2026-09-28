@@ -1,40 +1,45 @@
-"""Determinisztikus entitás-kör, LLM nélkül: a crawl adatbázisából olvas, az `entities` és a
-`page_entities` táblát tölti, és egy `entity_runs` sort ír.
+"""Determinisztikus entitás-kör, LLM nélkül: a crawl adatbázisából olvas, a hiányzó blokkokat
+felépíti (`dom.build_blocks`), az `entities`, a `page_entities` (említéstábla) és a
+`mention_sources` táblát tölti, és egy `entity_runs` sort ír.
 
-Csak a sikeres (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalakból dolgozik.
+Csak a sikeres (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalakból dolgozik. Egy említés egy
+előfordulás: blokk és karakterpozíció a blokk szövegében (a schema-említésnek nincs blokkja).
 
 - schema: a JSON-LD blokkok minden `@type`-os csomópontja, a beágyazottak is, ha a típusa a
   `config/schema_types.toml` leképezésében szerepel és van szöveges `name`-je → entitás a
-  leképezett típussal; position = schema, evidence = a `name` értéke, source = schema.
+  leképezett típussal; oldalanként és entitásonként egy említés, blokk nélkül: position = schema,
+  surface_form = a `name` értéke, context = a csomópont JSON-ja, source = schema, count = a
+  csomópontok száma.
 - személynév: két `person`, ha mindkettő kéttokenes és a token-halmazuk azonos (a kulcs szerint,
   tehát ékezet-érzéketlenül), egy entitás ("Kiss Krisztián" = "Krisztian Kiss").
 - a site neve: a leggyakoribb org-típusú schema-név, a leggyakoribb `og:site_name`, és a title-ök
   ismétlődő végződései (legalább `MIN_TITLE_PAGES` oldalon és a title-ös oldalak
   `MIN_TITLE_SHARE` részén; ami egy elfogadott név végszelete, vagy egy elfogadott névre végződik,
-  kimarad). Ha a név kulcsa egy talált org-é, az org kapja a sorait; ha legfeljebb
-  `SHORT_NAME_CHARS` jelű, és a jelei sorrendben benne vannak egy ilyen org nevében ("KK" a
-  "kk.coach"-ban), az org aliasa; különben brand. Sor ott, ahol a név a title-ben vagy az első
-  H1-ben áll: position = title / h1, evidence = a szó szerinti részlet, source = rule.
+  kimarad). Ha a név kulcsa egy talált org-é, az org kapja az említéseit (role = brand); ha
+  legfeljebb `SHORT_NAME_CHARS` jelű, és a jelei sorrendben benne vannak egy ilyen org nevében
+  ("KK" a "kk.coach"-ban), az org aliasa; különben brand. Említés ott, ahol a név a title-blokkban
+  vagy az első H1-blokkban áll: position = title / h1, a szó szerinti részlet a pozíciójával,
+  source = rule.
 - anchor: a belső linkek anchorja, ha legalább `MIN_ANCHOR_PAGES` különböző oldalon azonos
   (kulcs szerint). Ha a kulcs egy talált entitásé, ahhoz kerül; különben concept-jelölt, ha
-  egyetlen célra mutat (két vagy több célra: navigációs, kimarad). position = anchor, source =
-  rule. Kimarad a betű nélküli, a legfeljebb 2 jelű és a csupa nagybetűs római szám anchor, az
-  oldalra önmagára, a kezdőoldalra (`site.home_urls`), a nem crawlolt oldalra (a cél nincs
-  a `pages`-ben) és a más nyelvű oldalra mutató link.
+  egyetlen célra mutat (két vagy több célra: navigációs, kimarad). Említés minden blokkban,
+  amelyben ilyen kulcsú anchor áll, a blokk szövegében a pozíciójával (a chrome-régióban is);
+  position = anchor, source = rule. Ha a kulcs egy oldal linkjei között szerepel, de egyik
+  látható blokkjában sem, kimarad (`anchor_not_in_visible_block`). Kimarad a betű nélküli, a
+  legfeljebb 2 jelű és a csupa nagybetűs római szám anchor, az oldalra önmagára, a kezdőoldalra
+  (`site.home_urls`), a nem crawlolt oldalra (a cél nincs a `pages`-ben) és a más nyelvű oldalra
+  mutató link.
 - alias: a név kulcsa (`alias_key`) kisbetűs, ékezet és kötőjel nélküli; egy kulcs és típus egy
   entitás, a többi írásmód az `aliases`-ben.
 - kanonikus név: a legerősebb forrás (schema > title / H1 > anchor) alakjai közül az ékezetes,
   azon belül a leggyakoribb; a csak title-ből jött brandnél az elsőbbségi sor első neve.
-- context: anchornál az oldalon az első ilyen anchor legközelebbi blokk-ősének szövege (ha üres,
-  mint a képes linknél, az anchor maga), schemánál a csomópont JSON-ja, title-nél és H1-nél a
-  teljes szöveg. section_ordinal: az elem előtti utolsó heading `headings.ordinal`-ja; 0, ha
-  nincs előtte heading (a `<head>` is ez); a H1 sora a saját ordinalja.
 - lang: azoknak az oldalaknak a leggyakoribb elsődleges nyelvi címkéje, ahol a kanonikus alak
   előfordul; ha ilyen nincs, az entitás összes oldaláé; ha az sincs, a site első nyelve.
 
-Újrafuttatható: a futás a korábbi schema- és rule-sorokat cseréli; a (kulcs, típus) szerint
-azonos entitás az azonosítóját megtartja (a source az erősebb lesz: schema > rule > llm), a más
-forrású sorok és entitásaik megmaradnak.
+Újrafuttatható: a futás a korábbi schema- és rule-forrásokat cseréli (a forrás nélkül maradt
+említés törlődik, a más forrású említés megmarad, és megkapja az új forrást is); a (kulcs, típus)
+szerint azonos entitás az azonosítóját megtartja (a source az erősebb lesz: schema > rule > llm),
+a más forrású entitások megmaradnak.
 """
 from __future__ import annotations
 
@@ -51,14 +56,12 @@ from pathlib import Path
 
 import duckdb
 import zstandard
-from selectolax.parser import HTMLParser, Node
+from selectolax.parser import HTMLParser
 
-from aaa2.engine.parse import anchor_text, schema_items
+from aaa2.entities.dom import build_blocks, parse_blocks
 from aaa2.llm.schemas import ENTITY_TYPES
 
 SCHEMA_TYPES_FILE = Path(__file__).parent / "config" / "schema_types.toml"
-# Ugyanaz, mint a parse-é (a headings tábla számolása); tests/test_boundaries.py őrzi.
-HEADING_TAGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
 MIN_ANCHOR_PAGES = 3
 MIN_TITLE_PAGES = 3
 MIN_TITLE_SHARE = 0.25
@@ -72,17 +75,10 @@ SOURCE_RANK = {"schema": 0, "title": 1, "h1": 1, "anchor": 2}
 ATTACH_ORDER = ("org", "brand", "person", "product", "service", "event", "work", "place",
                 "tech", "concept")
 
-_SKIPPED_ANCESTORS = frozenset({"noscript", "template"})
-_NON_BODY_TEXT = frozenset({"script", "style", "noscript", "template", "head"})
 # Az entitás forrása: kisebb az erősebb; újrafuttatáskor az erősebb marad.
 SOURCE_STRENGTH = {"schema": 0, "rule": 1, "llm": 2}
-_BLOCK_TAGS = frozenset({
-    "p", "li", "td", "th", "dd", "dt", "figcaption", "blockquote", "address", "caption",
-    "h1", "h2", "h3", "h4", "h5", "h6",
-})
 _DASHES = frozenset("-‐‑‒–—―−")
 _TRAILING_SEPARATORS = re.compile(r"[\s|\-–—·:»•]+$")
-_WHITESPACE = re.compile(r"\s+")
 _ROMAN = re.compile(r"(?=[ivxlcdm]+$)m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})")
 # Egy szó belsejében álló írásjel ("kk.coach", "a_b"): a határvizsgálat ezeken nem ugrik át.
 _INNER_PUNCTUATION = frozenset("._@/&+'")
@@ -242,10 +238,11 @@ def site_title_names(titles: list[str]) -> list[str]:
 class Mention:
     page_id: int
     position: str
-    evidence: str
-    context: str
-    section: int
+    surface: str
     source: str
+    ordinal: int | None = None                  # a blokk sorszáma; schemánál None
+    span: tuple[int, int] | None = None         # [kezdet, vég) a blokk szövegében
+    context: str | None = None                  # schema: a csomópont JSON-ja
     count: int = 1
 
 
@@ -254,6 +251,7 @@ class Candidate:
     type: str
     source: str
     names: list[str] = field(default_factory=list)      # a site-név elsőbbségi sora (brand)
+    role: str | None = None                              # org, amely a site neve is: brand
     forms: Counter[str] = field(default_factory=Counter)
     ranks: dict[str, int] = field(default_factory=dict)  # alak → a legerősebb forrása
     mentions: list[Mention] = field(default_factory=list)
@@ -292,8 +290,7 @@ class EntityRun:
 @dataclass
 class _PageDom:
     site_names: list[str]
-    anchors: dict[str, tuple[str, int]]       # anchor-szöveg → (context, section) az első helyen
-    schema_sections: list[int]                # schema_blocks.ordinal - 1 → section
+    blocks: list                              # dom.ParsedBlock, a tárolt blokkok sorrendjében
 
 
 def run_rules(con: duckdb.DuckDBPyConnection,
@@ -307,10 +304,14 @@ def run_rules(con: duckdb.DuckDBPyConnection,
         "ORDER BY page_id"
     ).fetchall()
     page_ids = [row[0] for row in pages]
+    build_blocks(con, page_ids)
+    block_ids = {(page_id, ordinal): block_id for block_id, page_id, ordinal in con.execute(
+        "SELECT block_id, page_id, ordinal FROM blocks WHERE list_contains(?, page_id)",
+        [page_ids]).fetchall()}
     page_lang = {page_id: _primary(lang) for page_id, _, _, _, lang, _ in pages}
     decompressor = zstandard.ZstdDecompressor()
-    dom = {page_id: _page_dom(decompressor.decompress(blob).decode("utf-8", "replace"))
-           for page_id, _, _, _, _, blob in pages}
+    dom = {page_id: _page_dom(decompressor.decompress(blob).decode("utf-8", "replace"), title)
+           for page_id, _, title, _, _, blob in pages}
     skipped: dict[str, object] = {}
     candidates: dict[tuple[str, str], Candidate] = {}
 
@@ -328,7 +329,12 @@ def run_rules(con: duckdb.DuckDBPyConnection,
         unique.setdefault(id(candidate), candidate)
     con.begin()
     try:
-        con.execute("DELETE FROM page_entities WHERE source IN ('schema', 'rule')")
+        (run_id,) = con.execute(
+            "INSERT INTO entity_runs (started_at, method, llm_calls) VALUES (?, 'rules', 0) "
+            "RETURNING run_id", [started]).fetchone()
+        con.execute("DELETE FROM mention_sources WHERE source IN ('schema', 'rule')")
+        con.execute("DELETE FROM page_entities WHERE mention_id NOT IN "
+                    "(SELECT mention_id FROM mention_sources)")
         existing = _existing_entities(con)
         rows = 0
         by_position: Counter[str] = Counter()
@@ -344,26 +350,31 @@ def run_rules(con: duckdb.DuckDBPyConnection,
                              None)
             if entity_id is None:
                 (entity_id,) = con.execute(
-                    "INSERT INTO entities (name, lang, type, aliases, source, created_at) "
-                    "VALUES (?, ?, ?, ?, ?, ?) RETURNING entity_id",
-                    [name, lang, candidate.type, aliases, candidate.source, started],
+                    "INSERT INTO entities (name, lang, type, aliases, source, role, created_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING entity_id",
+                    [name, lang, candidate.type, aliases, candidate.source, candidate.role,
+                     started],
                 ).fetchone()
             else:
                 (current,) = con.execute("SELECT source FROM entities WHERE entity_id = ?",
                                          [entity_id]).fetchone()
                 con.execute(
                     "UPDATE entities SET aliases = list_distinct(list_concat(coalesce(aliases, "
-                    "[]), ?)), lang = coalesce(lang, ?), source = ? WHERE entity_id = ?",
-                    [aliases, lang, stronger_source(current, candidate.source), entity_id],
+                    "[]), ?)), lang = coalesce(lang, ?), source = ?, role = coalesce(?, role) "
+                    "WHERE entity_id = ?",
+                    [aliases, lang, stronger_source(current, candidate.source), candidate.role,
+                     entity_id],
                 )
             entity_ids.add(entity_id)
+            written: set[int] = set()
             for mention in candidate.mentions:
+                mention_id = _store_mention(con, mention, entity_id, block_ids)
+                if mention_id in written:
+                    continue
+                written.add(mention_id)
                 con.execute(
-                    "INSERT INTO page_entities (page_id, entity_id, position, evidence, context, "
-                    "section_ordinal, count, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    [mention.page_id, entity_id, mention.position, mention.evidence,
-                     mention.context, mention.section, mention.count, mention.source],
-                )
+                    "INSERT INTO mention_sources (mention_id, source, run_id, count) "
+                    "VALUES (?, ?, ?, ?)", [mention_id, mention.source, run_id, mention.count])
                 rows += 1
                 by_position[mention.position] += 1
                 pages_with.add(mention.page_id)
@@ -371,20 +382,45 @@ def run_rules(con: duckdb.DuckDBPyConnection,
             "DELETE FROM entities WHERE source IN ('schema', 'rule') AND entity_id NOT IN "
             "(SELECT entity_id FROM page_entities)"
         )
-        (run_id,) = con.execute(
-            "INSERT INTO entity_runs (started_at, finished_at, method, pages, "
-            "pages_with_entities, entities, row_count, llm_calls, by_position, skipped) "
-            "VALUES (?, ?, 'rules', ?, ?, ?, ?, 0, ?, ?) RETURNING run_id",
-            [started, clock(), len(pages), len(pages_with), len(entity_ids), rows,
-             json.dumps(dict(sorted(by_position.items()))), json.dumps(skipped,
-                                                                     ensure_ascii=False)],
-        ).fetchone()
+        con.execute(
+            "UPDATE entity_runs SET finished_at = ?, pages = ?, pages_with_entities = ?, "
+            "entities = ?, row_count = ?, by_position = ?, skipped = ? WHERE run_id = ?",
+            [clock(), len(pages), len(pages_with), len(entity_ids), rows,
+             json.dumps(dict(sorted(by_position.items()))),
+             json.dumps(skipped, ensure_ascii=False), run_id],
+        )
         con.commit()
     except Exception:
         con.rollback()
         raise
     return EntityRun(run_id, len(pages), len(pages_with), len(entity_ids), rows,
                      dict(by_position), skipped)
+
+
+def _store_mention(con: duckdb.DuckDBPyConnection, mention: Mention, entity_id: int,
+                   block_ids: dict[tuple[int, int], int]) -> int:
+    """Az említés azonosítója: a meglévő (azonos oldal, blokk, pozíció és entitás; schemánál
+    oldal és entitás), vagy egy új sor."""
+    if mention.ordinal is None:
+        found = con.execute(
+            "SELECT mention_id FROM page_entities WHERE page_id = ? AND entity_id = ? "
+            "AND position = 'schema'", [mention.page_id, entity_id]).fetchone()
+        block_id, start, end = None, None, None
+    else:
+        block_id = block_ids[(mention.page_id, mention.ordinal)]
+        start, end = mention.span
+        found = con.execute(
+            "SELECT mention_id FROM page_entities WHERE page_id = ? AND block_id = ? "
+            "AND char_start = ? AND char_end = ? AND entity_id = ?",
+            [mention.page_id, block_id, start, end, entity_id]).fetchone()
+    if found:
+        return found[0]
+    (mention_id,) = con.execute(
+        "INSERT INTO page_entities (page_id, entity_id, block_id, char_start, char_end, "
+        "surface_form, position, context) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING mention_id",
+        [mention.page_id, entity_id, block_id, start, end, mention.surface, mention.position,
+         mention.context]).fetchone()
+    return mention_id
 
 
 # ---------------------------------------------------------------------------
@@ -396,16 +432,14 @@ def _schema(con, page_ids, dom, mapping, candidates, skipped) -> None:
     unmapped: Counter[str] = Counter()
     nameless: Counter[str] = Counter()
     per_page: dict[tuple[int, str, str], Mention] = {}
-    for page_id, ordinal, raw in con.execute(
-        "SELECT page_id, ordinal, json FROM schema_blocks WHERE type IS DISTINCT FROM 'invalid' "
+    for page_id, raw in con.execute(
+        "SELECT page_id, json FROM schema_blocks WHERE type IS DISTINCT FROM 'invalid' "
         "AND list_contains(?, page_id) ORDER BY page_id, ordinal", [page_ids],
     ).fetchall():
         try:
             block = json.loads(raw)
         except ValueError:
             continue
-        sections = dom[page_id].schema_sections
-        section = sections[ordinal - 1] if 0 < ordinal <= len(sections) else 0
         for node in _typed_nodes(block):
             types = [_short_type(t) for t in _as_list(node.get("@type"))]
             kind = next((mapping[t] for t in types if t in mapping), None)
@@ -422,8 +456,8 @@ def _schema(con, page_ids, dom, mapping, candidates, skipped) -> None:
             mention = per_page.get((page_id, key, kind))
             if mention is None:
                 context = json.dumps(node, ensure_ascii=False, separators=(",", ":"))
-                mention = Mention(page_id, "schema", name, context[:CONTEXT_CHARS], section,
-                                  "schema", 0)
+                mention = Mention(page_id, "schema", name, "schema",
+                                  context=context[:CONTEXT_CHARS], count=0)
                 per_page[(page_id, key, kind)] = mention
                 candidate.mentions.append(mention)
             mention.count += 1
@@ -457,19 +491,18 @@ def _site_names(con, pages, dom, candidates, skipped) -> None:
     names = ([org_pages.most_common(1)[0][0]] if org_pages else []) \
         + ([og_names.most_common(1)[0][0]] if og_names else []) \
         + site_title_names(titles)
-    h1_ordinals = dict(con.execute(
-        "SELECT page_id, min(ordinal) FROM headings WHERE level = 1 GROUP BY page_id"
-    ).fetchall())
 
     def mentions_of(key: str) -> list[Mention]:
         found = []
-        for page_id, _, title, h1, _, _ in pages:
-            for position, text, section in (("title", title, 0),
-                                            ("h1", h1, h1_ordinals.get(page_id, 0))):
-                span = find_name(text or "", key)
+        for page_id, *_ in pages:
+            blocks = dom[page_id].blocks
+            title = next((b for b in blocks if b.kind == "title"), None)
+            h1 = next((b for b in blocks if b.kind == "heading" and b.level == 1), None)
+            for position, block in (("title", title), ("h1", h1)):
+                span = find_name(block.text, key) if block is not None else None
                 if span:
-                    found.append(Mention(page_id, position, text[span[0]:span[1]], text,
-                                         section, "rule"))
+                    found.append(Mention(page_id, position, block.text[span[0]:span[1]], "rule",
+                                         block.ordinal, span))
         return found
 
     site_orgs: list[tuple[str, Candidate]] = []
@@ -484,6 +517,7 @@ def _site_names(con, pages, dom, candidates, skipped) -> None:
         if key in orgs:
             site_orgs.append((key, orgs[key]))
             target = orgs[key]
+            target.role = "brand"
         elif _short_name(key):
             short.append((key, name))
             continue
@@ -515,7 +549,7 @@ def _site_names(con, pages, dom, candidates, skipped) -> None:
 
 def _attach(target: Candidate, mentions: list[Mention]) -> None:
     for mention in mentions:
-        target.add_form(mention.evidence, mention.position)
+        target.add_form(mention.surface, mention.position)
         target.mentions.append(mention)
 
 
@@ -559,13 +593,25 @@ def _anchors(con, page_ids, dom, candidates, skipped) -> None:
                 continue
             target = candidates.setdefault((key, "concept"), Candidate("concept", "rule"))
         for page_id, forms in by_page.items():
-            evidence = forms.most_common(1)[0][0]
-            context, section = dom[page_id].anchors.get(evidence, (evidence, 0))
             for form, count in forms.items():
                 target.add_form(form, "anchor", count)
-            target.mentions.append(Mention(page_id, "anchor", evidence, context, section,
-                                           "rule", sum(forms.values())))
+            found = _anchor_mentions(dom[page_id].blocks, page_id, key)
+            if not found:
+                reasons["anchor_not_in_visible_block"] += 1
+            target.mentions.extend(found)
     skipped.update(dict(reasons))
+
+
+def _anchor_mentions(blocks: list, page_id: int, key: str) -> list[Mention]:
+    """Minden blokk, amelyben `key` kulcsú anchor áll: a név helye a blokk szövegében."""
+    found = []
+    for block in blocks:
+        if any(alias_key(anchor) == key for anchor in block.anchors):
+            span = find_name(block.text, key)
+            if span:
+                found.append(Mention(page_id, "anchor", block.text[span[0]:span[1]], "rule",
+                                     block.ordinal, span))
+    return found
 
 
 def _home_urls(con: duckdb.DuckDBPyConnection) -> set[str]:
@@ -578,7 +624,7 @@ def _home_urls(con: duckdb.DuckDBPyConnection) -> set[str]:
 
 def _language(candidate: Candidate, name: str, page_lang: dict[int, str | None]) -> str | None:
     canonical_pages = [m.page_id for m in candidate.mentions
-                       if html_lib.unescape(m.evidence).strip() == name]
+                       if html_lib.unescape(m.surface).strip() == name]
     for page_ids in (canonical_pages, [m.page_id for m in candidate.mentions]):
         langs = Counter(page_lang[p] for p in page_ids if page_lang.get(p))
         if langs:
@@ -591,62 +637,12 @@ def _language(candidate: Candidate, name: str, page_lang: dict[int, str | None])
 # ---------------------------------------------------------------------------
 
 
-def _page_dom(html: str) -> _PageDom:
+def _page_dom(html: str, title: str | None) -> _PageDom:
     tree = HTMLParser(html or "")
     site_names = [value for meta in tree.css("meta[property]")
                   if (meta.attributes.get("property") or "").strip().lower() == "og:site_name"
                   and (value := (meta.attributes.get("content") or "").strip())]
-    anchors: dict[str, tuple[str, int]] = {}
-    schema_sections: list[int] = []
-    section = 0
-    root = tree.root
-    for node in root.traverse() if root is not None else ():
-        tag = node.tag
-        if tag in HEADING_TAGS:
-            if not _skipped(node):
-                section += 1
-        elif tag == "a" and "href" in node.attributes:
-            text = anchor_text(node)
-            if text and text not in anchors and not _skipped(node):
-                anchors[text] = (_block_text(node)[:CONTEXT_CHARS] or text, section)
-        elif tag == "script":
-            kind = (node.attributes.get("type") or "").split(";")[0].strip().lower()
-            raw = (node.text() or "").strip()
-            if kind != "application/ld+json" or not raw:
-                continue
-            try:
-                items = len(list(schema_items(json.loads(raw))))
-            except ValueError:
-                items = 1
-            schema_sections.extend([section] * items)
-    return _PageDom(site_names, anchors, schema_sections)
-
-
-def section_texts(html: str) -> list[tuple[int, str]]:
-    """A body szövege szakaszonként: (section_ordinal, szöveg). A szakaszhatár a headingek
-    sorrendje, a headings táblával azonosan számolva; a script, style, noscript, template és a
-    `<head>` szövege kimarad."""
-    tree = HTMLParser(html or "")
-    parts: dict[int, list[str]] = defaultdict(list)
-    section = 0
-    root = tree.root
-    for node in root.traverse(include_text=True) if root is not None else ():
-        if node.tag in HEADING_TAGS:
-            if not _skipped(node):
-                section += 1
-        elif node.tag == "-text" and not any(
-                ancestor.tag in _NON_BODY_TEXT for ancestor in _ancestors(node)):
-            parts[section].append(node.text(deep=False) or "")
-    return [(number, _WHITESPACE.sub(" ", " ".join(texts)).strip())
-            for number, texts in sorted(parts.items())]
-
-
-def _block_text(node: Node) -> str:
-    parent = node.parent
-    for ancestor in _ancestors(node):
-        if ancestor.tag in _BLOCK_TAGS:
-            return _text(ancestor)
-    return _text(parent) if parent is not None else _text(node)
+    return _PageDom(site_names, parse_blocks(html, title))
 
 
 def _typed_nodes(value: object) -> Iterator[dict]:
@@ -688,23 +684,6 @@ def _existing_entities(con: duckdb.DuckDBPyConnection) -> dict[tuple[str, str], 
             for each in (kind, previous) if previous else (kind,):
                 found.setdefault((alias_key(form), each), entity_id)
     return found
-
-
-def _skipped(node: Node) -> bool:
-    return any(ancestor.tag in _SKIPPED_ANCESTORS for ancestor in _ancestors(node))
-
-
-def _ancestors(node: Node) -> Iterator[Node]:
-    parent = node.parent
-    while parent is not None and parent.tag not in (None, "-undef"):
-        yield parent
-        parent = parent.parent
-
-
-def _text(node: Node | None) -> str:
-    if node is None:
-        return ""
-    return _WHITESPACE.sub(" ", node.text(separator=" ", strip=True) or "").strip()
 
 
 def _primary(tag: str | None) -> str | None:

@@ -11,7 +11,7 @@ from aaa2.llm.schemas import ENTITY_TYPES
 EXPECTED = {
     "site", "crawl_runs", "crawl_queue", "pages", "links", "headings",
     "schema_blocks", "entities", "page_entities", "llm_calls", "rules", "rule_events",
-    "entity_runs",
+    "entity_runs", "blocks", "mention_sources", "page_entities_v1",
 }
 
 
@@ -28,15 +28,33 @@ def test_migrate_is_idempotent():
     assert migrate(con) == []
 
 
-def test_page_entities_requires_evidence():
+def test_a_mention_has_a_block_and_a_span_unless_it_is_schema():
     con = connect(":memory:")
-    con.execute("INSERT INTO pages (url) VALUES ('https://x.hu/')")
-    con.execute("INSERT INTO entities (name, type) VALUES ('X', 'brand')")
-    with pytest.raises(duckdb.ConstraintException, match="page_entities.evidence"):
-        con.execute(
-            "INSERT INTO page_entities (page_id, entity_id, position, evidence, source) "
-            "VALUES (1, 1, 'body', NULL, 'llm')"
-        )
+    insert = ("INSERT INTO page_entities (page_id, entity_id, block_id, char_start, char_end, "
+              "surface_form, position) VALUES (1, 1, ?, ?, ?, ?, ?)")
+    con.execute(insert, [5, 2, 9, "Példa", "body"])
+    con.execute(insert, [None, None, None, "Példa", "schema"])
+    for block, start, end, surface, position in (
+            (None, None, None, "Példa", "body"),        # blokk nélkül csak schema
+            (5, 2, 9, "Példa", "schema"),               # a schemának nincs blokkja
+            (5, 9, 2, "Példa", "body"),                 # üres vagy fordított pozíció
+            (5, 2, 9, None, "body")):                   # szöveg szerinti alak nélkül nincs sor
+        with pytest.raises(duckdb.ConstraintException):
+            con.execute(insert, [block, start, end, surface, position])
+    with pytest.raises(duckdb.ConstraintException):          # egy említés egyszer
+        con.execute(insert, [5, 2, 9, "Példa", "body"])
+
+
+def test_blocks_kind_and_region_are_closed_lists():
+    con = connect(":memory:")
+    insert = ("INSERT INTO blocks (page_id, ordinal, kind, region, heading_path, text) "
+              "VALUES (1, ?, ?, ?, [], 'x')")
+    con.execute(insert, [0, "title", "content"])
+    con.execute(insert, [1, "card", "chrome"])
+    for ordinal, kind, region in ((2, "div", "content"), (3, "other", "menu"),
+                                  (1, "other", "content")):
+        with pytest.raises(duckdb.ConstraintException):
+            con.execute(insert, [ordinal, kind, region])
 
 
 def test_entity_type_is_one_of_the_ten():
@@ -71,8 +89,9 @@ def test_migration_005_keeps_existing_rows(tmp_path):
     con = connect(path)
     assert con.execute("SELECT entity_id, name, lang, type, aliases FROM entities").fetchall() == [
         (1, "Materia", None, "brand", ["MTM"])]
-    assert con.execute("SELECT evidence, source, llm_call_id FROM page_entities").fetchall() == [
-        ("Materia", "rule", None)]
+    assert con.execute("SELECT evidence, source, llm_call_id FROM page_entities_v1"
+                       ).fetchall() == [("Materia", "rule", None)]
+    assert con.execute("SELECT count(*) FROM page_entities").fetchone() == (0,)
     con.execute("INSERT INTO entities (name, type) VALUES ('Budapest', 'place')")
     assert con.execute("SELECT max(entity_id) FROM entities").fetchone() == (2,)
     assert con.execute("SELECT call_id, attempts FROM llm_calls").fetchall() == [(1, 1)]

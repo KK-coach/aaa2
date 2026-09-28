@@ -79,10 +79,14 @@ def site(pages, languages=("hu",)):
 
 
 def entity_rows(con):
+    """(típus, név, URL, position, szöveg szerinti alak, blokksorszám, kezdőpozíció, count,
+    forrás) említésenként és forrásonként."""
     return con.execute(
-        "SELECT e.type, e.name, p.url, pe.position, pe.evidence, pe.context, pe.section_ordinal, "
-        "pe.count, pe.source FROM page_entities pe JOIN entities e USING (entity_id) "
-        "JOIN pages p USING (page_id) ORDER BY e.type, e.name, p.url, pe.position"
+        "SELECT e.type, e.name, p.url, pe.position, pe.surface_form, b.ordinal, pe.char_start, "
+        "s.count, s.source FROM page_entities pe JOIN entities e ON e.entity_id = pe.entity_id "
+        "JOIN pages p ON p.page_id = pe.page_id LEFT JOIN blocks b ON b.block_id = pe.block_id "
+        "JOIN mention_sources s ON s.mention_id = pe.mention_id "
+        "ORDER BY e.type, e.name, p.url, pe.position, b.ordinal"
     ).fetchall()
 
 
@@ -168,15 +172,15 @@ def test_schema_nodes_become_typed_entities():
     con = site({"/": html("Kezdőlap | Példa Kft.", "<h1>Üdv</h1><h2>Rólunk</h2>"
                           + ld({"@type": "Person", "name": "Kovács Béla"}), head=ld(GRAPH))})
     run = run_rules(con)
-    schema = [(kind, name, evidence, section, source) for kind, name, _, position, evidence,
-              _, section, _, source in entity_rows(con) if position == "schema"]
-    assert schema == [
-        ("event", "Pörkölőnap", "Pörkölőnap", 0, "schema"),
-        ("org", "Példa Kft.", "Példa Kft.", 0, "schema"),
-        ("person", "Kiss Anna", "Kiss Anna", 0, "schema"),
-        ("person", "Kovács Béla", "Kovács Béla", 2, "schema"),
-        ("product", "Kávé", "Kávé", 0, "schema"),
-        ("service", "SEO & UX", "SEO &amp; UX", 0, "schema"),
+    schema = [(kind, name, surface, ordinal, source) for kind, name, _, position, surface,
+              ordinal, _, _, source in entity_rows(con) if position == "schema"]
+    assert schema == [                                  # a schema-említésnek nincs blokkja
+        ("event", "Pörkölőnap", "Pörkölőnap", None, "schema"),
+        ("org", "Példa Kft.", "Példa Kft.", None, "schema"),
+        ("person", "Kiss Anna", "Kiss Anna", None, "schema"),
+        ("person", "Kovács Béla", "Kovács Béla", None, "schema"),
+        ("product", "Kávé", "Kávé", None, "schema"),
+        ("service", "SEO & UX", "SEO &amp; UX", None, "schema"),
     ]
     assert run.skipped["unmapped_schema_types"] == {"WebPage": 1, "BlogPosting": 1}
     assert run.skipped["schema_without_name"] == {"Person": 1}
@@ -192,14 +196,14 @@ def test_brand_from_titles_and_h1():
              for i in range(4)}
     con = site(pages)
     run = run_rules(con)
-    brand = [(url, position, evidence, context, section) for kind, _, url, position, evidence,
-             context, section, _, _ in entity_rows(con) if kind == "brand"]
-    assert brand == [
-        ("https://pelda.hu/0/", "title", "Példa Kft.", "Oldal 0 | Példa Kft.", 0),
-        ("https://pelda.hu/1/", "h1", "Példa Kft.", "Példa Kft.", 2),
-        ("https://pelda.hu/1/", "title", "Példa Kft.", "Oldal 1 | Példa Kft.", 0),
-        ("https://pelda.hu/2/", "title", "Példa Kft.", "Oldal 2 | Példa Kft.", 0),
-        ("https://pelda.hu/3/", "title", "Példa Kft.", "Oldal 3 | Példa Kft.", 0),
+    brand = [(url, position, surface, ordinal, start) for kind, _, url, position, surface,
+             ordinal, start, _, _ in entity_rows(con) if kind == "brand"]
+    assert brand == [                                   # a title a 0. blokk, a H1 a H2 után
+        ("https://pelda.hu/0/", "title", "Példa Kft.", 0, 10),
+        ("https://pelda.hu/1/", "h1", "Példa Kft.", 2, 0),
+        ("https://pelda.hu/1/", "title", "Példa Kft.", 0, 10),
+        ("https://pelda.hu/2/", "title", "Példa Kft.", 0, 10),
+        ("https://pelda.hu/3/", "title", "Példa Kft.", 0, 10),
     ]
     assert run.skipped["site_name_not_in_title_or_h1"] == ["Példa Portál"]
 
@@ -223,10 +227,11 @@ def test_short_site_name_is_an_alias_of_the_org_when_it_abbreviates_it():
              for i, title in enumerate(titles)}
     con = site(pages)
     run_rules(con)
-    assert con.execute("SELECT type, name, aliases FROM entities").fetchall() == [
-        ("org", "Példa Kft.", ["PK"])]
-    assert con.execute("SELECT evidence, count(*) FROM page_entities WHERE position = 'title' "
-                       "GROUP BY ALL ORDER BY ALL").fetchall() == [("PK", 3), ("Példa Kft.", 4)]
+    assert con.execute("SELECT type, name, aliases, role FROM entities").fetchall() == [
+        ("org", "Példa Kft.", ["PK"], "brand")]
+    assert con.execute("SELECT surface_form, count(*) FROM page_entities "
+                       "WHERE position = 'title' GROUP BY ALL ORDER BY ALL").fetchall() == [
+        ("PK", 3), ("Példa Kft.", 4)]
 
 
 @pytest.mark.parametrize(("short", "org", "abbreviation"), [
@@ -333,16 +338,17 @@ def test_trivial_anchor(anchor, reason):
     assert trivial_anchor(anchor) == reason
 
 
-def test_section_ordinals_match_the_headings_table():
-    """A noscript-beli heading nem számít, ahogy a headings táblában sem."""
+def test_anchor_mention_sits_in_its_block_under_its_headings():
+    """Az anchor-említés a linket tartalmazó blokkban, a helyével; a noscript-beli heading nem
+    számít a heading-útvonalban."""
     body = ("<h1>Egy</h1><noscript><h2>Rejtett</h2></noscript><h2>Kettő</h2>"
-            "<p><a href='/x/'>Közös</a></p>")
+            "<p>Lásd a <a href='/x/'>Közös</a> oldalt</p>")
     con = site({**{f"/{i}/": html(f"P{i}", body) for i in range(3)}, **stub("/x/")})
     run_rules(con)
     assert con.execute(
-        "SELECT DISTINCT pe.section_ordinal, h.text FROM page_entities pe JOIN headings h "
-        "ON h.page_id = pe.page_id AND h.ordinal = pe.section_ordinal").fetchall() == [
-        (2, "Kettő")]
+        "SELECT DISTINCT b.heading_path, b.text, pe.char_start, pe.char_end, pe.surface_form "
+        "FROM page_entities pe JOIN blocks b ON b.block_id = pe.block_id").fetchall() == [
+        (["Egy", "Kettő"], "Lásd a Közös oldalt", 7, 12, "Közös")]
 
 
 def nav(extra=""):
@@ -367,18 +373,22 @@ def test_anchor_candidates_with_structural_filters():
     con = site(pages)
     run = run_rules(con)
     rows = entity_rows(con)
-    concept = [(url, evidence, context, count) for kind, name, url, position, evidence, context,
-               _, count, _ in rows if kind == "concept"]
-    # A /szolgaltatasok/ oldalon a link önmagára mutat: 4 oldal marad.
-    assert concept == [(f"https://pelda.hu{p}", "Szolgáltatások", "Szolgáltatások", 1)
+    concept = [(url, surface, ordinal, start) for kind, name, url, position, surface, ordinal,
+               start, _, _ in rows if kind == "concept"]
+    # A /szolgaltatasok/ oldalon a link önmagára mutat: 4 oldal marad; a menüpont az 1. blokk
+    # (a nav alatt, chrome-régióban).
+    assert concept == [(f"https://pelda.hu{p}", "Szolgáltatások", 1, 0)
                        for p in ("/", "/a/", "/anna/", "/b/")]
-    anna = [(url, position, evidence, context, section) for kind, name, url, position, evidence,
-            context, section, _, _ in rows if kind == "person"]
+    assert con.execute("SELECT DISTINCT b.region FROM page_entities pe JOIN blocks b "
+                       "ON b.block_id = pe.block_id JOIN entities e ON e.entity_id = pe.entity_id "
+                       "WHERE e.type = 'concept'").fetchall() == [("chrome",)]
+    anna = [(url, position, surface, ordinal, start) for kind, name, url, position, surface,
+            ordinal, start, _, _ in rows if kind == "person"]
     assert anna == [
-        ("https://pelda.hu/", "anchor", "kiss anna", "Írta: kiss anna .", 1),
-        ("https://pelda.hu/", "schema", "Kiss Anna", '{"@type":"Person","name":"Kiss Anna"}', 0),
-        ("https://pelda.hu/a/", "anchor", "Kiss Anna", "Lásd: Kiss Anna cikkét", 2),
-        ("https://pelda.hu/b/", "anchor", "KISS ANNA", "KISS ANNA", 0),
+        ("https://pelda.hu/", "anchor", "kiss anna", 6, 6),          # "Írta: kiss anna ."
+        ("https://pelda.hu/", "schema", "Kiss Anna", None, None),
+        ("https://pelda.hu/a/", "anchor", "Kiss Anna", 7, 6),        # "Lásd: Kiss Anna cikkét"
+        ("https://pelda.hu/b/", "anchor", "KISS ANNA", 5, 0),
     ]
     assert con.execute("SELECT aliases FROM entities WHERE type = 'person'").fetchone() == (
         ["KISS ANNA", "kiss anna"],)
@@ -393,18 +403,17 @@ def test_anchor_candidates_with_structural_filters():
 
 def test_canonical_name_comes_from_the_creating_source():
     """A schema alakja a kanonikus név akkor is, ha az anchorok más alakja gyakoribb; a képes
-    link contextje az anchor maga."""
+    link anchorja (az alt-szöveg) nincs a látható szövegben: nincs említése, nem lesz belőle
+    entitás."""
     pages = {f"/{i}/": html(f"P{i}", "<p><a href='/anna/'>KISS ANNA</a></p>"
                             "<div><a href='/rolunk/'><img src='l.png' alt='Logó'></a></div>",
                             head=ld({"@type": "Person", "name": "Kiss Anna"}) if i == 0 else "")
              for i in range(3)}
     con = site({**pages, **stub("/anna/", "/rolunk/")})
-    run_rules(con)
+    run = run_rules(con)
     assert con.execute("SELECT type, name, aliases FROM entities ORDER BY type").fetchall() == [
-        ("concept", "Logó", []), ("person", "Kiss Anna", ["KISS ANNA"])]
-    assert {context for (context,) in con.execute(
-        "SELECT context FROM page_entities pe JOIN entities e USING (entity_id) "
-        "WHERE e.name = 'Logó'").fetchall()} == {"Logó"}
+        ("person", "Kiss Anna", ["KISS ANNA"])]
+    assert run.skipped["anchor_not_in_visible_block"] == 3
 
 
 def test_rerun_drops_vanished_candidates():
@@ -425,15 +434,21 @@ def test_rerun_keeps_ids_and_foreign_rows():
     first = run_rules(con)
     ids = dict(con.execute("SELECT name || '/' || type, entity_id FROM entities").fetchall())
     con.execute("INSERT INTO entities (name, type, source) VALUES ('Csak LLM', 'concept', 'llm')")
-    con.execute("INSERT INTO page_entities (page_id, entity_id, position, evidence, source) "
-                "SELECT 1, entity_id, 'body', 'Példa', 'llm' FROM entities "
-                "WHERE name = 'Példa Kft.' AND type = 'org'")
+    (mention_id,) = con.execute(
+        "INSERT INTO page_entities (page_id, entity_id, block_id, char_start, char_end, "
+        "surface_form, position) SELECT 1, entity_id, (SELECT block_id FROM blocks WHERE "
+        "page_id = 1 AND ordinal = 0), 0, 5, 'Oldal', 'title' FROM entities "
+        "WHERE name = 'Példa Kft.' AND type = 'org' RETURNING mention_id").fetchone()
+    con.execute("INSERT INTO mention_sources (mention_id, source, run_id) VALUES (?, 'llm', 99)",
+                [mention_id])
     second = run_rules(con)
     assert (second.entities, second.rows) == (first.entities, first.rows)
     assert dict(con.execute("SELECT name || '/' || type, entity_id FROM entities "
                             "WHERE source <> 'llm'").fetchall()) == ids
-    assert con.execute("SELECT count(*) FROM page_entities WHERE source = 'llm'").fetchone() == (
-        1,)
+    assert con.execute("SELECT mention_id FROM mention_sources WHERE source = 'llm'"
+                       ).fetchall() == [(mention_id,)]
+    assert con.execute("SELECT count(*) FROM page_entities WHERE mention_id = ?",
+                       [mention_id]).fetchone() == (1,)
     assert con.execute("SELECT count(*) FROM entities WHERE name = 'Csak LLM'").fetchone() == (1,)
     runs = con.execute("SELECT run_id, method, llm_calls, pages, entities, row_count "
                        "FROM entity_runs ORDER BY run_id").fetchall()
@@ -493,8 +508,10 @@ EXPECTED = {
     # Schema: Organization kk.coach, szolgáltatások, egy Person (a "Krisztian Kiss" és a "Kiss
     # Krisztián" egy). A site neve (og:site_name, a title "Kk.coach" alakja) és a " - KK"
     # végződés az org-hoz kerül; brand nincs.
+    # Anchor-említés minden blokkban, ahol a link áll (a menüben és a láblécben is).
     "kk-coach-crawl": {
-        "run": (40, 40, 75, 594, {"anchor": 440, "schema": 117, "title": 37}),
+        "run": (40, 40, 75, 633, {"anchor": 479, "schema": 117, "title": 37}),
+        "not_in_block": 0,
         "entities": {("org", "kk.coach"), ("person", "Kiss Krisztián"), ("place", "Worldwide"),
                      ("service", "SEO")},
         "absent": {("brand", "kk.coach"), ("brand", "KK"), ("person", "Krisztian Kiss"),
@@ -505,7 +522,8 @@ EXPECTED = {
     # A site-on nincs JSON-LD (élőben is): a brand a title-ből jön. A "Home" és a "Főoldal" a
     # kezdőoldalakra mutat; a "Menu" két célra (/menu/, /it/menu/): navigációs.
     "materia-crawl": {
-        "run": (14, 14, 6, 33, {"anchor": 19, "title": 14}),
+        "run": (14, 14, 6, 47, {"anchor": 33, "title": 14}),
+        "not_in_block": 0,
         "entities": {("brand", "Materia - Trattoria Moderna"), ("concept", "Borlap"),
                      ("concept", "Carta Vini"), ("concept", "GDPR"), ("concept", "Wine List"),
                      ("concept", "Étlap")},
@@ -518,6 +536,7 @@ EXPECTED = {
     # /ngx-bootstrap-ra mutatnak (256 előfordulás): concept nem marad.
     "ngx-bootstrap-crawl": {
         "run": (69, 69, 1, 69, {"title": 69}),
+        "not_in_block": 0,
         "entities": {("brand", "Angular Bootstrap")},
         "absent": {("concept", "ngx-bootstrap"), ("concept", "Examples"), ("concept", "API"),
                    ("concept", "components"), ("concept", "Previous"), ("concept", "Start 🏁")},
@@ -543,30 +562,36 @@ def test_reference_entities(reference, name):
     assert con.execute("SELECT llm_calls FROM entity_runs").fetchall() == [(0,)]
     # kk.coach és Materia: egyetlen nem crawlolt célra mutató anchor sincs.
     assert run.skipped.get("anchor_uncrawled_target", 0) == EXPECTED[name].get("uncrawled", 0)
+    assert run.skipped.get("anchor_not_in_visible_block", 0) == EXPECTED[name]["not_in_block"]
     if name != "kk-coach-crawl":
-        assert con.execute("SELECT count(*) FROM page_entities WHERE source = 'schema'"
+        assert con.execute("SELECT count(*) FROM mention_sources WHERE source = 'schema'"
                            ).fetchone() == (0,)
 
 
 @pytest.mark.parametrize("name", list(EXPECTED))
-def test_reference_rows_carry_verbatim_evidence(reference, name):
-    """Minden sornak van bizonyítéka, contextje és section_ordinalja, és a bizonyíték szó
-    szerint ott van, ahonnan jött."""
+def test_reference_mentions_point_into_their_blocks(reference, name):
+    """Minden nem schema említés szöveg szerinti alakja a blokkja szövegének
+    [char_start, char_end) szelete; a title a title-blokkban, a H1 egy első szintű headingben áll;
+    a schema-említésnek nincs blokkja, és a neve a JSON-LD-ben áll. Egy említés egy forrás."""
     if reference(name) is None:
         pytest.skip(f"nincs felvétel: {name}")
-    con, _ = reference(name)
+    con, run = reference(name)
     rows = con.execute(
-        "SELECT pe.page_id, pe.position, pe.evidence, pe.context, pe.section_ordinal, p.title, "
-        "p.h1 FROM page_entities pe JOIN pages p USING (page_id)").fetchall()
-    anchors = set(con.execute("SELECT from_page_id, anchor FROM links").fetchall())
-    blocks = {}
+        "SELECT pe.page_id, pe.position, pe.surface_form, pe.char_start, pe.char_end, b.text, "
+        "b.kind, b.level FROM page_entities pe LEFT JOIN blocks b ON b.block_id = pe.block_id"
+    ).fetchall()
+    schema = {}
     for page_id, raw in con.execute("SELECT page_id, json FROM schema_blocks").fetchall():
-        blocks[page_id] = blocks.get(page_id, "") + raw
+        schema[page_id] = schema.get(page_id, "") + raw
     wrong = []
-    for page_id, position, evidence, context, section, title, h1 in rows:
-        source = {"title": title, "h1": h1, "schema": blocks.get(page_id, "")}.get(position)
-        ok = ((page_id, evidence) in anchors if position == "anchor"
-              else bool(source) and evidence in source)
-        if not (evidence and context and section is not None and ok):
-            wrong.append((page_id, position, evidence))
-    assert (len(rows), wrong) == (EXPECTED[name]["run"][3], [])
+    for page_id, position, surface, start, end, text, kind, level in rows:
+        if position == "schema":
+            ok = text is None and surface in schema.get(page_id, "")
+        else:
+            ok = text is not None and text[start:end] == surface and (
+                (position == "title") == (kind == "title")) and (
+                position != "h1" or (kind, level) == ("heading", 1))
+        if not ok:
+            wrong.append((page_id, position, surface))
+    assert (len(rows), wrong) == (run.rows, [])
+    assert con.execute("SELECT count(*) FROM mention_sources").fetchone() == (run.rows,)

@@ -434,3 +434,14 @@ def test_recall_needs_the_reference_block():
     assert (wrong_block.found, wrong_block.good, wrong_block.wrong) == (0, 1, 0)
     assert ("Montalcino", "hard", "place", "felismerési") in wrong_block.missed
     assert (right_block.found, right_block.recognized) == (1, 1)
+
+
+def test_real_development_pages_load_from_the_annotation_templates():
+    real = se.load_pages(page_set="development-real")
+    assert [page["page_id"] for page in real] == [
+        "kk_coach_meres_hu", "materia_etlap_hu", "ngx_accordion_en"]
+    for page in real:
+        assert page["set"] == "development-real"
+        assert all(block["id"].startswith("b") for block in page["blocks"])
+        assert set(page["gold"]) == {"primary_entities", "entities", "optional", "negatives"}
+    assert len(se.load_pages(page_set="all")) == len(EVERY_PAGE)

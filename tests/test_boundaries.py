@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 
 from aaa2.engine import parse
-from aaa2.entities import rules
+from aaa2.entities import dom
 
 ROOT = Path(__file__).resolve().parent.parent
 ALLOWED_FROM_ENGINE = {"aaa2.engine.parse": {"anchor_text", "schema_items"}}
@@ -101,8 +101,12 @@ def test_no_forbidden_edge_between_engine_and_entities():
     assert violations(ROOT) == []
 
 
-def test_entities_heading_tags_match_the_parser():
-    assert rules.HEADING_TAGS == parse.HEADING_TAGS
+def test_block_noise_filter_matches_the_main_content_extractor():
+    assert dom.NOISE_SELECTOR == parse._NOISE_SELECTOR
+    assert dom.COOKIE_SELECTORS == parse._COOKIE_SELECTORS
+    html = ('<body><script>x</script><div style="display: none">rejtett</div>'
+            '<div class="cookie-bar">süti</div><p>marad</p></body>')
+    assert dom.content_tree(html).body.html == parse._content_tree(html).body.html
 
 
 def test_the_walk_finds_direct_and_indirect_edges(tmp_path):
