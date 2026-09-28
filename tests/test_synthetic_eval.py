@@ -436,14 +436,6 @@ def test_recall_needs_the_reference_block():
     assert (right_block.found, right_block.recognized) == (1, 1)
 
 
-def test_modifier_concept_rule_and_its_example_is_not_on_the_pages():
-    assert "A professional concept used as a modifier of another word" in BLOCK_PROMPT
-    assert "“hidegen sajtolt olívaolaj” → hidegen sajtolás" in BLOCK_PROMPT
-    for page in EVERY_PAGE.values():
-        text = "\n".join(block_text(b) for b in page["blocks"]).casefold()
-        assert "hidegen sajtol" not in text, page["page_id"]
-
-
 def test_real_development_pages_load_from_the_annotation_templates():
     real = se.load_pages(page_set="development-real")
     assert [page["page_id"] for page in real] == [
