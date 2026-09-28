@@ -37,6 +37,8 @@ Pontozás (`score_page`), oldalanként:
   kanonikus neve vagy egy aliasa;
 - a recall, a precizitás, a felismerés és az elnevezés külön a megnevezett tételekre (nem
   concept) és a fogalmakra (concept); a precizitás hibáit a modell típusa sorolja be;
+- a megnevezett entitások precizitása a v2 definíció szerint is (`good_hard`, `wrong_hard`):
+  a modell concept és service típusú csoportjai nélkül (azokat a verdiktek mérik);
 - `primary_entities`, oldalanként: jó, ha a referencia összes elsődleges tételét visszaadta;
   üres referenciánál csak az üres lista jó;
 - költség, token be / ki.
@@ -62,6 +64,7 @@ import duckdb
 from aaa2.db.connect import DATA_DIR, connect
 from aaa2.entities.blocks import check_surface, surface_spans
 from aaa2.entities.extract import extract_page
+from aaa2.entities.gate import SOFT_TYPES
 from aaa2.entities.naming import name_record
 from aaa2.entities.rules import alias_key
 from aaa2.llm.client import LLMError, open_clients
@@ -245,6 +248,8 @@ class PageScore:
     wrong: int = 0
     wrong_named: int = 0                                    # a modell típusa szerint
     wrong_concepts: int = 0
+    good_hard: int = 0                                      # a modell típusa nem concept vagy
+    wrong_hard: int = 0                                     # service (megnevezett entitás, v2)
     neutral: int = 0
     type_right: int = 0
     subtype_right: int = 0
@@ -319,6 +324,7 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
         target = next((item for item in required if item.keys & keys), None)
         if target is not None:
             score.good += 1
+            score.good_hard += group.type not in SOFT_TYPES
             if target.type == "concept":
                 score.good_concepts += 1
             else:
@@ -333,6 +339,7 @@ def score_page(page: dict, record: dict, call_row: tuple | None = None) -> PageS
             score.neutral += 1
             continue
         score.wrong += 1
+        score.wrong_hard += group.type not in SOFT_TYPES
         if group.type == "concept":
             score.wrong_concepts += 1
         else:
@@ -486,7 +493,8 @@ def _pct(part: int, whole: int) -> str:
 
 
 SUMMED = ("required", "found", "named", "named_found", "concepts", "concepts_found", "good",
-          "good_named", "good_concepts", "wrong_named", "wrong_concepts", "recognized_named",
+          "good_named", "good_concepts", "wrong_named", "wrong_concepts", "good_hard",
+          "wrong_hard", "recognized_named",
           "recognized_concepts", "well_named_named", "well_named_concepts",
           "wrong", "type_right", "subtype_right", "subtype_total", "block_right", "block_total",
           "primary_found", "primary_total", "tokens_in", "tokens_out")
