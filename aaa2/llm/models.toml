@@ -10,12 +10,13 @@
 # nem kér prompt-gyorsítótárat; az automatikus gyorsítótár olvasása (OpenAI, Gemini) és írása
 # (OpenAI) a saját árán számol. A gondolkodási (thinking / reasoning) tokenek kimeneti áron.
 
-# A pipeline lépéseinek modellje; a lépések különböző modellt használhatnak. Mindkettő egy
-# szolgáltató konfigurált modellje (`model`, `fallback` vagy `alternatives`).
+# A pipeline lépéseinek modellje; a lépések különböző modellt használhatnak. Mindegyik egy
+# szolgáltató konfigurált modellje (`model`, `fallback` vagy `alternatives`); az elnevezés
+# "off" is lehet (nincs elnevezési hívás).
 
 [pipeline]
 extraction = "gpt-6-luna"      # blokkos kinyerés (entities.blocks)
-naming = "gpt-6-luna"          # célzott elnevezési hívás (entities.naming); választható: gpt-6-sol
+naming = "off"                 # célzott elnevezési hívás (entities.naming); választható: gpt-6-luna, gpt-6-sol
 
 [anthropic]
 model = "claude-opus-5-5"

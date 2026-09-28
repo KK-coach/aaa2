@@ -843,8 +843,11 @@ def main(argv: list[str] | None = None) -> None:
     if args.command == "name":
         if not args.source or not args.tag or args.source == args.tag:
             raise SystemExit("name: --from és egy tőle eltérő --tag kell")
-        name_run(args.model, args.data_dir, pages, args.source, args.tag,
-                 args.naming_model or pipeline["naming"])
+        naming_model = args.naming_model or pipeline["naming"]
+        if naming_model == "off":
+            raise SystemExit("name: az elnevezés ki van kapcsolva ([pipeline] naming = off); "
+                             "a --naming-model adja meg a modellt")
+        name_run(args.model, args.data_dir, pages, args.source, args.tag, naming_model)
     args.out.mkdir(parents=True, exist_ok=True)
     out = args.out / f"{args.model}{'-' + args.tag if args.tag else ''}-report.md"
     out.write_text(report_markdown(args.model, measure(args.model, args.data_dir, pages,
