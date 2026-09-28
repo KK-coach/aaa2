@@ -308,7 +308,35 @@ def goals(s: V3Score) -> list[str]:
     return out
 
 
-def report_markdown(groups: list[tuple[str, list[V3Score]]]) -> str:
+def previous_lines(groups: list[tuple[str, list[V3Score]]],
+                   previous: Mapping[str, tuple[int, int]]) -> list[str]:
+    """A megnevezett precizitás a korábbi és a mostani referencialistával, egymás mellett."""
+    lines = ["## Megnevezett precizitás: korábbi és végleges referencialista", "",
+             "| sor | korábbi | végleges | változás (pont) |", "|---|---|---|---|"]
+
+    def cells(label, scores):
+        old = [previous[s.page_id] for s in scores if s.page_id in previous]
+        if not old:
+            return None
+        good, wrong = sum(g for g, _ in old), sum(w for _, w in old)
+        new_good = sum(s.good_hard for s in scores if s.page_id in previous)
+        new_all = sum(s.good_hard + s.wrong_hard for s in scores if s.page_id in previous)
+        before = good / (good + wrong) if good + wrong else None
+        after = new_good / new_all if new_all else None
+        delta = "—" if before is None or after is None else f"{(after - before) * 100:+.1f}"
+        return (f"| {label} | {_pct(good, good + wrong)} | {_pct(new_good, new_all)} | "
+                f"{delta} |")
+
+    for label, scores in groups:
+        if line := cells(f"**{label}**", scores):
+            lines.append(line)
+        lines += [line for s in scores if (line := cells(s.page_id, [s]))]
+    return lines + [""]
+
+
+def report_markdown(groups: list[tuple[str, list[V3Score]]],
+                    previous: Mapping[str, tuple[int, int]] | None = None) -> str:
+    """`previous`: oldalanként (jó, hibás) megnevezett csoport a korábbi referencialistával."""
     lines = ["# Megközelítés v3: zárolt és fejlesztési oldalak", "",
              ("Luna-kinyerés (3a prompt, elnevezés nélkül, darabolva), utána a v3 szabály "
               "(`tests/acceptance/v3_eval.py`). A fő sor a zárolt oldalak összege; a fejlesztési "
@@ -316,6 +344,8 @@ def report_markdown(groups: list[tuple[str, list[V3Score]]]) -> str:
              HEADER, RULE]
     for label, scores in groups:
         lines.append(row(f"**{label}**", total(scores, label), len(scores)))
+    if previous:
+        lines += ["", *previous_lines(groups, previous)]
     for label, scores in groups:
         lines += ["", f"## {label}", "", HEADER, RULE]
         lines += [row(s.page_id, s, 1) for s in scores]
@@ -346,6 +376,9 @@ def main(argv: list[str] | None = None) -> None:
                         help="verdicts, report: a fejlesztési oldalak (alapból kk.coach mérés "
                              "és ngx Accordion)")
     parser.add_argument("--out", type=Path, default=se.OUT_DIR.parent / "v3")
+    parser.add_argument("--previous-pages-dir", type=Path, default=None,
+                        help="report: a zárolt oldalak korábbi referencialistája (a megnevezett "
+                             "precizitás összevetéséhez)")
     args = parser.parse_args(argv)
     model = args.model or load_config().pipeline["extraction"]
     if args.command == "apply":
@@ -367,9 +400,17 @@ def main(argv: list[str] | None = None) -> None:
                                 ge.read_record(args.data_dir, p["page_id"], model, args.source))
                        for p in pages if records.get(p["page_id"]) is not None])
               for label, pages in (("zárolt oldalak", locked), ("fejlesztési oldalak", dev))]
+    previous = None
+    if args.previous_pages_dir is not None:
+        previous = {}
+        for page in se.load_pages(args.previous_pages_dir, se.LOCKED):
+            record = records.get(page["page_id"])
+            if record is not None:
+                old = se.score_page(page, record)
+                previous[page["page_id"]] = (old.good_hard, old.wrong_hard)
     args.out.mkdir(parents=True, exist_ok=True)
     out = args.out / f"{model}-{args.tag}-report.md"
-    out.write_text(report_markdown(groups), encoding="utf-8")
+    out.write_text(report_markdown(groups, previous), encoding="utf-8")
     print(out)
 
 

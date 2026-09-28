@@ -139,3 +139,12 @@ def test_scoring_named_services_concepts_and_the_rule(tmp_path):
     assert [(i["canonical"], i["type"]) for i in items] == [
         ("Bérszámfejtés Csomag", "service"), ("Cash-flow", "concept"),
         ("Készletforgás", "concept"), ("Bérszámfejtés", "concept")]
+
+
+def test_previous_and_final_named_precision_side_by_side():
+    from tests.acceptance.v3_eval import V3Score, report_markdown
+    score = V3Score("p", good_hard=9, wrong_hard=1)
+    text = report_markdown([("zárolt oldalak", [score])], {"p": (9, 6)})
+    assert ("| **zárolt oldalak** | 60.0 (9/15) | 90.0 (9/10) | +30.0 |" in text)
+    assert "| p | 60.0 (9/15) | 90.0 (9/10) | +30.0 |" in text
+    assert "korábbi és végleges" not in report_markdown([("zárolt oldalak", [score])])
