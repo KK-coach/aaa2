@@ -7,7 +7,8 @@ igen/nem kérdéssel, egy LLM-hívásban oldalanként.
 - Kimenet tételenként: marad vagy kiesik. A kieső tétel minden említése kiesik; a válasz nélküli
   tétel marad (számolva). Hibás hívásnál minden marad, a hiba a rekordban.
 - A prompt állandó; a példapárjai (fogalom kontra leíró kifejezés, megnevezett ajánlat kontra
-  tevékenység-leírás) nem a teszt- és fejlesztési oldalakról valók. A hívás `purpose = verify`.
+  tevékenység-leírás) nem a teszt- és fejlesztési oldalakról valók. A hívás `purpose = verify`,
+  saját kimeneti plafonnal (`VERIFY_MAX_OUTPUT_TOKENS`), a költségőr is ezzel számol.
 """
 from __future__ import annotations
 
@@ -20,6 +21,7 @@ from aaa2.llm.client import LLMError, SchemaMismatch
 from aaa2.llm.schemas import VerifyResult
 
 BLOCK_LIMIT = 600                 # a blokk szövegéből ennyi karakter megy a bemenetbe
+VERIFY_MAX_OUTPUT_TOKENS = 4000   # az ellenőrző hívás kimeneti plafonja (a költségőr is ezzel)
 
 VERIFY_PROMPT = (
     "You check candidate entities extracted from one web page. Each candidate has an id, a "
@@ -90,7 +92,8 @@ def verify_record(client, record: Mapping, blocks: Mapping[str, Mapping],
         return out
     try:
         result = client.extract(VerifyResult, VERIFY_PROMPT, verify_input(items, blocks),
-                                domain="entity", purpose="verify", page_id=page_id)
+                                domain="entity", purpose="verify", page_id=page_id,
+                                max_output_tokens=VERIFY_MAX_OUTPUT_TOKENS)
     except SchemaMismatch as exc:
         out.update(verify_call_id=exc.call_id, verify_error=f"schema_mismatch: {exc}"[:500])
         out["call_ids"].append(exc.call_id)

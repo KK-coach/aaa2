@@ -3,8 +3,8 @@
 Minden visszaérkezett válasz — a sémának nem megfelelő is — sort ír a site-adatbázis
 `llm_calls` táblájába és a főkönyvbe (ledger.py). Hívás előtt a keret-őr a főkönyvből összesíti
 a szolgáltató modelljeinek költségét, és hozzáadja a hívás legnagyobb költségét (a bemenet
-konzervatív becslése és a teljes `max_output_tokens`); ha ez a leállási küszöb fölé vinné, nem
-hív. Átmeneti hibánál (408,
+konzervatív becslése és a teljes `max_output_tokens`, vagy a hívás saját, kisebb
+`max_output_tokens`-e, ha megadja); ha ez a leállási küszöb fölé vinné, nem hív. Átmeneti hibánál (408,
 429, 5xx, kapcsolat) exponenciális várakozással és jitterrel újrapróbál; a kísérletek száma az
 `llm_calls.attempts`-be, az utolsó sikertelen kísérlet hibája a `last_error`-ba kerül. A kulcsok
 a környezetből vagy a `.env`-ből jönnek; kulcs nélkül a szolgáltató kimarad, nem hiba.
@@ -52,7 +52,8 @@ class SchemaMismatch(LLMError):
 class Adapter(Protocol):
     config: ProviderConfig
 
-    def call(self, model: str, schema: type[BaseModel], prompt: str, input: str) -> Reply: ...
+    def call(self, model: str, schema: type[BaseModel], prompt: str, input: str,
+             max_output_tokens: int | None = None) -> Reply: ...
 
     def list_models(self) -> list[str]: ...
 
@@ -105,28 +106,38 @@ class LLMClient:
         spent = ledger.spent_by_model(self.ledger_path)
         return sum(spent.get(model, 0.0) for model in self.provider.models)
 
-    def worst_case_usd(self, prompt: str, input: str, day) -> float:
+    def output_limit(self, max_output_tokens: int | None = None) -> int:
+        """A hívás kimeneti plafonja: a megadott, de legfeljebb a szolgáltatóé."""
+        limit = self.provider.max_output_tokens
+        return min(max_output_tokens, limit) if max_output_tokens else limit
+
+    def worst_case_usd(self, prompt: str, input: str, day,
+                       max_output_tokens: int | None = None) -> float:
         """Egy hívás legnagyobb költsége: a bemenet konzervatív tokenbecslése
-        (`CHARS_PER_TOKEN` karakterenként egy token) és a teljes `max_output_tokens` a modell
-        árán, a hosszú-kontextus sávval együtt."""
+        (`CHARS_PER_TOKEN` karakterenként egy token) és a kimeneti plafon (`output_limit`) a
+        modell árán, a hosszú-kontextus sávval együtt."""
         tokens_in = -(-(len(prompt) + len(input)) // CHARS_PER_TOKEN)
-        usage = Usage(input=tokens_in, output=self.provider.max_output_tokens)
+        usage = Usage(input=tokens_in, output=self.output_limit(max_output_tokens))
         return self.config.price(self.model, day).cost_usd(usage)
 
     def extract[T: BaseModel](self, schema: type[T], prompt: str, input: str, *, domain: str,
-                              purpose: str = "extract", page_id: int | None = None
-                              ) -> Extraction[T]:
+                              purpose: str = "extract", page_id: int | None = None,
+                              max_output_tokens: int | None = None) -> Extraction[T]:
+        """`max_output_tokens`: a hívás saját kimeneti plafonja (legfeljebb a szolgáltatóé);
+        a költségőr is ezzel számol."""
         called_at = self.clock()
         price = self.config.price(self.model, called_at.date())
         spent = self.spent_usd()
-        worst = self.worst_case_usd(prompt, input, called_at.date())
+        limit = self.output_limit(max_output_tokens)
+        worst = self.worst_case_usd(prompt, input, called_at.date(), limit)
         if spent + worst > self.provider.stop_usd:
             raise BudgetExceeded(
                 f"{self.provider.name}: {spent:.4f} USD + ez a hívás legfeljebb {worst:.4f} USD "
-                f"(max_output_tokens {self.provider.max_output_tokens}) a "
+                f"(max_output_tokens {limit}) a "
                 f"{self.provider.stop_usd} USD leállási küszöb fölé vinné "
                 f"(keret {self.provider.budget_usd} USD)")
-        reply, attempts, latency_ms, last_error = self._call(schema, prompt, input)
+        reply, attempts, latency_ms, last_error = self._call(
+            schema, prompt, input, max_output_tokens if max_output_tokens else None)
         cost = price.cost_usd(reply.usage)
         (call_id,) = self.con.execute(
             "INSERT INTO llm_calls (domain, page_id, model, tokens_in, tokens_out, cost_usd, "
@@ -153,8 +164,8 @@ class LLMClient:
                 call_id) from exc
         return Extraction(parsed=parsed, call_id=call_id)
 
-    def _call(self, schema: type[BaseModel], prompt: str, input: str
-              ) -> tuple[Reply, int, int, str | None]:
+    def _call(self, schema: type[BaseModel], prompt: str, input: str,
+              max_output_tokens: int | None = None) -> tuple[Reply, int, int, str | None]:
         """A válasz, a kísérletek száma, a sikeres kísérlet késleltetése (ms) és az utolsó
         sikertelen kísérlet hibája (None, ha nem kellett újrapróba)."""
         attempt, last_error = 0, None
@@ -162,7 +173,9 @@ class LLMClient:
             attempt += 1
             started = time.perf_counter()
             try:
-                reply = self.adapter.call(self.model, schema, prompt, input)
+                extra = ({"max_output_tokens": self.output_limit(max_output_tokens)}
+                         if max_output_tokens else {})
+                reply = self.adapter.call(self.model, schema, prompt, input, **extra)
             except API_ERRORS as exc:
                 if attempt > len(self.retry.delays) or not is_transient(exc):
                     tries = f"{attempt} kísérlet után: " if attempt > 1 else ""

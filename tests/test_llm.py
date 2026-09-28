@@ -400,6 +400,23 @@ def test_budget_counts_the_worst_case_of_the_call_before_calling(con, api, env, 
     assert [route for route, _, _ in api.requests] == ["anthropic"]
 
 
+def test_a_call_with_its_own_output_limit_is_budgeted_and_sent_with_it(con, api, env,
+                                                                      ledger_path):
+    """Saját kimeneti plafonnal (4000 token × 20 USD / 1M = 0,08 USD) a hívás belefér ott is,
+    ahol a szolgáltató plafonjával (0,32 USD) nem; a kérés ezzel a plafonnal megy."""
+    client = clients_for(con, api, env, ledger_path)["anthropic"]
+    assert client.worst_case_usd("UTASÍTÁS", "OLDAL", NOON.date(), 4000) == pytest.approx(
+        (7 * 4 + 4000 * 20) / 1e6)
+    assert client.output_limit(4000) == 4000 and client.output_limit(99_000) == 16_000
+    spend(ledger_path, "claude-opus-5-5", 9.8)                            # 9,8 + 0,32 > 10
+    with pytest.raises(BudgetExceeded, match=r"\(max_output_tokens 16000\)"):
+        client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
+    client.extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity",
+                   max_output_tokens=4000)                               # 9,8 + 0,08 < 10
+    assert [(route, body["max_tokens"]) for route, _, body in api.requests] == [
+        ("anthropic", 4000)]
+
+
 def test_budget_counts_every_model_of_the_provider(con, api, env, ledger_path):
     spend(ledger_path, "gpt-5.6-terra", 4.4)
     spend(ledger_path, "gpt-6-luna", 0.11)

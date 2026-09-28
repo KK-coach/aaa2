@@ -40,7 +40,8 @@ class Scripted:
         self.replies = list(replies)
         self.inputs = []
 
-    def call(self, model, schema, prompt, input):
+    def call(self, model, schema, prompt, input, **options):
+        self.options = options
         self.inputs.append((prompt, input))
         return Reply(text=json.dumps(self.replies.pop(0), ensure_ascii=False),
                      usage=Usage(input=100, output=10))
@@ -77,6 +78,7 @@ def test_decisions_drop_every_mention_and_missing_answers_keep(tmp_path):
     assert (out["verify_missing"], out["verify_error"]) == (1, None)
     assert out["call_ids"] == [7, out["verify_call_id"]]
     assert con.execute("SELECT purpose FROM llm_calls").fetchall() == [("verify",)]
+    assert adapter.options == {"max_output_tokens": 4000}
 
 
 def test_a_failed_call_keeps_everything(tmp_path):

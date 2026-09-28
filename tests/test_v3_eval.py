@@ -44,7 +44,8 @@ class Scripted:
         self.replies = list(replies)
         self.inputs = []
 
-    def call(self, model, schema, prompt, input):
+    def call(self, model, schema, prompt, input, **options):
+        self.options = options
         self.inputs.append(input)
         return Reply(text=json.dumps(self.replies.pop(0), ensure_ascii=False),
                      usage=Usage(input=100, output=10))
