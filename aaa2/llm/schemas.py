@@ -112,3 +112,13 @@ class BlockExtraction(BaseModel):
     primary_entities: list[str] = Field(description="The canonical names of the entities the "
                                                     "page is mainly about; may be empty.")
     entities: list[BlockEntity]
+
+
+class CandidateDecision(BaseModel):
+    candidate_id: str = Field(description="The id of the candidate, as given in the input.")
+    keep: bool = Field(description="true: the candidate is what its type asks for; false: it "
+                                   "is not.")
+
+
+class VerifyResult(BaseModel):
+    decisions: list[CandidateDecision]
