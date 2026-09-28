@@ -1847,6 +1847,33 @@
       "text": "accordion-heading"
      }
     ]
+   },
+   {
+    "canonical": "AccordionModule",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "namespace": "ngx-bootstrap/accordion",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b204",
+      "text": "AccordionModule"
+     }
+    ]
+   },
+   {
+    "canonical": "web-animations-js",
+    "type": "tech",
+    "subtype": "library",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b204",
+      "text": "web-animations-js"
+     }
+    ]
    }
   ],
   "optional": [
@@ -2221,6 +2248,19 @@
      {
       "block": "b80",
       "text": "root module"
+     }
+    ]
+   },
+   {
+    "canonical": "Bootstrap",
+    "type": "tech",
+    "subtype": "framework",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Bootstrap"
      }
     ]
    }

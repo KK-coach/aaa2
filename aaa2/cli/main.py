@@ -151,7 +151,7 @@ def entities(
     extraction_model: Annotated[str | None, typer.Option(
         help="a kinyerés modellje (alapból a models.toml [pipeline] extraction)")] = None,
     naming_model: Annotated[str | None, typer.Option(
-        help="az elnevezés modellje (alapból a [pipeline] naming); none: elnevezés nélkül")
+        help="az elnevezés modellje (alapból a [pipeline] naming); off: elnevezés nélkül")
     ] = None,
     limit: Annotated[int | None, typer.Option(help="legfeljebb ennyi oldal az LLM-körben")
                      ] = None,
@@ -166,7 +166,7 @@ def entities(
         pipeline = load_config().pipeline
         client = _pipeline_client(con, extraction_model or pipeline["extraction"])
         chosen = naming_model or pipeline["naming"]
-        if chosen != "none":
+        if chosen not in ("off", "none"):
             naming = client if chosen == client.model else _pipeline_client(con, chosen)
     runs = [run_rules(con).run_id]
     if client is not None:

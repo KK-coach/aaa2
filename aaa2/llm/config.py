@@ -90,6 +90,7 @@ class ProviderConfig:
 
 
 PIPELINE_STEPS = ("extraction", "naming")
+PIPELINE_OFF = "off"                     # a lépés kikapcsolva (csak az elnevezésnél)
 
 
 @dataclass(frozen=True)
@@ -114,7 +115,8 @@ class LLMConfig:
 def load_config(path: Path = CONFIG_PATH) -> LLMConfig:
     """Beolvas és ellenőriz: mindhárom szolgáltató, 0 < küszöb ≤ keret, a fallback csak
     megadott modellre kapcsolható, modellenként legalább egy ársor, egy modell ársorainak
-    érvényessége nem fedi át egymást, és a `[pipeline]` minden lépésének modellje konfigurált."""
+    érvényessége nem fedi át egymást, és a `[pipeline]` minden lépésének modellje konfigurált
+    (az elnevezésé "off" is lehet)."""
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
     providers = {}
     for name in PROVIDERS:
@@ -144,6 +146,8 @@ def load_config(path: Path = CONFIG_PATH) -> LLMConfig:
         raise ValueError(f"[pipeline]: a lépések {', '.join(PIPELINE_STEPS)}")
     config = LLMConfig(providers=providers, prices=prices, pipeline=pipeline)
     for step, model in pipeline.items():
+        if step == "naming" and model == PIPELINE_OFF:
+            continue
         if config.provider_of(model) is None:
             raise ValueError(f"[pipeline] {step}: a {model} nincs a konfigurált modellek között")
     return config
