@@ -20,7 +20,7 @@ elnevezés nélkül):
   említésszám, aztán az első említés sorrendje).
 
 A navigáció és az anchor-szövegek a rögzített készlet renderelt DOM-jából jönnek
-(`gate_eval.page_context`). A kimenet a `--tag` alá kerül; a konzolra csak darabszám.
+(`gate_eval.page_context`). A kimenet a `--tag` alá kerül; ha a Sol-hívás hibára fut, az oldalnak nincs kimenete. A konzolra csak darabszám.
 """
 from __future__ import annotations
 
@@ -106,6 +106,10 @@ def run_apply(model: str, data_dir: Path, pages: list[dict], source: str, tag: s
                 print(f"{page['page_id']}: nincs kinyerés ({source})")
                 continue
             out = apply_v3(record, ge.page_context(page, data_dir), verifier, knowledge)
+            if out.get("verify_error"):
+                print(f"{page['page_id']}: a Sol-hívás hibára futott, nincs kimenet: "
+                      f"{out['verify_error']}")
+                continue
             out["v3_source"] = source
             ge.write_record(data_dir, page["page_id"], model, tag, out)
             services = out["v3"]["services"]
