@@ -72,14 +72,26 @@ def template(page_id: str, db: Path, url: str) -> dict:
 
 
 def block_mapping(old: list[dict], new: list[dict]) -> dict[str, str]:
-    """Régi blokk-azonosító → új: a szövegek („ · ” nélkül) sorrend szerinti párosítása."""
+    """Régi blokk-azonosító → új: a szövegek („ · ” és „ | ” nélkül) sorrend szerinti
+    párosítása; a nem egyező szakaszban a régi blokk ahhoz az új blokkhoz kerül, amelynek a
+    szövege tartalmazza (sorrendben, pl. rácscellák egy táblázatsorban)."""
     def plain(block):
-        return block["text"].replace(" · ", " ")
-    matcher = difflib.SequenceMatcher(a=[plain(b) for b in old], b=[plain(b) for b in new],
-                                      autojunk=False)
-    return {old[i]["id"]: new[j]["id"]
-            for tag, i1, i2, j1, j2 in matcher.get_opcodes() if tag == "equal"
-            for i, j in zip(range(i1, i2), range(j1, j2), strict=True)}
+        return " ".join(block["text"].replace(" · ", " ").replace(" | ", " ").split())
+    olds, news = [plain(b) for b in old], [plain(b) for b in new]
+    matcher = difflib.SequenceMatcher(a=olds, b=news, autojunk=False)
+    mapping: dict[str, str] = {}
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            mapping.update((old[i]["id"], new[j]["id"])
+                           for i, j in zip(range(i1, i2), range(j1, j2), strict=True))
+            continue
+        j = j1
+        for i in range(i1, i2):
+            k = next((k for k in range(j, j2) if olds[i] and olds[i] in news[k]), None)
+            if k is not None:
+                mapping[old[i]["id"]] = new[k]["id"]
+                j = k
+    return mapping
 
 
 def realign(gold: dict, old: list[dict], new: list[dict]) -> tuple[dict, list[str]]:

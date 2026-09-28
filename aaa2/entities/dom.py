@@ -19,11 +19,20 @@ heading-útvonallal; a `blocks` tábla forrása (M2 spec A2). A forrás közvetl
   példák kódja) marad.
 - Típus: heading (h1–h6, a szintjével), paragraph (p), list_item (li, dt, dd), table_row (tr;
   a nem üres cellák a `cells`-ben az oszlopfejléccel, ha a táblázatnak van csupa-th fejlécsora;
-  a szöveg a cellák ` | `-vel), code (pre; soronként `<li>`-be tördelt kódnál a sorok új sorral,
+  a szöveg a cellák ` | `-vel; div-rácsos táblázat is, lásd lent), code (pre; soronként `<li>`-be tördelt kódnál a sorok új sorral,
   különben a pre szövege, a sortörésekkel), card (legalább két azonos címkéjű és osztályú
   testvér-tároló, mindegyik legfeljebb `CARD_MAX_WORDS` szavas, és van benne heading vagy
   strong / b cím; a benne lévő nem heading blokkok), other (minden más, pl. div közvetlen
   szövege).
+- Div-rácsos táblázat (CSS grid sorburkoló nélkül, a cellák egy tároló lapos gyerekei): a
+  tároló legalább `GRID_MIN_CELLS` látható gyereke mind div / section cella, heading, lista,
+  táblázat és pre nélkül, legfeljebb `GRID_MAX_CELL_WORDS` szóval, a tárolónak nincs saját
+  szövege; van olyan 2–`GRID_MAX_COLUMNS` oszlopszám, amellyel a cellák legalább 3 sorba
+  rendeződnek, az első sor (fejléc) cellái legfeljebb `GRID_HEADER_WORDS` szavasak és nem
+  számosak, a többi sorban oszloponként azonos, hogy a cella számos-e (a szavak legalább fele
+  tartalmaz számjegyet), és van számos és nem számos oszlop is. A legkisebb ilyen oszlopszám adja
+  a sorokat: a fejlécsor és az adatsorok `table_row` blokkok, a cellák a fejléc szerinti
+  oszlopnévvel; egy cella több bekezdése „ · ”-vel.
 - Régió: chrome, ha header, nav, footer, aside vagy sidebar elem, navigation, banner,
   contentinfo, complementary ARIA-szerepű elem, vagy `site-header`, `site-footer`, `sidebar`
   osztályú elem alatt áll; egyébként content.
@@ -64,6 +73,11 @@ CHROME = frozenset({"header", "nav", "footer", "aside", "sidebar"})
 CHROME_CLASSES = frozenset({"site-header", "site-footer", "sidebar"})
 CHROME_ROLES = frozenset({"navigation", "banner", "contentinfo", "complementary"})
 CARD_MAX_WORDS = 120
+GRID_MIN_CELLS = 6
+GRID_MAX_COLUMNS = 6
+GRID_MAX_CELL_WORDS = 40
+GRID_HEADER_WORDS = 3
+GRID_BLOCKERS = "h1, h2, h3, h4, h5, h6, ul, ol, table, pre"
 KIND_OF = {**{f"h{i}": "heading" for i in range(1, 7)}, "p": "paragraph", "li": "list_item",
            "dt": "list_item", "dd": "list_item"}
 COOKIE = re.compile(r"cookie|consent|gdpr")
@@ -173,6 +187,57 @@ def card_containers(tree: HTMLParser) -> set[int]:
     return cards
 
 
+def _elements(node: Node) -> list[Node] | None:
+    """A látható elem-gyerekek; None, ha a csomópontnak saját (nem whitespace) szövege van."""
+    out: list[Node] = []
+    child = node.child
+    while child is not None:
+        name = child.tag
+        if name == "-text":
+            if (child.text(deep=False) or "").strip():
+                return None
+        elif name not in SKIP and name != "-comment" and not _hidden(child):
+            out.append(child)
+        child = child.next
+    return out
+
+
+def _cell_text(cell: Node) -> str:
+    return collapse(cell.text(separator=" ") or "")
+
+
+def _digits(text: str) -> bool:
+    """Számos cella: a szavak legalább fele tartalmaz számjegyet."""
+    words = text.split()
+    return bool(words) and 2 * sum(any(ch.isdigit() for ch in w) for w in words) >= len(words)
+
+
+def grid_containers(tree: HTMLParser) -> dict[int, int]:
+    """A div-rácsos táblázatok: tároló `mem_id` → oszlopszám (lásd a modul leírását)."""
+    grids: dict[int, int] = {}
+    for parent in tree.css("body *"):
+        cells = _elements(parent)
+        if not cells or len(cells) < GRID_MIN_CELLS or any(
+                c.tag not in ("div", "section") or c.css_first(GRID_BLOCKERS) is not None
+                for c in cells):
+            continue
+        texts = [_cell_text(c) for c in cells]
+        if any(not t or len(t.split()) > GRID_MAX_CELL_WORDS for t in texts):
+            continue
+        for width in range(2, GRID_MAX_COLUMNS + 1):
+            if len(cells) % width or len(cells) // width < 3:
+                continue
+            header, data = texts[:width], texts[width:]
+            if any(_digits(t) or len(t.split()) > GRID_HEADER_WORDS for t in header):
+                continue
+            rows = [data[i:i + width] for i in range(0, len(data), width)]
+            shapes = [[_digits(t) for t in r] for r in rows]
+            if all(s == shapes[0] for s in shapes) and any(shapes[0]) and not all(shapes[0]):
+                grids[parent.mem_id] = width
+                break
+    return grids
+
+
 def _inline(node: Node, parts: list[str], anchors: list[str]) -> None:
     """A csomópont szövege soron belüliként (minden leszármazott), a rejtett elemek nélkül."""
     child = node.child
@@ -220,6 +285,7 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
     if body is None:
         return blocks
     cards = card_containers(tree)
+    grids = grid_containers(tree)
     stack: list[tuple[int, str]] = []
     headers: dict[int, list[str]] = {}
     ordinal = 0
@@ -258,6 +324,29 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
             cells = [{"header": names[i] if i < len(names) and names[i] else None, "value": value}
                      for i, (_, value) in enumerate(values) if value]
         emit("table_row", region, " | ".join(c["value"] for c in cells), anchors, cells=cells)
+
+    def grid(node: Node, region: str, width: int) -> None:
+        cells = _elements(node) or []
+        names: list[str] = []
+        for start in range(0, len(cells), width):
+            values: list[str] = []
+            anchors: list[str] = []
+            for cell in cells[start:start + width]:
+                pieces = []
+                for part in _elements(cell) or [cell]:
+                    own: list[str] = []
+                    _inline(part, own, anchors)
+                    if text := collapse(" ".join(o for o in own if o)):
+                        pieces.append(text)
+                values.append(" · ".join(pieces))
+            if not names:
+                names = values
+                row_cells = [{"header": None, "value": v} for v in values if v]
+            else:
+                row_cells = [{"header": names[i] or None, "value": v}
+                             for i, v in enumerate(values) if v]
+            emit("table_row", region, " | ".join(c["value"] for c in row_cells), anchors,
+                 cells=row_cells)
 
     def code(pre: Node, region: str) -> None:
         lines = pre.css("li")
@@ -309,6 +398,8 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
                 child_card = in_card or child.mem_id in cards
                 if name == "tr":
                     row(child, child_region)
+                elif child.mem_id in grids:
+                    grid(child, child_region, grids[child.mem_id])
                 elif name == "pre":
                     code(child, child_region)
                 else:

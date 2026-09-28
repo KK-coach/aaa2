@@ -1553,177 +1553,121 @@
   },
   {
    "id": "b170",
-   "kind": "paragraph",
+   "kind": "table_row",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
     "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
    ],
-   "text": "Project"
+   "text": "Project | Est. hours | Est. cost",
+   "cells": [
+    {
+     "header": null,
+     "value": "Project"
+    },
+    {
+     "header": null,
+     "value": "Est. hours"
+    },
+    {
+     "header": null,
+     "value": "Est. cost"
+    }
+   ]
   },
   {
    "id": "b171",
-   "kind": "paragraph",
+   "kind": "table_row",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
     "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
    ],
-   "text": "Est. hours"
+   "text": "Szerver oldali mérés beállítás · GTM szerver oldali konténer, Conversions API, first-party adatréteg, validálás | 8-14 h | 108000–184000 Ft",
+   "cells": [
+    {
+     "header": "Project",
+     "value": "Szerver oldali mérés beállítás · GTM szerver oldali konténer, Conversions API, first-party adatréteg, validálás"
+    },
+    {
+     "header": "Est. hours",
+     "value": "8-14 h"
+    },
+    {
+     "header": "Est. cost",
+     "value": "108000–184000 Ft"
+    }
+   ]
   },
   {
    "id": "b172",
-   "kind": "paragraph",
+   "kind": "table_row",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
     "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
    ],
-   "text": "Est. cost"
+   "text": "BigQuery integráció · GA4 export, Google ads, Search Console, Bing webmaster tools, Microsoft Clarity beállítás. séma tervezés. | 10-18 h | 160000-208000 Ft",
+   "cells": [
+    {
+     "header": "Project",
+     "value": "BigQuery integráció · GA4 export, Google ads, Search Console, Bing webmaster tools, Microsoft Clarity beállítás. séma tervezés."
+    },
+    {
+     "header": "Est. hours",
+     "value": "10-18 h"
+    },
+    {
+     "header": "Est. cost",
+     "value": "160000-208000 Ft"
+    }
+   ]
   },
   {
    "id": "b173",
-   "kind": "paragraph",
+   "kind": "table_row",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
     "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
    ],
-   "text": "Szerver oldali mérés beállítás"
+   "text": "Looker Studio dashboard · Döntési réteg riportálás, KPI-hierarchia, csatornateljesítmény, konverzió nézet | 10-20 h | 160000-320000 Ft",
+   "cells": [
+    {
+     "header": "Project",
+     "value": "Looker Studio dashboard · Döntési réteg riportálás, KPI-hierarchia, csatornateljesítmény, konverzió nézet"
+    },
+    {
+     "header": "Est. hours",
+     "value": "10-20 h"
+    },
+    {
+     "header": "Est. cost",
+     "value": "160000-320000 Ft"
+    }
+   ]
   },
   {
    "id": "b174",
-   "kind": "paragraph",
+   "kind": "table_row",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
     "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
    ],
-   "text": "GTM szerver oldali konténer, Conversions API, first-party adatréteg, validálás"
+   "text": "Teljes mérési rendszer · GA4 architektúra + szerver oldali + attribúciós modellezés + BigQuery + Looker Studio | 28-48 h | 448000-768000 Ft",
+   "cells": [
+    {
+     "header": "Project",
+     "value": "Teljes mérési rendszer · GA4 architektúra + szerver oldali + attribúciós modellezés + BigQuery + Looker Studio"
+    },
+    {
+     "header": "Est. hours",
+     "value": "28-48 h"
+    },
+    {
+     "header": "Est. cost",
+     "value": "448000-768000 Ft"
+    }
+   ]
   },
   {
    "id": "b175",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "8-14 h"
-  },
-  {
-   "id": "b176",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "108000–184000 Ft"
-  },
-  {
-   "id": "b177",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "BigQuery integráció"
-  },
-  {
-   "id": "b178",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "GA4 export, Google ads, Search Console, Bing webmaster tools, Microsoft Clarity beállítás. séma tervezés."
-  },
-  {
-   "id": "b179",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "10-18 h"
-  },
-  {
-   "id": "b180",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "160000-208000 Ft"
-  },
-  {
-   "id": "b181",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "Looker Studio dashboard"
-  },
-  {
-   "id": "b182",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "Döntési réteg riportálás, KPI-hierarchia, csatornateljesítmény, konverzió nézet"
-  },
-  {
-   "id": "b183",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "10-20 h"
-  },
-  {
-   "id": "b184",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "160000-320000 Ft"
-  },
-  {
-   "id": "b185",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "Teljes mérési rendszer"
-  },
-  {
-   "id": "b186",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "GA4 architektúra + szerver oldali + attribúciós modellezés + BigQuery + Looker Studio"
-  },
-  {
-   "id": "b187",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "28-48 h"
-  },
-  {
-   "id": "b188",
-   "kind": "paragraph",
-   "heading_path": [
-    "Mérés nélküli marketing nem más, mint találgatás.",
-    "Átlátható árazás. Csomagok nélkül, meglepetések nélkül."
-   ],
-   "text": "448000-768000 Ft"
-  },
-  {
-   "id": "b189",
    "kind": "other",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1732,7 +1676,7 @@
    "text": "Óradíj: 16 000 Ft"
   },
   {
-   "id": "b190",
+   "id": "b176",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1741,7 +1685,7 @@
    "text": "— Gyakori kérdések"
   },
   {
-   "id": "b191",
+   "id": "b177",
    "kind": "heading",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1750,7 +1694,7 @@
    "text": "Amit mérési projekt előtt szoktak megkérdezni."
   },
   {
-   "id": "b192",
+   "id": "b178",
    "kind": "heading",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1760,7 +1704,7 @@
    "text": "Kell szerver oldali beállítás, ha már GA4-em van?"
   },
   {
-   "id": "b193",
+   "id": "b179",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1770,7 +1714,7 @@
    "text": "A csak böngésző alapú GA4 egyre megbízhatatlanabb. Adblockerek, iOS ITP és harmadik féltől szárm. cookie-korlátozások csendben elvisznek 20–40% konverziós eventet. hibaüzenet nélkül. A szerver oldali mérés a kritikus jeleket olyan first-party infrastruktúrára viszi, amelyet te irányítasz, visszanyerve azt az adatot, amelyet a böngésző-alapú setup már nem tud megszerezni. Ha fizetett hirdetést futtatsz, vagy pontos organikus attribúcióra van szükséged, a szerver oldali mérés ma már nem opcionális — alapfeltétel."
   },
   {
-   "id": "b194",
+   "id": "b180",
    "kind": "heading",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1780,7 +1724,7 @@
    "text": "Mi a különbség GA4-beállítás és mérési architektúra között?"
   },
   {
-   "id": "b195",
+   "id": "b181",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1790,7 +1734,7 @@
    "text": "A GA4-beállítás eszközkonfiguráció. A mérési architektúra először üzleti logika — meghatározza, mi számít, hogyan kapcsolódik a bevételhez, és minden adatpont melyik döntéshez vezet. A GA4-beállítás arra felel: „telepítve van-e a tracking?” A mérési architektúra arra: „tudunk-e magabiztos növekedési döntéseket hozni ebből az adatból?”"
   },
   {
-   "id": "b196",
+   "id": "b182",
    "kind": "heading",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1800,7 +1744,7 @@
    "text": "Hogyan befolyásolja a mérés az SEO-teljesítményt?"
   },
   {
-   "id": "b197",
+   "id": "b183",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1810,7 +1754,7 @@
    "text": "Pontos mérés nélkül az SEO értéke szinte mindig alulértékelt marad. A legtöbb rendszer az utolsó kattintásnak adja az érdemet, ami gyakran egy direkt vagy fizetett csatorna. Így az organikus csatorna hozzájárulása a döntési folyamat korábbi szakaszaiban nem látszik, még akkor sem, ha valójában fontos szerepet játszott. Egy jól kialakított attribúciós modell láthatóvá teszi ezt a hatást a teljes ügyfélúton, ami jobb döntéseket tesz lehetővé a befektetések és a prioritások terén. Emellett minden SEO-munkát egy kiinduló állapothoz kell mérni. Ha nincs alapvonal, akkor nem lehet egyértelműen bizonyítani, hogy egy adott tartalmi, technikai vagy strukturális fejlesztés tényleg eredményt hozott."
   },
   {
-   "id": "b198",
+   "id": "b184",
    "kind": "heading",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1820,7 +1764,7 @@
    "text": "Kell BigQuery, vagy elég a GA4?"
   },
   {
-   "id": "b199",
+   "id": "b185",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1830,7 +1774,7 @@
    "text": "A legtöbb kkv-nak elég a GA4 megfelelő event-architektúrával és egy jól strukturált Looker Studio dashboarddal. A BigQuery akkor válik értékessé, ha nyers event-szintű adatra, összetett csatornák közötti lekérdezésekre, GA4 adatmegőrzési határain túli történeti elemzésre, vagy CRM és szerver oldali adatforrásokkal való integrációra van szükség. Nem alapértelmezett ajánlás — a megfelelő eszköz akkor, amikor a standard GA4-riportálás eléri a strukturális korlátait."
   },
   {
-   "id": "b200",
+   "id": "b186",
    "kind": "heading",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1840,7 +1784,7 @@
    "text": "Mennyi ideig tart egy mérési rendszer felépítése?"
   },
   {
-   "id": "b201",
+   "id": "b187",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1850,7 +1794,7 @@
    "text": "Egy alap audit és mérés beállítás általában egy sprintbe fér (2 hét). Egy teljes mérési architektúra — szerver oldali beállítással, attribúciós modellezéssel és riportálási réteggel — a meglévő rendszer összetettségétől függően 3–4 sprint. Az első sprint mindig egy tracking integritás audittal kezdődik, mielőtt bármilyen új implementáció elkezdődne."
   },
   {
-   "id": "b202",
+   "id": "b188",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1860,7 +1804,7 @@
    "text": "— A növekedési keretrendszerem további részei"
   },
   {
-   "id": "b203",
+   "id": "b189",
    "kind": "heading",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1869,7 +1813,7 @@
    "text": "A mérés az alap. Ezek a rétegek, amelyeknek segít"
   },
   {
-   "id": "b204",
+   "id": "b190",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1878,7 +1822,7 @@
    "text": "02. réteg"
   },
   {
-   "id": "b205",
+   "id": "b191",
    "kind": "heading",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1888,7 +1832,7 @@
    "text": "SEO"
   },
   {
-   "id": "b206",
+   "id": "b192",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1898,7 +1842,7 @@
    "text": "Keresési szándék feltárása, információs struktúra kialakítása és szakmai hitelesség építése, mérhető üzleti eredményekre hangolva."
   },
   {
-   "id": "b207",
+   "id": "b193",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1908,7 +1852,7 @@
    "text": "SEO felfedezése"
   },
   {
-   "id": "b208",
+   "id": "b194",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1918,7 +1862,7 @@
    "text": "03. réteg"
   },
   {
-   "id": "b209",
+   "id": "b195",
    "kind": "heading",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1928,7 +1872,7 @@
    "text": "GEO – AI láthatóság"
   },
   {
-   "id": "b210",
+   "id": "b196",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1938,7 +1882,7 @@
    "text": "Entitás-architektúra és tudásgráf strukturálás a generatív AI-rendszerekben való megjelenéshez"
   },
   {
-   "id": "b211",
+   "id": "b197",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1948,7 +1892,7 @@
    "text": "GEO felfedezése"
   },
   {
-   "id": "b212",
+   "id": "b198",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1958,7 +1902,7 @@
    "text": "04. réteg"
   },
   {
-   "id": "b213",
+   "id": "b199",
    "kind": "heading",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1968,7 +1912,7 @@
    "text": "UX & Konverzió"
   },
   {
-   "id": "b214",
+   "id": "b200",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1978,7 +1922,7 @@
    "text": "Döntési útvonalak tudatos kialakítása és a súrlódási pontok csökkentése, hogy a mért forgalomból mérhető bevétel legyen."
   },
   {
-   "id": "b215",
+   "id": "b201",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1988,7 +1932,7 @@
    "text": "UX felfedezése"
   },
   {
-   "id": "b216",
+   "id": "b202",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -1998,7 +1942,7 @@
    "text": "05. réteg"
   },
   {
-   "id": "b217",
+   "id": "b203",
    "kind": "heading",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -2008,7 +1952,7 @@
    "text": "Kivitelezés"
   },
   {
-   "id": "b218",
+   "id": "b204",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -2018,7 +1962,7 @@
    "text": "Sprintalapú működés, amely a mérésből származó felismeréseket konkrét fejlesztésekké alakítja."
   },
   {
-   "id": "b219",
+   "id": "b205",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -2028,7 +1972,7 @@
    "text": "Kivitelezés felfedezése"
   },
   {
-   "id": "b220",
+   "id": "b206",
    "kind": "heading",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -2037,7 +1981,7 @@
    "text": "Ha a riportjaid vitát szülnek döntések helyett, az strukturális probléma."
   },
   {
-   "id": "b221",
+   "id": "b207",
    "kind": "paragraph",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -2046,7 +1990,7 @@
    "text": "Oszd meg a weboldalad és az elsődleges analitikai kihívásodat. Felvázolom, hol korlátozza a mérési architektúrád a döntéshozatalt — és hogyan néz ki egy strukturált megoldás."
   },
   {
-   "id": "b222",
+   "id": "b208",
    "kind": "other",
    "heading_path": [
     "Mérés nélküli marketing nem más, mint találgatás.",
@@ -2128,39 +2072,39 @@
       "text": "GA4"
      },
      {
+      "block": "b172",
+      "text": "GA4"
+     },
+     {
+      "block": "b174",
+      "text": "GA4"
+     },
+     {
       "block": "b178",
-      "text": "GA4"
-     },
-     {
-      "block": "b186",
-      "text": "GA4"
-     },
-     {
-      "block": "b192",
       "text": "GA4-em"
      },
      {
-      "block": "b193",
+      "block": "b179",
       "text": "GA4"
      },
      {
-      "block": "b194",
+      "block": "b180",
       "text": "GA4-beállítás"
      },
      {
-      "block": "b195",
+      "block": "b181",
       "text": "GA4-beállítás"
      },
      {
-      "block": "b198",
+      "block": "b184",
       "text": "GA4"
      },
      {
-      "block": "b199",
+      "block": "b185",
       "text": "GA4"
      },
      {
-      "block": "b199",
+      "block": "b185",
       "text": "GA4-riportálás"
      }
     ]
@@ -2216,7 +2160,7 @@
       "text": "GTM"
      },
      {
-      "block": "b174",
+      "block": "b171",
       "text": "GTM"
      }
     ],
@@ -2249,19 +2193,19 @@
       "text": "Bigquery"
      },
      {
-      "block": "b177",
+      "block": "b172",
       "text": "BigQuery"
      },
      {
-      "block": "b186",
+      "block": "b174",
       "text": "BigQuery"
      },
      {
-      "block": "b198",
+      "block": "b184",
       "text": "BigQuery"
      },
      {
-      "block": "b199",
+      "block": "b185",
       "text": "BigQuery"
      }
     ]
@@ -2286,15 +2230,15 @@
       "text": "Looker studio"
      },
      {
-      "block": "b181",
+      "block": "b173",
       "text": "Looker Studio"
      },
      {
-      "block": "b186",
+      "block": "b174",
       "text": "Looker Studio"
      },
      {
-      "block": "b199",
+      "block": "b185",
       "text": "Looker Studio"
      }
     ]
@@ -2318,7 +2262,7 @@
       "text": "Search Console"
      },
      {
-      "block": "b178",
+      "block": "b172",
       "text": "Search Console"
      }
     ]
@@ -2365,7 +2309,7 @@
       "text": "Conversions API"
      },
      {
-      "block": "b174",
+      "block": "b171",
       "text": "Conversions API"
      }
     ]
@@ -2501,7 +2445,7 @@
       "text": "ITP-je"
      },
      {
-      "block": "b193",
+      "block": "b179",
       "text": "ITP"
      }
     ]
@@ -2541,7 +2485,7 @@
       "text": "iOS"
      },
      {
-      "block": "b193",
+      "block": "b179",
       "text": "iOS"
      }
     ]
@@ -2642,7 +2586,7 @@
     "aliases": [],
     "surface_forms": [
      {
-      "block": "b178",
+      "block": "b172",
       "text": "Google ads"
      }
     ]
@@ -2655,7 +2599,7 @@
     "aliases": [],
     "surface_forms": [
      {
-      "block": "b178",
+      "block": "b172",
       "text": "Bing webmaster tools"
      }
     ]
@@ -2670,7 +2614,7 @@
     "difficulty": "easy",
     "surface_forms": [
      {
-      "block": "b178",
+      "block": "b172",
       "text": "Microsoft Clarity"
      }
     ]
@@ -2693,19 +2637,19 @@
       "text": "mérési architektúra"
      },
      {
-      "block": "b194",
+      "block": "b180",
       "text": "mérési architektúra"
      },
      {
-      "block": "b195",
+      "block": "b181",
       "text": "mérési architektúra"
      },
      {
-      "block": "b201",
+      "block": "b187",
       "text": "mérési architektúra"
      },
      {
-      "block": "b221",
+      "block": "b207",
       "text": "mérési architektúrád"
      }
     ]
@@ -2769,7 +2713,7 @@
       "text": "szerveroldali mérés"
      },
      {
-      "block": "b193",
+      "block": "b179",
       "text": "szerver oldali mérés"
      }
     ]
@@ -2798,11 +2742,11 @@
       "text": "Attribúciós modellezés"
      },
      {
-      "block": "b186",
+      "block": "b174",
       "text": "attribúciós modellezés"
      },
      {
-      "block": "b201",
+      "block": "b187",
       "text": "attribúciós modellezéssel"
      }
     ]
@@ -2836,7 +2780,7 @@
       "text": "last-click"
      },
      {
-      "block": "b197",
+      "block": "b183",
       "text": "utolsó kattintásnak"
      }
     ]
@@ -2906,7 +2850,7 @@
       "text": "KPI-hierarchia"
      },
      {
-      "block": "b182",
+      "block": "b173",
       "text": "KPI-hierarchia"
      }
     ]
@@ -2971,23 +2915,23 @@
       "text": "SEO"
      },
      {
-      "block": "b196",
+      "block": "b182",
       "text": "SEO-teljesítményt"
      },
      {
-      "block": "b197",
+      "block": "b183",
       "text": "SEO"
      },
      {
-      "block": "b197",
+      "block": "b183",
       "text": "SEO-munkát"
      },
      {
-      "block": "b205",
+      "block": "b191",
       "text": "SEO"
      },
      {
-      "block": "b207",
+      "block": "b193",
       "text": "SEO"
      }
     ]
@@ -3012,11 +2956,11 @@
     ],
     "surface_forms": [
      {
-      "block": "b209",
+      "block": "b195",
       "text": "GEO"
      },
      {
-      "block": "b211",
+      "block": "b197",
       "text": "GEO"
      }
     ]
@@ -3048,11 +2992,11 @@
       "text": "UX-változásnak"
      },
      {
-      "block": "b213",
+      "block": "b199",
       "text": "UX"
      },
      {
-      "block": "b215",
+      "block": "b201",
       "text": "UX"
      }
     ]
@@ -3066,7 +3010,7 @@
     "aliases": [],
     "surface_forms": [
      {
-      "block": "b213",
+      "block": "b199",
       "text": "UX & Konverzió"
      }
     ]
@@ -3080,11 +3024,11 @@
     "aliases": [],
     "surface_forms": [
      {
-      "block": "b217",
+      "block": "b203",
       "text": "Kivitelezés"
      },
      {
-      "block": "b219",
+      "block": "b205",
       "text": "Kivitelezés"
      }
     ]
@@ -3099,7 +3043,7 @@
     "difficulty": "easy",
     "surface_forms": [
      {
-      "block": "b210",
+      "block": "b196",
       "text": "Entitás-architektúra"
      }
     ]
@@ -3114,7 +3058,7 @@
     "difficulty": "easy",
     "surface_forms": [
      {
-      "block": "b210",
+      "block": "b196",
       "text": "tudásgráf"
      }
     ]
@@ -3139,7 +3083,7 @@
       "text": "Harmadik féltől szárm. cookie-k"
      },
      {
-      "block": "b193",
+      "block": "b179",
       "text": "harmadik féltől szárm. cookie-korlátozások"
      }
     ]
@@ -3171,7 +3115,7 @@
       "text": "Tracking integritás audit"
      },
      {
-      "block": "b201",
+      "block": "b187",
       "text": "tracking integritás audittal"
      }
     ]
@@ -3184,7 +3128,7 @@
     "aliases": [],
     "surface_forms": [
      {
-      "block": "b173",
+      "block": "b171",
       "text": "Szerver oldali mérés beállítás"
      }
     ]
@@ -3197,7 +3141,7 @@
     "aliases": [],
     "surface_forms": [
      {
-      "block": "b177",
+      "block": "b172",
       "text": "BigQuery integráció"
      }
     ]
@@ -3210,7 +3154,7 @@
     "aliases": [],
     "surface_forms": [
      {
-      "block": "b181",
+      "block": "b173",
       "text": "Looker Studio dashboard"
      }
     ]
@@ -3223,7 +3167,7 @@
     "aliases": [],
     "surface_forms": [
      {
-      "block": "b185",
+      "block": "b174",
       "text": "Teljes mérési rendszer"
      }
     ]
@@ -3309,7 +3253,7 @@
       "text": "CRM-jelek"
      },
      {
-      "block": "b199",
+      "block": "b185",
       "text": "CRM"
      }
     ]
@@ -3340,7 +3284,7 @@
       "text": "Adblockerek"
      },
      {
-      "block": "b193",
+      "block": "b179",
       "text": "Adblockerek"
      }
     ]
@@ -3377,7 +3321,7 @@
       "text": "attribúció"
      },
      {
-      "block": "b193",
+      "block": "b179",
       "text": "attribúcióra"
      }
     ]
@@ -3434,11 +3378,11 @@
       "text": "first-party"
      },
      {
-      "block": "b174",
+      "block": "b171",
       "text": "first-party"
      },
      {
-      "block": "b193",
+      "block": "b179",
       "text": "first-party"
      }
     ]
@@ -3453,7 +3397,7 @@
     ],
     "surface_forms": [
      {
-      "block": "b210",
+      "block": "b196",
       "text": "generatív AI-rendszerekben"
      }
     ]
@@ -3474,11 +3418,11 @@
       "text": "AI"
      },
      {
-      "block": "b209",
+      "block": "b195",
       "text": "AI"
      },
      {
-      "block": "b210",
+      "block": "b196",
       "text": "AI-rendszerekben"
      }
     ]
@@ -3573,15 +3517,15 @@
       "text": "sprintekben"
      },
      {
-      "block": "b201",
+      "block": "b187",
       "text": "sprintbe"
      },
      {
-      "block": "b201",
+      "block": "b187",
       "text": "sprint"
      },
      {
-      "block": "b218",
+      "block": "b204",
       "text": "Sprintalapú"
      }
     ]
@@ -3800,7 +3744,7 @@
       "text": "ügyfélúton"
      },
      {
-      "block": "b197",
+      "block": "b183",
       "text": "ügyfélúton"
      }
     ]
