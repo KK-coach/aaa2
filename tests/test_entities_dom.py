@@ -122,6 +122,50 @@ def test_sibling_inline_labels_are_separated():
     assert texts("<div><a href='/a'>GA4</a><br><img alt='x'></div>") == ["GA4"]
 
 
+GRID = """
+<h2>Árazás</h2>
+<div class="grid">
+  <div class="c1"><p>Project</p></div><div class="c2"><p>Est. hours</p></div>
+  <div class="c3"><p>Est. cost</p></div>
+  <div class="c4"><p><strong>Szerver oldali mérés</strong></p><p>GTM, GA4 és CAPI</p></div>
+  <div class="c5"><p>8-14 h</p></div><div class="c6"><p>108000–184000 Ft</p></div>
+  <div class="c7"><p><strong>BigQuery integráció</strong></p><p>GA4 export</p></div>
+  <div class="c8"><p>10-18 h</p></div><div class="c9"><p>160000-208000 Ft</p></div>
+</div>
+<p>Óradíj</p>
+"""
+
+
+def test_a_flat_div_grid_with_a_header_row_becomes_table_rows():
+    parsed = parse_blocks(f"<html><body>{GRID}</body></html>")
+    assert [(b.kind, b.text) for b in parsed] == [
+        ("heading", "Árazás"),
+        ("table_row", "Project | Est. hours | Est. cost"),
+        ("table_row", "Szerver oldali mérés · GTM, GA4 és CAPI | 8-14 h | 108000–184000 Ft"),
+        ("table_row", "BigQuery integráció · GA4 export | 10-18 h | 160000-208000 Ft"),
+        ("paragraph", "Óradíj")]
+    assert parsed[2].cells == [
+        {"header": "Project", "value": "Szerver oldali mérés · GTM, GA4 és CAPI"},
+        {"header": "Est. hours", "value": "8-14 h"},
+        {"header": "Est. cost", "value": "108000–184000 Ft"}]
+    assert parsed[1].cells[0] == {"header": None, "value": "Project"}
+
+
+def test_not_a_grid():
+    # egy adatsor: kevés sor
+    assert all(b.kind == "paragraph" for b in parse_blocks(
+        "<html><body><div><div><p>A</p></div><div><p>B</p></div><div><p>x</p></div>"
+        "<div><p>1 h</p></div></div></body></html>"))
+    # nincs számos oszlop (kártyasor)
+    cards = "".join(f"<div><p>Cím {c}</p></div><div><p>Leírás {c}</p></div>" for c in "abc")
+    assert all(b.kind == "paragraph" for b in parse_blocks(f"<html><body><div>{cards}</div>"
+                                                            "</body></html>"))
+    # a cellában lista van
+    listed = GRID.replace("<p>GA4 export</p>", "<ul><li>GA4 export</li></ul>")
+    assert "table_row" not in {b.kind for b in parse_blocks(f"<html><body>{listed}</body>"
+                                                            "</html>")}
+
+
 TABS = """
 <h1>Oldal</h1>
 <div class="tab-content">

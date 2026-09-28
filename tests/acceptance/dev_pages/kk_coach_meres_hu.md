@@ -3,7 +3,7 @@
 - URL: https://kk.coach/hu/megoldasok/meres/
 - nyelv: hu-HU
 - site: This page belongs to the website kk.coach, whose home page is titled “SEO & AI-Driven Organic Growth Consultant | Kk.coach”.
-- blokkok (content régió): 211
+- blokkok (content régió): 197
 
 Blokkonként: azonosító, típus, heading-útvonal, szöveg (táblázatsornál a cellák az oszlopfejléccel).
 
@@ -165,56 +165,42 @@ Blokkonként: azonosító, típus, heading-útvonal, szöveg (táblázatsornál 
 - **b167** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés üzleti logikával kezdődik, nem eszköz-konfigurációval. › Folyamatos minőségellenőrzés): — Árazás
 - **b168** `heading`: Átlátható árazás. Csomagok nélkül, meglepetések nélkül.
 - **b169** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): A munkadíj 16 000 Ft / óra. Minden projekt egy induló egyeztetéssel kezdődik, hogy előre tisztán látszódjon, pontosan min dolgozunk, és mekkora ráfordítással érdemes számolni. Az óraszámot befolyásolja, hány platform érintett, milyen összetett a meglévő rendszer, és hogy a megvalósítás önállóan vagy a belső csapattal együttműködve történik. Nincs hosszú távú elköteleződés. A projektek előre egyeztetett sprintekben haladnak. Ha a feladat vagy a projekt iránya közben változik, a becslést mindig frissítjük, mielőtt a munka tovább folytatódna.
-- **b170** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Project
-- **b171** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Est. hours
-- **b172** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Est. cost
-- **b173** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Szerver oldali mérés beállítás
-- **b174** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): GTM szerver oldali konténer, Conversions API, first-party adatréteg, validálás
-- **b175** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): 8-14 h
-- **b176** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): 108000–184000 Ft
-- **b177** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): BigQuery integráció
-- **b178** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): GA4 export, Google ads, Search Console, Bing webmaster tools, Microsoft Clarity beállítás. séma tervezés.
-- **b179** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): 10-18 h
-- **b180** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): 160000-208000 Ft
-- **b181** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Looker Studio dashboard
-- **b182** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Döntési réteg riportálás, KPI-hierarchia, csatornateljesítmény, konverzió nézet
-- **b183** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): 10-20 h
-- **b184** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): 160000-320000 Ft
-- **b185** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Teljes mérési rendszer
-- **b186** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): GA4 architektúra + szerver oldali + attribúciós modellezés + BigQuery + Looker Studio
-- **b187** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): 28-48 h
-- **b188** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): 448000-768000 Ft
-- **b189** `other` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Óradíj: 16 000 Ft
-- **b190** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): — Gyakori kérdések
-- **b191** `heading`: Amit mérési projekt előtt szoktak megkérdezni.
-- **b192** `heading`: Kell szerver oldali beállítás, ha már GA4-em van?
-- **b193** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Amit mérési projekt előtt szoktak megkérdezni. › Kell szerver oldali beállítás, ha már GA4-em van?): A csak böngésző alapú GA4 egyre megbízhatatlanabb. Adblockerek, iOS ITP és harmadik féltől szárm. cookie-korlátozások csendben elvisznek 20–40% konverziós eventet. hibaüzenet nélkül. A szerver oldali mérés a kritikus jeleket olyan first-party infrastruktúrára viszi, amelyet te irányítasz, visszanyerve azt az adatot, amelyet a böngésző-alapú setup már nem tud megszerezni. Ha fizetett hirdetést futtatsz, vagy pontos organikus attribúcióra van szükséged, a szerver oldali mérés ma már nem opcionális — alapfeltétel.
-- **b194** `heading`: Mi a különbség GA4-beállítás és mérési architektúra között?
-- **b195** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Amit mérési projekt előtt szoktak megkérdezni. › Mi a különbség GA4-beállítás és mérési architektúra között?): A GA4-beállítás eszközkonfiguráció. A mérési architektúra először üzleti logika — meghatározza, mi számít, hogyan kapcsolódik a bevételhez, és minden adatpont melyik döntéshez vezet. A GA4-beállítás arra felel: „telepítve van-e a tracking?” A mérési architektúra arra: „tudunk-e magabiztos növekedési döntéseket hozni ebből az adatból?”
-- **b196** `heading`: Hogyan befolyásolja a mérés az SEO-teljesítményt?
-- **b197** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Amit mérési projekt előtt szoktak megkérdezni. › Hogyan befolyásolja a mérés az SEO-teljesítményt?): Pontos mérés nélkül az SEO értéke szinte mindig alulértékelt marad. A legtöbb rendszer az utolsó kattintásnak adja az érdemet, ami gyakran egy direkt vagy fizetett csatorna. Így az organikus csatorna hozzájárulása a döntési folyamat korábbi szakaszaiban nem látszik, még akkor sem, ha valójában fontos szerepet játszott. Egy jól kialakított attribúciós modell láthatóvá teszi ezt a hatást a teljes ügyfélúton, ami jobb döntéseket tesz lehetővé a befektetések és a prioritások terén. Emellett minden SEO-munkát egy kiinduló állapothoz kell mérni. Ha nincs alapvonal, akkor nem lehet egyértelműen bizonyítani, hogy egy adott tartalmi, technikai vagy strukturális fejlesztés tényleg eredményt hozott.
-- **b198** `heading`: Kell BigQuery, vagy elég a GA4?
-- **b199** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Amit mérési projekt előtt szoktak megkérdezni. › Kell BigQuery, vagy elég a GA4?): A legtöbb kkv-nak elég a GA4 megfelelő event-architektúrával és egy jól strukturált Looker Studio dashboarddal. A BigQuery akkor válik értékessé, ha nyers event-szintű adatra, összetett csatornák közötti lekérdezésekre, GA4 adatmegőrzési határain túli történeti elemzésre, vagy CRM és szerver oldali adatforrásokkal való integrációra van szükség. Nem alapértelmezett ajánlás — a megfelelő eszköz akkor, amikor a standard GA4-riportálás eléri a strukturális korlátait.
-- **b200** `heading`: Mennyi ideig tart egy mérési rendszer felépítése?
-- **b201** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Amit mérési projekt előtt szoktak megkérdezni. › Mennyi ideig tart egy mérési rendszer felépítése?): Egy alap audit és mérés beállítás általában egy sprintbe fér (2 hét). Egy teljes mérési architektúra — szerver oldali beállítással, attribúciós modellezéssel és riportálási réteggel — a meglévő rendszer összetettségétől függően 3–4 sprint. Az első sprint mindig egy tracking integritás audittal kezdődik, mielőtt bármilyen új implementáció elkezdődne.
-- **b202** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Amit mérési projekt előtt szoktak megkérdezni. › Mennyi ideig tart egy mérési rendszer felépítése?): — A növekedési keretrendszerem további részei
-- **b203** `heading`: A mérés az alap. Ezek a rétegek, amelyeknek segít
-- **b204** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít): 02. réteg
-- **b205** `heading`: SEO
-- **b206** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › SEO): Keresési szándék feltárása, információs struktúra kialakítása és szakmai hitelesség építése, mérhető üzleti eredményekre hangolva.
-- **b207** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › SEO): SEO felfedezése
-- **b208** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › SEO): 03. réteg
-- **b209** `heading`: GEO – AI láthatóság
-- **b210** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › GEO – AI láthatóság): Entitás-architektúra és tudásgráf strukturálás a generatív AI-rendszerekben való megjelenéshez
-- **b211** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › GEO – AI láthatóság): GEO felfedezése
-- **b212** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › GEO – AI láthatóság): 04. réteg
-- **b213** `heading`: UX & Konverzió
-- **b214** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › UX & Konverzió): Döntési útvonalak tudatos kialakítása és a súrlódási pontok csökkentése, hogy a mért forgalomból mérhető bevétel legyen.
-- **b215** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › UX & Konverzió): UX felfedezése
-- **b216** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › UX & Konverzió): 05. réteg
-- **b217** `heading`: Kivitelezés
-- **b218** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › Kivitelezés): Sprintalapú működés, amely a mérésből származó felismeréseket konkrét fejlesztésekké alakítja.
-- **b219** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › Kivitelezés): Kivitelezés felfedezése
-- **b220** `heading`: Ha a riportjaid vitát szülnek döntések helyett, az strukturális probléma.
-- **b221** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Ha a riportjaid vitát szülnek döntések helyett, az strukturális probléma.): Oszd meg a weboldalad és az elsődleges analitikai kihívásodat. Felvázolom, hol korlátozza a mérési architektúrád a döntéshozatalt — és hogyan néz ki egy strukturált megoldás.
-- **b222** `other` (Mérés nélküli marketing nem más, mint találgatás. › Ha a riportjaid vitát szülnek döntések helyett, az strukturális probléma.): Írj nekem
+- **b170** `table_row` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Project; Est. hours; Est. cost
+- **b171** `table_row` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Project: Szerver oldali mérés beállítás · GTM szerver oldali konténer, Conversions API, first-party adatréteg, validálás; Est. hours: 8-14 h; Est. cost: 108000–184000 Ft
+- **b172** `table_row` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Project: BigQuery integráció · GA4 export, Google ads, Search Console, Bing webmaster tools, Microsoft Clarity beállítás. séma tervezés.; Est. hours: 10-18 h; Est. cost: 160000-208000 Ft
+- **b173** `table_row` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Project: Looker Studio dashboard · Döntési réteg riportálás, KPI-hierarchia, csatornateljesítmény, konverzió nézet; Est. hours: 10-20 h; Est. cost: 160000-320000 Ft
+- **b174** `table_row` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Project: Teljes mérési rendszer · GA4 architektúra + szerver oldali + attribúciós modellezés + BigQuery + Looker Studio; Est. hours: 28-48 h; Est. cost: 448000-768000 Ft
+- **b175** `other` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): Óradíj: 16 000 Ft
+- **b176** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Átlátható árazás. Csomagok nélkül, meglepetések nélkül.): — Gyakori kérdések
+- **b177** `heading`: Amit mérési projekt előtt szoktak megkérdezni.
+- **b178** `heading`: Kell szerver oldali beállítás, ha már GA4-em van?
+- **b179** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Amit mérési projekt előtt szoktak megkérdezni. › Kell szerver oldali beállítás, ha már GA4-em van?): A csak böngésző alapú GA4 egyre megbízhatatlanabb. Adblockerek, iOS ITP és harmadik féltől szárm. cookie-korlátozások csendben elvisznek 20–40% konverziós eventet. hibaüzenet nélkül. A szerver oldali mérés a kritikus jeleket olyan first-party infrastruktúrára viszi, amelyet te irányítasz, visszanyerve azt az adatot, amelyet a böngésző-alapú setup már nem tud megszerezni. Ha fizetett hirdetést futtatsz, vagy pontos organikus attribúcióra van szükséged, a szerver oldali mérés ma már nem opcionális — alapfeltétel.
+- **b180** `heading`: Mi a különbség GA4-beállítás és mérési architektúra között?
+- **b181** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Amit mérési projekt előtt szoktak megkérdezni. › Mi a különbség GA4-beállítás és mérési architektúra között?): A GA4-beállítás eszközkonfiguráció. A mérési architektúra először üzleti logika — meghatározza, mi számít, hogyan kapcsolódik a bevételhez, és minden adatpont melyik döntéshez vezet. A GA4-beállítás arra felel: „telepítve van-e a tracking?” A mérési architektúra arra: „tudunk-e magabiztos növekedési döntéseket hozni ebből az adatból?”
+- **b182** `heading`: Hogyan befolyásolja a mérés az SEO-teljesítményt?
+- **b183** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Amit mérési projekt előtt szoktak megkérdezni. › Hogyan befolyásolja a mérés az SEO-teljesítményt?): Pontos mérés nélkül az SEO értéke szinte mindig alulértékelt marad. A legtöbb rendszer az utolsó kattintásnak adja az érdemet, ami gyakran egy direkt vagy fizetett csatorna. Így az organikus csatorna hozzájárulása a döntési folyamat korábbi szakaszaiban nem látszik, még akkor sem, ha valójában fontos szerepet játszott. Egy jól kialakított attribúciós modell láthatóvá teszi ezt a hatást a teljes ügyfélúton, ami jobb döntéseket tesz lehetővé a befektetések és a prioritások terén. Emellett minden SEO-munkát egy kiinduló állapothoz kell mérni. Ha nincs alapvonal, akkor nem lehet egyértelműen bizonyítani, hogy egy adott tartalmi, technikai vagy strukturális fejlesztés tényleg eredményt hozott.
+- **b184** `heading`: Kell BigQuery, vagy elég a GA4?
+- **b185** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Amit mérési projekt előtt szoktak megkérdezni. › Kell BigQuery, vagy elég a GA4?): A legtöbb kkv-nak elég a GA4 megfelelő event-architektúrával és egy jól strukturált Looker Studio dashboarddal. A BigQuery akkor válik értékessé, ha nyers event-szintű adatra, összetett csatornák közötti lekérdezésekre, GA4 adatmegőrzési határain túli történeti elemzésre, vagy CRM és szerver oldali adatforrásokkal való integrációra van szükség. Nem alapértelmezett ajánlás — a megfelelő eszköz akkor, amikor a standard GA4-riportálás eléri a strukturális korlátait.
+- **b186** `heading`: Mennyi ideig tart egy mérési rendszer felépítése?
+- **b187** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Amit mérési projekt előtt szoktak megkérdezni. › Mennyi ideig tart egy mérési rendszer felépítése?): Egy alap audit és mérés beállítás általában egy sprintbe fér (2 hét). Egy teljes mérési architektúra — szerver oldali beállítással, attribúciós modellezéssel és riportálási réteggel — a meglévő rendszer összetettségétől függően 3–4 sprint. Az első sprint mindig egy tracking integritás audittal kezdődik, mielőtt bármilyen új implementáció elkezdődne.
+- **b188** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Amit mérési projekt előtt szoktak megkérdezni. › Mennyi ideig tart egy mérési rendszer felépítése?): — A növekedési keretrendszerem további részei
+- **b189** `heading`: A mérés az alap. Ezek a rétegek, amelyeknek segít
+- **b190** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít): 02. réteg
+- **b191** `heading`: SEO
+- **b192** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › SEO): Keresési szándék feltárása, információs struktúra kialakítása és szakmai hitelesség építése, mérhető üzleti eredményekre hangolva.
+- **b193** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › SEO): SEO felfedezése
+- **b194** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › SEO): 03. réteg
+- **b195** `heading`: GEO – AI láthatóság
+- **b196** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › GEO – AI láthatóság): Entitás-architektúra és tudásgráf strukturálás a generatív AI-rendszerekben való megjelenéshez
+- **b197** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › GEO – AI láthatóság): GEO felfedezése
+- **b198** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › GEO – AI láthatóság): 04. réteg
+- **b199** `heading`: UX & Konverzió
+- **b200** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › UX & Konverzió): Döntési útvonalak tudatos kialakítása és a súrlódási pontok csökkentése, hogy a mért forgalomból mérhető bevétel legyen.
+- **b201** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › UX & Konverzió): UX felfedezése
+- **b202** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › UX & Konverzió): 05. réteg
+- **b203** `heading`: Kivitelezés
+- **b204** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › Kivitelezés): Sprintalapú működés, amely a mérésből származó felismeréseket konkrét fejlesztésekké alakítja.
+- **b205** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › A mérés az alap. Ezek a rétegek, amelyeknek segít › Kivitelezés): Kivitelezés felfedezése
+- **b206** `heading`: Ha a riportjaid vitát szülnek döntések helyett, az strukturális probléma.
+- **b207** `paragraph` (Mérés nélküli marketing nem más, mint találgatás. › Ha a riportjaid vitát szülnek döntések helyett, az strukturális probléma.): Oszd meg a weboldalad és az elsődleges analitikai kihívásodat. Felvázolom, hol korlátozza a mérési architektúrád a döntéshozatalt — és hogyan néz ki egy strukturált megoldás.
+- **b208** `other` (Mérés nélküli marketing nem más, mint találgatás. › Ha a riportjaid vitát szülnek döntések helyett, az strukturális probléma.): Írj nekem
