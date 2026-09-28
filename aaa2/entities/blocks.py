@@ -29,8 +29,7 @@ def _subtype_lines() -> str:
 
 
 def block_prompt() -> str:
-    """A blokkos prompt: a mesterséges oldalak 3a változata, a jelzőként használt fogalom
-    szabályával."""
+    """A blokkos prompt (a mesterséges oldalak 3a változata, rögzítve)."""
     return (
         "Extract every entity the page is about or mentions: named things, offered products or "
         "services, and definable professional concepts. A single mention is enough. Generic "
@@ -55,9 +54,6 @@ def block_prompt() -> str:
         "- For a product named after its origin, the product is the entity: “pármai "
         "sonka” is a product; the place is an entity only where the text refers to the "
         "place itself.\n"
-        "- A professional concept used as a modifier of another word is an entity in its own "
-        "right, under its noun form: “hidegen sajtolt olívaolaj” → hidegen sajtolás (a "
-        "method); its surface_form is the modifier as written (“hidegen sajtolt”).\n"
         "- The titles of this site's own pages are not works.\n"
         "- Return nothing that is not on the page.\n\n"
         "Return:\n"
