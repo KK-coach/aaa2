@@ -471,7 +471,7 @@ def test_cli_entities_and_status(tmp_path, monkeypatch):
     con.execute(f"ATTACH '{connect_module.db_path('pelda.hu')}' AS disk")
     con.execute("COPY FROM DATABASE memory TO disk")
     con.close()
-    result = CliRunner().invoke(app, ["entities", "pelda.hu"])
+    result = CliRunner().invoke(app, ["entities", "pelda.hu", "--no-llm", "--no-knowledge"])
     assert result.exit_code == 0, result.output
     # A /szolgaltatasok/ és az /en/ nincs crawlolva: a rájuk mutató anchorok kiesnek.
     lines = result.output.splitlines()

@@ -5,7 +5,8 @@ igen/nem kérdéssel, egy LLM-hívásban oldalanként.
   (`item_block`: az első szerkezeti helyű említés blokkja, ha van, különben az első említésé) a
   fajtájával és a szövegével.
 - Kimenet tételenként: marad vagy kiesik. A kieső tétel minden említése kiesik; a válasz nélküli
-  tétel marad (számolva). Hibás hívásnál minden marad, a hiba a rekordban.
+  tétel marad (számolva). Hibás hívásnál minden marad, a hiba a rekordban; a keret-őr
+  leállítása (`BudgetExceeded`) továbbmegy.
 - A prompt állandó; a példapárjai (fogalom kontra leíró kifejezés, megnevezett ajánlat kontra
   tevékenység-leírás) nem a teszt- és fejlesztési oldalakról valók. A hívás `purpose = verify`,
   saját kimeneti plafonnal (`VERIFY_MAX_OUTPUT_TOKENS`), a költségőr is ezzel számol.
@@ -17,7 +18,7 @@ from collections.abc import Callable, Mapping, Sequence
 from aaa2.entities.blocks import block_text
 from aaa2.entities.gate import STRUCTURAL_KINDS, SoftItem, soft_items
 from aaa2.entities.rules import alias_key
-from aaa2.llm.client import LLMError, SchemaMismatch
+from aaa2.llm.client import BudgetExceeded, LLMError, SchemaMismatch
 from aaa2.llm.schemas import VerifyResult
 
 BLOCK_LIMIT = 600                 # a blokk szövegéből ennyi karakter megy a bemenetbe
@@ -98,6 +99,8 @@ def verify_record(client, record: Mapping, blocks: Mapping[str, Mapping],
         out.update(verify_call_id=exc.call_id, verify_error=f"schema_mismatch: {exc}"[:500])
         out["call_ids"].append(exc.call_id)
         return out
+    except BudgetExceeded:
+        raise
     except LLMError as exc:
         out.update(verify_error=f"call_error: {exc}"[:500])
         return out

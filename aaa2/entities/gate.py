@@ -219,19 +219,26 @@ def title_variants(name: str) -> list[str]:
 
 class KnowledgeBase:
     """A (c) feltétel: `get(service, url, params)` → (kulcs, válasz) kérő, pl. a
-    `validate._Api` gyorsítótárral."""
+    `validate._Api` gyorsítótárral. `failures`: a válasz nélküli (hibás) kérések száma."""
 
     def __init__(self, get: Callable[[str, str, list[tuple[str, str]]], tuple[str, dict | None]]):
         self.get = get
+        self.failures = 0
+
+    def _get(self, service: str, url: str, params: list[tuple[str, str]]) -> dict | None:
+        _, body = self.get(service, url, params)
+        if body is None:
+            self.failures += 1
+        return body
 
     def wikidata(self, name: str, code: str) -> dict | None:
-        _, body = self.get("wikidata", WIKIDATA_API, [
+        body = self._get("wikidata", WIKIDATA_API, [
             ("action", "wbsearchentities"), ("format", "json"), ("search", name),
             ("language", code), ("strictlanguage", "1"), ("type", "item"), ("limit", "10")])
         return wikidata_hit(body, name, code)
 
     def wikipedia(self, name: str, code: str) -> dict | None:
-        _, body = self.get("wikipedia", WIKI_API.format(lang=code), [
+        body = self._get("wikipedia", WIKI_API.format(lang=code), [
             ("action", "query"), ("format", "json"), ("formatversion", "2"),
             ("titles", "|".join(title_variants(name))), ("redirects", "1"),
             ("prop", "pageprops"), ("ppprop", "disambiguation"), ("maxlag", "5")])
