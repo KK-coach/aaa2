@@ -28,7 +28,7 @@ from aaa2.entities.validate import (
 )
 from aaa2.llm.client import Retry
 from tests.recorded import FIXTURES_DIR
-from tests.test_entities_rules import html, site
+from tests.test_entities_rules import html, ld, site
 
 NOON = datetime(2026, 9, 26, 12, 0, tzinfo=UTC).replace(tzinfo=None)
 MAPPING = load_kg_types()
@@ -367,8 +367,8 @@ def test_wikipedia_requests_keep_their_distance(env):
 
 
 def test_rules_rerun_finds_an_entity_the_kg_retyped(env):
-    pages = {f"/{i}/": html(f"P{i}", "<a href='/bq/'>BigQuery</a>") for i in range(3)}
-    pages["/bq/"] = html("BQ", "")
+    brand = ld({"@type": "Brand", "name": "BigQuery"})
+    pages = {f"/{i}/": html(f"P{i}", "<p>BigQuery</p>", head=brand) for i in range(3)}
     con = site(pages)
     run_rules(con)
     # a type_suggested az LLM-körből jön, a szövegtörzsbeli sorával együtt (nem navigációs)
@@ -376,10 +376,10 @@ def test_rules_rerun_finds_an_entity_the_kg_retyped(env):
     con.execute("UPDATE entities SET type_suggested = 'tech'")
     run(con, connect(":memory:"), standard_apis(), env)
     assert con.execute("SELECT type, type_changed_from FROM entities").fetchall() == [
-        ("tech", "concept")]
+        ("tech", "brand")]
     run_rules(con)
     assert con.execute("SELECT name, type, source FROM entities").fetchall() == [
-        ("BigQuery", "tech", "rule")]
+        ("BigQuery", "tech", "schema")]
 
 
 def thing(name, description="leírás", article="szócikk"):
@@ -572,11 +572,12 @@ def outcome(con):
 
 
 REFERENCE_NAMES = ("kk-coach-crawl", "materia-crawl", "ngx-bootstrap-crawl")
-# A "Wine List" és a "Mérés" csak anchorban áll (navigációs); a Google a schemából jön.
+# A Google a schemából jön. Az anchorból jött fogalmak (pl. „Mérés”, „Wine List”) az M2/6 óta
+# nem entitások (menüpontok); a felvétel eredményének csak a megmaradt entitásai kellenek.
 NAMED = {
-    "kk-coach-crawl": {"Mérés|concept": ["stub", None, None, "navigational"],
-                       "Google|org": ["high", "org", "https://en.wikipedia.org/wiki/Google", None]},
-    "materia-crawl": {"Wine List|concept": ["stub", None, None, "navigational"]},
+    "kk-coach-crawl": {"Google|org": ["high", "org", "https://en.wikipedia.org/wiki/Google",
+                                      None]},
+    "materia-crawl": {},
     "ngx-bootstrap-crawl": {},
 }
 
@@ -608,7 +609,8 @@ def test_reference_validation_replays_the_recorded_answers(name, reference_crawl
     assert misses == []
     measured = outcome(con)
     assert {key: measured.get(key) for key in NAMED[name]} == NAMED[name]
-    assert measured == recorded["measured"]
+    assert measured == {key: recorded["measured"][key] for key in measured}
+    assert all(key.endswith("|concept") for key in set(recorded["measured"]) - set(measured))
 
 
 @pytest.mark.live

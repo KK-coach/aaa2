@@ -21,8 +21,10 @@ előfordulás: blokk és karakterpozíció a blokk szövegében (a schema-említ
   vagy az első H1-blokkban áll: position = title / h1, a szó szerinti részlet a pozíciójával,
   source = rule.
 - anchor: a belső linkek anchorja, ha legalább `MIN_ANCHOR_PAGES` különböző oldalon azonos
-  (kulcs szerint). Ha a kulcs egy talált entitásé, ahhoz kerül; különben concept-jelölt, ha
-  egyetlen célra mutat (két vagy több célra: navigációs, kimarad). Említés minden blokkban,
+  (kulcs szerint). Ha a kulcs egy talált entitásé, ahhoz kerül; különben nem entitás (M2/6, 5.
+  pont): két vagy több célra navigációs; egy célra, ha az entitásoldal (`pages.page_roles`),
+  a céloldal entitásának aliasa lesz a site-körben (`site.run_site`); ha segédoldal,
+  navigációs címke. Említés minden blokkban,
   amelyben ilyen kulcsú anchor áll, a blokk szövegében a pozíciójával (a chrome-régióban is);
   position = anchor, source = rule. Ha a kulcs egy oldal linkjei között szerepel, de egyik
   látható blokkjában sem, kimarad (`anchor_not_in_visible_block`). Kimarad a betű nélküli, a
@@ -59,6 +61,7 @@ import zstandard
 from selectolax.parser import HTMLParser
 
 from aaa2.entities.dom import build_blocks, parse_blocks
+from aaa2.entities.pages import ENTITY_ROLES, page_roles
 from aaa2.llm.schemas import ENTITY_TYPES
 
 SCHEMA_TYPES_FILE = Path(__file__).parent / "config" / "schema_types.toml"
@@ -555,9 +558,11 @@ def _attach(target: Candidate, mentions: list[Mention]) -> None:
 
 def _anchors(con, page_ids, dom, candidates, skipped) -> None:
     homes = _home_urls(con)
+    roles = page_roles(con)
     reasons: Counter[str] = Counter()
     occurrences: dict[str, dict[int, Counter[str]]] = defaultdict(lambda: defaultdict(Counter))
     targets: dict[str, set[str]] = defaultdict(set)
+    target_pages: dict[str, set[int]] = defaultdict(set)
     for from_id, anchor, to_url, to_id, from_url, from_lang, to_lang in con.execute(
         "SELECT l.from_page_id, l.anchor, l.to_url, l.to_page_id, p.url, p.lang, t.lang "
         "FROM links l JOIN pages p ON p.page_id = l.from_page_id "
@@ -581,6 +586,7 @@ def _anchors(con, page_ids, dom, candidates, skipped) -> None:
             continue
         occurrences[key][from_id][anchor] += 1
         targets[key].add(to_url)
+        target_pages[key].add(to_id)
     for key, by_page in occurrences.items():
         if len(by_page) < MIN_ANCHOR_PAGES:
             reasons["anchor_texts_under_min_pages"] += 1
@@ -590,8 +596,11 @@ def _anchors(con, page_ids, dom, candidates, skipped) -> None:
         if target is None:
             if len(targets[key]) > 1:
                 reasons["anchor_texts_navigational"] += 1
-                continue
-            target = candidates.setdefault((key, "concept"), Candidate("concept", "rule"))
+            else:
+                role = roles.get(target_pages[key].pop()) if target_pages[key] else None
+                reasons["anchor_to_entity_page" if role is not None and role.role in
+                        ENTITY_ROLES else "anchor_to_support_page"] += 1
+            continue
         for page_id, forms in by_page.items():
             for form, count in forms.items():
                 target.add_form(form, "anchor", count)

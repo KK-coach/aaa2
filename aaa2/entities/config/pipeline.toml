@@ -7,6 +7,7 @@ blocks = true         # a hiányzó blokkok felépítése a renderelt DOM-ból (
 extraction = true     # LLM-kinyerés a content-blokkokra (3a prompt, darabolva); a többi LLM-lépés ehhez kötött
 services = true       # saját ajánlatok: szerkezeti hely, utána az ellenőrző hívás
 concepts = true       # fogalmak: jelöltként, kapu nélkül, bizonyítékokkal
+site = true           # site-szintű entitások: oldalhoz kötés, csomagok, lépések, demó, sablon (LLM nélkül)
 knowledge = true      # tudásbázis-egyezés (Wikidata, Wikipedia): a fogalmak bizonyítéka és az entitásoké
 save = true           # mentés az említés- és entitástáblába; false: csak a futásnapló
 

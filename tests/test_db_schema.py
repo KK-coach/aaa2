@@ -12,6 +12,7 @@ EXPECTED = {
     "site", "crawl_runs", "crawl_queue", "pages", "links", "headings",
     "schema_blocks", "entities", "page_entities", "llm_calls", "rules", "rule_events",
     "entity_runs", "blocks", "mention_sources", "page_entities_v1", "entity_run_pages",
+    "entity_aliases", "entity_relations", "merge_log",
     "soft_checks",
 }
 

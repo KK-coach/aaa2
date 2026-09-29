@@ -47,7 +47,8 @@ PIPELINE_FILE = Path(__file__).parent / "config" / "pipeline.toml"
 ESTIMATE_CHARS_PER_TOKEN = 3.0       # a becsléshez; a keret-őr konzervatívabb (CHARS_PER_TOKEN)
 VERIFY_OUTPUT_BASE = 200             # az ellenőrző hívás kimeneti tokenje: alap
 VERIFY_OUTPUT_PER_ITEM = 40          # és tételenként
-STEPS = ("rules", "blocks", "extraction", "services", "concepts", "knowledge", "save")
+STEPS = ("rules", "blocks", "extraction", "services", "concepts", "site", "knowledge",
+         "save")
 
 
 @dataclass(frozen=True)
@@ -57,6 +58,7 @@ class Steps:
     extraction: bool = True
     services: bool = True
     concepts: bool = True
+    site: bool = True
     knowledge: bool = True
     save: bool = True
 
@@ -68,7 +70,7 @@ class Pipeline:
 
 
 def load_pipeline(path: Path = PIPELINE_FILE) -> Pipeline:
-    """A lépések (mind a hét megadva, logikai értékkel) és a költséghatár (> 0)."""
+    """A lépések (mind megadva, logikai értékkel) és a költséghatár (> 0)."""
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
     steps = raw.get("steps", {})
     if set(steps) != set(STEPS) or not all(isinstance(v, bool) for v in steps.values()):

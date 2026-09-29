@@ -5,9 +5,10 @@
   tudásbázis-kérések hibái, entitások és említések típusonként, a saját ajánlatok sorsa, a
   fogalmak bizonyítékai; ha van korábbi állapot (egy másik adatbázis, pl. a rögzített készlet
   a 012-es migráció előtt), a típusonkénti entitás- és említésszám mellette (regresszió).
-- Entitástábla: minden említéssel bíró entitás egy sorban: név, típus, altípus, forrás, hány
-  oldalon és hány említésben szerepel, és hány oldalon áll szerkezeti helyen (title, heading,
-  navigáció, kártya, táblázatsor), a tudásbázis-egyezés (Wikidata QID, Wikipedia-URL).
+- Entitástábla: minden említéssel bíró entitás egy sorban: név, típus, altípus, szint (tier),
+  jelölések (flags), forrás, hány oldalon és hány említésben szerepel, és hány oldalon áll
+  szerkezeti helyen (title, heading, navigáció, kártya, táblázatsor), az oldala (oldalhoz
+  kötött entitásnál), a tudásbázis-egyezés (Wikidata QID és státusz, Wikipedia-URL).
   Navigáció: az említés a chrome-régióban áll, vagy a név (`gate.occurs`) az említés oldalának
   chrome-régiójában. Sorrend: oldalszám, említésszám, név.
 """
@@ -24,8 +25,8 @@ import duckdb
 from aaa2.entities.gate import occurs
 
 PLACES = ("title", "heading", "nav", "card", "table_row")
-TABLE_FIELDS = ("entity", "type", "subtype", "source", "pages", "mentions", *PLACES,
-                "wikidata_qid", "wikipedia")
+TABLE_FIELDS = ("entity", "type", "subtype", "tier", "flags", "source", "pages", "mentions",
+                *PLACES, "anchor_page", "wikidata_qid", "wikidata_status", "wikipedia")
 
 
 def wikipedia_url(value: str | None) -> str:
@@ -55,18 +56,22 @@ def entity_table(con: duckdb.DuckDBPyConnection) -> list[dict]:
         if place in PLACES:
             places[entity_id][place].add(page_id)
     rows = []
-    for entity_id, name, kind, subtype, source, qid, wiki in con.execute(
-            "SELECT entity_id, name, type, subtype, source, wikidata_id, wikipedia FROM entities"
-    ).fetchall():
+    for entity_id, name, kind, subtype, tier, flags, source, anchor, qid, status, wiki in \
+            con.execute(
+                "SELECT e.entity_id, e.name, e.type, e.subtype, e.tier, e.flags, e.source, "
+                "p.url, e.wikidata_id, e.wikidata_status, e.wikipedia FROM entities e "
+                "LEFT JOIN pages p ON p.page_id = e.anchor_page_id").fetchall():
         if entity_id not in pages:
             continue
         nav = places[entity_id]["nav"]
         nav |= {page_id for page_id in pages[entity_id] - nav
                 if any(occurs(name, text) for text in chrome[page_id])}
-        rows.append({"entity": name, "type": kind, "subtype": subtype or "", "source": source,
+        rows.append({"entity": name, "type": kind, "subtype": subtype or "", "tier": tier or "",
+                     "flags": " ".join(flags or []), "source": source,
                      "pages": len(pages[entity_id]), "mentions": count[entity_id],
                      **{place: len(places[entity_id][place]) for place in PLACES},
-                     "wikidata_qid": qid or "", "wikipedia": wikipedia_url(wiki)})
+                     "anchor_page": anchor or "", "wikidata_qid": qid or "",
+                     "wikidata_status": status or "", "wikipedia": wikipedia_url(wiki)})
     return sorted(rows, key=lambda r: (-r["pages"], -r["mentions"], r["entity"].lower()))
 
 
@@ -157,6 +162,7 @@ def run_report(con: duckdb.DuckDBPyConnection, label: str,
             lines.append(f"  - {url}: {status}" + (f" ({error[:160]})" if error else ""))
         lines.append("")
     lines += _entities_section(con)
+    lines += _site_section(con)
     lines += _soft_section(con)
     lines += _regression_section(con, baseline)
     return "\n".join(lines) + "\n"
@@ -184,6 +190,41 @@ def _entities_section(con: duckdb.DuckDBPyConnection) -> list[str]:
     lines += ["", "Forrás szerint: " + (", ".join(f"{s} {n}" for s, n in by_source) or "—")
               + f"; tudásbázis-ellenőrzés nélkül: {unchecked}", ""]
     return lines
+
+
+def _site_section(con: duckdb.DuckDBPyConnection) -> list[str]:
+    run = _latest(con, "site")
+    if run is None:
+        return []
+    detail = json.loads(run[8] or "{}")
+    tiers = dict(con.execute(
+        "SELECT tier, count(*) FROM entities WHERE tier IS NOT NULL GROUP BY tier").fetchall())
+    anchored = con.execute(
+        "SELECT e.type, coalesce(e.subtype, ''), count(*) FROM entities e "
+        "WHERE e.anchor_page_id IS NOT NULL GROUP BY ALL ORDER BY ALL").fetchall()
+    flags = dict(con.execute(
+        "SELECT flag, count(*) FROM (SELECT unnest(flags) AS flag FROM entities) "
+        "GROUP BY flag").fetchall())
+    merges = con.execute("SELECT rule, count(*) FROM merge_log WHERE run_id = ? GROUP BY rule "
+                         "ORDER BY rule", [run[0]]).fetchall()
+    relations = con.execute("SELECT type, count(*) FROM entity_relations GROUP BY type "
+                            "ORDER BY type").fetchall()
+    thresholds = detail.get("thresholds", {})
+    return [
+        "## Site-szintű entitások", "",
+        f"- site-kör: #{run[0]}; oldalszerepek: "
+        + (", ".join(f"{k} {v}" for k, v in sorted(detail.get("roles", {}).items())) or "—"),
+        "- oldalhoz kötött entitások: "
+        + (", ".join(f"{t}{'/' + s if s else ''} {n}" for t, s, n in anchored) or "—"),
+        "- szintek: " + (", ".join(f"{k} {v}" for k, v in sorted(tiers.items())) or "—"),
+        "- jelölések: " + (", ".join(f"{k} {v}" for k, v in sorted(flags.items())) or "—"),
+        "- összevonás szabályonként: " + (", ".join(f"{r} {n}" for r, n in merges) or "0"),
+        "- kapcsolatok: " + (", ".join(f"{t} {n}" for t, n in relations) or "0"),
+        (f"- sablonküszöb: legalább {thresholds.get('template_min_groups', '—')} oldalcsoport "
+         f"és a csoportok {thresholds.get('template_min_share', 0):.0%}-a "
+         f"({thresholds.get('template_groups', '—')} csoportból "
+         f"{thresholds.get('template_needed', '—')}); demóküszöb: az említések "
+         f"{thresholds.get('demo_share', 0):.0%}-a demó-környezetben"), ""]
 
 
 def _soft_section(con: duckdb.DuckDBPyConnection) -> list[str]:

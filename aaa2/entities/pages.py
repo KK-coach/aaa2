@@ -1,0 +1,196 @@
+"""Oldalcsoportok és oldalszerepek a site-szintű entitásokhoz (M2 spec, M2/6, 3. pont).
+
+- Oldalcsoport: a hreflang-párok egy csoport (az oldal `hreflang` URL-jei szerint); ahol nincs
+  hreflang, a lekérdezés és a töredék nélküli URL (a fülek, pl. `?tab=api`, egy csoport).
+- Szerep oldalanként, sorrendben:
+  - `support`: kezdőoldal (`site.home_urls`), jogi, köszönő és hibaoldal (URL-kulcsszó), vagy
+    `ContactPage` / `AboutPage` / `ProfilePage` / `CollectionPage` / `SearchResultsPage`
+    csomópont;
+  - `offer`: az oldalra mutató (`url` vagy `@id` a töredék nélkül) JSON-LD `Service`;
+  - `product`: az oldalra mutató JSON-LD `Product`;
+  - `article`: `Article` / `BlogPosting` / `NewsArticle` / `TechArticle` csomópont;
+  - `component`: dokumentációs oldal: van kódblokkja (a `blocks` táblából, tehát a blokkok
+    felépítése után), a H1 legfeljebb `COMPONENT_H1_WORDS`
+    szó, és legalább `COMPONENT_MIN_LINKERS` más csoportból mutat rá navigációs (nav, aside)
+    link;
+  - különben `support` (nincs entitásoldal-bizonyíték).
+- A csoport szerepe a tagjaié közül az erősebb (offer > product > component > article); ha a
+  csoport bármely tagja kezdőoldal, jogi vagy köszönőoldal, a csoport `support`.
+"""
+from __future__ import annotations
+
+import json
+import re
+from collections import Counter, defaultdict
+from dataclasses import dataclass
+from urllib.parse import urldefrag, urlsplit, urlunsplit
+
+import duckdb
+
+ENTITY_ROLES = ("offer", "product", "component", "article")
+ROLE_TYPE = {"offer": ("service", None), "product": ("product", None),
+             "component": ("tech", "component"), "article": ("work", "article")}
+ARTICLE_TYPES = frozenset({"Article", "BlogPosting", "NewsArticle", "TechArticle"})
+SUPPORT_TYPES = frozenset({"ContactPage", "AboutPage", "ProfilePage", "CollectionPage",
+                           "SearchResultsPage", "CheckoutPage"})
+SUPPORT_URL_WORDS = ("privacy", "adatvedelem", "adatkezel", "cookie", "impressum", "impresszum",
+                     "terms", "aszf", "feltetelek", "thank-you", "thanks", "koszon", "grazie",
+                     "404", "et_code_snippet")
+NAV_POSITIONS = ("nav", "aside", "footer")
+COMPONENT_H1_WORDS = 4
+COMPONENT_MIN_LINKERS = 2
+
+
+@dataclass(frozen=True)
+class PageInfo:
+    page_id: int
+    url: str
+    lang: str | None
+    title: str | None
+    h1: str | None
+    group: str
+    role: str
+    reason: str
+
+
+def page_url(url: str) -> str:
+    """Lekérdezés és töredék nélkül, a záró perjel nélkül (a csoportkulcshoz)."""
+    parts = urlsplit(urldefrag(url)[0])
+    return urlunsplit((parts.scheme, parts.netloc, parts.path.rstrip("/") or "/", "", ""))
+
+
+def same_page(a: str | None, b: str) -> bool:
+    return bool(a) and urlsplit(urldefrag(a)[0])._replace(query="").geturl().rstrip("/") \
+        == urlsplit(b)._replace(query="", fragment="").geturl().rstrip("/")
+
+
+def primary_lang(tag: str | None) -> str | None:
+    return tag.strip().replace("_", "-").split("-", 1)[0].lower() if tag else None
+
+
+def group_key(url: str, hreflang: list[str] | None) -> str:
+    urls = sorted({entry.split("|", 1)[-1] for entry in hreflang or [] if entry})
+    return "hreflang:" + " ".join(page_url(u) for u in urls) if urls else page_url(url)
+
+
+def page_roles(con: duckdb.DuckDBPyConnection) -> dict[int, PageInfo]:
+    """Az alkalmas oldalak csoportja és szerepe (lásd a modul leírását)."""
+    rows = con.execute(
+        "SELECT page_id, url, lang, title, h1, hreflang FROM pages "
+        "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL "
+        "ORDER BY page_id").fetchall()
+    homes = {page_url(u) for u in _home_urls(con)}
+    nodes = _schema_nodes(con)
+    code_pages = {page_id for (page_id,) in con.execute(
+        "SELECT DISTINCT page_id FROM blocks WHERE kind = 'code' AND region = 'content'"
+    ).fetchall()}
+    groups = {page_id: group_key(url, hreflang) for page_id, url, _, _, _, hreflang in rows}
+    linkers: dict[str, set[str]] = defaultdict(set)
+    for from_id, to_id in con.execute(
+            "SELECT from_page_id, to_page_id FROM links WHERE to_page_id IS NOT NULL "
+            "AND list_contains(?, position)", [list(NAV_POSITIONS)]).fetchall():
+        if from_id in groups and to_id in groups and groups[from_id] != groups[to_id]:
+            linkers[groups[to_id]].add(groups[from_id])
+    own: dict[int, tuple[str, str]] = {}
+    for page_id, url, _, _, h1, _ in rows:
+        own[page_id] = _own_role(page_id, url, h1, homes, nodes.get(page_id, []),
+                                 page_id in code_pages, len(linkers[groups[page_id]]))
+    members: dict[str, list[int]] = defaultdict(list)
+    for page_id in own:
+        members[groups[page_id]].append(page_id)
+    out: dict[int, PageInfo] = {}
+    for key, page_ids in members.items():
+        roles = [own[p] for p in page_ids]
+        if any(reason in ("home", "support_url") for _, reason in roles):
+            role = "support"
+        else:
+            role = min((r for r, _ in roles), key=lambda r: (ENTITY_ROLES + ("support",)).index(r))
+        for page_id, url, lang, title, h1, _ in rows:
+            if page_id in page_ids:
+                mine, reason = own[page_id]
+                out[page_id] = PageInfo(page_id, url, primary_lang(lang), title, h1, key, role,
+                                        reason if mine == role else f"group:{role}")
+    return out
+
+
+def entity_groups(roles: dict[int, PageInfo]) -> dict[str, list[PageInfo]]:
+    """Az entitásoldal-csoportok tagjai oldalszám szerint."""
+    found: dict[str, list[PageInfo]] = defaultdict(list)
+    for info in sorted(roles.values(), key=lambda i: i.page_id):
+        if info.role in ENTITY_ROLES:
+            found[info.group].append(info)
+    return dict(found)
+
+
+def representative(members: list[PageInfo], site_lang: str | None) -> PageInfo:
+    """A csoport oldala a site elsődleges nyelvén (ha nincs, bármelyik), azon belül a
+    lekérdezés nélküli URL, aztán a legkisebb oldalszám."""
+    pool = [m for m in members if m.lang and m.lang == site_lang] or members
+    return min(pool, key=lambda m: ("?" in m.url, m.page_id))
+
+
+def site_language(con: duckdb.DuckDBPyConnection) -> str | None:
+    languages = (con.execute("SELECT languages FROM site").fetchone() or [None])[0] or []
+    return primary_lang(languages[0]) if languages else None
+
+
+def role_counts(roles: dict[int, PageInfo]) -> Counter[str]:
+    return Counter(info.role for info in roles.values())
+
+
+def _own_role(page_id: int, url: str, h1: str | None, homes: set[str], nodes: list[dict],
+              has_code: bool, linkers: int) -> tuple[str, str]:
+    if page_url(url) in homes:
+        return "support", "home"
+    path = urlsplit(url).path.lower()
+    if any(word in path for word in SUPPORT_URL_WORDS):
+        return "support", "support_url"
+    types = {_short(t) for node in nodes for t in _as_list(node.get("@type"))}
+    for kind, role in (("Service", "offer"), ("Product", "product")):
+        if any(kind in {_short(t) for t in _as_list(node.get("@type"))}
+               and (same_page(node.get("url"), url) or same_page(node.get("@id"), url))
+               for node in nodes):
+            return role, f"schema_{kind.lower()}"
+    if types & ARTICLE_TYPES:
+        return "article", "schema_article"
+    if types & SUPPORT_TYPES:
+        return "support", "schema_support"
+    if has_code and h1 and len(h1.split()) <= COMPONENT_H1_WORDS \
+            and linkers >= COMPONENT_MIN_LINKERS:
+        return "component", "docs_component"
+    return "support", "no_entity_evidence"
+
+
+def _schema_nodes(con: duckdb.DuckDBPyConnection) -> dict[int, list[dict]]:
+    """Oldalanként a JSON-LD blokkok legfelső szintű típusos csomópontjai (és a `@graph`
+    elemei)."""
+    found: dict[int, list[dict]] = defaultdict(list)
+    for page_id, raw in con.execute(
+            "SELECT page_id, json FROM schema_blocks WHERE type IS DISTINCT FROM 'invalid' "
+            "ORDER BY page_id, ordinal").fetchall():
+        try:
+            block = json.loads(raw)
+        except ValueError:
+            continue
+        for node in _as_list(block):
+            if isinstance(node, dict):
+                graph = node.get("@graph")
+                found[page_id] += [n for n in _as_list(graph) if isinstance(n, dict)] \
+                    if graph is not None else [node]
+    return found
+
+
+def _home_urls(con: duckdb.DuckDBPyConnection) -> set[str]:
+    row = con.execute("SELECT home_urls, seed_url FROM site").fetchone()
+    if row is None:
+        return set()
+    return set(row[0]) if row[0] is not None else {row[1]}
+
+
+def _short(value: object) -> str:
+    text = str(value).strip()
+    return re.split(r"[/#:]", text)[-1] if text else text
+
+
+def _as_list(value: object) -> list:
+    return value if isinstance(value, list) else [value] if value is not None else []
