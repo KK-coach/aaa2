@@ -224,15 +224,31 @@ class KnowledgeRun:
     errors: int
 
 
+def clear_person_links(con: duckdb.DuckDBPyConnection,
+                       clock: Callable[[], datetime]) -> int:
+    """A személyek automatikus Wikidata- és Wikipedia-kapcsolása ki van kapcsolva (M2/6, 8.
+    pont: csak a JSON-LD `sameAs`-en át, az még nincs kész): a meglévő linkjük törlődik, a
+    státuszuk none. Visszaad: hány személynél volt link."""
+    rows = con.execute(
+        "UPDATE entities SET wikidata_id = NULL, wikipedia = NULL, wikidata_status = 'none', "
+        "knowledge_checked_at = coalesce(knowledge_checked_at, ?) WHERE type = 'person' "
+        "AND (wikidata_id IS NOT NULL OR wikipedia IS NOT NULL OR wikidata_status IS NULL) "
+        "RETURNING entity_id", [clock()]).fetchall()
+    return len(rows)
+
+
 def link_entities(con: duckdb.DuckDBPyConnection, knowledge: KnowledgeBase,
                   clock: Callable[[], datetime], site_lang: str | None = None) -> KnowledgeRun:
-    """Az említéssel bíró, még nem ellenőrzött entitások neve a Wikidatán (címke vagy alias),
+    """Az említéssel bíró, még nem ellenőrzött, nem személy entitások neve a Wikidatán (címke
+    vagy alias),
     utána a Wikipedián (cím vagy átirányítás), az entitás nyelvén (ha nincs, a site-én), majd
     angolul; nyelvenként az első találat. Ha egy kérés hibára fut, az entitás ellenőrizetlen
     marad (a következő futás újra kérdezi)."""
+    clear_person_links(con, clock)
     rows = con.execute(
         "SELECT entity_id, name, lang FROM entities WHERE knowledge_checked_at IS NULL "
-        "AND entity_id IN (SELECT entity_id FROM page_entities) ORDER BY entity_id").fetchall()
+        "AND type <> 'person' AND entity_id IN (SELECT entity_id FROM page_entities) "
+        "ORDER BY entity_id").fetchall()
     wikidata = wikipedia = errors = 0
     for entity_id, name, lang in rows:
         before = knowledge.failures

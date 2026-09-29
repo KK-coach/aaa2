@@ -20,7 +20,13 @@
 - Materia: a márkák (`MATERIA_BRANDS`) külön entitások `brand_of` kapcsolattal; a jogszabályok
   (`MATERIA_LAWS`) work / legislation típusúak.
 
-A kimenet Markdown a `--out` alá; a konzolra a fájl útvonala.
+Halasztva (Krisztián döntése, 2026-09-29; a spec pontjai érvényesek, az M2/7 előtt kerülnek
+sorra): a termék–márka (9a), a jogszabály (9b) és a Wikidata-státusz (8. pont; kivéve a
+személyek automatikus kapcsolásának kikapcsolását). Ezek sorai „halasztva” jelöléssel
+mérnek, nem hibaként.
+
+A kimenet Markdown a `--out` alá; a konzolra a fájl útvonala. `--merge-sample PATH`: 30 tételes
+kézi összevonási minta a `merge_log`-ból (`merge_sample`), verdikt nélkül.
 """
 from __future__ import annotations
 
@@ -54,7 +60,7 @@ MATERIA_LAWS = ("Act CXII of 2011", "Act V of 2013", "Act XLVIII of 2008",
 @dataclass
 class Check:
     name: str
-    ok: bool
+    ok: bool | None                  # None: halasztva (a spec pontja később kerül sorra)
     detail: str = ""
 
 
@@ -64,8 +70,11 @@ class Result:
     checks: list[Check] = field(default_factory=list)
     tables: list[str] = field(default_factory=list)
 
-    def add(self, name: str, ok: bool, detail: str = "") -> None:
+    def add(self, name: str, ok: bool | None, detail: str = "") -> None:
         self.checks.append(Check(name, ok, detail))
+
+    def deferred(self, name: str, detail: str = "") -> None:
+        self.checks.append(Check(name, None, detail))
 
 
 class Index:
@@ -249,8 +258,8 @@ def evaluate_ngx(con: duckdb.DuckDBPyConnection) -> Result:
     api = con.execute(
         "SELECT name FROM entities WHERE subtype = 'api_symbol' AND (wikidata_id IS NOT NULL "
         "OR wikipedia IS NOT NULL)").fetchall()
-    result.add("Wikidata- vagy Wikipedia-link API-szimbólumon", not api,
-               f"{len(api)}: " + ", ".join(n for (n,) in api[:20]) if api else "0")
+    result.deferred("Wikidata- vagy Wikipedia-link API-szimbólumon (8. pont, halasztva)",
+                    f"{len(api)}: " + ", ".join(n for (n,) in api[:20]) if api else "0")
     template = []
     for heading in NGX_TEMPLATE_HEADINGS:
         total, flagged = con.execute(
@@ -281,8 +290,8 @@ def evaluate_materia(con: duckdb.DuckDBPyConnection) -> Result:
         good = len(ids) == 1 and bool(products)
         ok += good
         brand_rows.append(f"{brand}: {len(ids)} márka, {len(products)} brand_of")
-    result.add("márka külön entitás brand_of-fal", ok == len(MATERIA_BRANDS),
-               f"{ok}/{len(MATERIA_BRANDS)} — " + "; ".join(brand_rows))
+    result.deferred("márka külön entitás brand_of-fal (9a, halasztva)",
+                    f"{ok}/{len(MATERIA_BRANDS)} — " + "; ".join(brand_rows))
     law_rows = []
     good_laws = 0
     for law in MATERIA_LAWS:
@@ -295,17 +304,52 @@ def evaluate_materia(con: duckdb.DuckDBPyConnection) -> Result:
                                    for _, t, s in found)
         good_laws += good and any(t == "work" for _, t, _ in found)
         law_rows.append(f"{law}: " + (", ".join(f"{n} ({t}/{s})" for n, t, s in found) or "—"))
-    result.add("jogszabály work/legislation", good_laws == len(MATERIA_LAWS),
-               f"{good_laws}/{len(MATERIA_LAWS)} — " + "; ".join(law_rows))
+    result.deferred("jogszabály work/legislation (9b, halasztva)",
+                    f"{good_laws}/{len(MATERIA_LAWS)} — " + "; ".join(law_rows))
     return result
+
+
+SAMPLE_FILE = Path(__file__).parent / "verdicts" / "merge_sample.json"
+SAMPLE_SIZE = 30
+SAMPLE_ALL = ("hreflang_place", "page_identity_position", "type_split")
+
+
+def merge_sample(sites: dict[str, duckdb.DuckDBPyConnection], size: int = SAMPLE_SIZE) -> list:
+    """Kézi mintához `size` összevonás a `merge_log`-ból: a ritka szabályok (`SAMPLE_ALL`)
+    minden sora, a többi szabályból arányosan, egyenletes lépésközzel (determinisztikusan).
+    Tételenként a két entitás neve, a szabály, a bizonyíték és a megtartott entitás típusa;
+    `verdict`: correct / wrong (üresen)."""
+    rows = []
+    for site, con in sites.items():
+        for merge_id, rule, kept_id, kept, removed, evidence in con.execute(
+                "SELECT merge_id, rule, kept_id, kept_name, removed_name, evidence "
+                "FROM merge_log ORDER BY merge_id").fetchall():
+            kind = con.execute("SELECT type FROM entities WHERE entity_id = ?",
+                               [kept_id]).fetchone()
+            rows.append({"site": site, "merge_id": merge_id, "rule": rule, "kept": kept,
+                         "removed": removed, "kept_type": kind[0] if kind else None,
+                         "evidence": json.loads(evidence or "{}"), "verdict": None,
+                         "note": ""})
+    fixed = [r for r in rows if r["rule"] in SAMPLE_ALL]
+    rest = [r for r in rows if r["rule"] not in SAMPLE_ALL]
+    need = max(0, size - len(fixed))
+    by_rule: dict[str, list] = defaultdict(list)
+    for row in rest:
+        by_rule[row["rule"]].append(row)
+    picked = []
+    for rule, items in sorted(by_rule.items()):
+        share = max(1, round(need * len(items) / max(1, len(rest))))
+        step = max(1, len(items) // share)
+        picked += items[::step][:share]
+    return (fixed + picked)[:size] if len(fixed) < size else fixed[:size]
 
 
 def markdown(results: list[Result]) -> str:
     lines = ["# M2/6 elfogadás", ""]
     for result in results:
         lines += [f"## {result.site}", "", "| ellenőrzés | rendben | részlet |", "|---|---|---|"]
-        lines += [f"| {c.name} | {'igen' if c.ok else 'NEM'} | {c.detail} |"
-                  for c in result.checks]
+        lines += [f"| {c.name} | {'halasztva' if c.ok is None else 'igen' if c.ok else 'NEM'} "
+                  f"| {c.detail} |" for c in result.checks]
         lines += ["", *result.tables]
     return "\n".join(lines) + "\n"
 
@@ -316,6 +360,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--ngx", type=Path)
     parser.add_argument("--materia", type=Path)
     parser.add_argument("--out", type=Path, default=OUT_DIR / "acceptance.md")
+    parser.add_argument("--merge-sample", type=Path, default=None,
+                        help="a kézi összevonási minta (JSON) ide, a megadott adatbázisokból")
     args = parser.parse_args(argv)
     results = []
     for path, evaluate in ((args.kk, lambda c: evaluate_kk(c, json.loads(
@@ -330,6 +376,20 @@ def main(argv: list[str] | None = None) -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(markdown(results), encoding="utf-8")
     print(args.out)
+    if args.merge_sample is not None:
+        sites = {name: duckdb.connect(str(path), read_only=True) for name, path in
+                 (("kk.coach", args.kk), ("ngx-bootstrap", args.ngx), ("materia", args.materia))
+                 if path is not None}
+        try:
+            sample = merge_sample(sites)
+        finally:
+            for con in sites.values():
+                con.close()
+        args.merge_sample.parent.mkdir(parents=True, exist_ok=True)
+        args.merge_sample.write_text(json.dumps(
+            {"about": "M2/6 kézi összevonási minta; verdict: correct / wrong",
+             "items": sample}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        print(f"{args.merge_sample} ({len(sample)} tétel)")
 
 
 if __name__ == "__main__":

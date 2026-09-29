@@ -34,7 +34,22 @@
   kulcs szerint, blokkfajtánként) legalább `TEMPLATE_MIN_GROUPS` és az oldalcsoportok
   `TEMPLATE_MIN_SHARE` részén áll → `page_entities.flags` template; az entitás template, ha
   minden blokkos említése az. A title-blokk kimarad.
-- Minden összevonás a `merge_log`-ba kerül; futásonként egy `entity_runs` sor (method = site).
+- Összevonás (7. pont), fuzzy nélkül: a hreflang-pár oldalak azonos helyű headingjei (a
+  H2-szakaszok elölről és hátulról párban, amíg a H3-ak száma egyezik; a headinget egészében
+  lefedő egyetlen említés entitása, azonos típus, vagy service és csak headingben álló
+  concept: `hreflang_place`), és az írásmód-normalizált név (kis-nagybetű, ékezet, szóköz,
+  aláhúzás, kötőjel, perjel, gondolatjel, zárójel nélkül, a zárójeles rövidítés-kifejtéssel;
+  azonos típus: `normalized_name`). Két különböző oldalhoz kötött entitás és két eltérő szint
+  (core, package) nem olvad össze; a hreflang-párban az elsődleges nyelvű oldal entitása marad.
+- Fogalom és ajánlat (9. pont): a service típusú entitás LLM-említései, amelyeket az LLM
+  fogalomként talált (a tárolt rekordok szerint), fogalom-entitáshoz kerülnek (`type_split`),
+  kivéve a heading-, title- vagy kártyablokkot egészében lefedő említést és az ajánlat
+  valamelyik több szavas nevére szóló említést;
+  a fő ajánlat és a csomag `offers` kapcsolattal kötődik ezekhez, és az olyan fogalomhoz,
+  amelynek normalizált kulcsa a nevének vagy összetett címkéje egy részének kulcsa
+  (`label_parts`: „UX & Konverzióoptimalizálás” → UX, Konverzióoptimalizálás).
+- Minden összevonás és leválasztás a `merge_log`-ba kerül; futásonként egy `entity_runs` sor
+  (method = site).
 """
 from __future__ import annotations
 
@@ -50,6 +65,7 @@ import duckdb
 import zstandard
 
 from aaa2.entities.dom import parse_blocks
+from aaa2.entities.extract import surface_offsets
 from aaa2.entities.pages import (
     NAV_POSITIONS,
     ROLE_TYPE,
@@ -91,6 +107,10 @@ RATE = re.compile(r"óradíj|hourly rate|\brate\s*:|\bdíj\s*:|munkadíj|billed 
                   r"/\s*(?:óra|hour)\b", re.IGNORECASE)
 LOREM = re.compile(r"lorem ipsum", re.IGNORECASE)
 PARENTHETICAL = re.compile(r"(.+?)\s*\(([^()]+)\)")
+NORMAL_DROP = re.compile(r"[\s_\-/–—‐()]+")
+LABEL_SPLIT = re.compile(r"\s+(?:&|és|and|\+|–|—|-)\s+|\s*[/,]\s*")
+TIER_ORDER = {"core": 0, "package": 1, None: 2, "step": 3}
+OFFER_LABEL_SOURCES = ("nav", "schema", "anchor")
 ACRONYM = re.compile(r"[A-Z0-9][A-Z0-9&.+-]{1,5}")
 
 
@@ -111,6 +131,7 @@ class SiteRun:
     steps: int = 0
     merges: Counter[str] = field(default_factory=Counter)
     anchor_mentions: int = 0
+    offers: int = 0
     demo: list[str] = field(default_factory=list)
     template_mentions: int = 0
     template_entities: int = 0
@@ -205,7 +226,12 @@ def run_site(con: duckdb.DuckDBPyConnection,
         context = _Context(con, roles, site_lang, run_id)
         anchored = _page_entities(context, merger, run)
         _packages(context, merger, run, anchored)
+        _hreflang_place(context, merger)
+        _normalized_merges(con, merger)
+        split = _type_split(con, merger)
         _steps(con, run)
+        _normalized_merges(con, merger)
+        run.offers = _offers(con, split)
         _demo(con, run)
         _template(context, run)
         run.merges = merger.counts
@@ -214,7 +240,8 @@ def run_site(con: duckdb.DuckDBPyConnection,
             "skipped = ? WHERE run_id = ?",
             [clock(), len(roles), run.page_entities + run.packages, run.anchor_mentions,
              json.dumps({"roles": run.roles, "merges": dict(run.merges),
-                         "packages": run.packages, "steps": run.steps, "demo": run.demo,
+                         "packages": run.packages, "steps": run.steps, "offers": run.offers,
+                         "demo": run.demo,
                          "template_mentions": run.template_mentions,
                          "template_entities": run.template_entities,
                          "thresholds": run.thresholds}, ensure_ascii=False), run_id])
@@ -681,6 +708,339 @@ def _steps(con: duckdb.DuckDBPyConnection, run: SiteRun) -> None:
         "AND tier IS NULL RETURNING entity_id").fetchall()
     run.steps = len(rows)
 
+
+
+# ---------------------------------------------------------------------------
+# összevonás: írásmód és a hreflang-pár azonos helye (7. pont)
+# ---------------------------------------------------------------------------
+
+
+def normal_key(text: str) -> str:
+    """Az írásmód-normalizált kulcs: kis-nagybetű és ékezet nélkül (`alias_key`), az
+    elválasztók (szóköz, aláhúzás, kötőjel, perjel, gondolatjel) és a zárójelek nélkül."""
+    return NORMAL_DROP.sub("", alias_key(text))
+
+
+def _rank(row: tuple) -> tuple:
+    """Megtartási sorrend: oldalhoz kötött, core > package > nincs > step, erősebb forrás, több
+    említés. `row`: (entity_id, anchor, tier, source, mentions)."""
+    entity_id, anchor, tier, source, mentions = row
+    return (anchor is None, TIER_ORDER.get(tier, 2), SOURCE_STRENGTH.get(source, 9), -mentions,
+            entity_id)
+
+
+def _entity_rows(con: duckdb.DuckDBPyConnection) -> dict[int, tuple]:
+    return {row[0]: row for row in con.execute(
+        "SELECT e.entity_id, e.anchor_page_id, e.tier, e.source, (SELECT count(*) FROM "
+        "page_entities pe WHERE pe.entity_id = e.entity_id) FROM entities e").fetchall()}
+
+
+def _mergeable(a: tuple, b: tuple) -> bool:
+    """Két oldalhoz kötött entitás (különböző oldal) és két eltérő, nem üres, nem step szint
+    nem olvad össze."""
+    if a[1] is not None and b[1] is not None and a[1] != b[1]:
+        return False
+    tiers = {a[2], b[2]} - {None, "step"}
+    return len(tiers) <= 1
+
+
+def _normalized_merges(con: duckdb.DuckDBPyConnection, merger: Merger) -> None:
+    """Azonos típusú entitások azonos normalizált kulccsal (név, aliasok és a zárójeles
+    rövidítés-kifejtés) egy entitás (`normalized_name`); személy kimarad (a szabálykör
+    kezeli)."""
+    rows = _entity_rows(con)
+    groups: dict[tuple[str, str], list[int]] = defaultdict(list)
+    for entity_id, name, kind, aliases in con.execute(
+            "SELECT entity_id, name, type, aliases FROM entities WHERE type <> 'person' "
+            "AND (anchor_page_id IS NOT NULL OR entity_id IN (SELECT entity_id FROM "
+            "page_entities)) ORDER BY entity_id").fetchall():
+        forms = {name, *(aliases or [])}
+        forms |= {part for form in list(forms) for part in expansions(form)}
+        for key in {normal_key(f) for f in forms} - {""}:
+            groups[(kind, key)].append(entity_id)
+    done: set[int] = set()
+    for (kind, key), ids in sorted(groups.items()):
+        ids = [i for i in dict.fromkeys(ids) if i not in done and i in rows]
+        if len(ids) < 2:
+            continue
+        ordered = sorted((rows[i] for i in ids), key=_rank)
+        keep = ordered[0]
+        for other in ordered[1:]:
+            if _mergeable(keep, other) and _exists(con, other[0]):
+                merger.merge(keep[0], other[0], "normalized_name", {"key": key, "type": kind})
+                done.add(other[0])
+
+
+def _sections(con: duckdb.DuckDBPyConnection, page_id: int) -> list[tuple[int, list[int]]]:
+    """Az oldal H2-szakaszai: (a H2 blokkja, a H3 blokkjai), dokumentum-sorrendben."""
+    sections: list[tuple[int, list[int]]] = []
+    for block_id, level in con.execute(
+            "SELECT block_id, level FROM blocks WHERE page_id = ? AND region = 'content' "
+            "AND kind = 'heading' AND level IN (2, 3) ORDER BY ordinal", [page_id]).fetchall():
+        if level == 2:
+            sections.append((block_id, []))
+        elif sections:
+            sections[-1][1].append(block_id)
+    return sections
+
+
+def aligned_headings(left: list[tuple[int, list[int]]],
+                     right: list[tuple[int, list[int]]]) -> list[tuple[int, int]]:
+    """A két oldal azonos helyű headingjei: a H2-szakaszok elölről és hátulról párban, amíg a
+    H3-ak száma egyezik; a párba állított szakaszok H2-je és H3-ai sorszám szerint."""
+    pairs: list[tuple[int, int]] = []
+    front = 0
+    while front < min(len(left), len(right)) and len(left[front][1]) == len(right[front][1]):
+        front += 1
+    back = 0
+    while back < min(len(left), len(right)) - front \
+            and len(left[-1 - back][1]) == len(right[-1 - back][1]):
+        back += 1
+    indexes = [(i, i) for i in range(front)] + [(len(left) - 1 - k, len(right) - 1 - k)
+                                                 for k in range(back)]
+    for i, j in indexes:
+        pairs.append((left[i][0], right[j][0]))
+        pairs += list(zip(left[i][1], right[j][1], strict=True))
+    return pairs
+
+
+def _heading_entity(con: duckdb.DuckDBPyConnection, block_id: int) -> int | None:
+    """A headinget egészében lefedő említés entitása, ha pontosan egy ilyen van."""
+    (text,) = con.execute("SELECT text FROM blocks WHERE block_id = ?", [block_id]).fetchone()
+    found = {entity_id for entity_id, surface in con.execute(
+        "SELECT entity_id, surface_form FROM page_entities WHERE block_id = ?",
+        [block_id]).fetchall() if alias_key(surface) == alias_key(text)}
+    return found.pop() if len(found) == 1 else None
+
+
+def _hreflang_place(ctx: _Context, merger: Merger) -> None:
+    """A hreflang-pár oldalak azonos helyű headingjeinek entitása egy entitás
+    (`hreflang_place`), ha a típusuk egyezik, vagy az egyik service és a másik csak
+    headingben álló concept."""
+    con = ctx.con
+    groups: dict[str, list[PageInfo]] = defaultdict(list)
+    for info in ctx.roles.values():
+        groups[info.group].append(info)
+    for members in groups.values():
+        langs = {m.lang for m in members}
+        if len(langs) < 2:
+            continue
+        rep = representative(members, ctx.site_lang)
+        left = _sections(con, rep.page_id)
+        for info in members:
+            if info.lang == rep.lang:
+                continue
+            for mine, theirs in aligned_headings(left, _sections(con, info.page_id)):
+                a, b = _heading_entity(con, mine), _heading_entity(con, theirs)
+                if a is None or b is None or a == b or not (_exists(con, a) and _exists(con, b)):
+                    continue
+                keep, other = _place_pair(con, a, b, prefer=a)
+                if keep is not None:
+                    merger.merge(keep, other, "hreflang_place",
+                                 {"pages": [rep.page_id, info.page_id],
+                                  "blocks": [mine, theirs]})
+
+
+def _place_pair(con: duckdb.DuckDBPyConnection, a: int, b: int,
+                prefer: int | None = None) -> tuple[int | None, int]:
+    """(megtartott, beolvadó): azonos típusnál az oldalhoz kötött, a magasabb szintű, azonos
+    szinten a `prefer` (az elsődleges nyelvű oldalé); service és csak headingben álló
+    concept esetén a service."""
+    rows = _entity_rows(con)
+    types = dict(con.execute("SELECT entity_id, type FROM entities WHERE list_contains(?, "
+                             "entity_id)", [[a, b]]).fetchall())
+    if not _mergeable(rows[a], rows[b]):
+        return None, b
+    if types[a] == types[b]:
+        keep, other = sorted((rows[a], rows[b]), key=lambda r: (
+            r[1] is None, TIER_ORDER.get(r[2], 2), r[0] != prefer, *_rank(r)))
+        return keep[0], other[0]
+    for service, concept in ((a, b), (b, a)):
+        if types[service] == "service" and types[concept] == "concept" \
+                and _only_headings(con, concept):
+            return service, concept
+    return None, b
+
+
+def _only_headings(con: duckdb.DuckDBPyConnection, entity_id: int) -> bool:
+    (others,) = con.execute(
+        "SELECT count(*) FROM page_entities pe JOIN blocks b USING (block_id) "
+        "WHERE pe.entity_id = ? AND b.kind <> 'heading'", [entity_id]).fetchone()
+    return others == 0
+
+
+# ---------------------------------------------------------------------------
+# fogalom és ajánlat (9. pont)
+# ---------------------------------------------------------------------------
+
+
+def llm_types(con: duckdb.DuckDBPyConnection) -> dict[tuple[int, int, int, int], tuple[str, str]]:
+    """A legutóbbi LLM-futás tárolt rekordjaiból említésenként (oldal, blokk, kezdet, vég) az
+    LLM típusa és kanonikus neve."""
+    (run_id,) = con.execute("SELECT max(run_id) FROM entity_runs WHERE method = 'llm'"
+                            ).fetchone()
+    found: dict[tuple[int, int, int, int], tuple[str, str]] = {}
+    if run_id is None:
+        return found
+    for page_id, refined, extraction in con.execute(
+            "SELECT page_id, refined, extraction FROM entity_run_pages WHERE run_id = ? "
+            "AND status = 'done'", [run_id]).fetchall():
+        record = json.loads(refined or extraction or "{}")
+        blocks = {f"b{ordinal}": (block_id, text) for block_id, ordinal, text in con.execute(
+            "SELECT block_id, ordinal, text FROM blocks WHERE page_id = ?", [page_id]).fetchall()}
+        for raw in record.get("entities") or []:
+            block = blocks.get(raw.get("block_id"))
+            spans = surface_offsets(raw.get("surface_form", ""), block[1]) if block else []
+            if spans:
+                found.setdefault((page_id, block[0], *spans[0]),
+                                 (raw["type"], raw["canonical_name"]))
+    return found
+
+
+def _type_split(con: duckdb.DuckDBPyConnection, merger: Merger) -> dict[int, set[int]]:
+    """A service típusú entitás LLM-említései, amelyeket az LLM fogalomként talált, egy
+    fogalom-entitáshoz kerülnek (az LLM kanonikus nevével; meglévőhöz, ha a normalizált kulcs
+    egyezik). Visszaad: service → a leválasztott fogalmak."""
+    raw = llm_types(con)
+    concepts = _concept_index(con)
+    names = _service_names(con)
+    moved: dict[int, set[int]] = defaultdict(set)
+    counts: Counter[tuple[int, int]] = Counter()
+    for mention_id, entity_id, page_id, block_id, start, end, kind_, text in con.execute(
+            "SELECT pe.mention_id, pe.entity_id, pe.page_id, pe.block_id, pe.char_start, "
+            "pe.char_end, b.kind, b.text FROM page_entities pe JOIN entities e USING (entity_id) "
+            "JOIN blocks b USING (block_id) WHERE e.type = 'service' AND pe.mention_id IN "
+            "(SELECT mention_id FROM mention_sources WHERE source = 'llm') "
+            "ORDER BY pe.mention_id").fetchall():
+        kind, name = raw.get((page_id, block_id, start, end), (None, None))
+        if kind != "concept":
+            continue
+        whole = kind_ in ("heading", "title", "card") and alias_key(text[start:end]) \
+            == alias_key(text)
+        own = normal_key(name) in names.get(entity_id, set()) and len(name.split()) > 1
+        if whole or own:
+            continue
+        key = normal_key(name)
+        concept = concepts.get(key)
+        if concept is None:
+            (concept,) = con.execute(
+                "INSERT INTO entities (name, type, aliases, source, created_at) "
+                "VALUES (?, 'concept', [], 'llm', ?) RETURNING entity_id",
+                [name.strip(), merger.clock()]).fetchone()
+            concepts[key] = concept
+        _move_mention(con, mention_id, concept)
+        moved[entity_id].add(concept)
+        counts[(entity_id, concept)] += 1
+    for (entity_id, concept), count in counts.items():
+        (source_name,) = con.execute("SELECT name FROM entities WHERE entity_id = ?",
+                                     [entity_id]).fetchone()
+        (concept_name,) = con.execute("SELECT name FROM entities WHERE entity_id = ?",
+                                      [concept]).fetchone()
+        con.execute(
+            "INSERT INTO merge_log (run_id, kept_id, removed_id, kept_name, removed_name, rule, "
+            "evidence, merged_at) VALUES (?, ?, NULL, ?, ?, 'type_split', ?, ?)",
+            [merger.run_id, concept, concept_name, source_name,
+             json.dumps({"from_id": entity_id, "mentions": count}), merger.clock()])
+        merger.counts["type_split"] += 1
+    return moved
+
+
+def _service_names(con: duckdb.DuckDBPyConnection) -> dict[int, set[str]]:
+    """Service → a neve, az aliasai és az `entity_aliases` sorai normalizált kulccsal."""
+    found: dict[int, set[str]] = defaultdict(set)
+    for entity_id, name, aliases in con.execute(
+            "SELECT entity_id, name, aliases FROM entities WHERE type = 'service'").fetchall():
+        found[entity_id] |= {normal_key(f) for f in [name, *(aliases or [])]}
+    for entity_id, alias in con.execute(
+            "SELECT a.entity_id, a.alias FROM entity_aliases a JOIN entities e "
+            "USING (entity_id) WHERE e.type = 'service'").fetchall():
+        found[entity_id].add(normal_key(alias))
+    return found
+
+
+def _concept_index(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
+    found: dict[str, int] = {}
+    for entity_id, name, aliases in con.execute(
+            "SELECT entity_id, name, aliases FROM entities WHERE type = 'concept' "
+            "ORDER BY entity_id").fetchall():
+        for form in [name, *(aliases or [])]:
+            found.setdefault(normal_key(form), entity_id)
+    found.pop("", None)
+    return found
+
+
+def _move_mention(con: duckdb.DuckDBPyConnection, mention_id: int, entity_id: int) -> None:
+    """Az említés átkerül az entitáshoz; ha ott már van azonos helyű említés, a forrásai
+    oda kerülnek."""
+    row = con.execute("SELECT page_id, block_id, char_start, char_end FROM page_entities "
+                      "WHERE mention_id = ?", [mention_id]).fetchone()
+    same = con.execute(
+        "SELECT mention_id FROM page_entities WHERE page_id = ? AND block_id IS NOT DISTINCT "
+        "FROM ? AND char_start IS NOT DISTINCT FROM ? AND char_end IS NOT DISTINCT FROM ? "
+        "AND entity_id = ?", [*row, entity_id]).fetchone()
+    if same is None:
+        con.execute("UPDATE page_entities SET entity_id = ? WHERE mention_id = ?",
+                    [entity_id, mention_id])
+        return
+    con.execute("INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id, count) "
+                "SELECT ?, source, run_id, llm_call_id, count FROM mention_sources "
+                "WHERE mention_id = ? ON CONFLICT DO NOTHING", [same[0], mention_id])
+    con.execute("DELETE FROM mention_sources WHERE mention_id = ?", [mention_id])
+    con.execute("DELETE FROM page_entities WHERE mention_id = ?", [mention_id])
+
+
+def label_parts(text: str) -> list[str]:
+    """Az összetett ajánlatcímke részei (M2/6, 9. pont): az „&”, „és”, „and”, „+”, „/”, a
+    gondolatjel és a vessző mentén, és a zárójeles rövidítés-kifejtés."""
+    parts = [p.strip() for p in LABEL_SPLIT.split(text) if p.strip()]
+    return list(dict.fromkeys([*parts, *(e for p in [text, *parts] for e in expansions(p))]))
+
+
+def _offers(con: duckdb.DuckDBPyConnection, split: dict[int, set[int]]) -> int:
+    """`offers` a fő ajánlatból és a csomagból a fogalmakhoz: a leválasztott fogalmak
+    (`type_split`), és a fogalom, amelynek normalizált kulcsa az ajánlat nevének, navigációs,
+    JSON-LD vagy anchor-aliasának, vagy ezek egy címkerészének kulcsa (`name`)."""
+    concepts = _concept_index(con)
+    con.execute("DELETE FROM entity_relations WHERE type = 'offers'")
+    rows = set()
+    for entity_id, name, aliases in con.execute(
+            "SELECT entity_id, name, aliases FROM entities WHERE type = 'service' "
+            "AND tier IN ('core', 'package')").fetchall():
+        forms = {name} | {alias for (alias,) in con.execute(
+            "SELECT alias FROM entity_aliases WHERE entity_id = ? AND list_contains(?, source)",
+            [entity_id, list(OFFER_LABEL_SOURCES)]).fetchall()}
+        for form in forms:
+            for part in label_parts(form):
+                concept = concepts.get(normal_key(part))
+                if concept is not None:
+                    rows.add((entity_id, concept, "name", json.dumps({"name": part},
+                                                                     ensure_ascii=False)))
+        for concept in {resolve(con, c) for c in split.get(entity_id, ())}:
+            if concept is not None:
+                rows.add((entity_id, concept, "type_split", json.dumps({})))
+    unique: dict[tuple[int, int], tuple] = {}
+    for row in sorted(rows):
+        unique.setdefault(row[:2], row)
+    if unique:
+        con.executemany("INSERT INTO entity_relations (from_id, to_id, type, source, evidence) "
+                        "VALUES (?, ?, 'offers', ?, ?) ON CONFLICT DO NOTHING",
+                        [(a, b, s, e) for a, b, s, e in unique.values()])
+    return len(unique)
+
+
+def resolve(con: duckdb.DuckDBPyConnection, entity_id: int) -> int | None:
+    """Az entitás a `merge_log` szerinti összevonások után (a megtartotté), vagy None."""
+    seen = set()
+    while entity_id not in seen:
+        seen.add(entity_id)
+        if _exists(con, entity_id):
+            return entity_id
+        row = con.execute("SELECT kept_id FROM merge_log WHERE removed_id = ? "
+                          "ORDER BY merge_id DESC LIMIT 1", [entity_id]).fetchone()
+        if row is None:
+            return None
+        entity_id = row[0]
+    return None
 
 # ---------------------------------------------------------------------------
 # demó és sablon
