@@ -198,20 +198,21 @@ def test_the_same_span_twice_is_one_mention(tmp_path):
 
 
 def test_rule_and_llm_finding_the_same_mention_store_it_once(tmp_path):
-    """A szabály és az LLM ugyanazt az előfordulást találja: egy említés, két forrás; a
-    szabály újrafuttatása az llm-entitást szabályira emeli."""
+    """A szabály (anchor egy schema-entitáshoz) és az LLM ugyanazt az előfordulást találja: egy
+    említés, két forrás; a szabály újrafuttatása az llm-entitást schema-forrásúra emeli."""
+    event = ld({"@type": "Event", "name": "Budapest Coffee Fest"})
     pages = {f"/{i}/": html(f"P{i}", "<p>Lásd a <a href='/fest/'>Budapest Coffee Fest</a> "
-                            "programját</p>") for i in range(3)}
+                            "programját</p>", head=event if i == 0 else "") for i in range(3)}
     con = site({**pages, **stub("/fest/")})
-    answer = reply(mention("b1", "Budapest Coffee Fest", "Budapest Coffee Fest", "concept"))
+    answer = reply(mention("b1", "Budapest Coffee Fest", "Budapest Coffee Fest", "event"))
     client, _ = client_for(con, [answer] * 3 + [reply()], tmp_path)
     run_llm(con, client)
     assert con.execute("SELECT source FROM entities").fetchall() == [("llm",)]
     run_rules(con)
-    assert con.execute("SELECT type, source FROM entities").fetchall() == [("concept", "rule")]
-    assert con.execute("SELECT count(*) FROM page_entities").fetchone() == (3,)
+    assert con.execute("SELECT type, source FROM entities").fetchall() == [("event", "schema")]
+    assert con.execute("SELECT count(*) FROM page_entities").fetchone() == (4,)
     assert con.execute("SELECT source, count(*) FROM mention_sources GROUP BY ALL ORDER BY ALL"
-                       ).fetchall() == [("llm", 3), ("rule", 3)]
+                       ).fetchall() == [("llm", 3), ("rule", 3), ("schema", 1)]
 
 
 # ---------------------------------------------------------------------------
@@ -264,10 +265,11 @@ def test_same_type_match_wins_then_the_stronger_source(tmp_path):
 
 
 def gadget_site():
-    """3 oldal azonos "Kávégép" anchorral egy crawlolt célra: szabályból jött concept."""
-    pages = {f"/{i}/": html(f"P{i}", "<p>A <a href='/gep/'>Kávégép</a> használata egyszerű "
-                            "minden reggel</p>") for i in range(3)}
-    return site({**pages, **stub("/gep/")})
+    """3 oldal a "Kávégép" nevű JSON-LD Producttal: schemából jött product."""
+    product = ld({"@type": "Product", "name": "Kávégép"})
+    pages = {f"/{i}/": html(f"P{i}", "<p>A Kávégép használata egyszerű minden reggel</p>",
+                            head=product) for i in range(3)}
+    return site(pages)
 
 
 def gadget(kind):
@@ -277,23 +279,23 @@ def gadget(kind):
 def test_llm_type_is_a_vote_not_a_change(tmp_path):
     con = gadget_site()
     run_rules(con)
-    client, _ = client_for(con, [gadget("tech")] * 3 + [reply()], tmp_path)
+    client, _ = client_for(con, [gadget("tech")] * 3, tmp_path)
     run_llm(con, client)
     assert con.execute("SELECT type, source, type_votes, type_suggested FROM entities").fetchall(
-    ) == [("concept", "rule", '{"tech": 3}', "tech")]
+    ) == [("product", "schema", '{"tech": 3}', "tech")]
 
 
 def test_votes_accumulate_and_a_tie_keeps_the_current_type(tmp_path):
     con = gadget_site()
     run_rules(con)
-    client, _ = client_for(con, [gadget("tech"), gadget("concept"), reply(), reply()]
-                           + [gadget("product")] * 3 + [reply()], tmp_path)
+    client, _ = client_for(con, [gadget("tech"), gadget("product"), reply()]
+                           + [gadget("tech")] * 3, tmp_path)
     run_llm(con, client)
     assert con.execute("SELECT type_votes, type_suggested FROM entities").fetchone() == (
-        '{"concept": 1, "tech": 1}', "concept")
+        '{"product": 1, "tech": 1}', "product")
     run_llm(con, client)
     assert con.execute("SELECT type, type_votes, type_suggested FROM entities").fetchone() == (
-        "concept", '{"concept": 1, "product": 3, "tech": 1}', "product")
+        "product", '{"product": 1, "tech": 4}', "tech")
 
 
 def test_same_llm_entity_on_two_pages_is_one_entity(tmp_path):

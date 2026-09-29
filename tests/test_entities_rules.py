@@ -308,24 +308,43 @@ def test_navigational_home_short_and_roman_anchors_drop_out():
     pages.update(stub("/cikk-0/", "/cikk-1/", "/x/", "/y/", "/z/", "/anna-0/", "/anna-1/"))
     con = site(pages)
     run = run_rules(con)
+    # A „Mix” egyetlen, segédoldalra mutat: navigációs címke, nem entitás (M2/6, 5. pont).
     assert con.execute("SELECT type, name FROM entities ORDER BY type").fetchall() == [
-        ("concept", "Mix"), ("person", "Kiss Anna")]
+        ("person", "Kiss Anna")]
     assert con.execute("SELECT count(*) FROM page_entities WHERE position = 'anchor' AND "
                        "entity_id = (SELECT entity_id FROM entities WHERE type = 'person')"
                        ).fetchone() == (3,)
     assert (run.skipped["anchor_texts_navigational"], run.skipped["anchor_to_home"],
-            run.skipped["anchor_short"], run.skipped["anchor_roman_numeral"]) == (1, 3, 3, 3)
+            run.skipped["anchor_short"], run.skipped["anchor_roman_numeral"],
+            run.skipped["anchor_to_support_page"]) == (1, 3, 3, 3, 1)
 
 
 def test_anchor_to_an_uncrawled_target_drops_out():
-    """Ugyanaz az anchor 3 oldalon: nem crawlolt célra kiesik, crawlolt célra concept."""
+    """Ugyanaz az anchor 3 oldalon: nem crawlolt célra kiesik; crawlolt segédoldalra
+    navigációs címke, nem entitás."""
     pages = {f"/{i}/": html(f"P{i}", "<a href='/demo/'>Kattints ide</a>"
                             "<a href='/program/'>Programok</a>") for i in range(3)}
     con = site({**pages, **stub("/program/")})
     run = run_rules(con)
-    assert con.execute("SELECT type, name FROM entities").fetchall() == [
-        ("concept", "Programok")]
+    assert con.execute("SELECT type, name FROM entities").fetchall() == []
     assert run.skipped["anchor_uncrawled_target"] == 3
+    assert run.skipped["anchor_to_support_page"] == 1
+
+
+def test_anchor_to_an_entity_page_is_left_to_the_site_round():
+    """Az entitásoldalra (itt: saját JSON-LD Service) mutató anchor nem szabály-entitás: a
+    site-kör köti a céloldal entitásához."""
+    service = ld({"@type": "Service", "name": "Mérés és adatarchitektúra",
+                  "url": "https://pelda.hu/meres/"})
+    pages = {f"/{i}/": html(f"P{i}", "<a href='/meres/'>Mérés</a>") for i in range(3)}
+    pages["/meres/"] = html("Mérés", "<p>Szolgáltatás</p>", head=service)
+    con = site(pages)
+    run = run_rules(con)
+    assert run.skipped["anchor_to_entity_page"] == 1
+    assert con.execute("SELECT type, name FROM entities").fetchall() == [
+        ("service", "Mérés és adatarchitektúra")]
+    assert con.execute("SELECT DISTINCT position FROM page_entities").fetchall() == [
+        ("schema",)]
 
 
 @pytest.mark.parametrize(("anchor", "reason"), [
@@ -343,7 +362,9 @@ def test_anchor_mention_sits_in_its_block_under_its_headings():
     számít a heading-útvonalban."""
     body = ("<h1>Egy</h1><noscript><h2>Rejtett</h2></noscript><h2>Kettő</h2>"
             "<p>Lásd a <a href='/x/'>Közös</a> oldalt</p>")
-    con = site({**{f"/{i}/": html(f"P{i}", body) for i in range(3)}, **stub("/x/")})
+    org = ld({"@type": "Organization", "name": "Közös"})
+    con = site({**{f"/{i}/": html(f"P{i}", body, head=org if i == 0 else "")
+                   for i in range(3)}, **stub("/x/")})
     run_rules(con)
     assert con.execute(
         "SELECT DISTINCT b.heading_path, b.text, pe.char_start, pe.char_end, pe.surface_form "
@@ -373,15 +394,10 @@ def test_anchor_candidates_with_structural_filters():
     con = site(pages)
     run = run_rules(con)
     rows = entity_rows(con)
-    concept = [(url, surface, ordinal, start) for kind, name, url, position, surface, ordinal,
-               start, _, _ in rows if kind == "concept"]
-    # A /szolgaltatasok/ oldalon a link önmagára mutat: 4 oldal marad; a menüpont az 1. blokk
-    # (a nav alatt, chrome-régióban).
-    assert concept == [(f"https://pelda.hu{p}", "Szolgáltatások", 1, 0)
-                       for p in ("/", "/a/", "/anna/", "/b/")]
-    assert con.execute("SELECT DISTINCT b.region FROM page_entities pe JOIN blocks b "
-                       "ON b.block_id = pe.block_id JOIN entities e ON e.entity_id = pe.entity_id "
-                       "WHERE e.type = 'concept'").fetchall() == [("chrome",)]
+    # A „Szolgáltatások” menüpont 4 oldalon (a /szolgaltatasok/ saját linkje önmagára mutat),
+    # egyetlen segédoldalra: navigációs címke, nem entitás.
+    assert [kind for kind, *_ in rows if kind == "concept"] == []
+    assert run.skipped["anchor_to_support_page"] == 1
     anna = [(url, position, surface, ordinal, start) for kind, name, url, position, surface,
             ordinal, start, _, _ in rows if kind == "person"]
     assert anna == [
@@ -409,19 +425,23 @@ def test_canonical_name_comes_from_the_creating_source():
                             "<div><a href='/rolunk/'><img src='l.png' alt='Logó'></a></div>",
                             head=ld({"@type": "Person", "name": "Kiss Anna"}) if i == 0 else "")
              for i in range(3)}
+    pages[f"/{0}/"] = pages["/0/"].replace(
+        "</head>", ld({"@type": "Organization", "name": "Logó"}) + "</head>")
     con = site({**pages, **stub("/anna/", "/rolunk/")})
     run = run_rules(con)
     assert con.execute("SELECT type, name, aliases FROM entities ORDER BY type").fetchall() == [
-        ("person", "Kiss Anna", ["KISS ANNA"])]
+        ("org", "Logó", []), ("person", "Kiss Anna", ["KISS ANNA"])]
+    assert con.execute("SELECT DISTINCT position FROM page_entities pe JOIN entities e "
+                       "USING (entity_id) WHERE e.type = 'org'").fetchall() == [("schema",)]
     assert run.skipped["anchor_not_in_visible_block"] == 3
 
 
 def test_rerun_drops_vanished_candidates():
-    pages = {f"/{i}/": html(f"P{i}", "<a href='/x/'>Közös</a>") for i in range(3)}
-    con = site({**pages, **stub("/x/")})
+    pages = {f"/{i}/": html(f"P{i} | Közös", "<p>szöveg</p>") for i in range(3)}
+    con = site(pages)
     run_rules(con)
     assert con.execute("SELECT name FROM entities").fetchall() == [("Közös",)]
-    con.execute("DELETE FROM links WHERE from_page_id = 3")
+    con.execute("UPDATE pages SET title = 'P2' WHERE page_id = 3")
     run = run_rules(con)
     assert (run.entities, con.execute("SELECT count(*) FROM entities").fetchone()) == (0, (0,))
 
@@ -457,10 +477,9 @@ def test_rerun_keeps_ids_and_foreign_rows():
 
 
 def test_lang_is_the_majority_of_the_entity_pages():
-    # A cél nyelve ismeretlen (üres html[lang], szöveg nélkül): a link nem nyelvváltó.
-    pages = {f"/{i}/": html(f"P{i}", "<a href='/x/'>Közös</a>", lang="en" if i < 3 else "hu-HU")
+    pages = {f"/{i}/": html(f"P{i} | Közös", "<p>szöveg</p>", lang="en" if i < 3 else "hu-HU")
              for i in range(4)}
-    con = site({**pages, **stub("/x/", lang="")}, languages=("hu",))
+    con = site(pages, languages=("hu",))
     run_rules(con)
     assert con.execute("SELECT name, lang FROM entities").fetchall() == [("Közös", "en")]
 
@@ -508,9 +527,11 @@ EXPECTED = {
     # Schema: Organization kk.coach, szolgáltatások, egy Person (a "Krisztian Kiss" és a "Kiss
     # Krisztián" egy). A site neve (og:site_name, a title "Kk.coach" alakja) és a " - KK"
     # végződés az org-hoz kerül; brand nincs.
-    # Anchor-említés minden blokkban, ahol a link áll (a menüben és a láblécben is).
+    # Anchor-említés minden blokkban, ahol a link áll (a menüben és a láblécben is), csak a
+    # talált entitásokhoz; az ajánlatoldalakra mutató menüpontokat (18 szöveg) a site-kör köti,
+    # a segédoldalakra mutatók (8) navigációs címkék.
     "kk-coach-crawl": {
-        "run": (40, 40, 75, 633, {"anchor": 479, "schema": 117, "title": 37}),
+        "run": (40, 40, 49, 309, {"anchor": 155, "schema": 117, "title": 37}),
         "not_in_block": 0,
         "entities": {("org", "kk.coach"), ("person", "Kiss Krisztián"), ("place", "Worldwide"),
                      ("service", "SEO")},
@@ -520,14 +541,16 @@ EXPECTED = {
                                                                      "Krisztian Kiss"]},
     },
     # A site-on nincs JSON-LD (élőben is): a brand a title-ből jön. A "Home" és a "Főoldal" a
-    # kezdőoldalakra mutat; a "Menu" két célra (/menu/, /it/menu/): navigációs.
+    # kezdőoldalakra mutat; a "Menu" két célra (/menu/, /it/menu/): navigációs. Az étlap-, a
+    # borlap- és az adatvédelmi oldalra mutató menüpontok (5) segédoldalra mutatnak: nem
+    # entitások (M2/6, 5. pont).
     "materia-crawl": {
-        "run": (14, 14, 6, 47, {"anchor": 33, "title": 14}),
+        "run": (14, 14, 1, 14, {"title": 14}),
         "not_in_block": 0,
-        "entities": {("brand", "Materia - Trattoria Moderna"), ("concept", "Borlap"),
-                     ("concept", "Carta Vini"), ("concept", "GDPR"), ("concept", "Wine List"),
-                     ("concept", "Étlap")},
-        "absent": {("concept", "Menu"), ("concept", "Home"), ("concept", "Főoldal")},
+        "entities": {("brand", "Materia - Trattoria Moderna")},
+        "absent": {("concept", "Menu"), ("concept", "Home"), ("concept", "Főoldal"),
+                   ("concept", "Borlap"), ("concept", "Carta Vini"), ("concept", "GDPR"),
+                   ("concept", "Wine List"), ("concept", "Étlap")},
         "aliases": {},
     },
     # Nincs JSON-LD; a title minden oldalon "Angular Bootstrap". Az "Examples", az "API" és az

@@ -361,9 +361,10 @@ def test_entity_table_counts_pages_mentions_places_and_links(tmp_path):
                 "WHERE name = 'Cash-flow'")
     rows = {row["entity"]: row for row in entity_table(con)}
     assert rows["Bérszámfejtés Csomag"] | {} == {
-        "entity": "Bérszámfejtés Csomag", "type": "service", "subtype": "", "source": "llm",
-        "pages": 2, "mentions": 3, "title": 1, "heading": 1, "nav": 0, "card": 0,
-        "table_row": 0, "wikidata_qid": "", "wikipedia": ""}
+        "entity": "Bérszámfejtés Csomag", "type": "service", "subtype": "", "tier": "",
+        "flags": "", "source": "llm", "pages": 2, "mentions": 3, "title": 1, "heading": 1,
+        "nav": 0, "card": 0, "table_row": 0, "anchor_page": "", "wikidata_qid": "",
+        "wikidata_status": "", "wikipedia": ""}
     assert (rows["Cash-flow"]["pages"], rows["Cash-flow"]["mentions"], rows["Cash-flow"]["nav"],
             rows["Cash-flow"]["wikipedia"]) == (1, 2, 0, "https://hu.wikipedia.org/wiki/Cash_flow")
     assert rows["Könyvelés"]["nav"] == 1
@@ -371,8 +372,8 @@ def test_entity_table_counts_pages_mentions_places_and_links(tmp_path):
     path = tmp_path / "out" / "t.csv"
     assert write_entity_table(con, path) == len(rows)
     with path.open(encoding="utf-8-sig", newline="") as handle:
-        assert next(csv.reader(handle))[:6] == ["entity", "type", "subtype", "source", "pages",
-                                                "mentions"]
+        assert next(csv.reader(handle))[:8] == ["entity", "type", "subtype", "tier", "flags",
+                                                "source", "pages", "mentions"]
 
 
 def test_wikipedia_url():

@@ -24,6 +24,7 @@ from aaa2.entities.extract import estimate_llm, run_llm
 from aaa2.entities.gate import KnowledgeBase
 from aaa2.entities.report import run_report, write_entity_table
 from aaa2.entities.rules import run_rules
+from aaa2.entities.site import run_site
 from aaa2.entities.v3 import V3Step, link_entities, load_pipeline
 from aaa2.entities.validate import KG_DAILY_QUOTA, _Api, validate_entities
 from aaa2.llm import ledger
@@ -183,8 +184,10 @@ def entities(
     lépéseivel: a hiányzó blokkok, a determinisztikus szabálykör (JSON-LD, a site neve a
     title-ben és a H1-ben, legalább 3 oldalon azonos anchorok), utána oldalanként a
     content-régió blokkjainak LLM-kinyerése (darabolva, a kitalált említések kiszűrésével), a
-    saját ajánlatok szerkezeti helye és ellenőrző hívása, a fogalmak bizonyítékai, a mentés; a
-    végén a tudásbázis-egyezés az entitásokra. Az LLM-kör előtt költségbecslés."""
+    saját ajánlatok szerkezeti helye és ellenőrző hívása, a fogalmak bizonyítékai, a mentés;
+    utána a site-szintű entitások (oldalhoz kötés, csomagok, lépések, demó- és sablonjelölés,
+    LLM nélkül), a végén a tudásbázis-egyezés az entitásokra. Az LLM-kör előtt
+    költségbecslés."""
     con = _open(domain, db)
     pipeline = load_pipeline()
     steps = pipeline.steps
@@ -196,7 +199,7 @@ def entities(
     runs = [] if estimate or not steps.rules else [run_rules(con).run_id]
     site_lang = ((con.execute("SELECT languages FROM site").fetchone() or [None])[0]
                  or [None])[0]
-    kb = shared = linked = None
+    kb = shared = linked = site_run = None
     if use_knowledge and not estimate:
         shared = connect(shared_path())
         api = _Api(con, shared, httpx.Client(timeout=20.0), Retry(), _utcnow, time.monotonic)
@@ -239,6 +242,7 @@ def entities(
         elif estimate:
             typer.echo("becslés: az LLM-lépések kikapcsolva, nincs hívás")
             return
+        site_run = run_site(con) if steps.site else None
         if kb is not None:
             linked = link_entities(con, kb, _utcnow, site_lang)
     finally:
@@ -256,6 +260,12 @@ def entities(
                      if isinstance(value, dict) else ", ".join(value)
                      if isinstance(value, list) else value)
             typer.echo(f"  kimaradt, {reason}: {shown}")
+    if site_run is not None:
+        typer.echo(
+            f"site-kör #{site_run.run_id}: {site_run.page_entities} oldalhoz kötött entitás, "
+            f"{site_run.packages} csomag, {site_run.steps} lépés, összevonás "
+            f"{sum(site_run.merges.values())}, demó {len(site_run.demo)}, sablon-említés "
+            f"{site_run.template_mentions}")
     if linked is not None:
         typer.echo(f"tudásbázis: {linked.entities} entitás; Wikidata {linked.wikidata}, "
                    f"Wikipedia {linked.wikipedia}; hibás lekérdezés miatt ellenőrizetlen "
