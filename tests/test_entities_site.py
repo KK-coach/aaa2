@@ -4,9 +4,18 @@ sablonjelölés, a módosított anchor-szabály."""
 import json
 from datetime import UTC, datetime
 
+from aaa2.entities.knowledge import clear_person_links
 from aaa2.entities.pages import entity_groups, page_roles, representative
 from aaa2.entities.rules import run_rules
-from aaa2.entities.site import expansions, pricing_rows, run_site
+from aaa2.entities.site import (
+    aligned_headings,
+    expansions,
+    label_parts,
+    long_form,
+    normal_key,
+    pricing_rows,
+    run_site,
+)
 from tests.test_entities_rules import html, ld, site
 
 NOON = datetime(2026, 9, 29, 12, 0, tzinfo=UTC).replace(tzinfo=None)
@@ -279,3 +288,216 @@ def test_a_long_anchor_is_an_alias_when_it_is_the_article_title():
                        "source = 'anchor' AND alias = ?", [article[0], title]).fetchone() == (1,)
     assert con.execute("SELECT count(*) FROM page_entities WHERE entity_id = ? AND "
                        "position = 'anchor'", [article[0]]).fetchone() == (2,)
+
+
+# ---------------------------------------------------------------------------
+# összevonás, fogalom és ajánlat (PR B)
+# ---------------------------------------------------------------------------
+
+
+def test_normal_key_and_label_parts():
+    assert normal_key("UX & Konverzió optimalizálás") == normal_key("UX & Konverzióoptimalizálás")
+    assert normal_key("Two-Week Sprint (Structured Oversight)") == \
+        normal_key("Two-Week Sprint — Structured Oversight")
+    assert normal_key("page_load_time") == normal_key("Page load time")
+    assert normal_key("UX & CRO") == normal_key("UX és CRO") == normal_key("UX and CRO")
+    assert normal_key("SEO & Technikai alapok felmérése") == \
+        normal_key("SEO és technikai alapok felmérése")
+    assert normal_key("fejlesztés") == "fejlesztes"                  # az „és” csak szóként
+    assert normal_key("ngx-bootstrap/datepicker") != normal_key("ngx-bootstrap Datepicker")
+    assert normal_key("@angular/core") == "@angular/core"
+    assert long_form("Google Eats Own Citation (GEO)") == "Google Eats Own Citation"
+    assert long_form("GEO (Generative Engine Optimization)") == "Generative Engine Optimization"
+    assert long_form("Kéthetes Sprint (projektmenedzsment)") is None
+    assert label_parts("UX & Konverzióoptimalizálás") == ["UX", "Konverzióoptimalizálás"]
+    assert label_parts("GEO – AI láthatóság") == ["GEO", "AI láthatóság"]
+    assert label_parts("Keresőoptimalizálás (SEO)") == [
+        "Keresőoptimalizálás (SEO)", "Keresőoptimalizálás", "SEO"]
+
+
+def test_aligned_headings_pair_sections_from_both_ends_while_the_h3_counts_match():
+    left = [(1, [2, 3]), (4, [5]), (6, []), (7, [8, 9])]
+    right = [(11, [12, 13]), (14, [15, 16]), (17, [18, 19])]
+    assert aligned_headings(left, right) == [(1, 11), (2, 12), (3, 13), (7, 17), (8, 18),
+                                             (9, 19)]
+
+
+def test_normalized_names_merge_within_a_type_and_log_it():
+    con = business_site()
+    run_rules(con)
+    article = "https://pelda.hu/blog/cikk/"
+    a = llm_entity(con, article, "Bevezető", "Entitás-architektúra", "concept")
+    b = llm_entity(con, article, "méréshez", "Entitásarchitektúra", "concept")
+    llm_entity(con, article, "A rendszer", "Entitásarchitektúra", "tech")
+    run_site(con, clock=lambda: NOON)
+    assert {r[2] for r in by_name(con, "Entitás-architektúra")} == {"concept"}
+    assert by_name(con, "Entitásarchitektúra")[0][2] == "tech"
+    assert con.execute("SELECT kept_id, removed_id, rule FROM merge_log WHERE rule = "
+                       "'normalized_name'").fetchall() == [(a, b, "normalized_name")]
+
+
+def test_hreflang_place_merges_the_same_heading_across_languages():
+    con = business_site()
+    run_rules(con)
+    hu, en = "https://pelda.hu/hu/meres/", "https://pelda.hu/en/measurement/"
+    diag = llm_entity(con, hu, "Diagnózis", "Diagnózis", "service")
+    for url, text in ((hu, "Négy fázis"), (en, "Pricing")):
+        llm_entity(con, url, text, text, "concept")
+    run_site(con, clock=lambda: NOON)
+    # HU: „Négy fázis” (1 H3) és „Árazás” (0 H3); EN: „Pricing” (0 H3): az első szakasz H3-száma
+    # eltér, hátulról az „Árazás” ↔ „Pricing” párba áll, de az „Árazás”-nak nincs entitása.
+    assert con.execute("SELECT count(*) FROM merge_log WHERE rule = 'hreflang_place'"
+                       ).fetchone() == (0,)
+    assert by_name(con, "Diagnózis")[0][0] == diag
+
+
+def plant_llm_run(con, url, raw):
+    """Egy tárolt LLM-futás a megadott oldal nyers rekordjával (a típusleválasztáshoz)."""
+    page_id = con.execute("SELECT page_id FROM pages WHERE url = ?", [url]).fetchone()[0]
+    (run_id,) = con.execute("INSERT INTO entity_runs (started_at, method, model, llm_calls) "
+                            "VALUES (?, 'llm', 'x', 0) RETURNING run_id", [NOON]).fetchone()
+    con.execute("INSERT INTO entity_run_pages (run_id, page_id, status, refined) "
+                "VALUES (?, ?, 'done', ?)", [run_id, page_id, json.dumps({"entities": raw})])
+
+
+def test_concept_mentions_leave_the_offer_and_the_offer_offers_them():
+    con = business_site()
+    run_rules(con)
+    article = "https://pelda.hu/blog/cikk/"
+    ordinal = con.execute("SELECT b.ordinal FROM blocks b JOIN pages p USING (page_id) WHERE "
+                          "p.url = ? AND b.text LIKE 'Bevezető%'", [article]).fetchone()[0]
+    llm_entity(con, article, "méréshez", "Mérés", "service")
+    plant_llm_run(con, article, [{"block_id": f"b{ordinal}", "surface_form": "méréshez",
+                                  "canonical_name": "mérés", "type": "concept"}])
+    run_site(con, clock=lambda: NOON)
+    (core,) = [r for r in by_name(con, "Mérés") if r[2] == "service"]
+    concept = con.execute("SELECT entity_id FROM entities WHERE type = 'concept' AND "
+                          "lower(name) = 'mérés'").fetchone()[0]
+    assert con.execute("SELECT count(*) FROM page_entities WHERE entity_id = ? AND position = "
+                       "'body'", [concept]).fetchone() == (1,)
+    assert con.execute("SELECT rule, kept_id FROM merge_log WHERE rule = 'type_split'"
+                       ).fetchall() == [("type_split", concept)]
+    assert con.execute("SELECT from_id, to_id FROM entity_relations WHERE type = 'offers'"
+                       ).fetchall() == [(core[0], concept)]
+
+
+def test_person_links_are_cleared():
+    con = business_site()
+    con.execute("INSERT INTO entities (name, type, aliases, source, created_at, wikidata_id, "
+                "wikipedia) VALUES ('Kiss Anna', 'person', [], 'schema', ?, 'Q1', 'hu:Anna')",
+                [NOON])
+    assert clear_person_links(con, lambda: NOON) == 1
+    assert con.execute("SELECT wikidata_id, wikipedia, wikidata_status FROM entities").fetchall(
+    ) == [(None, None, "none")]
+
+
+def test_hreflang_place_merges_parallel_headings():
+    service = ld({"@type": "Service", "name": "Execution", "url": "https://pelda.hu/en/exec/"})
+    hu_body = ("<main><h1>Megvalósítás</h1><h2>Két munkamód</h2><h3>Közvetlen implementálás</h3>"
+               "<p>A.</p><h3>Strukturált felügyelet</h3><p>B.</p></main>")
+    en_body = ("<main><h1>Execution</h1><h2>Two ways to work</h2><h3>Direct Implementation</h3>"
+               "<p>A.</p><h3>Structured Oversight</h3><p>B.</p></main>")
+    con = site({"/": html("Pelda", "<main><h1>Pelda</h1></main>"),
+                "/hu/exec/": html("Megvalósítás · Pelda", hu_body),
+                "/en/exec/": html("Execution · Pelda", en_body, head=service, lang="en")},
+               languages=("hu", "en"))
+    con.execute("UPDATE pages SET hreflang = ? WHERE url LIKE '%/exec/'",
+                [["hu|https://pelda.hu/hu/exec/", "en|https://pelda.hu/en/exec/"]])
+    run_rules(con)
+    hu, en = "https://pelda.hu/hu/exec/", "https://pelda.hu/en/exec/"
+    direct_hu = llm_entity(con, hu, "Közvetlen implementálás", "Közvetlen implementálás",
+                           "service")
+    llm_entity(con, en, "Direct Implementation", "Direct Implementation", "service")
+    oversight = llm_entity(con, hu, "Strukturált felügyelet", "Strukturált felügyelet", "service")
+    llm_entity(con, en, "Structured Oversight", "Structured Oversight", "concept")
+    run_site(con, clock=lambda: NOON)
+    merged = con.execute("SELECT kept_id, kept_name, removed_name FROM merge_log "
+                         "WHERE rule = 'hreflang_place' ORDER BY merge_id").fetchall()
+    assert merged == [(direct_hu, "Közvetlen implementálás", "Direct Implementation"),
+                      (oversight, "Strukturált felügyelet", "Structured Oversight")]
+
+
+def test_confident_wikidata_merges_language_pairs_and_excluded_entities_get_no_link():
+    from aaa2.entities.gate import KnowledgeBase
+    from aaa2.entities.knowledge import link_entities, status_of
+    from tests.test_entities_pipeline import Knowledge
+    con = business_site()
+    run_rules(con)
+    article = "https://pelda.hu/blog/cikk/"
+    hu = llm_entity(con, article, "méréshez", "Mérés", "concept")
+    en = llm_entity(con, article, "A rendszer", "Measurement", "concept")
+    api = llm_entity(con, article, "alapja", "show", "tech", "api_symbol")
+    short = llm_entity(con, article, "Bevezető", "AB", "concept")
+    ambiguous = llm_entity(con, article, "Hogyan", "Mérték", "concept")
+    rival_name = llm_entity(con, article, "alapja", "Mértékegység", "concept")
+    person = llm_entity(con, article, "Hogyan", "Kiss Anna", "person")
+    run_site(con, clock=lambda: NOON)
+    source = Knowledge(wikidata={"Mérés": "Q12453", "Measurement": "Q12453", "show": "Q9",
+                                 "AB": "Q8", "Kiss Anna": "Q7",
+                                 "Mérték": [("Q12453", "alias"), ("Q5", "label")],
+                                 "Mértékegység": [("Q12453", "alias"), ("Q6", "label")]},
+                       classes={"Q12453": (["academic major"], "process of assigning"),
+                                "Q6": (["desa"], "village in Indonesia")})
+    run = link_entities(con, KnowledgeBase(source), lambda: NOON, "hu")
+    assert run.merged == 2
+    assert con.execute("SELECT kept_id, removed_id, rule FROM merge_log WHERE rule = "
+                       "'wikidata_confident' ORDER BY merge_id").fetchall() == [
+        (hu, en, "wikidata_confident"), (hu, rival_name, "wikidata_confident")]
+    rows = dict(con.execute("SELECT entity_id, wikidata_status FROM entities").fetchall())
+    assert (rows[hu], rows[api], rows[short], rows[person]) == ("confident", "none", "none",
+                                                                "none")
+    assert rows[ambiguous] == "probable"
+    # a rövid név csak a megerősítéshez kerül keresésre; a személy és az api_symbol soha
+    assert {name for _, name in source.requests} == {"Mérés", "Measurement", "AB", "Mérték",
+                                                        "Mértékegység"}
+    assert status_of("concept", ["organization"], "") == "none"
+    assert status_of("concept", [], "discipline focused on experience") == "confident"
+    assert status_of("tech", ["type of object"], "") == "probable"
+
+
+def exec_site(root_lang="hu"):
+    service = ld({"@type": "Service", "name": "Execution", "url": "https://pelda.hu/en/exec/"})
+    hu_body = ("<main><h1>Megvalósítás</h1><h2>Két munkamód</h2><h3>Közvetlen implementálás</h3>"
+               "<p>A.</p><h3>Strukturált felügyelet</h3><p>B.</p></main>")
+    en_body = ("<main><h1>Execution</h1><h2>Two ways to work</h2><h3>Direct Implementation</h3>"
+               "<p>A.</p><h3>Structured Oversight</h3><p>B.</p></main>")
+    con = site({"/": html("Pelda", "<main><h1>Pelda</h1></main>", lang=root_lang),
+                "/hu/exec/": html("Megvalósítás · Pelda", hu_body),
+                "/en/exec/": html("Execution · Pelda", en_body, head=service, lang="en")},
+               languages=("hu", "en"))
+    con.execute("UPDATE pages SET hreflang = ? WHERE url LIKE '%/exec/'",
+                [["hu|https://pelda.hu/hu/exec/", "en|https://pelda.hu/en/exec/"]])
+    return con
+
+
+def test_overrides_set_the_tier_and_part_of_and_are_logged(tmp_path, monkeypatch):
+    from aaa2.entities import overrides
+    (tmp_path / "pelda.hu.toml").write_text(
+        '[[offers]]\nnames = ["Strukturált felügyelet", "Structured Oversight"]\n'
+        'tier = "work_mode"\npart_of = "Execution"\n', encoding="utf-8")
+    monkeypatch.setattr(overrides, "SITES_DIR", tmp_path)
+    con = exec_site()
+    run_rules(con)
+    step = llm_entity(con, "https://pelda.hu/hu/exec/", "Strukturált felügyelet",
+                      "Strukturált felügyelet", "service")
+    run = run_site(con, clock=lambda: NOON)
+    assert run.overrides == 1
+    assert con.execute("SELECT type, tier, type_changed_from FROM entities WHERE entity_id = ?",
+                       [step]).fetchone() == ("service", "work_mode", "concept")
+    core = con.execute("SELECT entity_id FROM entities WHERE tier = 'core'").fetchone()[0]
+    assert con.execute("SELECT to_id, source FROM entity_relations WHERE from_id = ? AND "
+                       "type = 'part_of'", [step]).fetchall() == [(core, "override")]
+    evidence = json.loads(con.execute("SELECT evidence FROM merge_log WHERE rule = 'override'"
+                                      ).fetchone()[0])
+    assert (evidence["tier"], evidence["previous_tier"]) == ("work_mode", "step")
+
+
+def test_canonical_language_is_the_root_page_language_unless_configured():
+    from aaa2.entities.overrides import SiteConfig, canonical_language
+    con = exec_site(root_lang="en")
+    assert canonical_language(con) == "en"
+    assert canonical_language(con, SiteConfig(canonical_lang="hu")) == "hu"
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    assert con.execute("SELECT name FROM entities WHERE tier = 'core'").fetchone() == (
+        "Execution",)

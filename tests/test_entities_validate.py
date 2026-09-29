@@ -580,6 +580,9 @@ NAMED = {
     "materia-crawl": {},
     "ngx-bootstrap-crawl": {},
 }
+# Az M2/6 schema-leképezése óta: az areaServed-hely attribútum, a kezdőoldal-URL-es publisher a
+# site-szervezet aliasa.
+SCHEMA_ATTRIBUTE_GONE = {"Worldwide|place", "Digitális marketing coach|org"}
 
 
 @pytest.mark.parametrize("name", REFERENCE_NAMES)
@@ -610,7 +613,8 @@ def test_reference_validation_replays_the_recorded_answers(name, reference_crawl
     measured = outcome(con)
     assert {key: measured.get(key) for key in NAMED[name]} == NAMED[name]
     assert measured == {key: recorded["measured"][key] for key in measured}
-    assert all(key.endswith("|concept") for key in set(recorded["measured"]) - set(measured))
+    gone = set(recorded["measured"]) - set(measured)
+    assert {key for key in gone if not key.endswith("|concept")} <= SCHEMA_ATTRIBUTE_GONE
 
 
 @pytest.mark.live

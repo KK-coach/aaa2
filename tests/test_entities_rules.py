@@ -503,6 +503,23 @@ def test_cli_entities_and_status(tmp_path, monkeypatch):
     assert "  entitás-futás #1 (rules, " in status.output
 
 
+def test_schema_attributes_are_not_entities_and_home_orgs_are_the_site_org():
+    """A jobTitle és az areaServed alatti csomópont attribútum; a kezdőoldal URL-jével jelölt
+    más nevű szervezet (a publisher) a site-szervezet aliasa, a kanonikus név a site neve."""
+    person = ld({"@type": "Person", "name": "Kiss Anna",
+                 "jobTitle": {"@type": "Organization", "name": "Tanácsadó"},
+                 "areaServed": {"@type": "Place", "name": "Worldwide"}})
+    org = ld({"@type": "Organization", "name": "Példa Kft.", "url": "https://pelda.hu/"})
+    post = ld({"@type": "BlogPosting", "headline": "Cikk", "publisher": {
+        "@type": "Organization", "name": "Jobb marketing", "url": "https://pelda.hu"}})
+    pages = {f"/{i}/": html(f"Oldal {i} | Példa Kft.", "<p>Szöveg</p>",
+                            head=person + org + (post if i else "")) for i in range(3)}
+    con = site({"/": html("Példa Kft.", "<p>Kezdőlap</p>"), **pages})
+    run_rules(con)
+    assert con.execute("SELECT type, name, aliases FROM entities ORDER BY type").fetchall() == [
+        ("org", "Példa Kft.", ["Jobb marketing"]), ("person", "Kiss Anna", [])]
+
+
 # ---------------------------------------------------------------------------
 # a három rögzített készlet
 # ---------------------------------------------------------------------------
@@ -531,14 +548,19 @@ EXPECTED = {
     # talált entitásokhoz; az ajánlatoldalakra mutató menüpontokat (18 szöveg) a site-kör köti,
     # a segédoldalakra mutatók (8) navigációs címkék.
     "kk-coach-crawl": {
-        "run": (40, 40, 49, 309, {"anchor": 155, "schema": 117, "title": 37}),
+        # A „Worldwide” az areaServed értéke (attribútum), a „Digitális marketing coach” a
+        # blogposztok kezdőoldal-URL-es publisher-e: a site-szervezet aliasa (M2/6, 10. pont).
+        # A soron belüli elemek a renderelt szöveg szerint illeszkednek: a site két oldalán a
+        # link a szó közepén áll (`Explor<a>GEO — AI Visibility</a>e GEO`), a renderelt szöveg
+        # „ExplorGEO — AI Visibilitye GEO”, ezért ez a két anchor-említés nincs meg.
+        "run": (40, 40, 47, 301, {"anchor": 153, "schema": 111, "title": 37}),
         "not_in_block": 0,
-        "entities": {("org", "kk.coach"), ("person", "Kiss Krisztián"), ("place", "Worldwide"),
-                     ("service", "SEO")},
+        "entities": {("org", "kk.coach"), ("person", "Kiss Krisztián"), ("service", "SEO")},
         "absent": {("brand", "kk.coach"), ("brand", "KK"), ("person", "Krisztian Kiss"),
-                   ("concept", "Home"), ("concept", "Főoldal"), ("concept", "Read more")},
-        "aliases": {"kk.coach": ["KK", "Kk.coach"], "Kiss Krisztián": ["Kiss Krisztian",
-                                                                     "Krisztian Kiss"]},
+                   ("concept", "Home"), ("concept", "Főoldal"), ("concept", "Read more"),
+                   ("place", "Worldwide"), ("org", "Digitális marketing coach")},
+        "aliases": {"kk.coach": ["Digitális marketing coach", "KK", "Kk.coach"],
+                    "Kiss Krisztián": ["Kiss Krisztian", "Krisztian Kiss"]},
     },
     # A site-on nincs JSON-LD (élőben is): a brand a title-ből jön. A "Home" és a "Főoldal" a
     # kezdőoldalakra mutat; a "Menu" két célra (/menu/, /it/menu/): navigációs. Az étlap-, a

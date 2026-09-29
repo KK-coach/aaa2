@@ -13,13 +13,13 @@ from aaa2.db.connect import connect, db_path
 from aaa2.entities.dom import page_blocks
 from aaa2.entities.extract import estimate_llm, run_llm
 from aaa2.entities.gate import KnowledgeBase
+from aaa2.entities.knowledge import link_entities
 from aaa2.entities.report import entity_table, run_report, wikipedia_url, write_entity_table
 from aaa2.entities.rules import run_rules
 from aaa2.entities.v3 import (
     STEPS,
     Steps,
     V3Step,
-    link_entities,
     load_pipeline,
     page_context,
     verify_usage,
@@ -92,26 +92,45 @@ PAGE_REPLY = reply(
 
 
 class Knowledge:
-    """A `KnowledgeBase` kérője: névre Wikidata- és Wikipedia-válasz, hálózat nélkül."""
+    """A `KnowledgeBase` kérője hálózat nélkül: névre Wikidata-találat (`wikidata`: név → QID,
+    vagy (QID, label / alias) párok listája, vagy a nevek halmaza, akkor Q1), az elem osztályai és leírása (`classes`: QID → (osztály-
+    címkék, leírás)), Wikipedia-cím (`wikipedia`); a `failing` nevekre hibás válasz."""
 
-    def __init__(self, wikidata=(), wikipedia=(), failing=()):
-        self.wikidata, self.wikipedia, self.failing = set(wikidata), set(wikipedia), set(failing)
+    def __init__(self, wikidata=(), wikipedia=(), failing=(), classes=None):
+        self.wikidata = wikidata if isinstance(wikidata, dict) else dict.fromkeys(wikidata, "Q1")
+        self.wikipedia, self.failing = set(wikipedia), set(failing)
+        self.classes = classes or {}
         self.requests = []
 
     def __call__(self, service, url, params):
         args = dict(params)
+        if args.get("action") == "wbgetentities":
+            return "k", self._entities(args)
         name = args.get("search") or args.get("titles", "").split("|")[0]
         self.requests.append((service, name))
         if name in self.failing:
             return "k", None
         if service == "wikidata":
             lang = args["language"]
-            hits = [{"id": "Q1", "match": {"type": "label", "language": lang, "text": name}}] \
-                if name in self.wikidata else []
+            found = self.wikidata.get(name, [])
+            found = found if isinstance(found, list) else [(found, "label")]
+            hits = [{"id": qid, "match": {"type": kind, "language": lang, "text": name}}
+                    for qid, kind in found]
             return "k", {"search": hits}
         pages = [{"title": name}] if name in self.wikipedia else [{"title": name,
                                                                    "missing": True}]
         return "k", {"query": {"pages": pages}}
+
+    def _entities(self, args):
+        ids = args["ids"].split("|")
+        if args["props"] == "labels":
+            return {"entities": {i: {"labels": {"en": {"value": i.removeprefix("C:")}}}
+                                 for i in ids}}
+        labels, description = self.classes.get(ids[0], ([], ""))
+        return {"entities": {ids[0]: {
+            "descriptions": {"en": {"value": description}},
+            "claims": {"P31": [{"mainsnak": {"datavalue": {"value": {"id": f"C:{label}"}}}}
+                               for label in labels]}}}}
 
 
 def pipeline_run(con, adapter, tmp_path, steps=ALL_STEPS, knowledge=None, **options):
@@ -326,20 +345,24 @@ def test_estimate_prices_verify_from_the_extraction_on_structural_service_pages(
 # ---------------------------------------------------------------------------
 
 
-def test_entities_get_wikidata_and_wikipedia_matches_and_errors_stay_unchecked(tmp_path):
+def test_entities_get_a_wikidata_status_and_errors_stay_unchecked(tmp_path):
     con = site({"/": html("Könyvelés és bérszámfejtés", BODY)})
     pipeline_run(con, Scripted([PAGE_REPLY], [decisions(True, True)]), tmp_path)
-    source = Knowledge(wikidata=["Cash-flow"], wikipedia=["Cash-flow", "Számlázó"],
-                       failing=["Készletforgás"])
+    source = Knowledge(wikidata={"Cash-flow": "Q1", "Készletforgás": "Q2", "Számlázó": "Q3"},
+                       wikipedia=["Cash-flow", "Számlázó"], failing=["Számlázó"],
+                       classes={"Q1": (["financial concept"], "flow of money"),
+                                "Q2": (["human"], "a person")})
     run = link_entities(con, KnowledgeBase(source), lambda: NOON, "hu")
-    assert (run.entities, run.wikidata, run.wikipedia, run.errors) == (5, 1, 2, 1)
-    assert con.execute("SELECT name, wikidata_id, wikipedia FROM entities WHERE "
-                       "knowledge_checked_at IS NOT NULL ORDER BY name").fetchall() == [
-        ("Bérszámfejtés Csomag", None, None), ("Cash-flow", "Q1", "hu:Cash-flow"),
-        ("Könyvelés", None, None), ("Számlázó", None, "hu:Számlázó")]
+    # A service nem kapcsolható; a Készletforgás találata ember: none; a Számlázó hibás.
+    assert (run.entities, run.confident, run.probable, run.none, run.errors) == (5, 1, 0, 3, 1)
+    assert con.execute("SELECT name, wikidata_id, wikipedia, wikidata_status FROM entities "
+                       "WHERE wikidata_status IS NOT NULL ORDER BY name").fetchall() == [
+        ("Bérszámfejtés Csomag", None, None, "none"),
+        ("Cash-flow", "Q1", "hu:Cash-flow", "confident"),
+        ("Készletforgás", None, None, "none"), ("Könyvelés", None, None, "none")]
     source.requests.clear()
     again = link_entities(con, KnowledgeBase(source), lambda: NOON, "hu")
-    assert again.entities == 1 and {name for _, name in source.requests} == {"Készletforgás"}
+    assert again.entities == 1 and {name for _, name in source.requests} == {"Számlázó"}
 
 
 # ---------------------------------------------------------------------------

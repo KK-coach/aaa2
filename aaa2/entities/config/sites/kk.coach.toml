@@ -1,0 +1,19 @@
+# Site-szintű felülbírálatok (M2 spec, M2/6, 4. pont): a tanácsadó a site ismeretében megadhatja
+# egy ajánlat szintjét. Felülírja a szintszabályt (pl. a csak headingben álló munkamód lépés
+# lenne), a site-kör a merge_log-ban rögzíti (rule = override).
+#
+# canonical_lang: a kanonikus név nyelve; ha nincs megadva, a site gyökér-URL-jének nyelve.
+#
+# [[offers]]: egy ajánlat. names: a nevei (bármelyik nyelven; egy entitásba kerülnek) vagy url:
+# az oldala; tier: core / package / work_mode; part_of: a fő ajánlat neve vagy URL-je.
+
+# Krisztián döntése (2026-09-29): a két munkamód külön ajánlat, a Kivitelezés része.
+[[offers]]
+names = ["Közvetlen implementálás", "Direct Implementation"]
+tier = "work_mode"
+part_of = "Execution"
+
+[[offers]]
+names = ["Strukturált felügyelet", "Structured Oversight"]
+tier = "work_mode"
+part_of = "Execution"

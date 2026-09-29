@@ -67,6 +67,9 @@ INLINE = frozenset({
     "kbd", "mark", "q", "s", "samp", "small", "span", "strong", "sub", "sup", "time", "u", "var",
     "wbr", "svg", "path", "label", "button", "input", "select", "option", "picture", "source",
 })
+# Szöveg szintű elemek: a határukon a szöveg folyik tovább (szó közepén is), elválasztó nélkül.
+INLINE_TAGS = INLINE - {"br", "img", "svg", "path", "label", "button", "input", "select",
+                        "option", "picture", "source"}
 CELLS = frozenset({"td", "th"})
 SKIP = frozenset({"script", "style", "noscript", "iframe", "template", "head"})
 CHROME = frozenset({"header", "nav", "footer", "aside", "sidebar"})
@@ -113,7 +116,9 @@ def content_tree(html: str) -> HTMLParser:
 
 
 def collapse(text: str) -> str:
-    return WHITESPACE.sub(" ", text).strip()
+    """A whitespace egy szóközzé, a lágy kötőjel (U+00AD) és a nulla szélességű szóköz
+    törölve."""
+    return WHITESPACE.sub(" ", text.replace("\u00ad", "").replace("\u200b", "")).strip()
 
 
 def _hidden(node: Node) -> bool:
@@ -203,7 +208,9 @@ def _elements(node: Node) -> list[Node] | None:
 
 
 def _cell_text(cell: Node) -> str:
-    return collapse(cell.text(separator=" ") or "")
+    parts: list[str] = []
+    _inline(cell, parts, [])
+    return inline_text(parts)
 
 
 def _digits(text: str) -> bool:
@@ -239,19 +246,36 @@ def grid_containers(tree: HTMLParser) -> dict[int, int]:
 
 
 def _inline(node: Node, parts: list[str], anchors: list[str]) -> None:
-    """A csomópont szövege soron belüliként (minden leszármazott), a rejtett elemek nélkül."""
+    """A csomópont szövege soron belüliként (minden leszármazott), a rejtett elemek nélkül. A
+    szövegdarabok a saját whitespace-ükkel kerülnek a listába; soron belüli elem (`INLINE_TAGS`,
+    pl. `<strong>`, `<wbr>`) határán nincs elválasztó (a szó közepén kezdődő kiemelés nem
+    töri a szót), más elem és a `<br>` előtt és után szóköz; két közvetlenül egymást követő
+    link két címke, köztük szóköz. A darabok `"".join`-nal fűzendők (`inline_text`)."""
     child = node.child
+    after_link = False
     while child is not None:
         name = child.tag
         if name == "-text":
-            parts.append((child.text(deep=False) or "").strip())
+            parts.append(child.text(deep=False) or "")
+            after_link = False
         elif name in SKIP or name == "-comment" or _hidden(child):
             pass
         else:
             if name == "a" and "href" in child.attributes and (text := anchor_text(child)):
                 anchors.append(text)
+            inline = name in INLINE_TAGS and not (name == "a" and after_link)
+            if not inline:
+                parts.append(" ")
             _inline(child, parts, anchors)
+            if not inline:
+                parts.append(" ")
+            after_link = name == "a"
         child = child.next
+
+
+def inline_text(parts: list[str]) -> str:
+    """Az `_inline` darabjai egy szöveggé, a whitespace összevonva."""
+    return collapse("".join(parts))
 
 
 def _table(node: Node) -> Node | None:
@@ -312,7 +336,7 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
             if child.tag in CELLS and not _hidden(child):
                 parts: list[str] = []
                 _inline(child, parts, anchors)
-                values.append((child.tag, collapse(" ".join(p for p in parts if p))))
+                values.append((child.tag, inline_text(parts)))
             child = child.next
         table = _table(tr)
         key = table.mem_id if table is not None else tr.mem_id
@@ -336,7 +360,7 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
                 for part in _elements(cell) or [cell]:
                     own: list[str] = []
                     _inline(part, own, anchors)
-                    if text := collapse(" ".join(o for o in own if o)):
+                    if text := inline_text(own):
                         pieces.append(text)
                 values.append(" · ".join(pieces))
             if not names:
@@ -355,7 +379,7 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
             for line in lines:
                 parts: list[str] = []
                 _inline(line, parts, [])
-                texts.append(collapse(" ".join(p for p in parts if p)))
+                texts.append(inline_text(parts))
             text = "\n".join(texts).strip("\n")
         else:
             text = (pre.text(deep=True) or "").strip("\n").rstrip()
@@ -368,15 +392,17 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
         chips = _chips(node)
 
         def flush() -> None:
-            emit(kind, region, collapse(" ".join(p for p in parts if p)), anchors, level)
+            emit(kind, region, inline_text(parts), anchors, level)
             parts.clear()
             anchors.clear()
 
         child = node.child
+        after_link = False
         while child is not None:
             name = child.tag
             if name == "-text":
-                parts.append((child.text(deep=False) or "").strip())
+                parts.append(child.text(deep=False) or "")
+                after_link = False
             elif name in SKIP or name == "-comment" or _hidden(child):
                 pass
             elif name in INLINE:
@@ -385,11 +411,16 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
                 if chips:
                     own: list[str] = []
                     _inline(child, own, anchors)
-                    if any(own) and any(parts):
-                        parts.append("·")
+                    if "".join(own).strip() and "".join(parts).strip():
+                        parts.append(" · ")
                     parts.extend(own)
                 else:
+                    joined = name in INLINE_TAGS and not (name == "a" and after_link)
+                    gap = [] if joined else [" "]
+                    parts.extend(gap)
                     _inline(child, parts, anchors)
+                    parts.extend(gap)
+                after_link = name == "a"
             elif child.mem_id in skip_panes:
                 pass
             else:

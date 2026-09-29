@@ -5,9 +5,10 @@ felépíti (`dom.build_blocks`), az `entities`, a `page_entities` (említéstáb
 Csak a sikeres (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalakból dolgozik. Egy említés egy
 előfordulás: blokk és karakterpozíció a blokk szövegében (a schema-említésnek nincs blokkja).
 
-- schema: a JSON-LD blokkok minden `@type`-os csomópontja, a beágyazottak is, ha a típusa a
-  `config/schema_types.toml` leképezésében szerepel és van szöveges `name`-je → entitás a
-  leképezett típussal; oldalanként és entitásonként egy említés, blokk nélkül: position = schema,
+- schema: a JSON-LD blokkok minden `@type`-os csomópontja, a beágyazottak is (az attribútum-
+  tulajdonságok, `SCHEMA_ATTRIBUTES` alatt nem: jobTitle, areaServed, knowsAbout, description),
+  ha a típusa a `config/schema_types.toml` leképezésében szerepel és van szöveges `name`-je →
+  entitás a leképezett típussal; oldalanként és entitásonként egy említés, blokk nélkül: position = schema,
   surface_form = a `name` értéke, context = a csomópont JSON-ja, source = schema, count = a
   csomópontok száma.
 - személynév: két `person`, ha mindkettő kéttokenes és a token-halmazuk azonos (a kulcs szerint,
@@ -19,7 +20,8 @@ előfordulás: blokk és karakterpozíció a blokk szövegében (a schema-említ
   legfeljebb `SHORT_NAME_CHARS` jelű, és a jelei sorrendben benne vannak egy ilyen org nevében
   ("KK" a "kk.coach"-ban), az org aliasa; különben brand. Említés ott, ahol a név a title-blokkban
   vagy az első H1-blokkban áll: position = title / h1, a szó szerinti részlet a pozíciójával,
-  source = rule.
+  source = rule. A site-szervezet kanonikus neve a site neve; a kezdőoldal URL-jével jelölt más
+  nevű szervezet-csomópont (pl. a blogposzt `publisher`-e) az aliasa.
 - anchor: a belső linkek anchorja, ha legalább `MIN_ANCHOR_PAGES` különböző oldalon azonos
   (kulcs szerint). Ha a kulcs egy talált entitásé, ahhoz kerül; különben nem entitás (M2/6, 5.
   pont): két vagy több célra navigációs; egy célra, ha az entitásoldal (`pages.page_roles`),
@@ -38,7 +40,8 @@ előfordulás: blokk és karakterpozíció a blokk szövegében (a schema-említ
 - lang: azoknak az oldalaknak a leggyakoribb elsődleges nyelvi címkéje, ahol a kanonikus alak
   előfordul; ha ilyen nincs, az entitás összes oldaláé; ha az sincs, a site első nyelve.
 
-Újrafuttatható: a futás a korábbi schema- és rule-forrásokat cseréli (a forrás nélkül maradt
+A pozíciók a tárolt blokkok szövegében számítanak (a parser később változhat, a tárolt blokk
+nem). Újrafuttatható: a futás a korábbi schema- és rule-forrásokat cseréli (a forrás nélkül maradt
 említés törlődik, a más forrású említés megmarad, és megkapja az új forrást is); a (kulcs, típus)
 szerint azonos entitás az azonosítóját megtartja (a source az erősebb lesz: schema > rule > llm),
 a más forrású entitások megmaradnak.
@@ -61,10 +64,12 @@ import zstandard
 from selectolax.parser import HTMLParser
 
 from aaa2.entities.dom import build_blocks, parse_blocks
-from aaa2.entities.pages import ENTITY_ROLES, page_roles
+from aaa2.entities.pages import ENTITY_ROLES, page_roles, page_url
 from aaa2.llm.schemas import ENTITY_TYPES
 
 SCHEMA_TYPES_FILE = Path(__file__).parent / "config" / "schema_types.toml"
+# Tulajdonságok, amelyek értéke az entitás attribútuma, nem külön entitás (M2/6, 10. pont).
+SCHEMA_ATTRIBUTES = ("jobTitle", "areaServed", "knowsAbout", "description")
 MIN_ANCHOR_PAGES = 3
 MIN_TITLE_PAGES = 3
 MIN_TITLE_SHARE = 0.25
@@ -255,6 +260,7 @@ class Candidate:
     source: str
     names: list[str] = field(default_factory=list)      # a site-név elsőbbségi sora (brand)
     role: str | None = None                              # org, amely a site neve is: brand
+    urls: set[str] = field(default_factory=set)          # schema: a csomópontok url-je
     forms: Counter[str] = field(default_factory=Counter)
     ranks: dict[str, int] = field(default_factory=dict)  # alak → a legerősebb forrása
     mentions: list[Mention] = field(default_factory=list)
@@ -271,7 +277,7 @@ class Candidate:
         self.mentions.extend(other.mentions)
 
     def canonical(self) -> str:
-        if self.type == "brand" and self.names:
+        if (self.type == "brand" or self.role == "brand") and self.names:
             return self.names[0]
         best = min(self.ranks.values())
         order = list(self.ranks)
@@ -315,6 +321,12 @@ def run_rules(con: duckdb.DuckDBPyConnection,
     decompressor = zstandard.ZstdDecompressor()
     dom = {page_id: _page_dom(decompressor.decompress(blob).decode("utf-8", "replace"), title)
            for page_id, _, title, _, _, blob in pages}
+    stored = {(page_id, ordinal): text for page_id, ordinal, text in con.execute(
+        "SELECT page_id, ordinal, text FROM blocks WHERE list_contains(?, page_id)",
+        [page_ids]).fetchall()}
+    for page_id, page in dom.items():
+        for block in page.blocks:
+            block.text = stored.get((page_id, block.ordinal), block.text)
     skipped: dict[str, object] = {}
     candidates: dict[tuple[str, str], Candidate] = {}
 
@@ -443,7 +455,7 @@ def _schema(con, page_ids, dom, mapping, candidates, skipped) -> None:
             block = json.loads(raw)
         except ValueError:
             continue
-        for node in _typed_nodes(block):
+        for node in _typed_nodes(block, SCHEMA_ATTRIBUTES):
             types = [_short_type(t) for t in _as_list(node.get("@type"))]
             kind = next((mapping[t] for t in types if t in mapping), None)
             if kind is None:
@@ -456,6 +468,8 @@ def _schema(con, page_ids, dom, mapping, candidates, skipped) -> None:
             key = alias_key(name)
             candidate = candidates.setdefault((key, kind), Candidate(kind, "schema"))
             candidate.add_form(html_lib.unescape(name).strip(), "schema")
+            if isinstance(node.get("url"), str):
+                candidate.urls.add(page_url(node["url"]))
             mention = per_page.get((page_id, key, kind))
             if mention is None:
                 context = json.dumps(node, ensure_ascii=False, separators=(",", ":"))
@@ -508,6 +522,8 @@ def _site_names(con, pages, dom, candidates, skipped) -> None:
                                          block.ordinal, span))
         return found
 
+    homes = {page_url(u) for u in _home_urls(con)}
+    preferred = ([og_names.most_common(1)[0][0]] if og_names else []) + site_title_names(titles)
     site_orgs: list[tuple[str, Candidate]] = []
     short: list[tuple[str, str]] = []
     without_rows: list[str] = []
@@ -521,6 +537,8 @@ def _site_names(con, pages, dom, candidates, skipped) -> None:
             site_orgs.append((key, orgs[key]))
             target = orgs[key]
             target.role = "brand"
+            target.names.append(name)
+            _absorb_home_orgs(target, orgs, homes, candidates, preferred)
         elif _short_name(key):
             short.append((key, name))
             continue
@@ -548,6 +566,30 @@ def _site_names(con, pages, dom, candidates, skipped) -> None:
             without_rows.append(name)
     if without_rows:
         skipped["site_name_not_in_title_or_h1"] = without_rows
+
+
+def _absorb_home_orgs(target: Candidate, orgs: dict[str, Candidate], homes: set[str],
+                      candidates: dict[tuple[str, str], Candidate], preferred: list[str]) -> None:
+    """A kezdőoldal URL-jével jelölt más nevű szervezet-csomópontok (pl. a blogposzt
+    `publisher`-e a site szlogenjével) a site-szervezet aliasai. Ha volt ilyen, a kanonikus
+    név az og:site_name-mel vagy a title-végződéssel (`preferred`) egyező kulcsú alak közül a
+    legerősebb forrású."""
+    absorbed = False
+    for key, other in list(orgs.items()):
+        if other is not target and other.urls & homes:
+            target.absorb(other)
+            target.urls |= other.urls
+            candidates[(key, "org")] = target
+            orgs[key] = target
+            absorbed = True
+    if not absorbed:
+        return
+    for name in preferred:
+        forms = [f for f in target.forms if alias_key(f) == alias_key(name)]
+        if forms:
+            target.names.insert(0, min(forms, key=lambda f: (target.ranks[f],
+                                                            -target.forms[f])))
+            return
 
 
 def _attach(target: Candidate, mentions: list[Mention]) -> None:
@@ -654,15 +696,17 @@ def _page_dom(html: str, title: str | None) -> _PageDom:
     return _PageDom(site_names, parse_blocks(html, title))
 
 
-def _typed_nodes(value: object) -> Iterator[dict]:
+def _typed_nodes(value: object, skip: tuple[str, ...] = ()) -> Iterator[dict]:
+    """A típusos csomópontok, a beágyazottak is; a `skip` tulajdonságok alá nem lép."""
     if isinstance(value, dict):
         if "@type" in value:
             yield value
-        for child in value.values():
-            yield from _typed_nodes(child)
+        for key, child in value.items():
+            if key not in skip:
+                yield from _typed_nodes(child, skip)
     elif isinstance(value, list):
         for child in value:
-            yield from _typed_nodes(child)
+            yield from _typed_nodes(child, skip)
 
 
 def _short_type(value: object) -> str:

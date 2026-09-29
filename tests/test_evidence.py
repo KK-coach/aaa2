@@ -131,6 +131,11 @@ def test_knowledge_details():
     assert wikidata_hit({"search": [{"id": "Q1", "match": {"type": "alias", "language": "hu",
                                                            "text": "KPI"}}]}, "kpi", "hu") == {
         "id": "Q1", "match": "alias", "text": "KPI"}
+    hits = [{"id": "Q850210", "match": {"type": "alias", "language": "hu", "text": "forgalom"}},
+            {"id": "Q4323994", "match": {"type": "label", "language": "hu", "text": "forgalom"}}]
+    assert wikidata_hit({"search": hits}, "forgalom", "hu") == {
+        "id": "Q850210", "match": "alias", "text": "forgalom", "rivals": ["Q4323994"]}
+    assert "rivals" not in wikidata_hit({"search": hits[::-1]}, "forgalom", "hu")
     body = {"query": {"redirects": [{"from": "SEO", "to": "Keresőoptimalizálás"}],
                       "pages": [{"title": "Keresőoptimalizálás"}]}}
     assert wikipedia_page(body) == {"title": "Keresőoptimalizálás", "redirect": True}
