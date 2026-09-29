@@ -50,6 +50,8 @@
   a fő ajánlat és a csomag `offers` kapcsolattal kötődik ezekhez, és az olyan fogalomhoz,
   amelynek normalizált kulcsa a nevének vagy összetett címkéje egy részének kulcsa
   (`label_parts`: „UX & Konverzióoptimalizálás” → UX, Konverzióoptimalizálás).
+- Webshop-szintek (9a pont, `shop.py`): kategória, márka, termékcsalád, a termék tulajdonságai
+  és kapcsolatai, a csomagok után.
 - Site-szintű felülbírálat (4. pont, `overrides.py`, `config/sites/<domain>.toml`): az
   ajánlat szintje (core, package, work_mode) név vagy URL szerint, a szintszabály után
   (`apply_overrides`). A kanonikus név nyelve a beállításé, különben a site gyökér-URL-jéé
@@ -97,10 +99,12 @@ from aaa2.entities.rules import (
     title_endings,
     trivial_anchor,
 )
+from aaa2.entities.shop import run_shop
 
 ANCHOR_MAX_WORDS = 6
 CARD_LOOKBACK = 3
 CARD_TITLE_WORDS = 5
+SITE_PREFIX_MIN = 4
 IDENTITY_EXCLUDED_TYPES = ("person", "org", "brand", "place")
 PRICE_LOOKBACK = 4
 PACKAGE_NAME_WORDS = 6
@@ -125,7 +129,8 @@ CONJUNCTION = re.compile(r"\s*(?:\bes\b|\band\b|&)\s*")
 SUBTYPE_CLASS = {"package": "distribution", "library": "distribution",
                  "framework": "distribution", "software": "distribution",
                  "platform": "distribution", "language": "distribution",
-                 "component": "code", "api_symbol": "code", "feature": "code"}
+                 "component": "code", "api_symbol": "code", "feature": "code",
+                 "line": "line", "variant": "variant"}
 LABEL_SPLIT = re.compile(r"\s+(?:&|és|and|\+|–|—|-)\s+|\s*[/,]\s*")
 TIER_ORDER = {"core": 0, "package": 1, "work_mode": 1, None: 2, "step": 3}
 TIER_GROUP = {"work_mode": "package"}
@@ -152,6 +157,7 @@ class SiteRun:
     anchor_mentions: int = 0
     offers: int = 0
     overrides: int = 0
+    shop: dict = field(default_factory=dict)
     demo: list[str] = field(default_factory=list)
     template_mentions: int = 0
     template_entities: int = 0
@@ -247,6 +253,7 @@ def run_site(con: duckdb.DuckDBPyConnection,
         context = _Context(con, roles, site_lang, run_id)
         anchored = _page_entities(context, merger, run)
         _packages(context, merger, run, anchored)
+        run.shop = run_shop(context, merger, config).as_dict()
         _hreflang_place(context, merger)
         _normalized_merges(con, merger)
         split = _type_split(con, merger)
@@ -263,7 +270,7 @@ def run_site(con: duckdb.DuckDBPyConnection,
             [clock(), len(roles), run.page_entities + run.packages, run.anchor_mentions,
              json.dumps({"roles": run.roles, "merges": dict(run.merges),
                          "packages": run.packages, "steps": run.steps, "offers": run.offers,
-                         "overrides": run.overrides,
+                         "overrides": run.overrides, "shop": run.shop,
                          "demo": run.demo,
                          "template_mentions": run.template_mentions,
                          "template_entities": run.template_entities,
@@ -399,7 +406,8 @@ def _page_names(ctx: _Context, members: list[PageInfo], rep: PageInfo,
         if info.h1:
             names.append(Name(info.h1.strip(), h1_source, info.lang))
         for form in _title_forms(info.title, ctx.site_keys):
-            names.append(Name(form, title_source, info.lang))
+            if not cut_off(form, info.h1):
+                names.append(Name(form, title_source, info.lang))
         for node in nodes.get(info.page_id, []):
             for value in (node.get("name"), node.get("headline"), node.get("alternateName")):
                 for text in _texts(value):
@@ -439,21 +447,39 @@ def _canonical(role: str, rep: PageInfo, names: list[Name]) -> str:
 
 def _title_forms(title: str | None, site_keys: set[str]) -> list[str]:
     """A title a site-nevet tartalmazó végződés nélkül, és az elválasztók (`TITLE_SEPARATORS`)
-    közötti szeletei, a site-nevűek nélkül."""
+    közötti szeletei, a site-nevűek nélkül. Site-név a csonkolt alak is (a title hosszkorlátja
+    levágja: „… - DUEX” a „DUEX Hungary Webshop” helyett; `site_name_form`)."""
     if not title:
         return []
     clean = title.strip()
     for ending in title_endings(clean)[1:]:
-        if alias_key(ending) in site_keys:
+        if site_name_form(ending, site_keys, minimum=1):
             clean = clean[: clean.rfind(ending)].rstrip(" |-–—·:»•").strip()
             break
-    forms = [clean] if clean and alias_key(clean) not in site_keys else []
+    forms = [clean] if clean and not site_name_form(clean, site_keys) else []
     pattern = "|".join(re.escape(sep) for sep in TITLE_SEPARATORS)
     for piece in re.split(pattern, clean):
         piece = piece.strip()
-        if piece and piece not in forms and alias_key(piece) not in site_keys:
+        if piece and piece not in forms and not site_name_form(piece, site_keys):
             forms.append(piece)
     return forms
+
+
+def site_name_form(text: str, site_keys: set[str], minimum: int = SITE_PREFIX_MIN) -> bool:
+    """A szöveg a site egyik neve, vagy annak legalább `minimum` jeles eleje (csonkolt alak; a
+    title végén, a site-név helyén bármilyen rövid: „… - D”)."""
+    key = alias_key(text)
+    return key in site_keys or (len(key) >= minimum
+                                and any(site.startswith(key) for site in site_keys))
+
+
+def cut_off(form: str, full: str | None) -> bool:
+    """A `form` a `full` levágott eleje, szó közben (a title hosszkorlátja: „… Hmv Tartá” a
+    „… Hmv Tartályal 14KW …” H1 helyett); az ilyen alak nem név."""
+    if not full:
+        return False
+    key, whole = alias_key(form), alias_key(full)
+    return len(key) < len(whole) and whole.startswith(key) and whole[len(key)].isalnum()
 
 
 def _self_nodes(con: duckdb.DuckDBPyConnection, members: list[PageInfo]) -> dict[int, list[dict]]:
@@ -1246,11 +1272,13 @@ def _set_flag(con: duckdb.DuckDBPyConnection, flag: str, entity_ids: list[int]) 
 
 def _site_name_keys(con: duckdb.DuckDBPyConnection) -> set[str]:
     """A site nevei: a brand szerepű (site-név) entitások és a brand típusú szabály-entitások
-    neve és aliasai."""
+    neve és aliasai; a webshop termékmárkái (`brand_of` kapcsolattal) nem."""
     keys = set()
     for name, aliases in con.execute(
-            "SELECT name, aliases FROM entities WHERE role = 'brand' "
-            "OR (type = 'brand' AND source IN ('rule', 'schema'))").fetchall():
+            "SELECT name, aliases FROM entities e WHERE (role = 'brand' "
+            "OR (type = 'brand' AND source IN ('rule', 'schema'))) AND NOT EXISTS (SELECT 1 "
+            "FROM entity_relations r WHERE r.from_id = e.entity_id AND r.type = 'brand_of')"
+            ).fetchall():
         keys |= {alias_key(f) for f in [name, *(aliases or [])]}
     return keys - {""}
 
