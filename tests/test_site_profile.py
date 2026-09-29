@@ -276,7 +276,7 @@ def site_profile_row(con):
     ).fetchone()
 
 
-@pytest.mark.parametrize("name", list(REFERENCE_SETS))
+@pytest.mark.parametrize("name", list(EXPECTED))
 def test_reference_site_profile(name, reference_crawl):
     con = reference_crawl(name)
     if con is None:

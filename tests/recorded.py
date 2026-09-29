@@ -153,21 +153,33 @@ def load_page(name: str) -> dict | None:
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
-async def record_crawl(name: str, seed: str, options):
-    """Élő crawl, közben minden válasz felvéve; (Recording, kapcsolat, összesítő)."""
+async def record_crawl(name: str, seed: str, options, retries: int = 0):
+    """Élő crawl, közben minden válasz felvéve; (Recording, kapcsolat, összesítő). `retries`:
+    ennyiszer kerülnek újra sorra a válasz nélkül maradt (időtúllépés, hálózati hiba) URL-ek, a
+    crawl folytatásával ugyanabba a felvételbe; az összesítő az utolsó köré."""
+    from dataclasses import replace
+
     from aaa2.db.connect import connect
     from aaa2.engine.crawl import crawl
     from aaa2.engine.render import NAVIGATION_HEADERS, Renderer
 
     recording = Recording(name)
     recording.clear()
-    async with Renderer(concurrency=options.concurrency, upstream=recording.record) as renderer, \
+    async with Renderer(concurrency=options.concurrency, render_timeout=options.render_timeout,
+                        upstream=recording.record) as renderer, \
             httpx.AsyncClient(
                 transport=recording.recording_transport(), timeout=20.0,
                 headers={"User-Agent": renderer.user_agent, **NAVIGATION_HEADERS},
             ) as client:
         con = connect(":memory:")
         summary = await crawl(con, seed, options, client=client, renderer=renderer)
+        for _ in range(retries):
+            failed = con.execute("UPDATE crawl_queue SET status = 'queued', error = NULL "
+                                 "WHERE status = 'failed' RETURNING url").fetchall()
+            if not failed:
+                break
+            summary = await crawl(con, seed, replace(options, resume=True), client=client,
+                                  renderer=renderer)
     recording.save(pages=len(con.execute("SELECT url FROM pages").fetchall()))
     return recording, con, summary
 
@@ -180,10 +192,26 @@ def _reference_sets() -> dict:
         "materia-crawl": ("https://materia-tm.com/", CrawlOptions(concurrency=3)),
         "ngx-bootstrap-crawl": ("https://valor-software.com/ngx-bootstrap/components",
                                 CrawlOptions(concurrency=4, include="/ngx-bootstrap/")),
+        **{name: site_set(domain) for name, domain in SITE_SETS.items()},
     }
 
 
-# A három referencia-készlet: felvétel neve → (seed, crawl-beállítás).
+def site_set(domain: str) -> tuple[str, object]:
+    """A site-fájl `[crawl]` részéből: (seed, crawl-beállítás)."""
+    from aaa2.engine.crawl import CrawlOptions
+    from aaa2.engine.render import RENDER_TIMEOUT
+    from aaa2.entities.overrides import load_site_config
+
+    crawl = load_site_config(domain).crawl
+    return crawl.seed, CrawlOptions(concurrency=crawl.concurrency or 4, include=crawl.include,
+                                    exclude=crawl.exclude_pattern,
+                                    render_timeout=crawl.render_timeout or RENDER_TIMEOUT)
+
+
+# Az idegen site-ok (M2/7 B): felvétel neve → a site-fájl domainje.
+SITE_SETS = {"marketinglens-crawl": "marketinglens.com", "duex-crawl": "duexhungary.hu"}
+
+# A referencia-készletek: felvétel neve → (seed, crawl-beállítás).
 REFERENCE_SETS = _reference_sets()
 
 
@@ -196,7 +224,8 @@ async def replay_crawl(name: str, seed: str, options):
     recording = Recording(name)
     if not recording.exists:
         return None
-    async with Renderer(concurrency=options.concurrency, upstream=recording.replay) as renderer, \
+    async with Renderer(concurrency=options.concurrency, render_timeout=options.render_timeout,
+                        upstream=recording.replay) as renderer, \
             httpx.AsyncClient(transport=recording.replay_transport(), timeout=20.0) as client:
         con = connect(":memory:")
         await crawl(con, seed, options, client=client, renderer=renderer)

@@ -91,7 +91,7 @@ def test_locked_page_ids_and_sources():
                                 "kilenc-tiz-tizenegy-tizenketto/")
     assert long == "locked_kk_egy_ketto_harom_negy_ot_hat_het_nyolc"          # ≤ 40 jel
     sources = locked_sources()
-    assert len(sources) == 6
+    assert len(sources) == 3 * len(LOCKED_SITES)
     assert {db for _, db, _, _ in sources} == set(LOCKED_SITES)
     assert all(pid.startswith("locked_") for pid, _, _, _ in sources)
 

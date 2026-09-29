@@ -2,7 +2,15 @@
 adatbázis nélkül."""
 import json
 
-from tests.acceptance.locked_pages import DEVELOPMENT, OUT, PER_SITE, select, sha256
+from tests.acceptance.locked_pages import (
+    DEVELOPMENT,
+    M27_SITES,
+    OUT,
+    PER_SITE,
+    REQUIRED,
+    select,
+    sha256,
+)
 
 DEV = "https://x.test/hu/fejlesztes/"
 
@@ -46,9 +54,27 @@ def test_non_2xx_and_duplicates_are_dropped_and_order_is_sha256():
 
 def test_the_committed_list_follows_the_rule_shape():
     data = json.loads(OUT.read_text(encoding="utf-8"))
-    assert set(data["sites"]) == set(DEVELOPMENT)
+    assert set(data["sites"]) == set(DEVELOPMENT) | set(M27_SITES)
     for name, site in data["sites"].items():
-        assert site["development"] == DEVELOPMENT[name]
         assert len(site["urls"]) == PER_SITE
+        if name in M27_SITES:
+            assert site["development"] is None
+            required = list(REQUIRED.get(name, ()))
+            assert site["types"][:len(required)] == required
+            rest = site["urls"][len(required):]
+            assert rest == sorted(rest, key=sha256)
+            continue
+        assert site["development"] == DEVELOPMENT[name]
         assert site["urls"] == sorted(site["urls"], key=sha256)
         assert DEVELOPMENT[name] not in site["urls"]
+
+
+def test_required_page_types_come_first_then_sha256_order():
+    rows = [{**row(f"https://x.test/{i}/"), "type": kind}
+            for i, kind in enumerate(["other", "other", "product", "product", "category"])]
+    chosen = select(rows, None, required=("product", "category"))
+    products = sorted((r["url"] for r in rows if r["type"] == "product"), key=sha256)
+    assert chosen[:2] == [products[0], "https://x.test/4/"]
+    rest = sorted((r["url"] for r in rows if r["url"] not in chosen[:2]), key=sha256)
+    assert chosen[2:] == rest[:PER_SITE - 2]
+    assert select(rows, None) == sorted((r["url"] for r in rows), key=sha256)[:PER_SITE]

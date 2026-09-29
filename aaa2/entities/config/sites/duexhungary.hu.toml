@@ -1,0 +1,29 @@
+# Site-szintű beállítás: shop.duexhungary.hu (webshop; M2/7 B, Krisztián választása).
+#
+# [crawl]: a regexek a normalizált URL-re illeszkednek (re.search). A registrable domain a
+# duexhungary.hu, ezért az include a bolt hostjára szűkít. A kizárások Krisztián listája
+# (AAAV2-56): kosár-, regisztrációs, rendeléskövető és bejelentkező oldalak, a lista-
+# és képmegjelenítő AJAX-végpontok, a végtelen görgetés, és a dupla perjeles URL-ek.
+
+[crawl]
+seed = "https://shop.duexhungary.hu/"
+include = '^https?://shop\.duexhungary\.hu/'
+exclude = [
+    'action=cat_art_list',
+    'ajax=1',
+    'ajax_nodesign',
+    'infinite_scroll',
+    'shop_pic\.php',
+    'overlay=login',
+    'shop_order_track',
+    'shop_cart',
+    'shop_reg',
+    '^https?://[^/]+[^?]*//',
+]
+concurrency = 2
+render_timeout = 30
+
+# [page_types]: a bolt URL-szerkezete (Unas): /sct/ kategória, /spl/ márka × kategória lista.
+[page_types]
+category = ['/sct/']
+brand_category = ['/spl/']

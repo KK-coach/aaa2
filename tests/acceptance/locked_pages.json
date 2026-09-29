@@ -3,7 +3,8 @@
   "csak a 2xx státuszú URL, legalább 150 szavas main contenttel (word_count)",
   "kizárva a fejlesztési oldal és a fordításai (hreflang mindkét irányban), a lekérdezés nélkül vele azonos URL-ek (?tab= változatok) és az ezekre átirányító URL-ek",
   "egy oldal egyszer: kimarad az URL, amelynek a final_url-je vagy a canonical-ja egy másik, a listában maradt URL",
-  "a maradék az URL (UTF-8) sha256-ja szerint növekvő sorrendben, site-onként az első 3"
+  "a maradék az URL (UTF-8) sha256-ja szerint növekvő sorrendben, site-onként az első 3",
+  "M2/7 B, idegen site-ok: nincs fejlesztési oldal; a webshopon előbb a termék- és a kategória-oldaltípus legkisebb sha256-ú oldala (pages.page_types: JSON-LD és a site-fájl URL-mintái), a maradék hely sha256 szerint"
  ],
  "sites": {
   "kk-coach-crawl": {
@@ -28,6 +29,32 @@
     "https://valor-software.com/ngx-bootstrap/components/popover?tab=overview",
     "https://valor-software.com/ngx-bootstrap/components/tabs?tab=api",
     "https://valor-software.com/ngx-bootstrap/components/tooltip?tab=api"
+   ]
+  },
+  "marketinglens-crawl": {
+   "development": null,
+   "urls": [
+    "https://marketinglens.com/competitor-analysis-and-benchmarking-blog/what-is-competitor-analysis-and-benchmarking/",
+    "https://marketinglens.com/google-consent-mode-blog/why-consent-mode-v2-matters/",
+    "https://marketinglens.com/digital-marketing-agency/"
+   ],
+   "types": [
+    "blog",
+    "blog",
+    "other"
+   ]
+  },
+  "duex-crawl": {
+   "development": null,
+   "urls": [
+    "https://shop.duexhungary.hu/spd/_HM123MR-U34-3F/LG-ThermaV-R32-12KW-3Fazis",
+    "https://shop.duexhungary.hu/sct/246786/Osztott-Hoszivattyu",
+    "https://shop.duexhungary.hu/spd/CWH24AAD/Cascade-BORA-62-kW-oldalfali-split-klima-szett"
+   ],
+   "types": [
+    "product",
+    "category",
+    "product"
    ]
   }
  }
