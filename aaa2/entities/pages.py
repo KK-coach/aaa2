@@ -129,11 +129,6 @@ def representative(members: list[PageInfo], site_lang: str | None) -> PageInfo:
     return min(pool, key=lambda m: ("?" in m.url, m.page_id))
 
 
-def site_language(con: duckdb.DuckDBPyConnection) -> str | None:
-    languages = (con.execute("SELECT languages FROM site").fetchone() or [None])[0] or []
-    return primary_lang(languages[0]) if languages else None
-
-
 def role_counts(roles: dict[int, PageInfo]) -> Counter[str]:
     return Counter(info.role for info in roles.values())
 

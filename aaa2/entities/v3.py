@@ -22,7 +22,6 @@ from __future__ import annotations
 import tomllib
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 
 import duckdb
@@ -34,7 +33,6 @@ from aaa2.entities.gate import (
     KnowledgeBase,
     PageContext,
     SoftItem,
-    base_language,
     repetition,
     soft_items,
     structure,
@@ -209,60 +207,3 @@ def store_soft_checks(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int,
             "blocks, mentions, prominent, rank, knowledge, sol, kept) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", rows)
     return len(rows)
-
-
-# ---------------------------------------------------------------------------
-# tudásbázis-egyezés az entitásokra
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class KnowledgeRun:
-    entities: int
-    wikidata: int
-    wikipedia: int
-    errors: int
-
-
-def clear_person_links(con: duckdb.DuckDBPyConnection,
-                       clock: Callable[[], datetime]) -> int:
-    """A személyek automatikus Wikidata- és Wikipedia-kapcsolása ki van kapcsolva (M2/6, 8.
-    pont: csak a JSON-LD `sameAs`-en át, az még nincs kész): a meglévő linkjük törlődik, a
-    státuszuk none. Visszaad: hány személynél volt link."""
-    rows = con.execute(
-        "UPDATE entities SET wikidata_id = NULL, wikipedia = NULL, wikidata_status = 'none', "
-        "knowledge_checked_at = coalesce(knowledge_checked_at, ?) WHERE type = 'person' "
-        "AND (wikidata_id IS NOT NULL OR wikipedia IS NOT NULL OR wikidata_status IS NULL) "
-        "RETURNING entity_id", [clock()]).fetchall()
-    return len(rows)
-
-
-def link_entities(con: duckdb.DuckDBPyConnection, knowledge: KnowledgeBase,
-                  clock: Callable[[], datetime], site_lang: str | None = None) -> KnowledgeRun:
-    """Az említéssel bíró, még nem ellenőrzött, nem személy entitások neve a Wikidatán (címke
-    vagy alias),
-    utána a Wikipedián (cím vagy átirányítás), az entitás nyelvén (ha nincs, a site-én), majd
-    angolul; nyelvenként az első találat. Ha egy kérés hibára fut, az entitás ellenőrizetlen
-    marad (a következő futás újra kérdezi)."""
-    clear_person_links(con, clock)
-    rows = con.execute(
-        "SELECT entity_id, name, lang FROM entities WHERE knowledge_checked_at IS NULL "
-        "AND type <> 'person' AND entity_id IN (SELECT entity_id FROM page_entities) "
-        "ORDER BY entity_id").fetchall()
-    wikidata = wikipedia = errors = 0
-    for entity_id, name, lang in rows:
-        before = knowledge.failures
-        codes = list(dict.fromkeys([base_language(lang or site_lang), "en"]))
-        qid = next((hit["id"] for code in codes if (hit := knowledge.wikidata(name, code))),
-                   None)
-        title = next((f"{code}:{page['title']}" for code in codes
-                      if (page := knowledge.wikipedia(name, code))), None)
-        if knowledge.failures > before:
-            errors += 1
-            continue
-        con.execute("UPDATE entities SET wikidata_id = ?, wikipedia = ?, "
-                    "knowledge_checked_at = ? WHERE entity_id = ?",
-                    [qid, title, clock(), entity_id])
-        wikidata += qid is not None
-        wikipedia += title is not None
-    return KnowledgeRun(len(rows), wikidata, wikipedia, errors)

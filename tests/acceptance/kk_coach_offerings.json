@@ -1,6 +1,6 @@
 {
   "site": "kk.coach",
-  "status": "final, javítva 2026-09-29: Content Authority Build a GEO alá; 'AI-láthatóság' kikerült a GEO aliasai közül",
+  "status": "final, javítva 2026-09-29 (2): kitalált angol csomagnév törölve; offers csak névből; felülbírálat a munkamódokra; site-variánsok",
   "purpose": "Az M2/6 elfogadási referenciája: a site saját ajánlatai, oldalhoz kötött entitásként, magyarul és angolul egy-egy entitás.",
   "rules": {
     "core": "saját oldal és navigációs pont; a kanonikus név a site elsődleges nyelvén (magyar) a H1",
@@ -9,7 +9,10 @@
     "method_step": "csak heading egy szolgáltatásoldalon; a site saját fogalma (concept/method), nem ajánlat",
     "combined_label": "a 'UX & Konverzióoptimalizálás' egy ajánlat (saját oldal, menüpont), de két külön fogalmat kínál: UX és konverzióoptimalizálás. Ha a modell a címkét UX-re és konverzióra bontja, az helyes; az ajánlat-entitás a két fogalomhoz 'offers' kapcsolattal kötődik",
     "en_only": "ahol a magyar oldalon nincs párja, a csomag csak angolul létezik; ez nem hiba",
-    "standalone_concept": "az 'AI láthatóság' önmagában a folyó szövegben fogalom; csak a 'GEO – AI láthatóság' teljes címke az ajánlat aliasa"
+    "standalone_concept": "az 'AI láthatóság' önmagában a folyó szövegben fogalom; csak a 'GEO – AI láthatóság' teljes címke az ajánlat aliasa",
+    "offers": "az offers kapcsolat csak az ajánlat nevéből származtatható fogalmakra kötelező; a tartalomból származó fogalmak (korábbi lista) nem elfogadási feltételek",
+    "overrides": "a tanácsadó a site ismeretében felülbírálhatja az ajánlat szintjét (site-szintű felülbírálati fájl); az elfogadás ezt a fájlt használja",
+    "canonical_language": "nyitott: a kanonikus név nyelve (a site gyökér-URL-jének nyelve, vagy konfigurálható); az elfogadás a kanonikus nevet nem ellenőrzi, csak hogy minden alias ugyanahhoz az entitáshoz tartozik"
   },
   "core": [
     {
@@ -24,10 +27,8 @@
         "Mérés"
       ],
       "offers_concepts": [
-        "mérési architektúra",
-        "adatarchitektúra",
-        "szerver oldali mérés",
-        "attribúciós modellezés"
+        "mérés",
+        "adatarchitektúra"
       ],
       "packages": [
         {
@@ -58,14 +59,16 @@
         "Keresőoptimalizálás"
       ],
       "offers_concepts": [
-        "SEO",
-        "technikai SEO",
-        "keresési szándék"
+        "SEO"
       ],
       "packages": [
         {
           "en": "SEO & Technical Audit",
-          "hu": "SEO és technikai alapok felmérése"
+          "hu": "SEO és technikai alapok felmérése",
+          "site_variants": [
+            "SEO & Techn ikai alapok felmérése"
+          ],
+          "note": "a site árazási sora 'SEO & Techn ikai…' alakú (&, és a szó közepén szóköz); ha a parser a szóközt HTML-törésből hozza, ott javítandó"
         },
         {
           "en": "Technical SEO Implementation",
@@ -73,7 +76,11 @@
         },
         {
           "en": "Information Architecture Redesign",
-          "hu": "Információs architektúra újratervezése"
+          "hu": "Információs architektúra újratervezése",
+          "site_variants": [
+            "Információs architektúra újratervezés"
+          ],
+          "note": "a site két alakot használ (újratervezése / újratervezés): site-inkonzisztencia, a különálló entitás elfogadható"
         },
         {
           "en": "Ongoing SEO Retainer",
@@ -94,8 +101,7 @@
       ],
       "offers_concepts": [
         "GEO",
-        "AI láthatóság",
-        "entitás-architektúra"
+        "AI láthatóság"
       ],
       "packages": [
         {
@@ -161,30 +167,34 @@
         "Execution Model — Sprint-Based Organic Growth Delivery",
         "Sprint-Based Organic Growth Delivery"
       ],
-      "offers_concepts": [
-        "sprint",
-        "priorizálás",
-        "ICE scoring"
-      ],
+      "offers_concepts": [],
       "note": "Krisztián döntése: a magyar kanonikus név 'Kivitelezés'; a menü 'Megvalósítás' felirata alias",
       "work_modes": [
         {
           "en": "Direct Implementation",
-          "hu": "Közvetlen implementálás"
+          "hu": "Közvetlen implementálás",
+          "override": true,
+          "note": "Krisztián döntése: külön ajánlat. A site-on csak headingként áll, ezért a szintszabály lépésnek sorolná; a helyes szintet a site-szintű felülbírálati fájl adja"
         },
         {
           "en": "Structured Oversight",
-          "hu": "Strukturált felügyelet"
+          "hu": "Strukturált felügyelet",
+          "override": true,
+          "note": "Krisztián döntése: külön ajánlat. A site-on csak headingként áll, ezért a szintszabály lépésnek sorolná; a helyes szintet a site-szintű felülbírálati fájl adja"
         }
       ],
       "packages": [
         {
-          "en": "Two-Week Sprint — Direct Implementation",
-          "hu": "Kéthetes Sprint (Közvetlen implementálás)"
+          "en": "Two-Week Sprint",
+          "hu": "Kéthetes Sprint (Közvetlen implementálás)",
+          "pair_optional": true,
+          "note": "a 'Two-Week Sprint — Direct Implementation' nevet Claude találta ki, a site-on nincs; a magyar tábla 4, az angol 2 soros, ezért a sorpár nem állítható elő biztosan"
         },
         {
           "en": "Two-Week Sprint — Structured Oversight",
-          "hu": "Kéthetes Sprint (projektmenedzsment)"
+          "hu": "Kéthetes Sprint (projektmenedzsment)",
+          "pair_optional": true,
+          "note": "a magyar és az angol tábla sorszáma eltér; a nyelvi pár összevonása nem kötelező"
         },
         {
           "hu": "Folyamatos (Havi)",

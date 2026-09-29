@@ -5,7 +5,7 @@
    "site": "kk.coach",
    "merge_id": 5,
    "rule": "page_identity_position",
-   "kept": "GEO — AI SEO",
+   "kept": "GEO — AI Visibility",
    "removed": "GEO – AI láthatóság",
    "kept_type": "service",
    "evidence": {
@@ -21,7 +21,7 @@
    "site": "kk.coach",
    "merge_id": 9,
    "rule": "page_identity_position",
-   "kept": "Megvalósítási modell",
+   "kept": "Execution",
    "removed": "Execution Model",
    "kept_type": "service",
    "evidence": {
@@ -37,7 +37,7 @@
    "site": "kk.coach",
    "merge_id": 22,
    "rule": "page_identity_position",
-   "kept": "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
+   "kept": "SEO/UX Case Study: When Site Speed Stops Being a Technical Detail and Becomes a Revenue Question",
    "removed": "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
    "kept_type": "work",
    "evidence": {
@@ -58,12 +58,12 @@
    "kept_type": "service",
    "evidence": {
     "pages": [
-     14,
-     30
+     30,
+     14
     ],
     "blocks": [
-     2283,
-     419
+     419,
+     2283
     ]
    },
    "verdict": null,
@@ -73,17 +73,17 @@
    "site": "kk.coach",
    "merge_id": 39,
    "rule": "hreflang_place",
-   "kept": "Technikai SEO",
-   "removed": "Technical SEO",
+   "kept": "Technical SEO",
+   "removed": "Technikai SEO",
    "kept_type": "concept",
    "evidence": {
     "pages": [
-     16,
-     34
+     34,
+     16
     ],
     "blocks": [
-     2516,
-     4668
+     4668,
+     2516
     ]
    },
    "verdict": null,
@@ -93,17 +93,17 @@
    "site": "kk.coach",
    "merge_id": 40,
    "rule": "hreflang_place",
-   "kept": "Információs architektúra",
-   "removed": "Information architecture",
+   "kept": "Information architecture",
+   "removed": "Információs architektúra",
    "kept_type": "concept",
    "evidence": {
     "pages": [
-     16,
-     34
+     34,
+     16
     ],
     "blocks": [
-     2525,
-     4677
+     4677,
+     2525
     ]
    },
    "verdict": null,
@@ -113,17 +113,17 @@
    "site": "kk.coach",
    "merge_id": 41,
    "rule": "hreflang_place",
-   "kept": "szándék és tartalomstratégia",
-   "removed": "Intent and content strategy",
+   "kept": "Intent and content strategy",
+   "removed": "szándék és tartalomstratégia",
    "kept_type": "concept",
    "evidence": {
     "pages": [
-     16,
-     34
+     34,
+     16
     ],
     "blocks": [
-     2534,
-     4686
+     4686,
+     2534
     ]
    },
    "verdict": null,
@@ -133,17 +133,17 @@
    "site": "kk.coach",
    "merge_id": 42,
    "rule": "hreflang_place",
-   "kept": "konverzióillesztés",
-   "removed": "Conversion Alignment",
+   "kept": "Conversion Alignment",
+   "removed": "konverzióillesztés",
    "kept_type": "concept",
    "evidence": {
     "pages": [
-     16,
-     34
+     34,
+     16
     ],
     "blocks": [
-     2625,
-     4775
+     4775,
+     2625
     ]
    },
    "verdict": null,
@@ -153,17 +153,17 @@
    "site": "kk.coach",
    "merge_id": 43,
    "rule": "hreflang_place",
-   "kept": "Mérési architektúra",
-   "removed": "Measurement Architecture",
+   "kept": "Measurement Architecture",
+   "removed": "Mérési architektúra",
    "kept_type": "concept",
    "evidence": {
     "pages": [
-     20,
-     21
+     21,
+     20
     ],
     "blocks": [
-     3294,
-     3390
+     3390,
+     3294
     ]
    },
    "verdict": null,
@@ -173,17 +173,17 @@
    "site": "kk.coach",
    "merge_id": 44,
    "rule": "hreflang_place",
-   "kept": "AI-first munkamódszer",
-   "removed": "AI-First Workflow",
+   "kept": "AI-First Workflow",
+   "removed": "AI-first munkamódszer",
    "kept_type": "concept",
    "evidence": {
     "pages": [
-     20,
-     21
+     21,
+     20
     ],
     "blocks": [
-     3300,
-     3396
+     3396,
+     3300
     ]
    },
    "verdict": null,
@@ -191,10 +191,10 @@
   },
   {
    "site": "kk.coach",
-   "merge_id": 57,
+   "merge_id": 56,
    "rule": "type_split",
    "kept": "SEO",
-   "removed": "Keresőoptimalizálás (SEO)",
+   "removed": "SEO",
    "kept_type": "concept",
    "evidence": {
     "from_id": 5,
@@ -205,10 +205,10 @@
   },
   {
    "site": "kk.coach",
-   "merge_id": 58,
+   "merge_id": 57,
    "rule": "type_split",
    "kept": "Execution",
-   "removed": "Megvalósítási modell",
+   "removed": "Execution",
    "kept_type": "concept",
    "evidence": {
     "from_id": 8,
@@ -219,11 +219,11 @@
   },
   {
    "site": "kk.coach",
-   "merge_id": 59,
+   "merge_id": 58,
    "rule": "type_split",
    "kept": "keresőoptimalizálás",
-   "removed": "Keresőoptimalizálás (SEO)",
-   "kept_type": "concept",
+   "removed": "SEO",
+   "kept_type": null,
    "evidence": {
     "from_id": 5,
     "mentions": 2
@@ -233,7 +233,7 @@
   },
   {
    "site": "kk.coach",
-   "merge_id": 60,
+   "merge_id": 59,
    "rule": "type_split",
    "kept": "reporting",
    "removed": "reporting",
@@ -247,15 +247,90 @@
   },
   {
    "site": "kk.coach",
+   "merge_id": 61,
+   "rule": "override",
+   "kept": "Direct Implementation",
+   "removed": "Direct Implementation",
+   "kept_type": "service",
+   "evidence": {
+    "tier": "work_mode",
+    "previous_type": "service",
+    "previous_tier": "package",
+    "part_of": 8
+   },
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "site": "kk.coach",
+   "merge_id": 62,
+   "rule": "override",
+   "kept": "Structured oversight",
+   "removed": "Strukturált felügyelet",
+   "kept_type": "service",
+   "evidence": {
+    "names": [
+     "Strukturált felügyelet",
+     "Structured Oversight"
+    ],
+    "url": null
+   },
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "site": "kk.coach",
+   "merge_id": 63,
+   "rule": "override",
+   "kept": "Structured oversight",
+   "removed": "Structured oversight",
+   "kept_type": "service",
+   "evidence": {
+    "tier": "work_mode",
+    "previous_type": "concept",
+    "previous_tier": null,
+    "part_of": 8
+   },
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "site": "kk.coach",
+   "merge_id": 100,
+   "rule": "wikidata_short_name",
+   "kept": "User experience",
+   "removed": "UX",
+   "kept_type": "concept",
+   "evidence": {
+    "qid": "Q1047808"
+   },
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "site": "kk.coach",
+   "merge_id": 101,
+   "rule": "wikidata_short_name",
+   "kept": "Artificial intelligence",
+   "removed": "AI",
+   "kept_type": "concept",
+   "evidence": {
+    "qid": "Q11660"
+   },
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "site": "kk.coach",
    "merge_id": 23,
    "rule": "hreflang_pricing_row",
-   "kept": "GEO alapállapot-felmérés",
-   "removed": "GEO Baseline Assessment",
+   "kept": "GEO Baseline Assessment",
+   "removed": "GEO alapállapot-felmérés",
    "kept_type": "service",
    "evidence": {
     "pages": [
-     13,
-     31
+     31,
+     13
     ],
     "row": 1
    },
@@ -264,47 +339,13 @@
   },
   {
    "site": "kk.coach",
-   "merge_id": 28,
-   "rule": "hreflang_pricing_row",
-   "kept": "BigQuery integráció",
-   "removed": "BigQuery Integration",
-   "kept_type": "service",
-   "evidence": {
-    "pages": [
-     15,
-     32
-    ],
-    "row": 2
-   },
-   "verdict": null,
-   "note": ""
-  },
-  {
-   "site": "kk.coach",
-   "merge_id": 33,
-   "rule": "hreflang_pricing_row",
-   "kept": "Folyamatos SEO keretszerződés",
-   "removed": "Ongoing SEO Retainer",
-   "kept_type": "service",
-   "evidence": {
-    "pages": [
-     16,
-     34
-    ],
-    "row": 4
-   },
-   "verdict": null,
-   "note": ""
-  },
-  {
-   "site": "kk.coach",
    "merge_id": 45,
    "rule": "normalized_name",
-   "kept": "AI/referral traffic",
-   "removed": "AI referral traffic",
+   "kept": "content_load_time",
+   "removed": "content load time",
    "kept_type": "concept",
    "evidence": {
-    "key": "aireferraltraffic",
+    "key": "contentloadtime",
     "type": "concept"
    },
    "verdict": null,
@@ -312,97 +353,27 @@
   },
   {
    "site": "kk.coach",
-   "merge_id": 49,
+   "merge_id": 55,
    "rule": "normalized_name",
-   "kept": "Entitás-architektúra",
-   "removed": "Entitásarchitektúra",
-   "kept_type": "concept",
+   "kept": "Two-Week Sprint — Structured Oversight",
+   "removed": "Two-Week Sprint (Structured Oversight)",
+   "kept_type": "service",
    "evidence": {
-    "key": "entitasarchitektura",
-    "type": "concept"
-   },
-   "verdict": null,
-   "note": ""
-  },
-  {
-   "site": "kk.coach",
-   "merge_id": 53,
-   "rule": "normalized_name",
-   "kept": "kulcsszóvolumen",
-   "removed": "kulcsszó-volumen",
-   "kept_type": "concept",
-   "evidence": {
-    "key": "kulcsszovolumen",
-    "type": "concept"
-   },
-   "verdict": null,
-   "note": ""
-  },
-  {
-   "site": "kk.coach",
-   "merge_id": 61,
-   "rule": "normalized_name",
-   "kept": "GEO",
-   "removed": "Generative Engine Optimization",
-   "kept_type": "concept",
-   "evidence": {
-    "key": "geo",
-    "type": "concept"
+    "key": "twoweeksprintstructuredoversight",
+    "type": "service"
    },
    "verdict": null,
    "note": ""
   },
   {
    "site": "ngx-bootstrap",
-   "merge_id": 3,
+   "merge_id": 9,
    "rule": "normalized_name",
-   "kept": "boundaryLinks",
-   "removed": "Boundary links",
+   "kept": "datesDisabled",
+   "removed": "Dates disabled",
    "kept_type": "tech",
    "evidence": {
-    "key": "boundarylinks",
-    "type": "tech"
-   },
-   "verdict": null,
-   "note": ""
-  },
-  {
-   "site": "ngx-bootstrap",
-   "merge_id": 7,
-   "rule": "normalized_name",
-   "kept": "Daterangepicker",
-   "removed": "Date range picker",
-   "kept_type": "tech",
-   "evidence": {
-    "key": "daterangepicker",
-    "type": "tech"
-   },
-   "verdict": null,
-   "note": ""
-  },
-  {
-   "site": "ngx-bootstrap",
-   "merge_id": 11,
-   "rule": "normalized_name",
-   "kept": "Direction links",
-   "removed": "directionLinks",
-   "kept_type": "tech",
-   "evidence": {
-    "key": "directionlinks",
-    "type": "tech"
-   },
-   "verdict": null,
-   "note": ""
-  },
-  {
-   "site": "ngx-bootstrap",
-   "merge_id": 15,
-   "rule": "normalized_name",
-   "kept": "minLength",
-   "removed": "Min length",
-   "kept_type": "tech",
-   "evidence": {
-    "key": "minlength",
+    "key": "datesdisabled",
     "type": "tech"
    },
    "verdict": null,
@@ -436,61 +407,81 @@
      36
     ],
     "name": "14%-kal csökkent az organikus kattintás, miközben a pozíciók nem romlottak: B2B SaaS case study az AI search hatásáról",
-    "canonical": "14%-kal csökkent az organikus kattintás, miközben a pozíciók nem romlottak: B2B SaaS case study az AI search hatásáról"
+    "canonical": "Organic clicks dropped by 14% while rankings stayed stable: a B2B SaaS case study on the impact of AI search"
    },
    "verdict": null,
    "note": ""
   },
   {
    "site": "kk.coach",
-   "merge_id": 6,
-   "rule": "page_identity",
-   "kept": "Execution",
-   "removed": "Execution Model — Sprint-Based Organic Growth Delivery",
-   "kept_type": "service",
-   "evidence": {
-    "pages": [
-     14,
-     30
-    ],
-    "name": "Execution Model — Sprint-Based Organic Growth Delivery",
-    "canonical": "Megvalósítási modell"
-   },
-   "verdict": null,
-   "note": ""
-  },
-  {
-   "site": "kk.coach",
-   "merge_id": 11,
+   "merge_id": 12,
    "rule": "page_identity",
    "kept": "Measurement & Data Architecture",
-   "removed": "Measurement & Data Architecture — GA4, Server-Side Tracking & Attribution",
+   "removed": "Mérés és adatarchitektúra",
    "kept_type": "service",
    "evidence": {
     "pages": [
      15,
      32
     ],
-    "name": "Measurement & Data Architecture — GA4, Server-Side Tracking & Attribution",
-    "canonical": "Mérés és adat architektúra"
+    "name": "Mérés és adatarchitektúra",
+    "canonical": "Measurement & Data Architecture"
    },
    "verdict": null,
    "note": ""
   },
   {
    "site": "kk.coach",
-   "merge_id": 15,
-   "rule": "page_identity",
-   "kept": "SEO",
-   "removed": "Keresőoptimalizálás (SEO)",
-   "kept_type": "service",
+   "merge_id": 64,
+   "rule": "wikidata_confident",
+   "kept": "User experience",
+   "removed": "Felhasználói élmény",
+   "kept_type": "concept",
    "evidence": {
-    "pages": [
-     16,
-     34
-    ],
-    "name": "Keresőoptimalizálás (SEO)",
-    "canonical": "Keresőoptimalizálás (SEO)"
+    "qid": "Q1047808",
+    "type": "concept"
+   },
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "site": "kk.coach",
+   "merge_id": 73,
+   "rule": "wikidata_confident",
+   "kept": "AI visibility",
+   "removed": "AI search visibility",
+   "kept_type": "concept",
+   "evidence": {
+    "qid": "Q138646003",
+    "type": "concept"
+   },
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "site": "kk.coach",
+   "merge_id": 82,
+   "rule": "wikidata_confident",
+   "kept": "Advertising",
+   "removed": "reklám",
+   "kept_type": "concept",
+   "evidence": {
+    "qid": "Q37038",
+    "type": "concept"
+   },
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "site": "kk.coach",
+   "merge_id": 91,
+   "rule": "wikidata_confident",
+   "kept": "Key Performance Indicators",
+   "removed": "key performance indicator",
+   "kept_type": "concept",
+   "evidence": {
+    "qid": "Q860554",
+    "type": "concept"
    },
    "verdict": null,
    "note": ""

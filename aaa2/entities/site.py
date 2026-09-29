@@ -38,9 +38,11 @@
   H2-szakaszok elölről és hátulról párban, amíg a H3-ak száma egyezik; a headinget egészében
   lefedő egyetlen említés entitása, azonos típus, vagy service és csak headingben álló
   concept: `hreflang_place`), és az írásmód-normalizált név (kis-nagybetű, ékezet, szóköz,
-  aláhúzás, kötőjel, perjel, gondolatjel, zárójel nélkül, a zárójeles rövidítés-kifejtéssel;
-  azonos típus: `normalized_name`). Két különböző oldalhoz kötött entitás és két eltérő szint
-  (core, package) nem olvad össze; a hreflang-párban az elsődleges nyelvű oldal entitása marad.
+  aláhúzás, kötőjel, perjel, gondolatjel, zárójel nélkül, „&” = „és” = „and”; a zárójeles
+  rövidítésből csak a hosszú kifejtés; „/” vagy „@” tartalmú névnél elválasztó-normalizálás
+  nincs; azonos típus: `normalized_name`). Két különböző oldalhoz kötött entitás, két eltérő
+  szint (core, package) és két nem kompatibilis altípus (package kontra component) nem olvad
+  össze; a hreflang-párban a kanonikus nyelvű oldal entitása marad.
 - Fogalom és ajánlat (9. pont): a service típusú entitás LLM-említései, amelyeket az LLM
   fogalomként talált (a tárolt rekordok szerint), fogalom-entitáshoz kerülnek (`type_split`),
   kivéve a heading-, title- vagy kártyablokkot egészében lefedő említést és az ajánlat
@@ -48,8 +50,12 @@
   a fő ajánlat és a csomag `offers` kapcsolattal kötődik ezekhez, és az olyan fogalomhoz,
   amelynek normalizált kulcsa a nevének vagy összetett címkéje egy részének kulcsa
   (`label_parts`: „UX & Konverzióoptimalizálás” → UX, Konverzióoptimalizálás).
-- Minden összevonás és leválasztás a `merge_log`-ba kerül; futásonként egy `entity_runs` sor
-  (method = site).
+- Site-szintű felülbírálat (4. pont, `overrides.py`, `config/sites/<domain>.toml`): az
+  ajánlat szintje (core, package, work_mode) név vagy URL szerint, a szintszabály után
+  (`apply_overrides`). A kanonikus név nyelve a beállításé, különben a site gyökér-URL-jéé
+  (`overrides.canonical_language`).
+- Minden összevonás, leválasztás és felülbírálat a `merge_log`-ba kerül; futásonként egy
+  `entity_runs` sor (method = site).
 """
 from __future__ import annotations
 
@@ -66,15 +72,21 @@ import zstandard
 
 from aaa2.entities.dom import parse_blocks
 from aaa2.entities.extract import surface_offsets
+from aaa2.entities.overrides import (
+    SiteConfig,
+    canonical_language,
+    load_site_config,
+    site_domain,
+)
 from aaa2.entities.pages import (
     NAV_POSITIONS,
     ROLE_TYPE,
     PageInfo,
     entity_groups,
     page_roles,
+    page_url,
     representative,
     same_page,
-    site_language,
 )
 from aaa2.entities.rules import (
     SOURCE_STRENGTH,
@@ -108,8 +120,15 @@ RATE = re.compile(r"óradíj|hourly rate|\brate\s*:|\bdíj\s*:|munkadíj|billed 
 LOREM = re.compile(r"lorem ipsum", re.IGNORECASE)
 PARENTHETICAL = re.compile(r"(.+?)\s*\(([^()]+)\)")
 NORMAL_DROP = re.compile(r"[\s_\-/–—‐()]+")
+# az `alias_key` után: az „és” ékezet nélkül „es”
+CONJUNCTION = re.compile(r"\s*(?:\bes\b|\band\b|&)\s*")
+SUBTYPE_CLASS = {"package": "distribution", "library": "distribution",
+                 "framework": "distribution", "software": "distribution",
+                 "platform": "distribution", "language": "distribution",
+                 "component": "code", "api_symbol": "code", "feature": "code"}
 LABEL_SPLIT = re.compile(r"\s+(?:&|és|and|\+|–|—|-)\s+|\s*[/,]\s*")
-TIER_ORDER = {"core": 0, "package": 1, None: 2, "step": 3}
+TIER_ORDER = {"core": 0, "package": 1, "work_mode": 1, None: 2, "step": 3}
+TIER_GROUP = {"work_mode": "package"}
 OFFER_LABEL_SOURCES = ("nav", "schema", "anchor")
 ACRONYM = re.compile(r"[A-Z0-9][A-Z0-9&.+-]{1,5}")
 
@@ -132,6 +151,7 @@ class SiteRun:
     merges: Counter[str] = field(default_factory=Counter)
     anchor_mentions: int = 0
     offers: int = 0
+    overrides: int = 0
     demo: list[str] = field(default_factory=list)
     template_mentions: int = 0
     template_entities: int = 0
@@ -215,7 +235,8 @@ def run_site(con: duckdb.DuckDBPyConnection,
     clock = clock or _now
     started = clock()
     roles = page_roles(con)
-    site_lang = site_language(con)
+    config = load_site_config(site_domain(con))
+    site_lang = canonical_language(con, config)
     con.begin()
     try:
         (run_id,) = con.execute(
@@ -231,6 +252,7 @@ def run_site(con: duckdb.DuckDBPyConnection,
         split = _type_split(con, merger)
         _steps(con, run)
         _normalized_merges(con, merger)
+        run.overrides = apply_overrides(context, merger, config)
         run.offers = _offers(con, split)
         _demo(con, run)
         _template(context, run)
@@ -241,6 +263,7 @@ def run_site(con: duckdb.DuckDBPyConnection,
             [clock(), len(roles), run.page_entities + run.packages, run.anchor_mentions,
              json.dumps({"roles": run.roles, "merges": dict(run.merges),
                          "packages": run.packages, "steps": run.steps, "offers": run.offers,
+                         "overrides": run.overrides,
                          "demo": run.demo,
                          "template_mentions": run.template_mentions,
                          "template_entities": run.template_entities,
@@ -716,32 +739,53 @@ def _steps(con: duckdb.DuckDBPyConnection, run: SiteRun) -> None:
 
 
 def normal_key(text: str) -> str:
-    """Az írásmód-normalizált kulcs: kis-nagybetű és ékezet nélkül (`alias_key`), az
-    elválasztók (szóköz, aláhúzás, kötőjel, perjel, gondolatjel) és a zárójelek nélkül."""
-    return NORMAL_DROP.sub("", alias_key(text))
+    """Az írásmód-normalizált kulcs: kis-nagybetű és ékezet nélkül (`alias_key`), az „és” és az
+    „and” „&”-ként, az elválasztók (szóköz, aláhúzás, kötőjel, perjel, gondolatjel) és a
+    zárójelek nélkül. A „/” vagy „@” tartalmú név (csomag- és útvonalszerű) csak az
+    `alias_key`-t kapja: ott az elválasztó a név része."""
+    key = alias_key(text)
+    if "/" in key or "@" in key:
+        return key
+    return NORMAL_DROP.sub("", CONJUNCTION.sub("&", key))
+
+
+def long_form(text: str) -> str | None:
+    """A zárójeles rövidítés-kifejtés hosszú része („GEO (Generative Engine Optimization)” →
+    Generative Engine Optimization), vagy None. A rövidítés önmagában nem von össze."""
+    parts = expansions(text)
+    if not parts:
+        return None
+    base, inner = parts
+    return inner if ACRONYM.fullmatch(base) else base
 
 
 def _rank(row: tuple) -> tuple:
     """Megtartási sorrend: oldalhoz kötött, core > package > nincs > step, erősebb forrás, több
     említés. `row`: (entity_id, anchor, tier, source, mentions)."""
-    entity_id, anchor, tier, source, mentions = row
+    entity_id, anchor, tier, source, mentions = row[:5]
     return (anchor is None, TIER_ORDER.get(tier, 2), SOURCE_STRENGTH.get(source, 9), -mentions,
             entity_id)
 
 
 def _entity_rows(con: duckdb.DuckDBPyConnection) -> dict[int, tuple]:
+    """entity_id → (entity_id, anchor, tier, source, említésszám, típus, altípus)."""
     return {row[0]: row for row in con.execute(
         "SELECT e.entity_id, e.anchor_page_id, e.tier, e.source, (SELECT count(*) FROM "
-        "page_entities pe WHERE pe.entity_id = e.entity_id) FROM entities e").fetchall()}
+        "page_entities pe WHERE pe.entity_id = e.entity_id), e.type, e.subtype "
+        "FROM entities e").fetchall()}
 
 
 def _mergeable(a: tuple, b: tuple) -> bool:
-    """Két oldalhoz kötött entitás (különböző oldal) és két eltérő, nem üres, nem step szint
-    nem olvad össze."""
+    """Nem olvad össze: két különböző oldalhoz kötött entitás, két eltérő, nem üres, nem step
+    szint, és két nem kompatibilis altípus (terjesztési szint: package, library, framework …
+    kontra kódszint: component, api_symbol, feature; `SUBTYPE_CLASS`)."""
     if a[1] is not None and b[1] is not None and a[1] != b[1]:
         return False
-    tiers = {a[2], b[2]} - {None, "step"}
-    return len(tiers) <= 1
+    tiers = {TIER_GROUP.get(a[2], a[2]), TIER_GROUP.get(b[2], b[2])} - {None, "step"}
+    if len(tiers) > 1:
+        return False
+    classes = {SUBTYPE_CLASS.get(a[6]), SUBTYPE_CLASS.get(b[6])} - {None}
+    return len(classes) <= 1
 
 
 def _normalized_merges(con: duckdb.DuckDBPyConnection, merger: Merger) -> None:
@@ -755,7 +799,7 @@ def _normalized_merges(con: duckdb.DuckDBPyConnection, merger: Merger) -> None:
             "AND (anchor_page_id IS NOT NULL OR entity_id IN (SELECT entity_id FROM "
             "page_entities)) ORDER BY entity_id").fetchall():
         forms = {name, *(aliases or [])}
-        forms |= {part for form in list(forms) for part in expansions(form)}
+        forms |= {long for form in list(forms) if (long := long_form(form))}
         for key in {normal_key(f) for f in forms} - {""}:
             groups[(kind, key)].append(entity_id)
     done: set[int] = set()
@@ -1005,7 +1049,7 @@ def _offers(con: duckdb.DuckDBPyConnection, split: dict[int, set[int]]) -> int:
     rows = set()
     for entity_id, name, aliases in con.execute(
             "SELECT entity_id, name, aliases FROM entities WHERE type = 'service' "
-            "AND tier IN ('core', 'package')").fetchall():
+            "AND tier IN ('core', 'package', 'work_mode')").fetchall():
         forms = {name} | {alias for (alias,) in con.execute(
             "SELECT alias FROM entity_aliases WHERE entity_id = ? AND list_contains(?, source)",
             [entity_id, list(OFFER_LABEL_SOURCES)]).fetchall()}
@@ -1041,6 +1085,85 @@ def resolve(con: duckdb.DuckDBPyConnection, entity_id: int) -> int | None:
             return None
         entity_id = row[0]
     return None
+
+
+# ---------------------------------------------------------------------------
+# site-szintű felülbírálat (4. pont)
+# ---------------------------------------------------------------------------
+
+
+def apply_overrides(ctx: _Context, merger: Merger, config: SiteConfig) -> int:
+    """A `config/sites/<domain>.toml` ajánlat-felülbírálatai: a megnevezett (vagy az URL
+    oldalához kötött) entitások egy entitássá olvadnak (`override`), a szintjük a megadott, a
+    típusuk service, `part_of` a megadott fő ajánlathoz; a `merge_log` egy `override` sorral
+    rögzíti a korábbi típust és szintet. Visszaad: hány felülbírálat talált entitást."""
+    con = ctx.con
+    applied = 0
+    for override in config.offers:
+        ids = _override_entities(ctx, override.names, override.url)
+        if not ids:
+            continue
+        rows = _entity_rows(con)
+        keep = min((rows[i] for i in ids), key=_rank)[0]
+        for other in sorted(ids - {keep}):
+            merger.merge(keep, other, "override", {"names": list(override.names),
+                                                   "url": override.url})
+        name, kind, tier = con.execute("SELECT name, type, tier FROM entities WHERE entity_id = ?",
+                                       [keep]).fetchone()
+        con.execute(
+            "UPDATE entities SET type = 'service', subtype = CASE WHEN type = 'service' THEN "
+            "subtype END, tier = ?, type_changed_from = CASE WHEN type <> 'service' THEN type "
+            "ELSE type_changed_from END WHERE entity_id = ?", [override.tier, keep])
+        core = None
+        if override.part_of:
+            targets = _override_entities(ctx, (override.part_of,), override.part_of
+                                         if "://" in override.part_of else None) - {keep}
+            core = min(targets) if targets else None
+        if core is not None:
+            con.execute("DELETE FROM entity_relations WHERE from_id = ? AND type = 'part_of'",
+                        [keep])
+            con.execute("INSERT INTO entity_relations (from_id, to_id, type, source, evidence) "
+                        "VALUES (?, ?, 'part_of', 'override', ?) ON CONFLICT DO NOTHING",
+                        [keep, core, json.dumps({"part_of": override.part_of},
+                                                ensure_ascii=False)])
+        con.execute(
+            "INSERT INTO merge_log (run_id, kept_id, removed_id, kept_name, removed_name, rule, "
+            "evidence, merged_at) VALUES (?, ?, NULL, ?, ?, 'override', ?, ?)",
+            [merger.run_id, keep, name, name, json.dumps(
+                {"tier": override.tier, "previous_type": kind, "previous_tier": tier,
+                 "part_of": core}, ensure_ascii=False), merger.clock()])
+        merger.counts["override"] += 1
+        applied += 1
+    return applied
+
+
+def _override_entities(ctx: _Context, names: tuple[str, ...], url: str | None) -> set[int]:
+    """A nevek (normalizált kulcs: név, aliasok, `entity_aliases`) vagy az URL oldalához kötött
+    entitások; személy nem."""
+    con = ctx.con
+    found: set[int] = set()
+    if url:
+        pages = [info.page_id for info in ctx.roles.values()
+                 if page_url(info.url) == page_url(url)]
+        groups = {ctx.roles[p].group for p in pages}
+        members = [info.page_id for info in ctx.roles.values() if info.group in groups]
+        found |= {e for (e,) in con.execute(
+            "SELECT entity_id FROM entities WHERE list_contains(?, anchor_page_id)",
+            [members]).fetchall()}
+    keys = {normal_key(n) for n in names} - {""}
+    if keys:
+        for entity_id, name, aliases in con.execute(
+                "SELECT entity_id, name, aliases FROM entities WHERE type <> 'person' AND "
+                "(anchor_page_id IS NOT NULL OR entity_id IN (SELECT entity_id FROM "
+                "page_entities))").fetchall():
+            if {normal_key(f) for f in [name, *(aliases or [])]} & keys:
+                found.add(entity_id)
+        for entity_id, alias in con.execute(
+                "SELECT a.entity_id, a.alias FROM entity_aliases a JOIN entities e "
+                "USING (entity_id) WHERE e.type <> 'person'").fetchall():
+            if normal_key(alias) in keys:
+                found.add(entity_id)
+    return found
 
 # ---------------------------------------------------------------------------
 # demó és sablon

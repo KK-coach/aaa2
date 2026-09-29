@@ -172,8 +172,12 @@ def base_language(lang: str | None) -> str:
 
 def wikidata_hit(body: Mapping | None, name: str, lang: str) -> dict | None:
     """Az első találat (`id`, `match`: label / alias, `text`), amelynek a címkéje vagy aliasa
-    (`lang` nyelven) a kulcs szerint egyezik a névvel, és nem egyértelműsítő lap."""
+    (`lang` nyelven) a kulcs szerint egyezik a névvel, és nem egyértelműsítő lap. Ha ez csak
+    alias-egyezés, a `rivals` azoknak a további elemeknek a QID-je, amelyeknek a név a címkéje
+    (a név elsődleges jelentése lehet ott, pl. „forgalom”: a bevétel aliasa, a közlekedési
+    forgalom címkéje)."""
     key = alias_key(name)
+    found = []
     for hit in (body or {}).get("search") or []:
         match = hit.get("match") or {}
         if match.get("type") not in ("label", "alias") or match.get("language") != lang:
@@ -182,8 +186,14 @@ def wikidata_hit(body: Mapping | None, name: str, lang: str) -> dict | None:
             continue
         if any(word in (hit.get("description") or "").lower() for word in DISAMBIGUATION):
             continue
-        return {"id": hit.get("id"), "match": match["type"], "text": match.get("text")}
-    return None
+        found.append({"id": hit.get("id"), "match": match["type"], "text": match.get("text")})
+    if not found:
+        return None
+    first = found[0]
+    rivals = [hit["id"] for hit in found[1:] if hit["match"] == "label"]
+    if first["match"] == "alias" and rivals:
+        return {**first, "rivals": rivals}
+    return first
 
 
 def wikidata_match(body: Mapping | None, name: str, lang: str) -> str | None:
@@ -236,6 +246,32 @@ class KnowledgeBase:
             ("action", "wbsearchentities"), ("format", "json"), ("search", name),
             ("language", code), ("strictlanguage", "1"), ("type", "item"), ("limit", "10")])
         return wikidata_hit(body, name, code)
+
+    def classes(self, qid: str) -> tuple[list[str], str] | None:
+        """A Wikidata-elem „instance of” (P31) osztályainak angol címkéi és az angol leírása;
+        None, ha a kérés hibás."""
+        body = self._get("wikidata", WIKIDATA_API, [
+            ("action", "wbgetentities"), ("format", "json"), ("ids", qid),
+            ("props", "claims|descriptions"), ("languages", "en")])
+        if body is None:
+            return None
+        entity = (body.get("entities") or {}).get(qid) or {}
+        description = ((entity.get("descriptions") or {}).get("en") or {}).get("value") or ""
+        ids = []
+        for claim in (entity.get("claims") or {}).get("P31") or []:
+            value = ((claim.get("mainsnak") or {}).get("datavalue") or {}).get("value") or {}
+            if isinstance(value, dict) and value.get("id"):
+                ids.append(value["id"])
+        if not ids:
+            return [], description
+        labels = self._get("wikidata", WIKIDATA_API, [
+            ("action", "wbgetentities"), ("format", "json"), ("ids", "|".join(ids[:50])),
+            ("props", "labels"), ("languages", "en")])
+        if labels is None:
+            return None
+        names = [((e.get("labels") or {}).get("en") or {}).get("value") or ""
+                 for e in (labels.get("entities") or {}).values()]
+        return [n for n in names if n], description
 
     def wikipedia(self, name: str, code: str) -> dict | None:
         body = self._get("wikipedia", WIKI_API.format(lang=code), [

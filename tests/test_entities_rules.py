@@ -550,7 +550,10 @@ EXPECTED = {
     "kk-coach-crawl": {
         # A „Worldwide” az areaServed értéke (attribútum), a „Digitális marketing coach” a
         # blogposztok kezdőoldal-URL-es publisher-e: a site-szervezet aliasa (M2/6, 10. pont).
-        "run": (40, 40, 47, 303, {"anchor": 155, "schema": 111, "title": 37}),
+        # A soron belüli elemek a renderelt szöveg szerint illeszkednek: a site két oldalán a
+        # link a szó közepén áll (`Explor<a>GEO — AI Visibility</a>e GEO`), a renderelt szöveg
+        # „ExplorGEO — AI Visibilitye GEO”, ezért ez a két anchor-említés nincs meg.
+        "run": (40, 40, 47, 301, {"anchor": 153, "schema": 111, "title": 37}),
         "not_in_block": 0,
         "entities": {("org", "kk.coach"), ("person", "Kiss Krisztián"), ("service", "SEO")},
         "absent": {("brand", "kk.coach"), ("brand", "KK"), ("person", "Krisztian Kiss"),

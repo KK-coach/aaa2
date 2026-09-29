@@ -21,9 +21,8 @@
   (`MATERIA_LAWS`) work / legislation típusúak.
 
 Halasztva (Krisztián döntése, 2026-09-29; a spec pontjai érvényesek, az M2/7 előtt kerülnek
-sorra): a termék–márka (9a), a jogszabály (9b) és a Wikidata-státusz (8. pont; kivéve a
-személyek automatikus kapcsolásának kikapcsolását). Ezek sorai „halasztva” jelöléssel
-mérnek, nem hibaként.
+sorra): a termék–márka (9a) és a jogszabály (9b). Ezek sorai „halasztva” jelöléssel mérnek,
+nem hibaként. A 8. pont minimális része (fogalom-kapcsolás, API-szimbólum, személy) mér.
 
 A kimenet Markdown a `--out` alá; a konzolra a fájl útvonala. `--merge-sample PATH`: 30 tételes
 kézi összevonási minta a `merge_log`-ból (`merge_sample`), verdikt nélkül.
@@ -153,14 +152,8 @@ def evaluate_kk(con: duckdb.DuckDBPyConnection, reference: dict) -> Result:
                             ("munkamód", core.get("work_modes", []))):
             for item in items:
                 pkg_total += 1
-                found_p, missing_p = resolve(f"{kind}:{item.get('en') or item.get('hu')}",
-                                             _names(item))
-                services = [i for i in found_p if index.info[i]["type"] == "service"]
-                linked = core_id is not None and any((i, core_id) in part_of for i in services)
-                unassigned = [n for n in _names(item)
-                              if len(services) != 1 or services[0] not in index.find(n)]
-                ok = len(services) == 1 and linked and not unassigned
-                missing_p = unassigned
+                ok, found_p, missing_p, linked, services = _offer_item(
+                    index, resolve, part_of, core_id, kind, item)
                 pkg_ok += ok
                 note = []
                 if missing_p:
@@ -227,6 +220,40 @@ def evaluate_kk(con: duckdb.DuckDBPyConnection, reference: dict) -> Result:
     return result
 
 
+OFFER_TIERS = ("package", "work_mode")
+
+
+def _offer_item(index: Index, resolve, part_of: set, core_id: int | None, kind: str,
+                item: dict) -> tuple[bool, set, list, bool, list]:
+    """Egy csomag vagy munkamód. Alapesetben minden neve egyetlen service típusú, csomag- vagy
+    munkamód-szintű entitásra mutat, `part_of`-fal a fő ajánlathoz. `pair_optional`: a magyar
+    és az angol név lehet két entitás, de mindkettő ilyen. `site_variants`: a site-variáns
+    (vagy variáns szerint) is elfogadja a csomagot; a kötelező név ilyenkor más entitásra is
+    mutathat, de másik service-re nem."""
+    label = f"{kind}:{item.get('en') or item.get('hu')}"
+    variants = list(item.get("site_variants", []))
+    found, _ = resolve(label, _names(item) + variants)
+    services = [i for i in found if index.info[i]["type"] == "service"]
+
+    def good(entity_id: int) -> bool:
+        return index.info[entity_id]["tier"] in OFFER_TIERS and core_id is not None \
+            and (entity_id, core_id) in part_of
+
+    linked = any(good(i) for i in services)
+    required = [n for n in (item.get("hu"), item.get("en")) if n]
+    if item.get("pair_optional"):
+        misses = [n for n in required if not any(good(i) for i in index.find(n))]
+        return not misses, found, misses, linked, services
+    if variants:
+        others = [n for n in required
+                  if any(index.info[i]["type"] == "service" and not good(i)
+                         for i in index.find(n))]
+        return linked and len({i for i in services if good(i)}) == 1 and not others, found, \
+            others, linked, services
+    misses = [n for n in _names(item) if len(services) != 1 or services[0] not in index.find(n)]
+    return len(services) == 1 and linked and not misses, found, misses, linked, services
+
+
 def _same_item(labels: set[str]) -> bool:
     return len(labels) == 1
 
@@ -258,8 +285,8 @@ def evaluate_ngx(con: duckdb.DuckDBPyConnection) -> Result:
     api = con.execute(
         "SELECT name FROM entities WHERE subtype = 'api_symbol' AND (wikidata_id IS NOT NULL "
         "OR wikipedia IS NOT NULL)").fetchall()
-    result.deferred("Wikidata- vagy Wikipedia-link API-szimbólumon (8. pont, halasztva)",
-                    f"{len(api)}: " + ", ".join(n for (n,) in api[:20]) if api else "0")
+    result.add("Wikidata- vagy Wikipedia-link API-szimbólumon", not api,
+               f"{len(api)}: " + ", ".join(n for (n,) in api[:20]) if api else "0")
     template = []
     for heading in NGX_TEMPLATE_HEADINGS:
         total, flagged = con.execute(
@@ -311,7 +338,8 @@ def evaluate_materia(con: duckdb.DuckDBPyConnection) -> Result:
 
 SAMPLE_FILE = Path(__file__).parent / "verdicts" / "merge_sample.json"
 SAMPLE_SIZE = 30
-SAMPLE_ALL = ("hreflang_place", "page_identity_position", "type_split")
+SAMPLE_ALL = ("hreflang_place", "page_identity_position", "type_split", "override",
+              "wikidata_short_name")
 
 
 def merge_sample(sites: dict[str, duckdb.DuckDBPyConnection], size: int = SAMPLE_SIZE) -> list:

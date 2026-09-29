@@ -40,7 +40,8 @@ előfordulás: blokk és karakterpozíció a blokk szövegében (a schema-említ
 - lang: azoknak az oldalaknak a leggyakoribb elsődleges nyelvi címkéje, ahol a kanonikus alak
   előfordul; ha ilyen nincs, az entitás összes oldaláé; ha az sincs, a site első nyelve.
 
-Újrafuttatható: a futás a korábbi schema- és rule-forrásokat cseréli (a forrás nélkül maradt
+A pozíciók a tárolt blokkok szövegében számítanak (a parser később változhat, a tárolt blokk
+nem). Újrafuttatható: a futás a korábbi schema- és rule-forrásokat cseréli (a forrás nélkül maradt
 említés törlődik, a más forrású említés megmarad, és megkapja az új forrást is); a (kulcs, típus)
 szerint azonos entitás az azonosítóját megtartja (a source az erősebb lesz: schema > rule > llm),
 a más forrású entitások megmaradnak.
@@ -320,6 +321,12 @@ def run_rules(con: duckdb.DuckDBPyConnection,
     decompressor = zstandard.ZstdDecompressor()
     dom = {page_id: _page_dom(decompressor.decompress(blob).decode("utf-8", "replace"), title)
            for page_id, _, title, _, _, blob in pages}
+    stored = {(page_id, ordinal): text for page_id, ordinal, text in con.execute(
+        "SELECT page_id, ordinal, text FROM blocks WHERE list_contains(?, page_id)",
+        [page_ids]).fetchall()}
+    for page_id, page in dom.items():
+        for block in page.blocks:
+            block.text = stored.get((page_id, block.ordinal), block.text)
     skipped: dict[str, object] = {}
     candidates: dict[tuple[str, str], Candidate] = {}
 

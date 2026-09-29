@@ -217,3 +217,16 @@ def test_a_section_bigger_than_a_chunk_is_cut_further():
     chunks = chunk_blocks(page)
     assert all(len(c) <= CHUNK_MAX_BLOCKS for c in chunks)
     assert [b["id"] for c in chunks for b in c[1:]] == [b["id"] for b in page[1:]]
+
+
+def test_inline_elements_join_like_rendered_text():
+    """Szó közepén kezdődő kiemelés nem töri a szót, a lágy kötőjel kiesik; két közvetlenül
+    egymást követő link két címke; a <br> szóköz."""
+    parsed = parse_blocks(
+        "<html><body><main><p><strong>SEO &amp; Techn</strong>ikai alapok, "
+        "kereső­optimalizálás</p><p><a href='/a/'>Mérés</a><a href='/b/'>Kiss Anna</a>"
+        "</p><p>Első<br>második</p><table><tr><td><b>Tech</b>nika</td></tr></table>"
+        "</main></body></html>")
+    assert [b.text for b in parsed] == ["SEO & Technikai alapok, keresőoptimalizálás",
+                                        "Mérés Kiss Anna", "Első második", "Technika"]
+    assert parsed[1].anchors == ["Mérés", "Kiss Anna"]

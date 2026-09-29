@@ -22,10 +22,11 @@ from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
 from aaa2.entities.dom import build_blocks
 from aaa2.entities.extract import estimate_llm, run_llm
 from aaa2.entities.gate import KnowledgeBase
+from aaa2.entities.knowledge import link_entities
 from aaa2.entities.report import run_report, write_entity_table
 from aaa2.entities.rules import run_rules
 from aaa2.entities.site import run_site
-from aaa2.entities.v3 import V3Step, link_entities, load_pipeline
+from aaa2.entities.v3 import V3Step, load_pipeline
 from aaa2.entities.validate import KG_DAILY_QUOTA, _Api, validate_entities
 from aaa2.llm import ledger
 from aaa2.llm.client import Retry, check_models, open_clients
@@ -267,9 +268,9 @@ def entities(
             f"{sum(site_run.merges.values())}, demó {len(site_run.demo)}, sablon-említés "
             f"{site_run.template_mentions}")
     if linked is not None:
-        typer.echo(f"tudásbázis: {linked.entities} entitás; Wikidata {linked.wikidata}, "
-                   f"Wikipedia {linked.wikipedia}; hibás lekérdezés miatt ellenőrizetlen "
-                   f"{linked.errors}")
+        typer.echo(f"tudásbázis: {linked.entities} entitás; Wikidata biztos {linked.confident}, "
+                   f"valószínű {linked.probable}, nincs {linked.none}; összevonás "
+                   f"{linked.merged}; hibás lekérdezés miatt ellenőrizetlen {linked.errors}")
     for kind, count, rows in con.execute(
         "SELECT e.type, count(DISTINCT e.entity_id), count(*) FROM entities e "
         "JOIN page_entities pe USING (entity_id) "
