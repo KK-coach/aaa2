@@ -1,0 +1,14 @@
+# Az `aaa entities <domain>` lépései (M2 spec, „Megközelítés v3”). A lépések modelljei a
+# models.toml [pipeline] szakaszában (kinyerés, elnevezés, ellenőrzés).
+
+[steps]
+rules = true          # szabálykör: JSON-LD, a site neve a title-ben és a H1-ben, ismétlődő anchorok
+blocks = true         # a hiányzó blokkok felépítése a renderelt DOM-ból (a szabálykör a sajátjait mindig)
+extraction = true     # LLM-kinyerés a content-blokkokra (3a prompt, darabolva); a többi LLM-lépés ehhez kötött
+services = true       # saját ajánlatok: szerkezeti hely, utána az ellenőrző hívás
+concepts = true       # fogalmak: jelöltként, kapu nélkül, bizonyítékokkal
+knowledge = true      # tudásbázis-egyezés (Wikidata, Wikipedia): a fogalmak bizonyítéka és az entitásoké
+save = true           # mentés az említés- és entitástáblába; false: csak a futásnapló
+
+[limits]
+max_usd = 2.0         # a becsült költség felső határa; fölötte a futás nem indul, és a futás közben is itt áll meg

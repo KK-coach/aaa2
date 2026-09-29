@@ -11,7 +11,7 @@ Közös kapcsolók: `--model` (a kinyerés modellje, alapból a `[pipeline] extr
 a valódi fejlesztési oldalak (`synthetic_eval.REAL`).
 
 - `e1`: a `--from` kör rekordjaira a kapu (`entities.gate`); a navigáció (chrome-régió) és az
-  anchor-szövegek a rögzített készlet renderelt DOM-jából (`annotation.PAGES`, `parse_blocks`),
+  anchor-szövegek a rögzített készlet renderelt DOM-jából (`annotation.PAGES`, `v3.dom_context`),
   a tartalmi blokkok az oldal JSON-jából. A tudásbázis-kérések gyorsítótára és naplója:
   `<data-dir>/gate.duckdb`. Kimenet: a rekord a `--tag` alá, a döntések mellé
   (`<oldal>.<modell>.<címke>.gate.json`).
@@ -48,7 +48,6 @@ import zstandard
 import tests.acceptance.synthetic_eval as se
 from aaa2.db.connect import DATA_DIR, connect
 from aaa2.entities.blocks import block_text, surface_spans
-from aaa2.entities.dom import parse_blocks
 from aaa2.entities.gate import (
     PROMINENT_KINDS,
     KnowledgeBase,
@@ -59,6 +58,7 @@ from aaa2.entities.gate import (
     structure,
 )
 from aaa2.entities.rules import alias_key
+from aaa2.entities.v3 import dom_context
 from aaa2.entities.validate import _Api
 from aaa2.entities.verify import item_block, verify_record
 from aaa2.llm.client import Retry
@@ -108,10 +108,7 @@ def page_context(page: Mapping, data_dir: Path) -> PageContext:
             con.close()
         if row is not None:
             html = zstandard.ZstdDecompressor().decompress(row[1]).decode("utf-8", "replace")
-            for block in parse_blocks(html, row[0]):
-                if block.region == "chrome":
-                    chrome.append(block.text)
-                anchors += block.anchors
+            chrome, anchors = dom_context(html, row[0])
     return PageContext(page["blocks"], chrome, anchors, page.get("lang") or "en")
 
 

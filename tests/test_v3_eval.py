@@ -64,10 +64,12 @@ def test_services_need_structure_and_no_sol_veto_concepts_all_stay(tmp_path):
         "Bérszámfejtés Csomag", "Számlázó", "Cash-flow", "Készletforgás", "Készletforgás",
         "Bérszámfejtés"]
     assert out["v3"]["services"] == [
-        {"canonical": "Bérszámfejtés Csomag", "structure": "heading:b1", "sol": True,
-         "kept": True},
-        {"canonical": "Éves zárás", "structure": "heading:b2", "sol": False, "kept": False},
-        {"canonical": "Számlázás", "structure": None, "sol": None, "kept": False}]
+        {"canonical": "Bérszámfejtés Csomag", "structure": "heading:b1", "mentions": 1,
+         "sol": True, "kept": True},
+        {"canonical": "Éves zárás", "structure": "heading:b2", "mentions": 1, "sol": False,
+         "kept": False},
+        {"canonical": "Számlázás", "structure": None, "mentions": 1, "sol": None,
+         "kept": False}]
     assert [(c["canonical"], c["rank"], c["mentions"], c["prominent"], c["blocks"],
              c["knowledge"]) for c in out["v3"]["concepts"]] == [
         ("Bérszámfejtés", 1, 1, True, 2, None),

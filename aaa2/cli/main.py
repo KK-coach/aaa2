@@ -5,9 +5,13 @@ import asyncio
 import csv
 import json
 import sys
+import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
+import duckdb
+import httpx
 import typer
 
 from aaa2.db.connect import connect, db_path, shared_path
@@ -15,12 +19,16 @@ from aaa2.engine.crawl import CrawlOptions, run_crawl
 from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
-from aaa2.entities.extract import run_llm
+from aaa2.entities.dom import build_blocks
+from aaa2.entities.extract import estimate_llm, run_llm
+from aaa2.entities.gate import KnowledgeBase
+from aaa2.entities.report import run_report, write_entity_table
 from aaa2.entities.rules import run_rules
-from aaa2.entities.validate import KG_DAILY_QUOTA, validate_entities
+from aaa2.entities.v3 import V3Step, link_entities, load_pipeline
+from aaa2.entities.validate import KG_DAILY_QUOTA, _Api, validate_entities
 from aaa2.llm import ledger
-from aaa2.llm.client import check_models, open_clients
-from aaa2.llm.config import load_config
+from aaa2.llm.client import Retry, check_models, open_clients
+from aaa2.llm.config import PIPELINE_OFF, load_config
 
 app = typer.Typer(no_args_is_help=True, help="AAA v2 — sitewide SEO/GEO elemzőmotor")
 
@@ -146,31 +154,96 @@ def status(
 @app.command()
 def entities(
     domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
-    llm: Annotated[bool, typer.Option(help="a szabályok után LLM-kinyerés a blokkokra")
-                   ] = False,
+    db: Annotated[Path | None, typer.Option(
+        help="a site-adatbázis útvonala (alapból data/<domain>.duckdb)")] = None,
+    llm: Annotated[bool | None, typer.Option(
+        "--llm/--no-llm", help="az LLM-lépések (alapból a pipeline.toml extraction)")] = None,
+    knowledge: Annotated[bool | None, typer.Option(
+        "--knowledge/--no-knowledge",
+        help="tudásbázis-egyezés (alapból a pipeline.toml knowledge)")] = None,
     extraction_model: Annotated[str | None, typer.Option(
         help="a kinyerés modellje (alapból a models.toml [pipeline] extraction)")] = None,
     naming_model: Annotated[str | None, typer.Option(
         help="az elnevezés modellje (alapból a [pipeline] naming); off: elnevezés nélkül")
     ] = None,
+    verify_model: Annotated[str | None, typer.Option(
+        help="a saját ajánlatok ellenőrzésének modellje (alapból a [pipeline] verify); off: "
+             "csak a szerkezeti hely")] = None,
     limit: Annotated[int | None, typer.Option(help="legfeljebb ennyi oldal az LLM-körben")
                      ] = None,
+    resume: Annotated[bool, typer.Option(
+        help="a kinyerő modell legutóbbi LLM-futásának folytatása")] = False,
+    estimate: Annotated[bool, typer.Option(
+        help="csak a költségbecslés (a szabálykör és a hívások nélkül)")] = False,
+    max_usd: Annotated[float | None, typer.Option(
+        help="költséghatár (alapból a pipeline.toml max_usd): e fölötti becslésnél nem indul, "
+             "a futás közben itt áll meg")] = None,
 ) -> None:
-    """Entitás-kör: a hiányzó blokkok felépítése a renderelt DOM-ból, a determinisztikus
-    szabályok (JSON-LD, a site neve a title-ben és a H1-ben, legalább 3 oldalon azonos
-    anchorok), `--llm`-mel utána oldalanként egy kinyerő hívás a content-régió blokkjaira és egy
-    elnevezési hívás, a kitalált említések kiszűrésével és összevonással."""
-    con = _open(domain)
-    client = naming = None
-    if llm:
-        pipeline = load_config().pipeline
-        client = _pipeline_client(con, extraction_model or pipeline["extraction"])
-        chosen = naming_model or pipeline["naming"]
-        if chosen not in ("off", "none"):
-            naming = client if chosen == client.model else _pipeline_client(con, chosen)
-    runs = [run_rules(con).run_id]
-    if client is not None:
-        runs.append(run_llm(con, client, naming_client=naming, limit=limit).run_id)
+    """Entitás-pipeline a megközelítés v3 szerint, az `entities/config/pipeline.toml`
+    lépéseivel: a hiányzó blokkok, a determinisztikus szabálykör (JSON-LD, a site neve a
+    title-ben és a H1-ben, legalább 3 oldalon azonos anchorok), utána oldalanként a
+    content-régió blokkjainak LLM-kinyerése (darabolva, a kitalált említések kiszűrésével), a
+    saját ajánlatok szerkezeti helye és ellenőrző hívása, a fogalmak bizonyítékai, a mentés; a
+    végén a tudásbázis-egyezés az entitásokra. Az LLM-kör előtt költségbecslés."""
+    con = _open(domain, db)
+    pipeline = load_pipeline()
+    steps = pipeline.steps
+    cap = max_usd if max_usd is not None else pipeline.max_usd
+    use_llm = steps.extraction if llm is None else llm
+    use_knowledge = steps.knowledge if knowledge is None else knowledge
+    if steps.blocks:
+        build_blocks(con)
+    runs = [] if estimate or not steps.rules else [run_rules(con).run_id]
+    site_lang = ((con.execute("SELECT languages FROM site").fetchone() or [None])[0]
+                 or [None])[0]
+    kb = shared = linked = None
+    if use_knowledge and not estimate:
+        shared = connect(shared_path())
+        api = _Api(con, shared, httpx.Client(timeout=20.0), Retry(), _utcnow, time.monotonic)
+        kb = KnowledgeBase(api.get)
+    try:
+        if use_llm:
+            config = load_config()
+            models = config.pipeline
+            chosen = extraction_model or models["extraction"]
+            naming_choice = _step_model(naming_model or models["naming"])
+            verify_choice = (_step_model(verify_model or models["verify"])
+                             if steps.services else None)
+            guess = estimate_llm(con, config, chosen, naming_choice, verify_choice,
+                                 _utcnow().date(), limit=limit, resume=resume)
+            typer.echo(
+                f"becslés: {guess.pages} oldal, {guess.chunks} kinyerő darab, ~{guess.tokens_in} "
+                f"token be; kinyerés {guess.extract_usd:.4f} USD, ellenőrzés "
+                f"{guess.verify_usd:.4f} USD ({guess.verify_pages} oldal a meglévő kinyerésből"
+                + (f", {guess.verify_pending} oldalon a kinyerés után dől el"
+                   if guess.verify_pending else "")
+                + f"); összesen {guess.total_usd:.4f} USD, határ {cap:.2f} USD")
+            if estimate:
+                return
+            if guess.total_usd > cap:
+                typer.echo("a becslés a határ fölött van, a futás nem indul", err=True)
+                raise typer.Exit(code=2)
+            client = _pipeline_client(con, chosen)
+            naming = verifier = None
+            if naming_choice:
+                naming = (client if naming_choice == client.model
+                          else _pipeline_client(con, naming_choice))
+            if verify_choice:
+                verifier = (client if verify_choice == client.model
+                            else _pipeline_client(con, verify_choice))
+            refine = (V3Step(con, steps, verifier, kb if steps.knowledge else None, site_lang)
+                      if steps.services or steps.concepts else None)
+            runs.append(run_llm(con, client, naming_client=naming, refine=refine,
+                                save=steps.save, limit=limit, resume=resume,
+                                max_usd=cap).run_id)
+        elif estimate:
+            typer.echo("becslés: az LLM-lépések kikapcsolva, nincs hívás")
+            return
+        if kb is not None:
+            linked = link_entities(con, kb, _utcnow, site_lang)
+    finally:
+        if shared is not None:
+            shared.close()
     for run_id in runs:
         entity_run = con.execute(
             f"SELECT {ENTITY_RUN_COLUMNS} FROM entity_runs WHERE run_id = ?", [run_id]
@@ -183,12 +256,52 @@ def entities(
                      if isinstance(value, dict) else ", ".join(value)
                      if isinstance(value, list) else value)
             typer.echo(f"  kimaradt, {reason}: {shown}")
+    if linked is not None:
+        typer.echo(f"tudásbázis: {linked.entities} entitás; Wikidata {linked.wikidata}, "
+                   f"Wikipedia {linked.wikipedia}; hibás lekérdezés miatt ellenőrizetlen "
+                   f"{linked.errors}")
     for kind, count, rows in con.execute(
         "SELECT e.type, count(DISTINCT e.entity_id), count(*) FROM entities e "
         "JOIN page_entities pe USING (entity_id) "
         "GROUP BY e.type ORDER BY count(DISTINCT e.entity_id) DESC, e.type"
     ).fetchall():
         typer.echo(f"  {kind}: {count} entitás, {rows} sor")
+
+
+@app.command("entity-report")
+def entity_report(
+    domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
+    db: Annotated[Path | None, typer.Option(
+        help="a site-adatbázis útvonala (alapból data/<domain>.duckdb)")] = None,
+    out: Annotated[Path, typer.Option(help="a kimeneti mappa")] = Path("data/reports"),
+    baseline: Annotated[Path | None, typer.Option(
+        help="a korábbi állapot adatbázisa (regressziós összevetés, csak olvasva)")] = None,
+) -> None:
+    """Futásjelentés (Markdown) és site-szintű entitástábla (CSV) a legutóbbi futásról:
+    `<out>/<név>-run.md`, `<out>/<név>-entities.csv`."""
+    con = _open(domain, db)
+    stem = db.stem if db is not None else _domain(domain)
+    old = duckdb.connect(str(baseline), read_only=True) if baseline is not None else None
+    try:
+        text = run_report(con, stem, old)
+    finally:
+        if old is not None:
+            old.close()
+    out.mkdir(parents=True, exist_ok=True)
+    report = out / f"{stem}-run.md"
+    report.write_text(text, encoding="utf-8")
+    table = out / f"{stem}-entities.csv"
+    count = write_entity_table(con, table)
+    typer.echo(f"{report}")
+    typer.echo(f"{table} ({count} entitás)")
+
+
+def _step_model(value: str) -> str | None:
+    return None if value in (PIPELINE_OFF, "none") else value
+
+
+def _utcnow() -> datetime:
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 def _pipeline_client(con, model: str):
@@ -341,8 +454,8 @@ def _domain(value: str) -> str:
     return UrlPolicy.from_seed(value).domain if "://" in value else value.lower()
 
 
-def _open(domain: str):
-    path = db_path(_domain(domain))
+def _open(domain: str, db: Path | None = None):
+    path = db if db is not None else db_path(_domain(domain))
     if not path.exists():
         typer.echo(f"nincs adatbázis: {path}", err=True)
         raise typer.Exit(code=1)

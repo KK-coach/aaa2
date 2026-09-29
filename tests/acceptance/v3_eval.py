@@ -5,19 +5,10 @@
     python -m tests.acceptance.v3_eval apply --set development-real --page kk_coach_meres_hu \\
         --page ngx_accordion_en --from v3 --tag v3p
 
-A szabály (`apply_v3`), oldalanként, a `--from` kör rekordján (Luna-kinyerés, 3a prompt,
-elnevezés nélkül):
-
-- megnevezett entitás (a concept és a service kivételével minden típus): változatlan;
-- saját ajánlat (`service`): marad, ha szerkezeti helyen áll (title, heading, card vagy
-  table_row blokk, navigáció; anchor-szöveg nem elég), és a Sol-ellenőrzés nem vétózza. Csak a
-  szerkezeti helyű szolgáltatások mennek a Sol-hívásba (`verify.verify_record`, `select`); ha
-  nincs ilyen, nincs hívás;
-- fogalom (`concept`): kapu és ellenőrzés nélkül marad. A bizonyíték tételenként a rekord `v3`
-  mezőjében: szerkezet (`gate.structure`), ismétlődés (blokkszám), tudásbázis-egyezés
-  (Wikidata / Wikipedia, `gate.KnowledgeBase`, a `validate` gyorsítótárán át), title- vagy
-  heading-hely, említésszám és fontossági sorszám (title- vagy heading-helyű előre, aztán az
-  említésszám, aztán az első említés sorrendje).
+A szabály (`aaa2.entities.v3.apply_v3`, a pipeline is ezt futtatja), oldalanként, a `--from`
+kör rekordján (Luna-kinyerés, 3a prompt, elnevezés nélkül): a megnevezett entitás
+változatlan; a service szerkezeti helyen és a Sol vétója nélkül marad; a concept kapu nélkül
+marad, bizonyítékkal és fontossági sorszámmal (lásd az `aaa2/entities/v3.py` leírását).
 
 Pontozás (`report`, hálózat nélkül, a végleges referencialistán; `verdicts`: a még nem
 megítélt tételek a verdiktfájlba):
@@ -53,61 +44,15 @@ import tests.acceptance.gate_eval as ge
 import tests.acceptance.synthetic_eval as se
 from aaa2.db.connect import DATA_DIR, connect
 from aaa2.entities.blocks import block_text
-from aaa2.entities.gate import (
-    PROMINENT_KINDS,
-    KnowledgeBase,
-    PageContext,
-    SoftItem,
-    repetition,
-    soft_items,
-    structure,
-)
+from aaa2.entities.gate import KnowledgeBase, soft_items
 from aaa2.entities.rules import alias_key
+from aaa2.entities.v3 import apply_v3, service_place  # noqa: F401  (a mérés és a tesztek innen)
 from aaa2.entities.validate import _Api
-from aaa2.entities.verify import item_block, verify_record
+from aaa2.entities.verify import item_block
 from aaa2.llm.client import Retry
 from aaa2.llm.config import load_config
 
 SOL = "gpt-6-sol"
-
-
-def service_place(item: SoftItem, page: PageContext) -> str | None:
-    """A szolgáltatás szerkezeti helye; az anchor-szöveg nem számít."""
-    where = structure(item, page)
-    return None if where == "anchor" else where
-
-
-def apply_v3(record: Mapping, page: PageContext, verifier, knowledge,
-             page_id: int | None = None) -> dict:
-    """A rekord a v3 szabállyal (lásd a modul leírását), a `v3` bizonyíték-mezővel."""
-    blocks = page.by_id()
-    items = soft_items(record.get("entities") or [], blocks)
-    places = {item.key: service_place(item, page) for item in items if item.type == "service"}
-    out = verify_record(verifier, record, blocks, page_id,
-                        select=lambda item: item.type == "service" and places.get(item.key)
-                        is not None) if verifier is not None else dict(record)
-    vetoed = {alias_key(name) for name, kind, keep in out.get("verify_decisions") or []
-              if kind == "service" and keep is False}
-    dropped = {key for key, place in places.items() if place is None} | vetoed
-    out["entities"] = [raw for raw in record.get("entities") or []
-                       if alias_key(raw["canonical_name"]) not in dropped]
-    decided = {alias_key(name): keep for name, _, keep in out.get("verify_decisions") or []}
-    concepts = [item for item in items if item.type == "concept"]
-    order = {id(item): index for index, item in enumerate(concepts)}
-    prominent = {item.key: structure(item, page, PROMINENT_KINDS) is not None
-                 for item in concepts}
-    ranked = sorted(concepts, key=lambda item: (not prominent[item.key], -len(item.mentions),
-                                                order[id(item)]))
-    out["v3"] = {
-        "services": [{"canonical": item.canonical, "structure": places[item.key],
-                      "sol": decided.get(item.key), "kept": item.key not in dropped}
-                     for item in items if item.type == "service"],
-        "concepts": [{"canonical": item.canonical, "rank": rank + 1,
-                      "mentions": len(item.mentions), "prominent": prominent[item.key],
-                      "structure": structure(item, page), "blocks": repetition(item, page),
-                      "knowledge": knowledge(item.names(), page.lang)}
-                     for rank, item in enumerate(ranked)]}
-    return out
 
 
 def run_apply(model: str, data_dir: Path, pages: list[dict], source: str, tag: str) -> None:

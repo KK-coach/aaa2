@@ -24,19 +24,31 @@ entitásaival összevonva.
 - Típusjavaslat: minden elfogadott említés egy szavazat az LLM típusára (`entities.type_votes`,
   futásról futásra halmozódva); `type_suggested` a legtöbb szavazatot kapott típus, holtversenyben
   a jelenlegi. A típust ez nem írja át.
+- Kinyerés utáni lépés (`refine`, a pipeline-ban `v3.V3Step`): a rekord a mentés előtt; a
+  bizonyítékai (`v3` mező) a `soft_checks`-be. Ha az ellenőrző hívás hibára fut, az oldal nem
+  mentődik (`verify_error`).
 - Újrafuttatható: a feldolgozott oldal korábbi llm-forrásai ugyanattól a kinyerő modelltől
-  törlődnek, a forrás nélkül maradt említés és a említés nélkül maradt llm-entitás is.
-- `entity_runs`: method = llm, a kinyerő modell, a vizsgált oldalak, a hívások (kinyerés és
-  elnevezés) és a költségük, az említések, a kitaláltak.
+  törlődnek, a forrás nélkül maradt említés is; az említés nélküli llm-entitás a futás előtt és
+  után törlődik (az összevonás nem köt új említést korábbi, említés nélküli entitáshoz).
+- Oldalnapló (`entity_run_pages`): állapot, okok, hívások, időtartam, a kinyerés rekordja és a
+  lépés utáni rekord. Folytatás (`resume`): a modell legutóbbi futása megy tovább, a kész
+  oldal kimarad, a meglévő rekord nem hív újra. A keret-őr leállítása és a költséghatár
+  (`max_usd`, a futás hívásainak összege) a hátralévő oldalakat `stopped` állapotba teszi.
+- `entity_runs`: method = llm, a kinyerő modell, a vizsgált oldalak, a hívások (kinyerés,
+  elnevezés, ellenőrzés) és a költségük, az említések, a kitaláltak, az időtartam; az
+  oldalnaplóból és az említésekből, folytatásnál az egész futásra.
+- Költségbecslés a futás előtt: `estimate_llm` (a kinyerés darabonként; az ellenőrzés a
+  meglévő kinyerésből, csak a szerkezeti helyű service-es oldalakra).
 """
 from __future__ import annotations
 
 import json
 import re
+import time
 from collections import Counter, defaultdict
-from collections.abc import Callable, Sequence
-from dataclasses import dataclass
-from datetime import UTC, datetime
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, field
+from datetime import UTC, date, datetime
 
 import duckdb
 
@@ -45,7 +57,14 @@ from aaa2.entities.dom import build_blocks, page_blocks
 from aaa2.entities.llm import site_line
 from aaa2.entities.naming import name_record
 from aaa2.entities.rules import ATTACH_ORDER, SOURCE_STRENGTH, alias_key
+from aaa2.entities.v3 import (
+    ESTIMATE_CHARS_PER_TOKEN,
+    page_context,
+    store_soft_checks,
+    verify_usage,
+)
 from aaa2.llm.client import BudgetExceeded, LLMClient, LLMError, SchemaMismatch
+from aaa2.llm.config import LLMConfig, Usage
 from aaa2.llm.schemas import ENTITY_TYPES, BlockExtraction
 
 
@@ -118,14 +137,15 @@ def extract_page(client: LLMClient, site: str, blocks: Sequence[dict],
     return result
 
 
-def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
-            naming_client: LLMClient | None = None, limit: int | None = None,
-            page_ids: Sequence[int] | None = None,
-            clock: Callable[[], datetime] | None = None) -> LLMRun:
-    """`page_ids`: csak ezek közül az alkalmas oldalak; `limit`: legfeljebb ennyi oldal;
-    `naming_client`: az elnevezési hívás kliense (None: nincs elnevezés)."""
-    clock = clock or _now
-    started = clock()
+Refine = Callable[[Mapping, int, Sequence[Mapping], str | None], dict]
+
+FINAL = ("done", "skipped")                              # a folytatás ezeket kihagyja
+ATTEMPTED = ("done", "extracted", "failed", "verify_error")
+
+
+def select_pages(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None = None,
+                 limit: int | None = None) -> list[tuple[int, str | None]]:
+    """Az alkalmas (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalak és a nyelvük."""
     params: list = []
     only = ""
     if page_ids is not None:
@@ -133,115 +153,354 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
         params.append(list(page_ids))
     if limit:
         params.append(limit)
-    pages = con.execute(
+    return con.execute(
         "SELECT page_id, lang FROM pages "
         "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL"
         + only + " ORDER BY page_id" + (" LIMIT ?" if limit else ""), params,
     ).fetchall()
+
+
+def resumable_run(con: duckdb.DuckDBPyConnection, model: str) -> int | None:
+    """A modell legutóbbi LLM-futása (a folytatás ezt viszi tovább)."""
+    return con.execute("SELECT max(run_id) FROM entity_runs WHERE method = 'llm' AND model = ?",
+                       [model]).fetchone()[0]
+
+
+def run_pages(con: duckdb.DuckDBPyConnection, run_id: int | None) -> dict[int, dict]:
+    """A futás oldalankénti naplója (`entity_run_pages`), oldal szerint."""
+    if run_id is None:
+        return {}
+    rows = con.execute(
+        "SELECT page_id, status, reasons, call_ids, extraction, refined FROM entity_run_pages "
+        "WHERE run_id = ?", [run_id]).fetchall()
+    return {page_id: {"status": status, "reasons": json.loads(reasons or "{}"),
+                      "call_ids": list(call_ids or []),
+                      "extraction": json.loads(extraction) if extraction else None,
+                      "refined": json.loads(refined) if refined else None}
+            for page_id, status, reasons, call_ids, extraction, refined in rows}
+
+
+@dataclass
+class _PageLog:
+    status: str
+    reasons: Counter[str] = field(default_factory=Counter)
+    call_ids: list[int] = field(default_factory=list)
+    chunks: int = 0
+    fabricated: int = 0
+    error: str | None = None
+    extraction: dict | None = None
+    refined: dict | None = None
+
+
+def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
+            naming_client: LLMClient | None = None, refine: Refine | None = None,
+            save: bool = True, limit: int | None = None,
+            page_ids: Sequence[int] | None = None, resume: bool = False,
+            max_usd: float | None = None, clock: Callable[[], datetime] | None = None,
+            monotonic: Callable[[], float] | None = None) -> LLMRun:
+    """`page_ids`: csak ezek közül az alkalmas oldalak; `limit`: legfeljebb ennyi oldal;
+    `naming_client`: az elnevezési hívás kliense (None: nincs elnevezés); `refine`: a kinyerés
+    utáni lépés (`v3.V3Step`; None: nincs); `save`: mentés az említés- és entitástáblába;
+    `resume`: a modell legutóbbi futásának folytatása; `max_usd`: a futás költséghatára (ha a
+    futás hívásai elérik, a többi oldal kimarad)."""
+    clock = clock or _now
+    monotonic = monotonic or time.monotonic
+    began = monotonic()
+    started = clock()
+    pages = select_pages(con, page_ids, limit)
     build_blocks(con, [page_id for page_id, _ in pages])
-    (run_id,) = con.execute(
-        "INSERT INTO entity_runs (started_at, method, model, llm_calls) VALUES (?, 'llm', ?, 0) "
-        "RETURNING run_id", [started, client.model]).fetchone()
+    run_id = resumable_run(con, client.model) if resume else None
+    if run_id is None:
+        (run_id,) = con.execute(
+            "INSERT INTO entity_runs (started_at, method, model, llm_calls) "
+            "VALUES (?, 'llm', ?, 0) RETURNING run_id", [started, client.model]).fetchone()
+    previous = run_pages(con, run_id)
+    con.execute("DELETE FROM entities WHERE source = 'llm' AND entity_id NOT IN "
+                "(SELECT entity_id FROM page_entities)")
     index = _EntityIndex(con)
     site = site_line(con) or ""
-    skipped: Counter[str] = Counter()
-    by_position: Counter[str] = Counter()
-    call_ids: list[int] = []
-    entity_ids: set[int] = set()
-    pages_with: set[int] = set()
-    rows = fabricated = done = 0
     for number, (page_id, lang) in enumerate(pages):
+        prior = previous.get(page_id) or {}
+        if prior.get("status") in FINAL:
+            continue
+        if max_usd is not None and _run_cost(con, run_id) >= max_usd:
+            _stop(con, run_id, pages[number:], previous, "cost_cap_stopped_pages", clock)
+            break
+        page_began = monotonic()
         blocks = page_blocks(con, page_id, region="content")
         if not blocks:
-            skipped["no_content_blocks"] += 1
+            _log(con, run_id, page_id, _PageLog("skipped", Counter(no_content_blocks=1)),
+                 0.0, clock)
             continue
-        done += 1
-        try:
-            page = extract_page(client, site, blocks, page_id)
-        except BudgetExceeded:
-            done -= 1
-            skipped["budget_stopped_pages"] = len(pages) - number
-            break
-        call_ids += page.call_ids
-        if len(page.failures) == page.chunks:
-            skipped[page.failures[0][0]] += 1
-            continue
-        for reason, _ in page.failures:
-            skipped[f"chunk_{reason}"] += 1
-        extract_call = next(i for i in page.call_ids
-                            if i not in {c for _, c in page.failures})
-        by_id = {block["id"]: block for block in blocks}
-        record = {"call_id": extract_call, "call_ids": list(page.call_ids),
-                  "primary_entities": page.primary_entities, "entities": page.entities}
-        if naming_client is not None:
+        log = _PageLog("failed", call_ids=list(prior.get("call_ids") or []),
+                       extraction=prior.get("extraction"), refined=prior.get("refined"))
+        if log.extraction is None:
             try:
-                record = name_record(naming_client, record, by_id, page_id=page_id)
+                log.extraction = _extract(client, naming_client, site, blocks, page_id)
             except BudgetExceeded:
-                skipped["naming_budget_stopped"] += 1
-            else:
-                call_ids += [i for i in record["call_ids"] if i not in page.call_ids]
-                if record.get("naming_error"):
-                    skipped["naming_error"] += 1
-        page_rows = page_fabricated = 0
+                _stop(con, run_id, pages[number:], previous, "budget_stopped_pages", clock)
+                break
+        extraction = log.extraction
+        log.call_ids = list(dict.fromkeys([*log.call_ids, *extraction["call_ids"]]))
+        log.chunks = extraction["chunks"]
+        log.reasons.update(extraction["reasons"])
+        if extraction["entities"] is None:
+            log.extraction = None
+            _log(con, run_id, page_id, log, monotonic() - page_began, clock)
+            continue
+        record = log.refined
+        if record is None and refine is not None:
+            try:
+                record = refine(extraction, page_id, blocks, lang)
+            except BudgetExceeded:
+                log.status = "stopped"
+                log.reasons = Counter(budget_stopped_pages=1)
+                _log(con, run_id, page_id, log, monotonic() - page_began, clock)
+                _stop(con, run_id, pages[number + 1:], previous, "budget_stopped_pages", clock)
+                break
+            log.call_ids = list(dict.fromkeys(
+                [*log.call_ids, *(i for i in record.get("call_ids") or [] if i is not None)]))
+            if record.get("verify_error"):
+                log.status, log.error = "verify_error", record["verify_error"]
+                log.reasons["verify_error"] += 1
+                _log(con, run_id, page_id, log, monotonic() - page_began, clock)
+                continue
+            log.refined = record
+        record = record or extraction
+        log.status = "done" if save else "extracted"
         con.begin()
         try:
-            con.execute(
-                "DELETE FROM mention_sources WHERE source = 'llm' AND mention_id IN "
-                "(SELECT mention_id FROM page_entities WHERE page_id = ?) AND llm_call_id IN "
-                "(SELECT call_id FROM llm_calls WHERE model = ?)", [page_id, client.model])
-            con.execute(
-                "DELETE FROM page_entities WHERE page_id = ? AND mention_id NOT IN "
-                "(SELECT mention_id FROM mention_sources)", [page_id])
-            written: set[int] = set()
-            for raw in record["entities"] or []:
-                block = by_id.get(raw.get("block_id"))
-                offsets = surface_offsets(raw.get("surface_form", ""), block["text"]) \
-                    if block else []
-                if not offsets:
-                    page_fabricated += 1
-                    continue
-                start, end = offsets[0]
-                entity_id = index.resolve(con, raw["canonical_name"], raw["type"],
-                                          raw.get("subtype"), _primary(lang), started)
-                index.vote(entity_id, raw["type"])
-                position = _position(block)
-                mention_id = _store_mention(con, page_id, entity_id, block, start, end,
-                                            position, raw.get("description"))
-                if mention_id in written:
-                    continue
-                written.add(mention_id)
-                con.execute(
-                    "INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id) "
-                    "VALUES (?, 'llm', ?, ?)", [mention_id, run_id, extract_call])
-                by_position[position] += 1
-                entity_ids.add(entity_id)
-                page_rows += 1
-            con.execute("UPDATE llm_calls SET fabricated_count = ? WHERE call_id = ?",
-                        [page_fabricated, extract_call])
-            index.write_votes(con)
+            log.fabricated = _store(con, run_id, page_id, lang, record, blocks, index, started,
+                                    save, client.model)
+            _log(con, run_id, page_id, log, monotonic() - page_began, clock)
             con.commit()
         except Exception:
             con.rollback()
             raise
-        rows += page_rows
-        fabricated += page_fabricated
-        if page_rows:
-            pages_with.add(page_id)
     con.execute("DELETE FROM entities WHERE source = 'llm' AND entity_id NOT IN "
                 "(SELECT entity_id FROM page_entities)")
+    return _finish(con, run_id, client.model,
+                   naming_client.model if naming_client else None, monotonic() - began, clock)
+
+
+def _extract(client: LLMClient, naming_client: LLMClient | None, site: str,
+             blocks: Sequence[dict], page_id: int) -> dict:
+    """A kinyerés (és az elnevezés) rekordja: `entities` (None: minden darab hibás),
+    `primary_entities`, `call_id` (az első sikeres kinyerő hívás), `call_ids`, `chunks`,
+    `reasons` (a kimaradás okai)."""
+    page = extract_page(client, site, blocks, page_id)
+    failed = {call_id for _, call_id in page.failures}
+    record = {"entities": None, "primary_entities": page.primary_entities, "call_id": None,
+              "call_ids": list(page.call_ids), "chunks": page.chunks, "reasons": {}}
+    if len(page.failures) == page.chunks:
+        record["reasons"] = {page.failures[0][0]: 1}
+        return record
+    reasons: Counter[str] = Counter(f"chunk_{reason}" for reason, _ in page.failures)
+    record.update(entities=page.entities,
+                  call_id=next(i for i in page.call_ids if i not in failed))
+    if naming_client is not None:
+        by_id = {block["id"]: block for block in blocks}
+        try:
+            named = name_record(naming_client, record, by_id, page_id=page_id)
+        except BudgetExceeded:
+            reasons["naming_budget_stopped"] += 1
+        else:
+            if named.get("naming_error"):
+                reasons["naming_error"] += 1
+            record = {**named, "chunks": page.chunks,
+                      "call_ids": list(dict.fromkeys([*record["call_ids"],
+                                                      *named.get("call_ids", [])]))}
+    record["reasons"] = dict(reasons)
+    return record
+
+
+def _store(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int, lang: str | None,
+           record: Mapping, blocks: Sequence[dict], index: _EntityIndex, started: datetime,
+           save: bool, model: str) -> int:
+    """Az oldal említései (a korábbi, azonos modelltől származó llm-források helyett), a
+    típus-szavazatok és a `v3` bizonyítékai; `save` nélkül csak a kitaláltak száma. Visszaad:
+    a kitalált említések száma."""
+    by_id = {block["id"]: block for block in blocks}
+    extract_call = record.get("call_id")
+    if save:
+        con.execute(
+            "DELETE FROM mention_sources WHERE source = 'llm' AND mention_id IN "
+            "(SELECT mention_id FROM page_entities WHERE page_id = ?) AND llm_call_id IN "
+            "(SELECT call_id FROM llm_calls WHERE model = ?)", [page_id, model])
+        con.execute(
+            "DELETE FROM page_entities WHERE page_id = ? AND mention_id NOT IN "
+            "(SELECT mention_id FROM mention_sources)", [page_id])
+    fabricated = 0
+    written: set[int] = set()
+    entity_of: dict[str, int] = {}
+    for raw in record["entities"] or []:
+        block = by_id.get(raw.get("block_id"))
+        offsets = surface_offsets(raw.get("surface_form", ""), block["text"]) if block else []
+        if not offsets:
+            fabricated += 1
+            continue
+        if not save:
+            continue
+        start, end = offsets[0]
+        entity_id = index.resolve(con, raw["canonical_name"], raw["type"], raw.get("subtype"),
+                                  _primary(lang), started)
+        entity_of.setdefault(alias_key(raw["canonical_name"]), entity_id)
+        index.vote(entity_id, raw["type"])
+        mention_id = _store_mention(con, page_id, entity_id, block, start, end,
+                                    _position(block), raw.get("description"))
+        if mention_id in written:
+            continue
+        written.add(mention_id)
+        con.execute(
+            "INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id) "
+            "VALUES (?, 'llm', ?, ?)", [mention_id, run_id, extract_call])
+    if extract_call is not None:
+        con.execute("UPDATE llm_calls SET fabricated_count = ? WHERE call_id = ?",
+                    [fabricated, extract_call])
+    if save:
+        index.write_votes(con)
+        if record.get("v3") is not None:
+            store_soft_checks(con, run_id, page_id, record["v3"], entity_of)
+    return fabricated
+
+
+def _log(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int, log: _PageLog,
+         seconds: float, clock: Callable[[], datetime]) -> None:
+    con.execute(
+        "INSERT OR REPLACE INTO entity_run_pages (run_id, page_id, status, reasons, call_ids, "
+        "chunks, fabricated, seconds, error, extraction, refined, finished_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [run_id, page_id, log.status, json.dumps(dict(log.reasons)), log.call_ids, log.chunks,
+         log.fabricated, seconds, log.error,
+         json.dumps(log.extraction, ensure_ascii=False) if log.extraction else None,
+         json.dumps(log.refined, ensure_ascii=False) if log.refined else None, clock()])
+
+
+def _stop(con: duckdb.DuckDBPyConnection, run_id: int, pages: Sequence[tuple[int, str | None]],
+          previous: Mapping[int, dict], reason: str, clock: Callable[[], datetime]) -> None:
+    """A hátralévő, még nem kész oldalak `stopped` állapotba, a meglévő rekordjukkal."""
+    for page_id, _ in pages:
+        prior = previous.get(page_id) or {}
+        if prior.get("status") in FINAL:
+            continue
+        _log(con, run_id, page_id,
+             _PageLog("stopped", Counter({reason: 1}), list(prior.get("call_ids") or []),
+                      extraction=prior.get("extraction"), refined=prior.get("refined")),
+             0.0, clock)
+
+
+def _run_cost(con: duckdb.DuckDBPyConnection, run_id: int) -> float:
+    return con.execute(
+        "SELECT coalesce(sum(cost_usd), 0) FROM llm_calls WHERE call_id IN "
+        "(SELECT DISTINCT unnest(call_ids) FROM entity_run_pages WHERE run_id = ?)",
+        [run_id]).fetchone()[0]
+
+
+def _finish(con: duckdb.DuckDBPyConnection, run_id: int, model: str, naming_model: str | None,
+            seconds: float, clock: Callable[[], datetime]) -> LLMRun:
+    """A futás mérőszámai az oldalnaplóból és az említésekből (folytatásnál az egész
+    futásra), az `entity_runs` sorába írva."""
+    logs = con.execute("SELECT status, reasons, call_ids, fabricated FROM entity_run_pages "
+                       "WHERE run_id = ?", [run_id]).fetchall()
+    skipped: Counter[str] = Counter()
+    call_ids: set[int] = set()
+    for _, reasons, ids, _ in logs:
+        skipped.update(json.loads(reasons or "{}"))
+        call_ids.update(ids or [])
+    done = sum(status in ATTEMPTED for status, _, _, _ in logs)
+    fabricated = sum(count or 0 for _, _, _, count in logs)
+    positions = dict(con.execute(
+        "SELECT pe.position, count(*) FROM mention_sources ms JOIN page_entities pe "
+        "USING (mention_id) WHERE ms.run_id = ? AND ms.source = 'llm' GROUP BY pe.position "
+        "ORDER BY pe.position", [run_id]).fetchall())
+    entities, pages_with = con.execute(
+        "SELECT count(DISTINCT pe.entity_id), count(DISTINCT pe.page_id) FROM mention_sources ms "
+        "JOIN page_entities pe USING (mention_id) WHERE ms.run_id = ? AND ms.source = 'llm'",
+        [run_id]).fetchone()
     (cost,) = con.execute("SELECT coalesce(sum(cost_usd), 0) FROM llm_calls "
-                          "WHERE list_contains(?, call_id)", [call_ids]).fetchone()
-    positions = dict(sorted(by_position.items()))
-    reasons = {k: v for k, v in skipped.items() if v}
+                          "WHERE list_contains(?, call_id)", [sorted(call_ids)]).fetchone()
+    rows = sum(positions.values())
+    reasons = {k: v for k, v in sorted(skipped.items()) if v}
     con.execute(
         "UPDATE entity_runs SET finished_at = ?, pages = ?, pages_with_entities = ?, "
         "entities = ?, row_count = ?, llm_calls = ?, cost_usd = ?, fabricated = ?, "
-        "by_position = ?, skipped = ? WHERE run_id = ?",
-        [clock(), done, len(pages_with), len(entity_ids), rows, len(call_ids), cost, fabricated,
-         json.dumps(positions), json.dumps(reasons), run_id])
-    return LLMRun(run_id, client.model, naming_client.model if naming_client else None, done,
-                  len(pages_with), len(entity_ids), rows, len(call_ids), cost, fabricated,
-                  positions, reasons)
+        "by_position = ?, skipped = ?, seconds = coalesce(seconds, 0) + ? WHERE run_id = ?",
+        [clock(), done, pages_with, entities, rows, len(call_ids), cost, fabricated,
+         json.dumps(positions), json.dumps(reasons), seconds, run_id])
+    return LLMRun(run_id, model, naming_model, done, pages_with, entities, rows, len(call_ids),
+                  cost, fabricated, positions, reasons)
+
+
+# ---------------------------------------------------------------------------
+# költségbecslés
+# ---------------------------------------------------------------------------
+
+EXTRACT_OUTPUT_RATIO = 2.0           # kimeneti / bemeneti token a kinyerésnél (mért: 1,1–2,1)
+
+
+@dataclass(frozen=True)
+class Estimate:
+    """A futás becsült költsége: a kinyerés (és az elnevezés) darabonként; az ellenőrzés csak a
+    már meglévő kinyerésű oldalakra, ahol szerkezeti helyen áll service (`verify_pages`); a még
+    kinyeretlen oldalakon a kinyerés után dől el (`verify_pending`), a futás közben a
+    költséghatár őrzi."""
+
+    pages: int
+    chunks: int
+    tokens_in: int
+    extract_usd: float
+    verify_pages: int
+    verify_usd: float
+    verify_pending: int = 0
+
+    @property
+    def total_usd(self) -> float:
+        return self.extract_usd + self.verify_usd
+
+
+def estimate_llm(con: duckdb.DuckDBPyConnection, config: LLMConfig, model: str,
+                 naming_model: str | None, verify_model: str | None, day: date, *,
+                 limit: int | None = None, page_ids: Sequence[int] | None = None,
+                 resume: bool = False) -> Estimate:
+    """A `run_llm` oldalaira, ugyanazzal a kiválasztással és folytatással: darabonként a
+    prompt és a bemenet karakterei `v3.ESTIMATE_CHARS_PER_TOKEN`-nel, a kimenet
+    `EXTRACT_OUTPUT_RATIO`-val; az elnevezés a kinyeréssel azonos becsléssel. Az ellenőrzés a
+    meglévő kinyerésből (`v3.verify_usage`), a kinyeretlen oldalak száma külön. A meglévő
+    kinyerés nem számít újra."""
+    pages = select_pages(con, page_ids, limit)
+    build_blocks(con, [page_id for page_id, _ in pages])
+    previous = run_pages(con, resumable_run(con, model) if resume else None)
+    site = site_line(con) or ""
+    count = chunks = tokens_in = verify_pages = verify_pending = 0
+    extract_usd = verify_usd = 0.0
+    for page_id, lang in pages:
+        prior = previous.get(page_id) or {}
+        if prior.get("status") in FINAL:
+            continue
+        blocks = page_blocks(con, page_id, region="content")
+        if not blocks:
+            continue
+        count += 1
+        extraction = prior.get("extraction")
+        if extraction is None:
+            for chunk in chunk_blocks(blocks):
+                chunks += 1
+                tokens = round((len(BLOCK_PROMPT) + len(block_input(site, chunk)))
+                               / ESTIMATE_CHARS_PER_TOKEN)
+                tokens_in += tokens
+                usage = Usage(input=tokens, output=round(tokens * EXTRACT_OUTPUT_RATIO))
+                extract_usd += config.cost_usd(model, usage, day)
+                if naming_model:
+                    extract_usd += config.cost_usd(naming_model, usage, day)
+        if not verify_model or prior.get("refined") is not None:
+            continue
+        if extraction is None:
+            verify_pending += 1
+        elif usage := verify_usage(extraction, page_context(con, page_id, blocks, lang)):
+            verify_pages += 1
+            verify_usd += config.cost_usd(verify_model, usage, day)
+    return Estimate(count, chunks, tokens_in, extract_usd, verify_pages, verify_usd,
+                    verify_pending)
 
 
 def _position(block: dict) -> str:
