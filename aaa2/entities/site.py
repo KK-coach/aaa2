@@ -171,7 +171,8 @@ class SiteRun:
 
 class Merger:
     """Entitások összevonása a `merge_log`-gal: az említések, a források, a bizonyítékok, a
-    kapcsolatok és az aliasok a megtartott entitáshoz kerülnek."""
+    kapcsolatok és az aliasok a megtartott entitáshoz kerülnek. Az azonos helyű (oldal, blokk,
+    szövegrész) említésből egy marad, a pozíciójától függetlenül (ez a `page_entities` kulcsa)."""
 
     def __init__(self, con: duckdb.DuckDBPyConnection, run_id: int,
                  clock: Callable[[], datetime]):
@@ -192,7 +193,8 @@ class Merger:
                 "SELECT r.mention_id, k.mention_id FROM page_entities r JOIN page_entities k "
                 "ON k.page_id = r.page_id AND k.block_id IS NOT DISTINCT FROM r.block_id "
                 "AND k.char_start IS NOT DISTINCT FROM r.char_start "
-                "AND k.char_end IS NOT DISTINCT FROM r.char_end AND k.position = r.position "
+                "AND k.char_end IS NOT DISTINCT FROM r.char_end "
+                "AND (k.position = r.position OR r.block_id IS NOT NULL) "
                 "WHERE r.entity_id = ? AND k.entity_id = ?", [remove, keep]).fetchall():
             con.execute(
                 "INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id, count) "
