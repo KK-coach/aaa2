@@ -4,15 +4,19 @@ Minden visszaérkezett válasz — a sémának nem megfelelő is — sort ír a 
 `llm_calls` táblájába és a főkönyvbe (ledger.py). Hívás előtt a keret-őr a főkönyvből összesíti
 a szolgáltató modelljeinek költségét, és hozzáadja a hívás legnagyobb költségét (a bemenet
 konzervatív becslése és a teljes `max_output_tokens`, vagy a hívás saját, kisebb
-`max_output_tokens`-e, ha megadja); ha ez a leállási küszöb fölé vinné, nem hív. Átmeneti hibánál (408,
+`max_output_tokens`-e, ha megadja); ha ez a leállási küszöb fölé vinné, nem hív. Párhuzamos
+hívásoknál a még futó hívások legnagyobb költsége is beszámít (`_RESERVED`, zár alatt), így a
+szálak együtt sem lépik át a küszöböt. Átmeneti hibánál (408,
 429, 5xx, kapcsolat) exponenciális várakozással és jitterrel újrapróbál; a kísérletek száma az
 `llm_calls.attempts`-be, az utolsó sikertelen kísérlet hibája a `last_error`-ba kerül. A kulcsok
 a környezetből vagy a `.env`-ből jönnek; kulcs nélkül a szolgáltató kimarad, nem hiba.
 """
 from __future__ import annotations
 
+import copy
 import os
 import random
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -31,6 +35,9 @@ from aaa2.llm.config import LLMConfig, ProviderConfig, Usage, load_config
 ENV_PATH = Path(".env")
 # A költségőr bemenet-becslése: ennyi karakter egy token (konzervatív; a magyar szöveg ~3).
 CHARS_PER_TOKEN = 2
+# Szolgáltatónként a még futó hívások legnagyobb költsége (a párhuzamos szálak közös kerete).
+_RESERVED: dict[str, float] = {}
+_RESERVE_LOCK = threading.Lock()
 
 
 class LLMError(Exception):
@@ -101,6 +108,13 @@ class LLMClient:
     def model(self) -> str:
         return self._model or self.provider.active_model
 
+    def bind(self, con: duckdb.DuckDBPyConnection) -> LLMClient:
+        """Ugyanez a kliens egy másik kapcsolattal (a párhuzamos szál saját kurzorával: a
+        DuckDB-kapcsolat nem szálbiztos); az adapter és a keret közös."""
+        bound = copy.copy(self)
+        bound.con = con
+        return bound
+
     def spent_usd(self) -> float:
         """A szolgáltató konfigurált modelljeinek halmozott költsége a főkönyvből."""
         spent = ledger.spent_by_model(self.ledger_path)
@@ -127,32 +141,39 @@ class LLMClient:
         a költségőr is ezzel számol."""
         called_at = self.clock()
         price = self.config.price(self.model, called_at.date())
-        spent = self.spent_usd()
         limit = self.output_limit(max_output_tokens)
         worst = self.worst_case_usd(prompt, input, called_at.date(), limit)
-        if spent + worst > self.provider.stop_usd:
-            raise BudgetExceeded(
-                f"{self.provider.name}: {spent:.4f} USD + ez a hívás legfeljebb {worst:.4f} USD "
-                f"(max_output_tokens {limit}) a "
-                f"{self.provider.stop_usd} USD leállási küszöb fölé vinné "
-                f"(keret {self.provider.budget_usd} USD)")
-        reply, attempts, latency_ms, last_error = self._call(
-            schema, prompt, input, max_output_tokens if max_output_tokens else None)
-        cost = price.cost_usd(reply.usage)
-        (call_id,) = self.con.execute(
-            "INSERT INTO llm_calls (domain, page_id, model, tokens_in, tokens_out, cost_usd, "
-            "purpose, latency_ms, called_at, attempts, last_error) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING call_id",
-            [domain, page_id, self.model, reply.usage.tokens_in, reply.usage.output, cost, purpose,
-             latency_ms, called_at, attempts, last_error],
-        ).fetchone()
-        ledger.append({
-            "called_at": called_at.isoformat(), "provider": self.provider.name,
-            "model": self.model, "cost_usd": cost, "tokens_in": reply.usage.tokens_in,
-            "tokens_out": reply.usage.output, "attempts": attempts, "last_error": last_error,
-            "domain": domain, "purpose": purpose, "db": _database_path(self.con),
-            "call_id": call_id, "usage": reply.raw_usage,
-        }, self.ledger_path)
+        name = self.provider.name
+        with _RESERVE_LOCK:
+            spent = self.spent_usd() + _RESERVED.get(name, 0.0)
+            if spent + worst > self.provider.stop_usd:
+                raise BudgetExceeded(
+                    f"{name}: {spent:.4f} USD + ez a hívás legfeljebb {worst:.4f} USD "
+                    f"(max_output_tokens {limit}) a "
+                    f"{self.provider.stop_usd} USD leállási küszöb fölé vinné "
+                    f"(keret {self.provider.budget_usd} USD)")
+            _RESERVED[name] = _RESERVED.get(name, 0.0) + worst
+        try:
+            reply, attempts, latency_ms, last_error = self._call(
+                schema, prompt, input, max_output_tokens if max_output_tokens else None)
+            cost = price.cost_usd(reply.usage)
+            (call_id,) = self.con.execute(
+                "INSERT INTO llm_calls (domain, page_id, model, tokens_in, tokens_out, cost_usd, "
+                "purpose, latency_ms, called_at, attempts, last_error) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING call_id",
+                [domain, page_id, self.model, reply.usage.tokens_in, reply.usage.output, cost,
+                 purpose, latency_ms, called_at, attempts, last_error],
+            ).fetchone()
+            ledger.append({
+                "called_at": called_at.isoformat(), "provider": name,
+                "model": self.model, "cost_usd": cost, "tokens_in": reply.usage.tokens_in,
+                "tokens_out": reply.usage.output, "attempts": attempts,
+                "last_error": last_error, "domain": domain, "purpose": purpose,
+                "db": _database_path(self.con), "call_id": call_id, "usage": reply.raw_usage,
+            }, self.ledger_path)
+        finally:
+            with _RESERVE_LOCK:
+                _RESERVED[name] = max(0.0, _RESERVED.get(name, 0.0) - worst)
         try:
             parsed = schema.model_validate_json(reply.text or "")
         except ValidationError as exc:

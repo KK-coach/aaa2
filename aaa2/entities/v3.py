@@ -65,18 +65,24 @@ class Steps:
 class Pipeline:
     steps: Steps
     max_usd: float
+    workers: int = 1
 
 
 def load_pipeline(path: Path = PIPELINE_FILE) -> Pipeline:
-    """A lépések (mind megadva, logikai értékkel) és a költséghatár (> 0)."""
+    """A lépések (mind megadva, logikai értékkel), a költséghatár (> 0) és a párhuzamosan
+    feldolgozott oldalak száma (`workers`, legalább 1; alapból 1)."""
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
     steps = raw.get("steps", {})
     if set(steps) != set(STEPS) or not all(isinstance(v, bool) for v in steps.values()):
         raise ValueError(f"{path.name} [steps]: a lépések {', '.join(STEPS)}, true / false")
-    max_usd = (raw.get("limits") or {}).get("max_usd")
+    limits = raw.get("limits") or {}
+    max_usd = limits.get("max_usd")
     if not isinstance(max_usd, int | float) or max_usd <= 0:
         raise ValueError(f"{path.name} [limits]: max_usd > 0")
-    return Pipeline(Steps(**steps), float(max_usd))
+    workers = limits.get("workers", 1)
+    if not isinstance(workers, int) or isinstance(workers, bool) or workers < 1:
+        raise ValueError(f"{path.name} [limits]: workers ≥ 1 egész")
+    return Pipeline(Steps(**steps), float(max_usd), workers)
 
 
 # ---------------------------------------------------------------------------

@@ -20,7 +20,7 @@ from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
 from aaa2.entities.dom import build_blocks
-from aaa2.entities.extract import estimate_llm, run_llm
+from aaa2.entities.extract import Worker, estimate_llm, run_llm
 from aaa2.entities.gate import KnowledgeBase
 from aaa2.entities.knowledge import link_entities
 from aaa2.entities.report import run_report, write_entity_table
@@ -180,6 +180,9 @@ def entities(
     max_usd: Annotated[float | None, typer.Option(
         help="költséghatár (alapból a pipeline.toml max_usd): e fölötti becslésnél nem indul, "
              "a futás közben itt áll meg")] = None,
+    workers: Annotated[int | None, typer.Option(
+        min=1, help="ennyi oldal LLM-lépései futnak egyszerre (alapból a pipeline.toml "
+                    "workers)")] = None,
 ) -> None:
     """Entitás-pipeline a megközelítés v3 szerint, az `entities/config/pipeline.toml`
     lépéseivel: a hiányzó blokkok, a determinisztikus szabálykör (JSON-LD, a site neve a
@@ -237,9 +240,27 @@ def entities(
                             else _pipeline_client(con, verify_choice))
             refine = (V3Step(con, steps, verifier, kb if steps.knowledge else None, site_lang)
                       if steps.services or steps.concepts else None)
+
+            def fork(cursor: duckdb.DuckDBPyConnection) -> Worker:
+                """Egy szál kliensei a saját kurzorán (a tudásbázis gyorsítótára is)."""
+                bound = client.bind(cursor)
+                own = {id(client): bound}
+                thread_kb = None
+                if kb is not None and steps.knowledge:
+                    thread_kb = KnowledgeBase(_Api(
+                        cursor, shared.cursor() if shared is not None else None,
+                        httpx.Client(timeout=20.0), Retry(), _utcnow, time.monotonic).get)
+                naming_bound = own.get(id(naming)) or (naming.bind(cursor) if naming else None)
+                verifier_bound = (own.get(id(verifier))
+                                  or (verifier.bind(cursor) if verifier else None))
+                return Worker(bound, naming_bound, V3Step(
+                    cursor, steps, verifier_bound, thread_kb, site_lang) if refine else None)
+
+            count = workers or pipeline.workers
+            typer.echo(f"párhuzamosság: {count} oldal egyszerre")
             runs.append(run_llm(con, client, naming_client=naming, refine=refine,
                                 save=steps.save, limit=limit, resume=resume,
-                                max_usd=cap).run_id)
+                                max_usd=cap, workers=count, fork=fork).run_id)
         elif estimate:
             typer.echo("becslés: az LLM-lépések kikapcsolva, nincs hívás")
             return

@@ -34,6 +34,10 @@ entitásaival összevonva.
   lépés utáni rekord. Folytatás (`resume`): a modell legutóbbi futása megy tovább, a kész
   oldal kimarad, a meglévő rekord nem hív újra. A keret-őr leállítása és a költséghatár
   (`max_usd`, a futás hívásainak összege) a hátralévő oldalakat `stopped` állapotba teszi.
+- Párhuzamosság (`workers`, `fork`): az oldalak LLM-lépései (kinyerés, elnevezés, ellenőrzés)
+  szálanként saját kurzorral és klienssel futnak, egyszerre legfeljebb `2 × workers` oldal van
+  folyamatban; a mentés és a napló a fő szálon, oldalsorrendben. A keret-őr a még futó
+  hívásokat is beszámítja (`llm.client`).
 - `entity_runs`: method = llm, a kinyerő modell, a vizsgált oldalak, a hívások (kinyerés,
   elnevezés, ellenőrzés) és a költségük, az említések, a kitaláltak, az időtartam; az
   oldalnaplóból és az említésekből, folytatásnál az egész futásra.
@@ -43,10 +47,12 @@ entitásaival összevonva.
 from __future__ import annotations
 
 import json
+import queue
 import re
 import time
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from collections.abc import Callable, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 
@@ -192,17 +198,31 @@ class _PageLog:
     refined: dict | None = None
 
 
+@dataclass(frozen=True)
+class Worker:
+    """Egy szál LLM-lépései: a kinyerő kliens, az elnevezés kliense és a kinyerés utáni lépés,
+    a szál saját adatbázis-kurzorához kötve (`fork`)."""
+    client: LLMClient
+    naming_client: LLMClient | None = None
+    refine: Refine | None = None
+
+
 def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
             naming_client: LLMClient | None = None, refine: Refine | None = None,
             save: bool = True, limit: int | None = None,
             page_ids: Sequence[int] | None = None, resume: bool = False,
-            max_usd: float | None = None, clock: Callable[[], datetime] | None = None,
+            max_usd: float | None = None, workers: int = 1,
+            fork: Callable[[duckdb.DuckDBPyConnection], Worker] | None = None,
+            clock: Callable[[], datetime] | None = None,
             monotonic: Callable[[], float] | None = None) -> LLMRun:
     """`page_ids`: csak ezek közül az alkalmas oldalak; `limit`: legfeljebb ennyi oldal;
     `naming_client`: az elnevezési hívás kliense (None: nincs elnevezés); `refine`: a kinyerés
     utáni lépés (`v3.V3Step`; None: nincs); `save`: mentés az említés- és entitástáblába;
     `resume`: a modell legutóbbi futásának folytatása; `max_usd`: a futás költséghatára (ha a
-    futás hívásai elérik, a többi oldal kimarad)."""
+    futás hívásai elérik, a többi oldal kimarad). `workers`: ennyi oldal LLM-lépései futnak
+    egyszerre, a `fork`-kal szálanként épített klienssel (a kapcsolat kurzorán); a mentés a fő
+    szálon, oldalsorrendben, így az eredmény a párhuzamosságtól független. `workers = 1` vagy
+    `fork` nélkül sorban, a megadott kliensekkel."""
     clock = clock or _now
     monotonic = monotonic or time.monotonic
     began = monotonic()
@@ -219,68 +239,114 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                 "(SELECT entity_id FROM page_entities)")
     index = _EntityIndex(con)
     site = site_line(con) or ""
-    for number, (page_id, lang) in enumerate(pages):
-        prior = previous.get(page_id) or {}
-        if prior.get("status") in FINAL:
-            continue
-        if max_usd is not None and _run_cost(con, run_id) >= max_usd:
-            _stop(con, run_id, pages[number:], previous, "cost_cap_stopped_pages", clock)
-            break
-        page_began = monotonic()
-        blocks = page_blocks(con, page_id, region="content")
-        if not blocks:
-            _log(con, run_id, page_id, _PageLog("skipped", Counter(no_content_blocks=1)),
-                 0.0, clock)
-            continue
-        log = _PageLog("failed", call_ids=list(prior.get("call_ids") or []),
-                       extraction=prior.get("extraction"), refined=prior.get("refined"))
-        if log.extraction is None:
-            try:
-                log.extraction = _extract(client, naming_client, site, blocks, page_id)
-            except BudgetExceeded:
-                _stop(con, run_id, pages[number:], previous, "budget_stopped_pages", clock)
+    parallel = workers > 1 and fork is not None
+    pool = queue.Queue()
+    for _ in range(workers if parallel else 1):
+        pool.put(fork(con.cursor()) if parallel else Worker(client, naming_client, refine))
+
+    def work(page_id: int, lang: str | None, blocks: list, prior: dict) -> tuple[_PageLog, str]:
+        worker = pool.get()
+        try:
+            return _page_llm(worker, site, page_id, lang, blocks, prior)
+        finally:
+            pool.put(worker)
+
+    executor = ThreadPoolExecutor(max_workers=workers) if parallel else None
+    pending: deque = deque()
+    stop_reason: str | None = None
+    waiting = list(pages)
+    try:
+        while waiting or pending:
+            while waiting and stop_reason is None and len(pending) < (2 * workers if parallel
+                                                                      else 1):
+                page_id, lang = waiting[0]
+                prior = previous.get(page_id) or {}
+                if prior.get("status") in FINAL:
+                    waiting.pop(0)
+                    continue
+                if max_usd is not None and _run_cost(con, run_id) >= max_usd:
+                    stop_reason = "cost_cap_stopped_pages"
+                    break
+                waiting.pop(0)
+                blocks = page_blocks(con, page_id, region="content")
+                if not blocks:
+                    _log(con, run_id, page_id,
+                         _PageLog("skipped", Counter(no_content_blocks=1)), 0.0, clock)
+                    continue
+                args = (page_id, lang, blocks, prior)
+                pending.append((page_id, lang, blocks, monotonic(),
+                                executor.submit(work, *args) if executor else work(*args)))
+            if not pending:
                 break
-        extraction = log.extraction
-        log.call_ids = list(dict.fromkeys([*log.call_ids, *extraction["call_ids"]]))
-        log.chunks = extraction["chunks"]
-        log.reasons.update(extraction["reasons"])
-        if extraction["entities"] is None:
-            log.extraction = None
-            _log(con, run_id, page_id, log, monotonic() - page_began, clock)
-            continue
-        record = log.refined
-        if record is None and refine is not None:
-            try:
-                record = refine(extraction, page_id, blocks, lang)
-            except BudgetExceeded:
-                log.status = "stopped"
-                log.reasons = Counter(budget_stopped_pages=1)
-                _log(con, run_id, page_id, log, monotonic() - page_began, clock)
-                _stop(con, run_id, pages[number + 1:], previous, "budget_stopped_pages", clock)
-                break
-            log.call_ids = list(dict.fromkeys(
-                [*log.call_ids, *(i for i in record.get("call_ids") or [] if i is not None)]))
-            if record.get("verify_error"):
-                log.status, log.error = "verify_error", record["verify_error"]
-                log.reasons["verify_error"] += 1
+            page_id, lang, blocks, page_began, outcome = pending.popleft()
+            log, status = outcome.result() if executor else outcome
+            if status in ("budget_extract", "budget_refine"):
+                stop_reason = "budget_stopped_pages"
+                if status == "budget_refine":
+                    _log(con, run_id, page_id, log, monotonic() - page_began, clock)
+                else:
+                    _stop(con, run_id, [(page_id, lang)], previous, stop_reason, clock)
+                continue
+            if status in ("failed", "verify_error"):
                 _log(con, run_id, page_id, log, monotonic() - page_began, clock)
                 continue
-            log.refined = record
-        record = record or extraction
-        log.status = "done" if save else "extracted"
-        con.begin()
-        try:
-            log.fabricated = _store(con, run_id, page_id, lang, record, blocks, index, started,
-                                    save, client.model)
-            _log(con, run_id, page_id, log, monotonic() - page_began, clock)
-            con.commit()
-        except Exception:
-            con.rollback()
-            raise
+            record = log.refined or log.extraction
+            log.status = "done" if save else "extracted"
+            con.begin()
+            try:
+                log.fabricated = _store(con, run_id, page_id, lang, record, blocks, index,
+                                        started, save, client.model)
+                _log(con, run_id, page_id, log, monotonic() - page_began, clock)
+                con.commit()
+            except Exception:
+                con.rollback()
+                raise
+    finally:
+        if executor is not None:
+            executor.shutdown(wait=True, cancel_futures=True)
+    if stop_reason is not None:
+        _stop(con, run_id, waiting, previous, stop_reason, clock)
     con.execute("DELETE FROM entities WHERE source = 'llm' AND entity_id NOT IN "
                 "(SELECT entity_id FROM page_entities)")
     return _finish(con, run_id, client.model,
                    naming_client.model if naming_client else None, monotonic() - began, clock)
+
+
+def _page_llm(worker: Worker, site: str, page_id: int, lang: str | None, blocks: list,
+              prior: Mapping) -> tuple[_PageLog, str]:
+    """Egy oldal LLM-lépései (kinyerés, elnevezés, a kinyerés utáni lépés), adatbázis-írás
+    nélkül a `site`-táblákba: (napló, kimenet). Kimenet: ok, failed (minden darab hibás),
+    verify_error, budget_extract / budget_refine (a keret-őr megállította)."""
+    log = _PageLog("failed", call_ids=list(prior.get("call_ids") or []),
+                   extraction=prior.get("extraction"), refined=prior.get("refined"))
+    if log.extraction is None:
+        try:
+            log.extraction = _extract(worker.client, worker.naming_client, site, blocks,
+                                      page_id)
+        except BudgetExceeded:
+            return log, "budget_extract"
+    extraction = log.extraction
+    log.call_ids = list(dict.fromkeys([*log.call_ids, *extraction["call_ids"]]))
+    log.chunks = extraction["chunks"]
+    log.reasons.update(extraction["reasons"])
+    if extraction["entities"] is None:
+        log.extraction = None
+        return log, "failed"
+    if log.refined is None and worker.refine is not None:
+        try:
+            record = worker.refine(extraction, page_id, blocks, lang)
+        except BudgetExceeded:
+            log.status = "stopped"
+            log.reasons = Counter(budget_stopped_pages=1)
+            return log, "budget_refine"
+        log.call_ids = list(dict.fromkeys(
+            [*log.call_ids, *(i for i in record.get("call_ids") or [] if i is not None)]))
+        if record.get("verify_error"):
+            log.status, log.error = "verify_error", record["verify_error"]
+            log.reasons["verify_error"] += 1
+            return log, "verify_error"
+        log.refined = record
+    return log, "ok"
 
 
 def _extract(client: LLMClient, naming_client: LLMClient | None, site: str,
