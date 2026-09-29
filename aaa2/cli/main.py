@@ -213,9 +213,11 @@ def entities(
                                  _utcnow().date(), limit=limit, resume=resume)
             typer.echo(
                 f"becslés: {guess.pages} oldal, {guess.chunks} kinyerő darab, ~{guess.tokens_in} "
-                f"token be; kinyerés {guess.extract_usd:.4f} USD, ellenőrzés legfeljebb "
-                f"{guess.verify_usd:.4f} USD ({guess.verify_pages} oldal); összesen "
-                f"{guess.total_usd:.4f} USD, határ {cap:.2f} USD")
+                f"token be; kinyerés {guess.extract_usd:.4f} USD, ellenőrzés "
+                f"{guess.verify_usd:.4f} USD ({guess.verify_pages} oldal a meglévő kinyerésből"
+                + (f", {guess.verify_pending} oldalon a kinyerés után dől el"
+                   if guess.verify_pending else "")
+                + f"); összesen {guess.total_usd:.4f} USD, határ {cap:.2f} USD")
             if estimate:
                 return
             if guess.total_usd > cap:

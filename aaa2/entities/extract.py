@@ -37,7 +37,8 @@ entitásaival összevonva.
 - `entity_runs`: method = llm, a kinyerő modell, a vizsgált oldalak, a hívások (kinyerés,
   elnevezés, ellenőrzés) és a költségük, az említések, a kitaláltak, az időtartam; az
   oldalnaplóból és az említésekből, folytatásnál az egész futásra.
-- Költségbecslés a futás előtt: `estimate_llm`.
+- Költségbecslés a futás előtt: `estimate_llm` (a kinyerés darabonként; az ellenőrzés a
+  meglévő kinyerésből, csak a szerkezeti helyű service-es oldalakra).
 """
 from __future__ import annotations
 
@@ -56,7 +57,12 @@ from aaa2.entities.dom import build_blocks, page_blocks
 from aaa2.entities.llm import site_line
 from aaa2.entities.naming import name_record
 from aaa2.entities.rules import ATTACH_ORDER, SOURCE_STRENGTH, alias_key
-from aaa2.entities.v3 import store_soft_checks
+from aaa2.entities.v3 import (
+    ESTIMATE_CHARS_PER_TOKEN,
+    page_context,
+    store_soft_checks,
+    verify_usage,
+)
 from aaa2.llm.client import BudgetExceeded, LLMClient, LLMError, SchemaMismatch
 from aaa2.llm.config import LLMConfig, Usage
 from aaa2.llm.schemas import ENTITY_TYPES, BlockExtraction
@@ -429,15 +435,15 @@ def _finish(con: duckdb.DuckDBPyConnection, run_id: int, model: str, naming_mode
 # költségbecslés
 # ---------------------------------------------------------------------------
 
-ESTIMATE_CHARS_PER_TOKEN = 3.0       # a becsléshez; a keret-őr konzervatívabb (CHARS_PER_TOKEN)
 EXTRACT_OUTPUT_RATIO = 2.0           # kimeneti / bemeneti token a kinyerésnél (mért: 1,1–2,1)
-VERIFY_ESTIMATE = Usage(input=1500, output=600)      # egy ellenőrző hívás (csak service-tételek)
 
 
 @dataclass(frozen=True)
 class Estimate:
-    """A futás becsült költsége: a kinyerés (és az elnevezés) darabonként, az ellenőrzés
-    felső becsléssel (minden oldalon egy hívás)."""
+    """A futás becsült költsége: a kinyerés (és az elnevezés) darabonként; az ellenőrzés csak a
+    már meglévő kinyerésű oldalakra, ahol szerkezeti helyen áll service (`verify_pages`); a még
+    kinyeretlen oldalakon a kinyerés után dől el (`verify_pending`), a futás közben a
+    költséghatár őrzi."""
 
     pages: int
     chunks: int
@@ -445,6 +451,7 @@ class Estimate:
     extract_usd: float
     verify_pages: int
     verify_usd: float
+    verify_pending: int = 0
 
     @property
     def total_usd(self) -> float:
@@ -456,16 +463,17 @@ def estimate_llm(con: duckdb.DuckDBPyConnection, config: LLMConfig, model: str,
                  limit: int | None = None, page_ids: Sequence[int] | None = None,
                  resume: bool = False) -> Estimate:
     """A `run_llm` oldalaira, ugyanazzal a kiválasztással és folytatással: darabonként a
-    prompt és a bemenet karakterei `ESTIMATE_CHARS_PER_TOKEN`-nel, a kimenet
-    `EXTRACT_OUTPUT_RATIO`-val; az elnevezés a kinyeréssel azonos becsléssel; az ellenőrzés
-    `VERIFY_ESTIMATE` oldalanként. A meglévő kinyerés nem számít újra."""
+    prompt és a bemenet karakterei `v3.ESTIMATE_CHARS_PER_TOKEN`-nel, a kimenet
+    `EXTRACT_OUTPUT_RATIO`-val; az elnevezés a kinyeréssel azonos becsléssel. Az ellenőrzés a
+    meglévő kinyerésből (`v3.verify_usage`), a kinyeretlen oldalak száma külön. A meglévő
+    kinyerés nem számít újra."""
     pages = select_pages(con, page_ids, limit)
     build_blocks(con, [page_id for page_id, _ in pages])
     previous = run_pages(con, resumable_run(con, model) if resume else None)
     site = site_line(con) or ""
-    count = chunks = tokens_in = verify_pages = 0
+    count = chunks = tokens_in = verify_pages = verify_pending = 0
     extract_usd = verify_usd = 0.0
-    for page_id, _ in pages:
+    for page_id, lang in pages:
         prior = previous.get(page_id) or {}
         if prior.get("status") in FINAL:
             continue
@@ -473,7 +481,8 @@ def estimate_llm(con: duckdb.DuckDBPyConnection, config: LLMConfig, model: str,
         if not blocks:
             continue
         count += 1
-        if prior.get("extraction") is None:
+        extraction = prior.get("extraction")
+        if extraction is None:
             for chunk in chunk_blocks(blocks):
                 chunks += 1
                 tokens = round((len(BLOCK_PROMPT) + len(block_input(site, chunk)))
@@ -483,10 +492,15 @@ def estimate_llm(con: duckdb.DuckDBPyConnection, config: LLMConfig, model: str,
                 extract_usd += config.cost_usd(model, usage, day)
                 if naming_model:
                     extract_usd += config.cost_usd(naming_model, usage, day)
-        if verify_model and prior.get("refined") is None:
+        if not verify_model or prior.get("refined") is not None:
+            continue
+        if extraction is None:
+            verify_pending += 1
+        elif usage := verify_usage(extraction, page_context(con, page_id, blocks, lang)):
             verify_pages += 1
-            verify_usd += config.cost_usd(verify_model, VERIFY_ESTIMATE, day)
-    return Estimate(count, chunks, tokens_in, extract_usd, verify_pages, verify_usd)
+            verify_usd += config.cost_usd(verify_model, usage, day)
+    return Estimate(count, chunks, tokens_in, extract_usd, verify_pages, verify_usd,
+                    verify_pending)
 
 
 def _position(block: dict) -> str:

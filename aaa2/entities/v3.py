@@ -40,9 +40,13 @@ from aaa2.entities.gate import (
     structure,
 )
 from aaa2.entities.rules import alias_key
-from aaa2.entities.verify import verify_record
+from aaa2.entities.verify import VERIFY_PROMPT, verify_input, verify_record
+from aaa2.llm.config import Usage
 
 PIPELINE_FILE = Path(__file__).parent / "config" / "pipeline.toml"
+ESTIMATE_CHARS_PER_TOKEN = 3.0       # a becsléshez; a keret-őr konzervatívabb (CHARS_PER_TOKEN)
+VERIFY_OUTPUT_BASE = 200             # az ellenőrző hívás kimeneti tokenje: alap
+VERIFY_OUTPUT_PER_ITEM = 40          # és tételenként
 STEPS = ("rules", "blocks", "extraction", "services", "concepts", "knowledge", "save")
 
 
@@ -165,6 +169,25 @@ class V3Step:
         knowledge = self.knowledge if self.steps.knowledge else None
         return apply_v3(record, page, self.verifier, knowledge, page_id,
                         services=self.steps.services, concepts=self.steps.concepts)
+
+
+def verify_items(record: Mapping, page: PageContext) -> list[SoftItem]:
+    """A rekord szerkezeti helyű service-tételei: ezek mennek az ellenőrző hívásba."""
+    return [item for item in soft_items(record.get("entities") or [], page.by_id())
+            if item.type == "service" and service_place(item, page) is not None]
+
+
+def verify_usage(record: Mapping, page: PageContext) -> Usage | None:
+    """Az ellenőrző hívás becsült tokenjei a kinyerés rekordjából: a bemenet a prompt és a
+    tételek (`verify.verify_input`) karakterei `ESTIMATE_CHARS_PER_TOKEN`-nel, a kimenet
+    `VERIFY_OUTPUT_BASE` és tételenként `VERIFY_OUTPUT_PER_ITEM`; ha nincs szerkezeti helyű
+    service, nincs hívás (None)."""
+    items = verify_items(record, page)
+    if not items:
+        return None
+    chars = len(VERIFY_PROMPT) + len(verify_input(items, page.by_id()))
+    return Usage(input=round(chars / ESTIMATE_CHARS_PER_TOKEN),
+                 output=VERIFY_OUTPUT_BASE + VERIFY_OUTPUT_PER_ITEM * len(items))
 
 
 def store_soft_checks(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int,

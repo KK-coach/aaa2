@@ -10,11 +10,20 @@ from typer.testing import CliRunner
 import aaa2.db.connect as connect_module
 from aaa2.cli.main import app
 from aaa2.db.connect import connect, db_path
+from aaa2.entities.dom import page_blocks
 from aaa2.entities.extract import estimate_llm, run_llm
 from aaa2.entities.gate import KnowledgeBase
 from aaa2.entities.report import entity_table, run_report, wikipedia_url, write_entity_table
 from aaa2.entities.rules import run_rules
-from aaa2.entities.v3 import STEPS, Steps, V3Step, link_entities, load_pipeline
+from aaa2.entities.v3 import (
+    STEPS,
+    Steps,
+    V3Step,
+    link_entities,
+    load_pipeline,
+    page_context,
+    verify_usage,
+)
 from aaa2.entities.verify import VERIFY_PROMPT
 from aaa2.llm import ledger
 from aaa2.llm.adapters import Reply
@@ -279,19 +288,37 @@ def test_mentionless_llm_entities_are_removed_before_merging(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_estimate_counts_chunks_and_an_upper_verify_call_per_page(tmp_path):
+def test_estimate_counts_chunks_and_leaves_verify_until_after_extraction(tmp_path):
     con = site({f"/{i}/": html(f"P{i}", "<p>szöveg itt</p>") for i in range(3)})
     day = date(2026, 9, 28)
     guess = estimate_llm(con, CONFIG, "gpt-6-luna", None, "gpt-6-sol", day)
-    assert (guess.pages, guess.chunks, guess.verify_pages) == (3, 3, 3)
-    assert guess.verify_usd == pytest.approx(3 * (1500 * 2.00 + 600 * 10.00) / 1e6)
-    assert 0 < guess.extract_usd < guess.verify_usd
-    assert guess.total_usd == pytest.approx(guess.extract_usd + guess.verify_usd)
-    assert estimate_llm(con, CONFIG, "gpt-6-luna", None, None, day).verify_usd == 0
+    assert (guess.pages, guess.chunks, guess.verify_pages, guess.verify_pending) == (3, 3, 0, 3)
+    assert guess.verify_usd == 0 and guess.total_usd == guess.extract_usd > 0
+    assert estimate_llm(con, CONFIG, "gpt-6-luna", None, None, day).verify_pending == 0
     adapter = Scripted([reply()] * 2)
     run_llm(con, client_for(con, adapter, tmp_path), limit=2, clock=lambda: NOON)
     rest = estimate_llm(con, CONFIG, "gemini-3.8-flash", None, None, day, resume=True)
     assert (rest.pages, rest.chunks) == (1, 1)
+
+
+def test_estimate_prices_verify_from_the_extraction_on_structural_service_pages(tmp_path):
+    con = site({"/": html("Könyvelés és bérszámfejtés", BODY),
+                "/b/": html("B", "<p>A Budapest Coffee Fest idén is lesz</p>")})
+    answer = reply(mention("b1", "Budapest Coffee Fest", "Budapest Coffee Fest", "event"))
+    adapter = Scripted([PAGE_REPLY, answer], [{"decisions": "nem lista"}])
+    pipeline_run(con, adapter, tmp_path)
+    day = date(2026, 9, 28)
+    guess = estimate_llm(con, CONFIG, "gemini-3.8-flash", None, "gpt-6-sol", day, resume=True)
+    # Csak a verify_error oldal van hátra; a kinyerése megvan, két szerkezeti helyű service-szel.
+    assert (guess.pages, guess.chunks, guess.extract_usd) == (1, 0, 0)
+    assert (guess.verify_pages, guess.verify_pending) == (1, 0)
+    page = page_context(con, 1, page_blocks(con, 1, region="content"), "hu")
+    extraction = json.loads(con.execute(
+        "SELECT extraction FROM entity_run_pages WHERE page_id = 1").fetchone()[0])
+    usage = verify_usage(extraction, page)
+    assert usage.output == 200 + 2 * 40
+    assert guess.verify_usd == pytest.approx(CONFIG.cost_usd("gpt-6-sol", usage, day))
+    assert verify_usage({"entities": [PAGE_REPLY["entities"][2]]}, page) is None
 
 
 # ---------------------------------------------------------------------------
