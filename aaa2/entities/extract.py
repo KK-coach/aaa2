@@ -244,10 +244,15 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
     for _ in range(workers if parallel else 1):
         pool.put(fork(con.cursor()) if parallel else Worker(client, naming_client, refine))
 
-    def work(page_id: int, lang: str | None, blocks: list, prior: dict) -> tuple[_PageLog, str]:
+    def work(page_id: int, lang: str | None, blocks: list,
+             prior: dict) -> tuple[_PageLog, str, float]:
+        """Az oldal LLM-lépései egy szálon; a harmadik elem a saját ideje (a sorban állás
+        nélkül)."""
         worker = pool.get()
+        page_began = monotonic()
         try:
-            return _page_llm(worker, site, page_id, lang, blocks, prior)
+            return (*_page_llm(worker, site, page_id, lang, blocks, prior),
+                    monotonic() - page_began)
         finally:
             pool.put(worker)
 
@@ -274,29 +279,30 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                          _PageLog("skipped", Counter(no_content_blocks=1)), 0.0, clock)
                     continue
                 args = (page_id, lang, blocks, prior)
-                pending.append((page_id, lang, blocks, monotonic(),
+                pending.append((page_id, lang, blocks,
                                 executor.submit(work, *args) if executor else work(*args)))
             if not pending:
                 break
-            page_id, lang, blocks, page_began, outcome = pending.popleft()
-            log, status = outcome.result() if executor else outcome
+            page_id, lang, blocks, outcome = pending.popleft()
+            log, status, seconds = outcome.result() if executor else outcome
             if status in ("budget_extract", "budget_refine"):
                 stop_reason = "budget_stopped_pages"
                 if status == "budget_refine":
-                    _log(con, run_id, page_id, log, monotonic() - page_began, clock)
+                    _log(con, run_id, page_id, log, seconds, clock)
                 else:
                     _stop(con, run_id, [(page_id, lang)], previous, stop_reason, clock)
                 continue
             if status in ("failed", "verify_error"):
-                _log(con, run_id, page_id, log, monotonic() - page_began, clock)
+                _log(con, run_id, page_id, log, seconds, clock)
                 continue
             record = log.refined or log.extraction
             log.status = "done" if save else "extracted"
+            store_began = monotonic()
             con.begin()
             try:
                 log.fabricated = _store(con, run_id, page_id, lang, record, blocks, index,
                                         started, save, client.model)
-                _log(con, run_id, page_id, log, monotonic() - page_began, clock)
+                _log(con, run_id, page_id, log, seconds + monotonic() - store_began, clock)
                 con.commit()
             except Exception:
                 con.rollback()
