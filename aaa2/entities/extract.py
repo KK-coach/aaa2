@@ -46,6 +46,7 @@ entitásaival összevonva.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import queue
 import re
@@ -196,6 +197,8 @@ class _PageLog:
     error: str | None = None
     extraction: dict | None = None
     refined: dict | None = None
+    raw_html_hash: str | None = None
+    input_hash: str | None = None
 
 
 @dataclass(frozen=True)
@@ -211,7 +214,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
             naming_client: LLMClient | None = None, refine: Refine | None = None,
             save: bool = True, limit: int | None = None,
             page_ids: Sequence[int] | None = None, resume: bool = False,
-            max_usd: float | None = None, workers: int = 1,
+            max_usd: float | None = None, workers: int = 1, reuse: bool = False,
             fork: Callable[[duckdb.DuckDBPyConnection], Worker] | None = None,
             clock: Callable[[], datetime] | None = None,
             monotonic: Callable[[], float] | None = None) -> LLMRun:
@@ -222,7 +225,9 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
     futás hívásai elérik, a többi oldal kimarad). `workers`: ennyi oldal LLM-lépései futnak
     egyszerre, a `fork`-kal szálanként épített klienssel (a kapcsolat kurzorán); a mentés a fő
     szálon, oldalsorrendben, így az eredmény a párhuzamosságtól független. `workers = 1` vagy
-    `fork` nélkül sorban, a megadott kliensekkel."""
+    `fork` nélkül sorban, a megadott kliensekkel. `reuse`: a változatlan oldal (azonos
+    kinyerő modell és bemenet-hash, `input_fingerprint`) a modell korábbi futásának tárolt
+    kinyerését és ellenőrzését kapja, hívás nélkül (inkrementális futás)."""
     clock = clock or _now
     monotonic = monotonic or time.monotonic
     began = monotonic()
@@ -239,6 +244,11 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                 "(SELECT entity_id FROM page_entities)")
     index = _EntityIndex(con)
     site = site_line(con) or ""
+    models = (client.model, naming_client.model if naming_client else None,
+              getattr(refine, "fingerprint", None) if refine else None)
+    reusable = reusable_pages(con, client.model) if reuse else {}
+    raw_hashes = dict(con.execute("SELECT page_id, raw_html_hash FROM pages").fetchall())
+    hashes: dict[int, str] = {}
     parallel = workers > 1 and fork is not None
     pool = queue.Queue()
     for _ in range(workers if parallel else 1):
@@ -278,6 +288,11 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                     _log(con, run_id, page_id,
                          _PageLog("skipped", Counter(no_content_blocks=1)), 0.0, clock)
                     continue
+                hashes[page_id] = input_fingerprint(site, blocks, models)
+                stored = reusable.get(page_id)
+                if not prior.get("extraction") and stored and stored[0] == hashes[page_id]:
+                    prior = {"extraction": stored[1], "refined": stored[2], "call_ids": [],
+                             "reused": True}
                 args = (page_id, lang, blocks, prior)
                 pending.append((page_id, lang, blocks,
                                 executor.submit(work, *args) if executor else work(*args)))
@@ -285,6 +300,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                 break
             page_id, lang, blocks, outcome = pending.popleft()
             log, status, seconds = outcome.result() if executor else outcome
+            log.raw_html_hash, log.input_hash = raw_hashes.get(page_id), hashes.get(page_id)
             if status in ("budget_extract", "budget_refine"):
                 stop_reason = "budget_stopped_pages"
                 if status == "budget_refine":
@@ -318,6 +334,35 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                    naming_client.model if naming_client else None, monotonic() - began, clock)
 
 
+def input_fingerprint(site: str, blocks: Sequence[Mapping],
+                      models: Sequence[str | None]) -> str:
+    """A kinyerés bemenetének hash-e: a prompt, a site-leíró mondat, a content-blokkok
+    (azonosító, fajta, heading-útvonal, szöveg, cellák) és a modellek (kinyerés, elnevezés, a
+    kinyerés utáni lépés beállítása)."""
+    payload = json.dumps([BLOCK_PROMPT, site, list(models),
+                          [[b.get("id"), b.get("kind"), b.get("heading_path"), b.get("text"),
+                            b.get("cells")] for b in blocks]],
+                         ensure_ascii=False, sort_keys=True, default=str)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def reusable_pages(con: duckdb.DuckDBPyConnection,
+                   model: str) -> dict[int, tuple[str, dict, dict | None]]:
+    """Oldalanként a modell legutóbbi sikeres (done, extracted) kinyerése bemenet-hash-sel:
+    (input_hash, kinyerés, ellenőrzés utáni rekord)."""
+    found: dict[int, tuple[str, dict, dict | None]] = {}
+    for page_id, input_hash, extraction, refined in con.execute(
+            "SELECT p.page_id, p.input_hash, p.extraction, p.refined FROM entity_run_pages p "
+            "JOIN entity_runs r USING (run_id) WHERE r.method = 'llm' AND r.model = ? "
+            "AND p.status IN ('done', 'extracted') AND p.input_hash IS NOT NULL "
+            "AND p.extraction IS NOT NULL ORDER BY p.run_id DESC, p.finished_at DESC",
+            [model]).fetchall():
+        if page_id not in found:
+            found[page_id] = (input_hash, json.loads(extraction),
+                              json.loads(refined) if refined else None)
+    return found
+
+
 def _page_llm(worker: Worker, site: str, page_id: int, lang: str | None, blocks: list,
               prior: Mapping) -> tuple[_PageLog, str]:
     """Egy oldal LLM-lépései (kinyerés, elnevezés, a kinyerés utáni lépés), adatbázis-írás
@@ -325,6 +370,8 @@ def _page_llm(worker: Worker, site: str, page_id: int, lang: str | None, blocks:
     verify_error, budget_extract / budget_refine (a keret-őr megállította)."""
     log = _PageLog("failed", call_ids=list(prior.get("call_ids") or []),
                    extraction=prior.get("extraction"), refined=prior.get("refined"))
+    if prior.get("reused"):
+        log.reasons["reused_extraction"] += 1
     if log.extraction is None:
         try:
             log.extraction = _extract(worker.client, worker.naming_client, site, blocks,
@@ -332,7 +379,8 @@ def _page_llm(worker: Worker, site: str, page_id: int, lang: str | None, blocks:
         except BudgetExceeded:
             return log, "budget_extract"
     extraction = log.extraction
-    log.call_ids = list(dict.fromkeys([*log.call_ids, *extraction["call_ids"]]))
+    if not prior.get("reused"):                # az újrahasznált kinyerés hívásai a régi futáséi
+        log.call_ids = list(dict.fromkeys([*log.call_ids, *extraction["call_ids"]]))
     log.chunks = extraction["chunks"]
     log.reasons.update(extraction["reasons"])
     if extraction["entities"] is None:
@@ -440,12 +488,13 @@ def _log(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int, log: _PageLo
          seconds: float, clock: Callable[[], datetime]) -> None:
     con.execute(
         "INSERT OR REPLACE INTO entity_run_pages (run_id, page_id, status, reasons, call_ids, "
-        "chunks, fabricated, seconds, error, extraction, refined, finished_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "chunks, fabricated, seconds, error, extraction, refined, finished_at, raw_html_hash, "
+        "input_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [run_id, page_id, log.status, json.dumps(dict(log.reasons)), log.call_ids, log.chunks,
          log.fabricated, seconds, log.error,
          json.dumps(log.extraction, ensure_ascii=False) if log.extraction else None,
-         json.dumps(log.refined, ensure_ascii=False) if log.refined else None, clock()])
+         json.dumps(log.refined, ensure_ascii=False) if log.refined else None, clock(),
+         log.raw_html_hash, log.input_hash])
 
 
 def _stop(con: duckdb.DuckDBPyConnection, run_id: int, pages: Sequence[tuple[int, str | None]],
@@ -524,6 +573,7 @@ class Estimate:
     verify_pages: int
     verify_usd: float
     verify_pending: int = 0
+    reused: int = 0                  # változatlan oldal a korábbi kinyerésével, hívás nélkül
 
     @property
     def total_usd(self) -> float:
@@ -533,17 +583,20 @@ class Estimate:
 def estimate_llm(con: duckdb.DuckDBPyConnection, config: LLMConfig, model: str,
                  naming_model: str | None, verify_model: str | None, day: date, *,
                  limit: int | None = None, page_ids: Sequence[int] | None = None,
-                 resume: bool = False) -> Estimate:
+                 resume: bool = False,
+                 reuse_models: Sequence[str | None] | None = None) -> Estimate:
     """A `run_llm` oldalaira, ugyanazzal a kiválasztással és folytatással: darabonként a
     prompt és a bemenet karakterei `v3.ESTIMATE_CHARS_PER_TOKEN`-nel, a kimenet
     `EXTRACT_OUTPUT_RATIO`-val; az elnevezés a kinyeréssel azonos becsléssel. Az ellenőrzés a
     meglévő kinyerésből (`v3.verify_usage`), a kinyeretlen oldalak száma külön. A meglévő
-    kinyerés nem számít újra."""
+    kinyerés nem számít újra. `reuse_models`: a `run_llm` újrahasználatának modelljei
+    (kinyerés, elnevezés, a lépés beállítása); a változatlan oldal nem számít (`reused`)."""
     pages = select_pages(con, page_ids, limit)
     build_blocks(con, [page_id for page_id, _ in pages])
     previous = run_pages(con, resumable_run(con, model) if resume else None)
     site = site_line(con) or ""
-    count = chunks = tokens_in = verify_pages = verify_pending = 0
+    reusable = reusable_pages(con, model) if reuse_models is not None else {}
+    count = chunks = tokens_in = verify_pages = verify_pending = reused = 0
     extract_usd = verify_usd = 0.0
     for page_id, lang in pages:
         prior = previous.get(page_id) or {}
@@ -551,6 +604,11 @@ def estimate_llm(con: duckdb.DuckDBPyConnection, config: LLMConfig, model: str,
             continue
         blocks = page_blocks(con, page_id, region="content")
         if not blocks:
+            continue
+        stored = reusable.get(page_id)
+        if not prior.get("extraction") and stored and stored[0] == input_fingerprint(
+                site, blocks, reuse_models):
+            reused += 1
             continue
         count += 1
         extraction = prior.get("extraction")
@@ -572,7 +630,7 @@ def estimate_llm(con: duckdb.DuckDBPyConnection, config: LLMConfig, model: str,
             verify_pages += 1
             verify_usd += config.cost_usd(verify_model, usage, day)
     return Estimate(count, chunks, tokens_in, extract_usd, verify_pages, verify_usd,
-                    verify_pending)
+                    verify_pending, reused)
 
 
 def _position(block: dict) -> str:

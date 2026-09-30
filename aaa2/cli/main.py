@@ -26,7 +26,7 @@ from aaa2.entities.knowledge import link_entities
 from aaa2.entities.report import run_report, write_entity_table
 from aaa2.entities.rules import run_rules
 from aaa2.entities.site import run_site
-from aaa2.entities.v3 import V3Step, load_pipeline
+from aaa2.entities.v3 import V3Step, load_pipeline, v3_fingerprint
 from aaa2.entities.validate import KG_DAILY_QUOTA, _Api, validate_entities
 from aaa2.llm import ledger
 from aaa2.llm.client import Retry, check_models, open_clients
@@ -183,6 +183,9 @@ def entities(
     workers: Annotated[int | None, typer.Option(
         min=1, help="ennyi oldal LLM-lépései futnak egyszerre (alapból a pipeline.toml "
                     "workers)")] = None,
+    fresh: Annotated[bool, typer.Option(
+        help="minden oldal újra kinyerve; alapból a változatlan oldal (azonos bemenet és "
+             "modell) a korábbi kinyerését kapja, hívás nélkül")] = False,
 ) -> None:
     """Entitás-pipeline a megközelítés v3 szerint, az `entities/config/pipeline.toml`
     lépéseivel: a hiányzó blokkok, a determinisztikus szabálykör (JSON-LD, a site neve a
@@ -216,15 +219,21 @@ def entities(
             naming_choice = _step_model(naming_model or models["naming"])
             verify_choice = (_step_model(verify_model or models["verify"])
                              if steps.services else None)
+            refines = steps.services or steps.concepts
+            reuse_models = None if fresh else (
+                chosen, naming_choice, v3_fingerprint(steps, verify_choice) if refines else None)
             guess = estimate_llm(con, config, chosen, naming_choice, verify_choice,
-                                 _utcnow().date(), limit=limit, resume=resume)
+                                 _utcnow().date(), limit=limit, resume=resume,
+                                 reuse_models=reuse_models)
             typer.echo(
                 f"becslés: {guess.pages} oldal, {guess.chunks} kinyerő darab, ~{guess.tokens_in} "
                 f"token be; kinyerés {guess.extract_usd:.4f} USD, ellenőrzés "
                 f"{guess.verify_usd:.4f} USD ({guess.verify_pages} oldal a meglévő kinyerésből"
                 + (f", {guess.verify_pending} oldalon a kinyerés után dől el"
                    if guess.verify_pending else "")
-                + f"); összesen {guess.total_usd:.4f} USD, határ {cap:.2f} USD")
+                + f"); összesen {guess.total_usd:.4f} USD, határ {cap:.2f} USD"
+                + (f"; változatlan, a korábbi kinyerésével: {guess.reused} oldal"
+                   if guess.reused else ""))
             if estimate:
                 return
             if guess.total_usd > cap:
@@ -260,7 +269,8 @@ def entities(
             typer.echo(f"párhuzamosság: {count} oldal egyszerre")
             runs.append(run_llm(con, client, naming_client=naming, refine=refine,
                                 save=steps.save, limit=limit, resume=resume,
-                                max_usd=cap, workers=count, fork=fork).run_id)
+                                max_usd=cap, workers=count, fork=fork,
+                                reuse=not fresh).run_id)
         elif estimate:
             typer.echo("becslés: az LLM-lépések kikapcsolva, nincs hívás")
             return

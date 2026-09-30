@@ -161,6 +161,12 @@ def page_context(con: duckdb.DuckDBPyConnection, page_id: int, blocks: Sequence[
     return PageContext(list(blocks), chrome, anchors, lang or "en")
 
 
+def v3_fingerprint(steps: Steps, verify_model: str | None) -> str:
+    """A kinyerés utáni lépés beállítása a kinyerés újrahasználatához: a lépések és az
+    ellenőrző modell."""
+    return f"v3:{steps.services}:{steps.concepts}:{steps.knowledge}:{verify_model}"
+
+
 class V3Step:
     """A v3 szabály egy oldalra a pipeline-ban: `(rekord, oldal, blokkok, nyelv) → rekord`."""
 
@@ -168,6 +174,10 @@ class V3Step:
                  knowledge: KnowledgeBase | None = None, site_lang: str | None = None):
         self.con, self.steps, self.verifier, self.knowledge = con, steps, verifier, knowledge
         self.site_lang = site_lang
+
+    @property
+    def fingerprint(self) -> str:
+        return v3_fingerprint(self.steps, getattr(self.verifier, "model", None))
 
     def __call__(self, record: Mapping, page_id: int, blocks: Sequence[Mapping],
                  lang: str | None) -> dict:

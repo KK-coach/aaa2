@@ -9,14 +9,15 @@ import time
 from datetime import UTC, datetime
 
 import pytest
+import zstandard
 from typer.testing import CliRunner
 
 import aaa2.db.connect as connect_module
 from aaa2.cli.main import app
 from aaa2.db.connect import connect, db_path
 from aaa2.entities.blocks import BLOCK_PROMPT, block_input
-from aaa2.entities.dom import page_blocks
-from aaa2.entities.extract import Worker, run_llm, surface_offsets
+from aaa2.entities.dom import build_blocks, page_blocks
+from aaa2.entities.extract import Worker, estimate_llm, run_llm, surface_offsets
 from aaa2.entities.llm import site_line
 from aaa2.entities.naming import NAMING_PROMPT
 from aaa2.entities.rules import run_rules
@@ -572,3 +573,63 @@ def test_budget_guard_counts_the_calls_in_flight(tmp_path):
     first.join(5)
     client.extract(BlockExtraction, "p", "x", domain="d")
     assert len(adapter.calls) == 2
+
+
+# ---------------------------------------------------------------------------
+# inkrementális futás
+# ---------------------------------------------------------------------------
+
+
+def hashed_product_site():
+    con = product_site()
+    con.execute("UPDATE pages SET raw_html_hash = 'h-' || page_id")
+    return con
+
+
+def incremental_run(con, adapter, tmp_path, **options):
+    client = LLMClient(con, adapter, CONFIG, tmp_path / "ledger.jsonl", lambda: NOON,
+                       Retry(sleep=lambda _: None))
+    return run_llm(con, client, reuse=True, **options)
+
+
+def test_unchanged_pages_reuse_their_extraction_without_calls(tmp_path):
+    con = hashed_product_site()
+    adapter = PageAdapter(delay=0)
+    first = incremental_run(con, adapter, tmp_path)
+    before = mentions(con)
+    second = incremental_run(con, adapter, tmp_path)
+    assert (first.llm_calls, second.llm_calls, len(adapter.calls)) == (6, 0, 6)
+    assert second.skipped == {"reused_extraction": 6} and mentions(con) == before
+    assert con.execute("SELECT count(*) FROM entity_run_pages WHERE run_id = ? "
+                       "AND input_hash IS NOT NULL AND raw_html_hash IS NOT NULL",
+                       [second.run_id]).fetchone() == (6,)
+
+
+def test_a_changed_page_gets_new_blocks_and_only_it_is_extracted_again(tmp_path):
+    con = hashed_product_site()
+    adapter = PageAdapter(delay=0)
+    incremental_run(con, adapter, tmp_path)
+    (page_id,) = con.execute("SELECT page_id FROM pages WHERE url LIKE '%/2/'").fetchone()
+    changed = html("P2", "<p>A Termék9 az új választás.</p>")
+    con.execute("UPDATE pages SET rendered_html = ?, raw_html_hash = 'uj' WHERE page_id = ?",
+                [zstandard.ZstdCompressor().compress(changed.encode()), page_id])
+    assert build_blocks(con) == 1
+    assert con.execute("SELECT count(*) FROM page_entities WHERE page_id = ?",
+                       [page_id]).fetchone() == (0,)          # a régi blokkok említései
+    guess = estimate_llm(con, CONFIG, "gemini-3.8-flash", None, None, NOON.date(),
+                         reuse_models=("gemini-3.8-flash", None, None))
+    assert (guess.pages, guess.reused) == (1, 5)
+    run = incremental_run(con, adapter, tmp_path)
+    assert run.llm_calls == 1 and len(adapter.calls) == 7
+    assert ("Termék9", 1) in {(name, ordinal) for name, ordinal, *_ in mentions(con)}
+    assert "Termék2" not in {name for name, *_ in mentions(con)}
+
+
+def test_legacy_blocks_are_adopted_without_rebuilding():
+    con = hashed_product_site()
+    build_blocks(con)
+    con.execute("DELETE FROM blocks_built")                  # a 016 előtti adatbázis
+    before = con.execute("SELECT block_id FROM blocks ORDER BY block_id").fetchall()
+    assert build_blocks(con) == 0
+    assert con.execute("SELECT block_id FROM blocks ORDER BY block_id").fetchall() == before
+    assert con.execute("SELECT count(*) FROM blocks_built").fetchone() == (6,)
