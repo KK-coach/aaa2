@@ -558,6 +558,10 @@
       "block": "b38",
       "text": "Wifi-s"
      }
+    ],
+    "acceptable_subtypes": [
+     "feature",
+     "standard"
     ]
    },
    {

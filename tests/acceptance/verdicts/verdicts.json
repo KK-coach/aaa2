@@ -2774,6 +2774,149 @@
    "verdict": "descriptive",
    "note": "",
    "judged_by": "Claude (chat), 2026-09-30"
+  },
+  {
+   "page_id": "locked_ml_digital_marketing_agency",
+   "canonical": "digital marketing",
+   "type": "concept",
+   "block": "b0",
+   "kind": "title",
+   "block_text": "MarketingLens Digital Marketing Agency",
+   "reference": "kötelező: digital marketing",
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "page_id": "locked_ml_digital_marketing_agency",
+   "canonical": "strategic consulting",
+   "type": "concept",
+   "block": "b37",
+   "kind": "paragraph",
+   "block_text": "Industry-Leading Expertise at Your Service! Our team at MarketingLens embodies expertise, with industry leaders hailing from top tech giants such as Google, Meta, Oracle, and Accenture. Together, we offer decades of collective experience in digital marketing, data analytics, and strategic consulting.",
+   "reference": "referencián kívül",
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "page_id": "locked_ml_digital_marketing_agency",
+   "canonical": "data strategy",
+   "type": "concept",
+   "block": "b38",
+   "kind": "paragraph",
+   "block_text": "Unlock Hidden Potential in Your Business with AI-Powered Data Analytics! Harness the Power of Advanced Data Insights to Drive Growth. In today’s data-driven world, extracting actionable insights from your information is crucial for success. Our cutting-edge approach leverages BigQuery and advanced digital data analytics to create bespoke data strategies.",
+   "reference": "opcionális: data strategy",
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "page_id": "locked_ml_digital_marketing_agency",
+   "canonical": "digital marketing strategy",
+   "type": "concept",
+   "block": "b39",
+   "kind": "paragraph",
+   "block_text": "Harness the Power of MarTech for Growth! We help businesses leverage emerging technology to craft winning digital marketing strategies and unlock data insights. This empowers data-driven decision-making and drives business growth.",
+   "reference": "kötelező: digital marketing",
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "page_id": "locked_ml_digital_marketing_agency",
+   "canonical": "business growth consulting",
+   "type": "concept",
+   "block": "b53",
+   "kind": "paragraph",
+   "block_text": "MarketingLens isn’t just a digital marketing agency; they’re true business growth consultants. Their deep understanding of our core business, combined with a concise strategy, robust tracking, and expert data analysis, has been instrumental in scaling our mobile app globally. Thanks to their 15-20 years of experience, we’ve consistently reached our business goals for years. They truly get it.",
+   "reference": "referencián kívül",
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "page_id": "locked_ml_digital_marketing_agency",
+   "canonical": "Data-Driven Assets analytics",
+   "type": "concept",
+   "block": "b76",
+   "kind": "paragraph",
+   "block_text": "Boosted customer retention rate using Data-Driven Assets analytics.",
+   "reference": "opcionális: Data-Driven Assets",
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "page_id": "locked_ml_what_is_competitor_analysis_and",
+   "canonical": "Actionable Roadmaps",
+   "type": "concept",
+   "block": "b50",
+   "kind": "list_item",
+   "block_text": "Actionable Roadmaps: We don’t just give you data; we show you where the untapped opportunities are to increase your revenue.",
+   "reference": "opcionális: Actionable Roadmaps",
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "page_id": "locked_ml_why_consent_mode_v2_matters",
+   "canonical": "ePrivacy and GDPR diagnostics",
+   "type": "concept",
+   "block": "b34",
+   "kind": "paragraph",
+   "block_text": "Modern privacy regulations demand sophisticated approaches to user consent management, making Consent Mode v2 implementation crucial for sustained business operations. The framework provides mechanisms for handling user preferences across multiple data processing categories while maintaining analytical capabilities through advanced modeling techniques. Organizations leveraging comprehensive ePrivacy and GDPR diagnostics services can navigate these complexities more effectively, ensuring both compliance and operational continuity. The strategic implementation of consent management systems directly correlates with improved user trust, enhanced data quality, and sustainable growth in privacy-conscious markets.",
+   "reference": "kötelező: GDPR",
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "page_id": "locked_ml_why_consent_mode_v2_matters",
+   "canonical": "privacy audits",
+   "type": "concept",
+   "block": "b38",
+   "kind": "paragraph",
+   "block_text": "Businesses experience varying degrees of data reduction following Consent Mode v2 implementation, typically ranging from 20% to 60% depending on user consent rates and geographic markets. European markets generally show higher opt-out rates compared to other regions, necessitating robust modeling capabilities to maintain analytical accuracy. The conversion tracking functionality adapts dynamically to consent status, ensuring marketing attribution remains functional across different user segments. Companies utilizing comprehensive privacy audits can better anticipate and mitigate these impacts through strategic implementation planning and ongoing optimization efforts.",
+   "reference": "opcionális: privacy audit",
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "page_id": "locked_ml_why_consent_mode_v2_matters",
+   "canonical": "privacy diagnostics",
+   "type": "concept",
+   "block": "b42",
+   "kind": "paragraph",
+   "block_text": "The intersection of GDPR and ePrivacy regulations creates complex compliance requirements that require sophisticated technical implementations. Consent Mode v2 addresses these challenges by providing mechanisms for lawful data processing while respecting user autonomy. The framework’s compliance features include automatic consent status communication, data processing limitation controls, and audit trail capabilities that support regulatory reporting requirements. Companies investing in thorough privacy diagnostics can ensure their implementations meet current regulatory standards while preparing for future legislative developments.",
+   "reference": "referencián kívül",
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "page_id": "locked_ml_why_consent_mode_v2_matters",
+   "canonical": "privacy consultation",
+   "type": "concept",
+   "block": "b45",
+   "kind": "paragraph",
+   "block_text": "Revenue protection represents a critical benefit of proper Consent Mode v2 implementation, as businesses avoid potential penalties associated with non-compliance while maintaining operational effectiveness. The framework supports continued advertising optimization through enhanced conversion data, enabling marketers to make informed decisions despite privacy restrictions. Customer trust improvements correlate with transparent consent management practices, leading to higher engagement rates and improved brand perception. Companies utilizing expert privacy consultation services can maximize these benefits through strategic implementation approaches tailored to their specific business models and target markets.",
+   "reference": "referencián kívül",
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "page_id": "locked_ml_why_consent_mode_v2_matters",
+   "canonical": "consent-management assessment",
+   "type": "concept",
+   "block": "b48",
+   "kind": "paragraph",
+   "block_text": "Professional consent management services provide essential support for organizations navigating the complex requirements of Consent Mode v2 implementation and ongoing compliance maintenance. Specialized consulting teams offer comprehensive assessment services that evaluate current data collection practices, identify compliance gaps, and develop strategic implementation roadmaps tailored to specific business requirements. These services encompass technical implementation support, legal compliance verification, and performance optimization strategies that ensure maximum effectiveness while maintaining regulatory adherence. Organizations benefit from expert guidance that reduces implementation risks and accelerates time-to-compliance across their digital properties.",
+   "reference": "referencián kívül",
+   "verdict": null,
+   "note": ""
+  },
+  {
+   "page_id": "locked_ml_why_consent_mode_v2_matters",
+   "canonical": "technical implementation support",
+   "type": "concept",
+   "block": "b48",
+   "kind": "paragraph",
+   "block_text": "Professional consent management services provide essential support for organizations navigating the complex requirements of Consent Mode v2 implementation and ongoing compliance maintenance. Specialized consulting teams offer comprehensive assessment services that evaluate current data collection practices, identify compliance gaps, and develop strategic implementation roadmaps tailored to specific business requirements. These services encompass technical implementation support, legal compliance verification, and performance optimization strategies that ensure maximum effectiveness while maintaining regulatory adherence. Organizations benefit from expert guidance that reduces implementation risks and accelerates time-to-compliance across their digital properties.",
+   "reference": "referencián kívül",
+   "verdict": null,
+   "note": ""
   }
  ]
 }

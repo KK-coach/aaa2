@@ -660,12 +660,13 @@
     ]
    },
    {
-    "canonical": "Wi-fi",
+    "canonical": "Wi-Fi",
     "type": "tech",
-    "subtype": "standard",
+    "subtype": "feature",
     "aliases": [
-     "Wi-Fi",
-     "WiFi"
+     "Wi-fi",
+     "WiFi",
+     "Wifi"
     ],
     "difficulty": "easy",
     "surface_forms": [
@@ -673,6 +674,10 @@
       "block": "b38",
       "text": "Wi-fi"
      }
+    ],
+    "acceptable_subtypes": [
+     "feature",
+     "standard"
     ]
    },
    {
