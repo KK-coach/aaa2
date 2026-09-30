@@ -160,3 +160,19 @@ def test_shop_levels_brand_family_variant_and_category(shop_config):
                        ).fetchone() == (0,)                 # a csonkolt title nem von össze
     assert con.execute("SELECT count(*) FROM page_entities WHERE entity_id = ? "
                        "AND position = 'h1'", [family]).fetchone() == (3,)
+
+
+def test_a_rerun_keeps_the_relations_consistent(shop_config):
+    """Újrafuttatáskor (szabálykör + site-kör) a kapcsolatok száma ugyanaz, és egyik sem mutat
+    törölt entitásra."""
+    con = shop_site()
+    counts = []
+    for _ in range(2):
+        run_rules(con)
+        run_site(con)
+        counts.append(con.execute("SELECT type, count(*) FROM entity_relations GROUP BY type "
+                                  "ORDER BY type").fetchall())
+    assert counts[0] == counts[1]
+    assert con.execute("SELECT count(*) FROM entity_relations WHERE from_id NOT IN (SELECT "
+                       "entity_id FROM entities) OR to_id NOT IN (SELECT entity_id FROM "
+                       "entities)").fetchone() == (0,)

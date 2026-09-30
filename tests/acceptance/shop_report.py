@@ -20,14 +20,20 @@ def rows(con: duckdb.DuckDBPyConnection, sql: str, params: list | None = None) -
     return con.execute(sql, params or []).fetchall()
 
 
+
+def relations(con: duckdb.DuckDBPyConnection, kind: str) -> list[tuple]:
+    """Az adott típusú kapcsolatok, csak a mindkét végén létező entitások között."""
+    return rows(con, "SELECT from_id, to_id FROM entity_relations WHERE type = ? AND from_id IN "
+                     "(SELECT entity_id FROM entities) AND to_id IN (SELECT entity_id FROM "
+                     "entities)", [kind])
+
+
 def collect(db: Path) -> dict[str, list[dict]]:
     con = duckdb.connect(str(db), read_only=True)
     try:
-        brand_of = rows(con, "SELECT from_id, to_id FROM entity_relations WHERE type = 'brand_of'")
-        part_of = dict(rows(con, "SELECT from_id, to_id FROM entity_relations "
-                                 "WHERE type = 'part_of'"))
-        in_category = dict(rows(con, "SELECT from_id, to_id FROM entity_relations "
-                                     "WHERE type = 'in_category'"))
+        brand_of = relations(con, "brand_of")
+        part_of = dict(relations(con, "part_of"))
+        in_category = dict(relations(con, "in_category"))
         names = dict(rows(con, "SELECT entity_id, name FROM entities"))
         brand_of_target = {to: frm for frm, to in brand_of}
         urls = dict(rows(con, "SELECT e.entity_id, p.url FROM entities e JOIN pages p "

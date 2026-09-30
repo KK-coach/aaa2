@@ -185,10 +185,12 @@ def family_name(key: tuple[str, ...], names: Sequence[str], brand: str | None) -
 
 
 def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
-    """A webshop-szintek (lásd a modul leírását); termékoldal nélküli site-on üres."""
+    """A webshop-szintek (lásd a modul leírását); termékoldal nélküli site-on üres. A `shop`
+    forrású kapcsolatok minden futásban újraépülnek."""
     from aaa2.entities.site import Name, _page_mentions, _write_aliases
 
     run = ShopRun()
+    ctx.con.execute("DELETE FROM entity_relations WHERE source = 'shop'")
     kinds = page_types(ctx.con, config.page_types)
     if "product" not in kinds.values():
         return run

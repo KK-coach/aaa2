@@ -27,9 +27,10 @@
 - Módszertani lépés (4. pont): az LLM-ből jött, fő ajánlathoz és csomaghoz nem kötött service
   → concept / method, `tier = step` (`type_changed_from = service`).
 - Demótartalom (6. pont): nem-tech típusú entitás (`DEMO_TYPES`), amelynek blokkos említései
-  legalább `DEMO_SHARE` részben demó-környezetben állnak: kódblokk, „lorem ipsum” szöveg, vagy
+  legalább `DEMO_SHARE` részben demó-környezetben állnak: kódblokk, „lorem ipsum” szöveg,
+  kitöltőszöveg-oldal (`placeholder.placeholder_pages`: a szövege döntően lorem ipsum), vagy
   olyan oldal, ahol ugyanennek az entitásnak kódblokkos említése is van (a példa kimenete).
-  Jelölés: `flags` demo.
+  Jelölés: `flags` demo. A kitöltőszöveg-oldal oldalhoz kötött entitást sem hoz létre.
 - Sablonismétlés (6. pont): az említés egysége (kódblokkban a sora, máshol a blokk szövege,
   kulcs szerint, blokkfajtánként) legalább `TEMPLATE_MIN_GROUPS` és az oldalcsoportok
   `TEMPLATE_MIN_SHARE` részén áll → `page_entities.flags` template; az entitás template, ha
@@ -90,6 +91,7 @@ from aaa2.entities.pages import (
     representative,
     same_page,
 )
+from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import (
     SOURCE_STRENGTH,
     TITLE_SEPARATORS,
@@ -159,6 +161,7 @@ class SiteRun:
     overrides: int = 0
     shop: dict = field(default_factory=dict)
     demo: list[str] = field(default_factory=list)
+    placeholder_pages: list[str] = field(default_factory=list)
     template_mentions: int = 0
     template_entities: int = 0
     thresholds: dict[str, float] = field(default_factory=dict)
@@ -251,6 +254,10 @@ def run_site(con: duckdb.DuckDBPyConnection,
             "INSERT INTO entity_runs (started_at, method, llm_calls) VALUES (?, 'site', 0) "
             "RETURNING run_id", [started]).fetchone()
         run = SiteRun(run_id, dict(Counter(info.role for info in roles.values())))
+        # a korábbi körök óta törölt entitásokra mutató kapcsolatok (újrafuttatáskor a
+        # szabálykör az említés nélküli szabály-entitásokat törli)
+        con.execute("DELETE FROM entity_relations WHERE from_id NOT IN (SELECT entity_id FROM "
+                    "entities) OR to_id NOT IN (SELECT entity_id FROM entities)")
         merger = Merger(con, run_id, clock)
         context = _Context(con, roles, site_lang, run_id)
         anchored = _page_entities(context, merger, run)
@@ -263,7 +270,8 @@ def run_site(con: duckdb.DuckDBPyConnection,
         _normalized_merges(con, merger)
         run.overrides = apply_overrides(context, merger, config)
         run.offers = _offers(con, split)
-        _demo(con, run)
+        run.placeholder_pages = sorted(roles[p].url for p in context.placeholder if p in roles)
+        _demo(con, run, context.placeholder)
         _template(context, run)
         run.merges = merger.counts
         con.execute(
@@ -273,7 +281,7 @@ def run_site(con: duckdb.DuckDBPyConnection,
              json.dumps({"roles": run.roles, "merges": dict(run.merges),
                          "packages": run.packages, "steps": run.steps, "offers": run.offers,
                          "overrides": run.overrides, "shop": run.shop,
-                         "demo": run.demo,
+                         "demo": run.demo, "placeholder_pages": run.placeholder_pages,
                          "template_mentions": run.template_mentions,
                          "template_entities": run.template_entities,
                          "thresholds": run.thresholds}, ensure_ascii=False), run_id])
@@ -288,7 +296,9 @@ class _Context:
     def __init__(self, con: duckdb.DuckDBPyConnection, roles: dict[int, PageInfo],
                  site_lang: str | None, run_id: int):
         self.con, self.roles, self.site_lang, self.run_id = con, roles, site_lang, run_id
-        self.groups = entity_groups(roles)
+        self.placeholder = placeholder_pages(con)
+        self.groups = {group: members for group, members in entity_groups(roles).items()
+                       if not all(m.page_id in self.placeholder for m in members)}
         self.site_keys = _site_name_keys(con)
         self._dom: dict[int, list] = {}
 
@@ -312,7 +322,11 @@ class _Context:
 
 
 def _page_entities(ctx: _Context, merger: Merger, run: SiteRun) -> dict[str, int]:
-    """Csoportonként az oldalhoz kötött entitás azonosítója."""
+    """Csoportonként az oldalhoz kötött entitás azonosítója. A kitöltőszöveg-oldalhoz egy korábbi
+    futásban kötött entitás oldalkötése megszűnik (újrafuttatáskor is ugyanaz, mint frissen)."""
+    if ctx.placeholder:
+        ctx.con.execute("UPDATE entities SET anchor_page_id = NULL, tier = NULL "
+                        "WHERE list_contains(?, anchor_page_id)", [sorted(ctx.placeholder)])
     anchors = _qualified_anchors(ctx)
     cards = _card_headings(ctx)
     anchored: dict[str, int] = {}
@@ -1198,10 +1212,11 @@ def _override_entities(ctx: _Context, names: tuple[str, ...], url: str | None) -
 # ---------------------------------------------------------------------------
 
 
-def _demo(con: duckdb.DuckDBPyConnection, run: SiteRun) -> None:
+def _demo(con: duckdb.DuckDBPyConnection, run: SiteRun,
+          placeholder: set[int] = frozenset()) -> None:
     rows = con.execute(
         "SELECT pe.entity_id, pe.page_id, b.kind, b.text FROM page_entities pe "
-        "JOIN entities e USING (entity_id) JOIN blocks b USING (block_id) "
+        "JOIN entities e USING (entity_id) LEFT JOIN blocks b USING (block_id) "
         "WHERE list_contains(?, e.type)", [list(DEMO_TYPES)]).fetchall()
     code_pages: dict[int, set[int]] = defaultdict(set)
     for entity_id, page_id, kind, _ in rows:
@@ -1211,7 +1226,8 @@ def _demo(con: duckdb.DuckDBPyConnection, run: SiteRun) -> None:
     demo: Counter[int] = Counter()
     for entity_id, page_id, kind, text in rows:
         total[entity_id] += 1
-        if kind == "code" or LOREM.search(text or "") or page_id in code_pages[entity_id]:
+        if (kind == "code" or LOREM.search(text or "") or page_id in placeholder
+                or page_id in code_pages[entity_id]):
             demo[entity_id] += 1
     flagged = [e for e in total if demo[e] / total[e] >= DEMO_SHARE]
     _set_flag(con, "demo", flagged)
