@@ -1,0 +1,5 @@
+# Site-szintű beállítás: marketinglens.com (idegen B2B-site; M2/7 B, Krisztián választása).
+
+[crawl]
+seed = "https://marketinglens.com/"
+concurrency = 4

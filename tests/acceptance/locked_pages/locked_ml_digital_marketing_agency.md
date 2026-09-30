@@ -1,0 +1,67 @@
+# locked_ml_digital_marketing_agency
+
+- URL: https://marketinglens.com/digital-marketing-agency/
+- nyelv: en-GB
+- site: This page belongs to the website marketinglens.com, whose home page is titled “MarketingLens Marketing Technology Agency”.
+- blokkok (content régió): 58
+
+Blokkonként: azonosító, típus, heading-útvonal, szöveg (táblázatsornál a cellák az oszlopfejléccel).
+
+- **b0** `title`: MarketingLens Digital Marketing Agency
+- **b30** `heading`: We are MarketingLens
+- **b31** `heading`: Your High-Performance Google Growth Experts
+- **b32** `heading`: Digital Marketing Agency
+- **b33** `paragraph` (Your High-Performance Google Growth Experts › Digital Marketing Agency): Looking to supercharge your growth within the Google ecosystem? Look no further! We’re a team of ex-Google specialists laser-focused on Google Ads, Analytics, and Data Platforms, dedicated to unlocking your full potential on the world’s most powerful advertising platform.
+- **b34** `other` (Your High-Performance Google Growth Experts › Digital Marketing Agency): Contact us
+- **b35** `paragraph` (Your High-Performance Google Growth Experts › Digital Marketing Agency): Our winning formula:
+- **b36** `heading`: Expertise + Insights + Technology = Impact
+- **b37** `paragraph` (Your High-Performance Google Growth Experts › Expertise + Insights + Technology = Impact): Industry-Leading Expertise at Your Service! Our team at MarketingLens embodies expertise, with industry leaders hailing from top tech giants such as Google, Meta, Oracle, and Accenture. Together, we offer decades of collective experience in digital marketing, data analytics, and strategic consulting.
+- **b38** `paragraph` (Your High-Performance Google Growth Experts › Expertise + Insights + Technology = Impact): Unlock Hidden Potential in Your Business with AI-Powered Data Analytics! Harness the Power of Advanced Data Insights to Drive Growth. In today’s data-driven world, extracting actionable insights from your information is crucial for success. Our cutting-edge approach leverages BigQuery and advanced digital data analytics to create bespoke data strategies.
+- **b39** `paragraph` (Your High-Performance Google Growth Experts › Expertise + Insights + Technology = Impact): Harness the Power of MarTech for Growth! We help businesses leverage emerging technology to craft winning digital marketing strategies and unlock data insights. This empowers data-driven decision-making and drives business growth.
+- **b40** `other` (Your High-Performance Google Growth Experts › Expertise + Insights + Technology = Impact): More about our services
+- **b41** `heading`: Your Google Expert Team
+- **b42** `paragraph` (Your High-Performance Google Growth Experts › Your Google Expert Team): Custom Strategies, Breakthrough Results. We combine deep industry knowledge, media expertise, and platform mastery to craft customer-centric marketing. Automated processes ensure efficient workflows. Dedicated teams (3-6 experts) provide focused attention. Transparent dashboards with clear KPIs empower collaboration and track progress towards your goals.
+- **b43** `other` (Your High-Performance Google Growth Experts › Your Google Expert Team): More about the leadership team
+- **b44** `heading`: BERTI B.
+- **b45** `paragraph` (Your High-Performance Google Growth Experts › Your Google Expert Team › BERTI B.): CEO & Head of Digital
+- **b46** `heading`: BALAZS V. PH.D
+- **b47** `paragraph` (Your High-Performance Google Growth Experts › Your Google Expert Team › BALAZS V. PH.D): Head of Marketing Science
+- **b48** `heading`: ELY L.
+- **b49** `paragraph` (Your High-Performance Google Growth Experts › Your Google Expert Team › ELY L.): Head of Product & Growth Strategy
+- **b50** `heading`: We partner with leading brands
+- **b51** `other` (Your High-Performance Google Growth Experts › We partner with leading brands): More about our clients
+- **b52** `heading`: Client Testimonials
+- **b53** `paragraph` (Your High-Performance Google Growth Experts › Client Testimonials): MarketingLens isn’t just a digital marketing agency; they’re true business growth consultants. Their deep understanding of our core business, combined with a concise strategy, robust tracking, and expert data analysis, has been instrumental in scaling our mobile app globally. Thanks to their 15-20 years of experience, we’ve consistently reached our business goals for years. They truly get it.
+- **b54** `other` (Your High-Performance Google Growth Experts › Client Testimonials): A. M. Algharawi
+- **b55** `paragraph` (Your High-Performance Google Growth Experts › Client Testimonials): Owner, Xeropan
+- **b56** `paragraph` (Your High-Performance Google Growth Experts › Client Testimonials): Berti was our Google account manager who provided us extensive strategic opportunities and reports in relation to Google Ads. Berti has excellent account management skills with sales orient drive and determination. He is a “go-getter”! I would highly recommend Berti , very positive attitude towards work.
+- **b57** `other` (Your High-Performance Google Growth Experts › Client Testimonials): N. Huang
+- **b58** `paragraph` (Your High-Performance Google Growth Experts › Client Testimonials): Global Head of Search Marketing, IWG plc
+- **b59** `paragraph` (Your High-Performance Google Growth Experts › Client Testimonials): Elite International Motors is very pleased with the performance of MarketingLens. Their team is professional, responsive, and consistently delivers quality results. We’re happy to be working with them and look forward to a continued partnership. A true partner!
+- **b60** `other` (Your High-Performance Google Growth Experts › Client Testimonials): A. Domingo
+- **b61** `paragraph` (Your High-Performance Google Growth Experts › Client Testimonials): Executive Administrator, Elite International Motors LLC
+- **b62** `paragraph` (Your High-Performance Google Growth Experts › Client Testimonials): For years, MarketingLens has been our trusted advisor, propelling our B2B e-commerce webshop to a consistently high ROAS. They see beyond the PPC universe, acting as true partners in our entire digital journey. What sets them apart is their proactive approach; they’re always ahead of the curve, pushing us to implement the latest innovations that directly impact our profitability. They don’t just manage campaigns; they genuinely drive our business forward.
+- **b63** `other` (Your High-Performance Google Growth Experts › Client Testimonials): R. Farkas
+- **b64** `paragraph` (Your High-Performance Google Growth Experts › Client Testimonials): CEO, Schrack
+- **b65** `heading`: Client Success Stories
+- **b66** `heading`: Raketech
+- **b67** `paragraph` (Your High-Performance Google Growth Experts › Raketech): MarketingLens, leveraging the expertise of former Google strategists, partnered with Raketech to deliver a comprehensive market expansion strategy. Our approach centred around competitive analysis and benchmarking to uncover the best opportunities.
+- **b68** `other` (Your High-Performance Google Growth Experts › Raketech): View Case Study
+- **b69** `heading`: Tradewind Finance
+- **b70** `paragraph` (Your High-Performance Google Growth Experts › Tradewind Finance): Driving conversions and lower CPC through broad match & automatization.
+- **b71** `other` (Your High-Performance Google Growth Experts › Tradewind Finance): View Case Study
+- **b72** `heading`: DroneDeploy
+- **b73** `paragraph` (Your High-Performance Google Growth Experts › DroneDeploy): Seized new market opportunity with a strategic video and display launch.
+- **b74** `other` (Your High-Performance Google Growth Experts › DroneDeploy): View Case Study
+- **b75** `heading`: Xeropan
+- **b76** `paragraph` (Your High-Performance Google Growth Experts › Xeropan): Boosted customer retention rate using Data-Driven Assets analytics.
+- **b77** `other` (Your High-Performance Google Growth Experts › Xeropan): View Case Study
+- **b78** `heading`: OTP Bank
+- **b79** `paragraph` (Your High-Performance Google Growth Experts › OTP Bank): Boosted customer retention rate using Data-Driven Assets analytics.
+- **b80** `other` (Your High-Performance Google Growth Experts › OTP Bank): View Case Study
+- **b81** `heading`: Extreme Digital
+- **b82** `paragraph` (Your High-Performance Google Growth Experts › Extreme Digital): Reduced click costs by 40% with expert negative keyword and exclusion strategies.
+- **b83** `other` (Your High-Performance Google Growth Experts › Extreme Digital): View Case Study
+- **b84** `other` (Your High-Performance Google Growth Experts › Extreme Digital): Previous · Next
+- **b85** `other` (Your High-Performance Google Growth Experts › Extreme Digital): 1 · 2 · 3 · 4 · 5 · 6
+- **b86** `paragraph` (Your High-Performance Google Growth Experts › Extreme Digital): Making the complex digital landscape simple

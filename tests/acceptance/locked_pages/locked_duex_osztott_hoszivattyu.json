@@ -1,0 +1,343 @@
+{
+ "page_id": "locked_duex_osztott_hoszivattyu",
+ "set": "locked",
+ "url": "https://shop.duexhungary.hu/sct/246786/Osztott-Hoszivattyu",
+ "lang": "hu",
+ "site_description": "This page belongs to the website duexhungary.hu, whose home page is titled “DUEX Hungary Webshop”.",
+ "blocks": [
+  {
+   "id": "b0",
+   "kind": "title",
+   "heading_path": [],
+   "text": "Osztott Hőszivattyú - Termékek - DUEX Hungary Webshop"
+  },
+  {
+   "id": "b34",
+   "kind": "heading",
+   "heading_path": [
+    "Osztott Hőszivattyú"
+   ],
+   "text": "Osztott Hőszivattyú"
+  },
+  {
+   "id": "b35",
+   "kind": "other",
+   "heading_path": [
+    "Osztott Hőszivattyú"
+   ],
+   "text": "AUX"
+  },
+  {
+   "id": "b36",
+   "kind": "other",
+   "heading_path": [
+    "Osztott Hőszivattyú"
+   ],
+   "text": "FUJITSU WATERSTAGE"
+  }
+ ],
+ "gold": {
+  "primary_entities": [
+   "Osztott Hőszivattyú"
+  ],
+  "entities": [
+   {
+    "canonical": "Osztott Hőszivattyú",
+    "type": "concept",
+    "subtype": "category",
+    "note": "a kategóriaoldal témája",
+    "acceptable_types": [
+     "concept",
+     "product"
+    ],
+    "acceptable_subtypes": [
+     "category",
+     "other",
+     "line"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Osztott Hőszivattyú"
+     },
+     {
+      "block": "b34",
+      "text": "Osztott Hőszivattyú"
+     }
+    ]
+   },
+   {
+    "canonical": "AUX",
+    "type": "brand",
+    "subtype": "other",
+    "note": "a kategórián belüli márkaszűrő a tartalomban (nem a navigációs fában)",
+    "acceptable_types": [
+     "brand",
+     "org"
+    ],
+    "acceptable_subtypes": [
+     "other",
+     "company"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b35",
+      "text": "AUX"
+     }
+    ]
+   },
+   {
+    "canonical": "Fujitsu Waterstage",
+    "type": "product",
+    "subtype": "line",
+    "aliases": [
+     "FUJITSU WATERSTAGE",
+     "Waterstage"
+    ],
+    "note": "márka + termékcsalád a tartalomban",
+    "acceptable_types": [
+     "product",
+     "brand"
+    ],
+    "acceptable_subtypes": [
+     "line",
+     "other"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b36",
+      "text": "FUJITSU WATERSTAGE"
+     }
+    ]
+   }
+  ],
+  "optional": [
+   {
+    "canonical": "Fujitsu",
+    "type": "brand",
+    "subtype": "other",
+    "note": "márka: site-szintű (9a)",
+    "acceptable_types": [
+     "brand",
+     "org"
+    ],
+    "acceptable_subtypes": [
+     "other",
+     "company"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b36",
+      "text": "FUJITSU"
+     }
+    ]
+   },
+   {
+    "canonical": "DUEX Hungary",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [
+     "DUEX Hungary Webshop"
+    ],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "DUEX Hungary"
+     }
+    ]
+   }
+  ],
+  "negatives": [
+   {
+    "text": "Belépés"
+   },
+   {
+    "text": "Jelszó"
+   },
+   {
+    "text": "Regisztráció"
+   },
+   {
+    "text": "Elfelejtettem a jelszavamat"
+   }
+  ]
+ },
+ "gold_status": "final (Krisztián jóváhagyta, 2026-09-30)",
+ "annotation_notes": [
+  "Kategóriaoldal: a kategória és a tartalomban felsorolt márkák/termékcsaládok kötelezők; a navigációs kategóriafa nem.",
+  "Parser-megfigyelés: a navigációs fa elemei ID-előtaggal állnak ('488784|246786AUX'); a referencia csak a tartalmi b35/b36 blokkot várja."
+ ],
+ "rules": {
+  "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+  "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+  "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
+  "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
+  "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
+  "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
+  "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
+  "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
+  "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
+  "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
+  "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
+  "ambiguous_aliases": "a többértelmű rövidítés (pl. GTM) felismerésnek elég, de az elnevezés csak a kontextus szerinti teljes névvel helyes; site-szinten azonos rövidítés nem vonható össze automatikusan",
+  "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service).",
+  "webshop_levels": "webshop-szintek (M2/6 spec, 9a pont): a márka brand (Cascade, Fujitsu); a termékcsalád product / line (Cascade VISION NORDIC, Fujitsu Waterstage High Power V2); a termék (változat) product / variant, a saját oldalán (Cascade VISION NORDIC 3,5 kW); a kategória concept / category (Oldalfali Split Klímaberendezés). A teljesítmény, a fázisszám és az energiaosztály a termék tulajdonsága, nem entitás; a szakmai fogalmak (hűtőközeg: R290, R32; inverteres) fogalmak. Ha a terméknév a márkát vagy a családot tartalmazza, a márka és a család is kötelező tétel, a terméknév részeként álló szöveg szerinti alakkal",
+  "ecommerce_rule": "webshop: a termék (változat) kötelező, a saját oldalán; a termékcsalád és a márka a site-szintű lépés dolga (9a), oldalszinten opcionális; a kategória a breadcrumbból kötelező; a navigációs kategória- és márkafa, a bejelentkezési űrlap és a kosár-gombok nem entitások; a teljesítmény, a fázis, az energiaosztály és a méretek attribútumok, nem entitások"
+ },
+ "subtype_glossary": {
+  "service": {
+   "audit": "felmérés, átvilágítás",
+   "implementation": "beállítás, kiépítés, bevezetés",
+   "consulting": "tanácsadás",
+   "reporting": "riport, dashboard",
+   "training": "képzés, workshop",
+   "other": "egyéb"
+  },
+  "org": {
+   "company": "cég",
+   "restaurant": "étterem, vendéglátóhely",
+   "institution": "intézmény, szervezet",
+   "team": "csapat",
+   "other": "egyéb"
+  },
+  "tech": {
+   "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+   "library": "programkönyvtár",
+   "framework": "keretrendszer",
+   "language": "programozási nyelv",
+   "package": "telepíthető csomag (npm, pip)",
+   "component": "egy könyvtár konkrét komponense",
+   "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+   "api": "programozói interfész, amit szolgáltatásként hívnak",
+   "standard": "műszaki szabvány, specifikáció",
+   "feature": "egy szoftver funkciója",
+   "other": "egyéb"
+  },
+  "product": {
+   "line": "termékcsalád (a márka egy termékvonala)",
+   "variant": "termékváltozat, a saját termékoldalával",
+   "dish": "étel vagy desszert az étlapon",
+   "ingredient": "alapanyag, tésztafajta",
+   "wine": "bor",
+   "drink": "ital, koktél",
+   "physical_good": "egyéb fizikai áru",
+   "other": "egyéb"
+  },
+  "concept": {
+   "category": "a webshop termékkategóriája",
+   "method": "módszer, keretrendszer, eljárás",
+   "discipline": "szakterület",
+   "metric": "mérhető mennyiség, mutató",
+   "ui_pattern": "általános felületi minta",
+   "license": "licenc",
+   "designation": "eredetvédelmi vagy minőségi jelölés",
+   "other": "egyéb"
+  },
+  "place": {
+   "city": "város",
+   "region": "régió, tartomány",
+   "country": "ország",
+   "venue": "helyszín, épület",
+   "other": "egyéb"
+  },
+  "work": {
+   "article": "cikk",
+   "case_study": "esettanulmány",
+   "book": "könyv",
+   "course": "tanfolyam",
+   "other": "egyéb"
+  },
+  "event": {
+   "conference": "konferencia",
+   "webinar": "webinár",
+   "festival": "fesztivál",
+   "other": "egyéb"
+  },
+  "brand": {
+   "other": "egyéb"
+  },
+  "person": {}
+ },
+ "subtype_vocabulary": {
+  "service": [
+   "audit",
+   "implementation",
+   "consulting",
+   "reporting",
+   "training",
+   "other"
+  ],
+  "org": [
+   "company",
+   "restaurant",
+   "institution",
+   "team",
+   "other"
+  ],
+  "tech": [
+   "software",
+   "library",
+   "framework",
+   "language",
+   "package",
+   "component",
+   "api_symbol",
+   "api",
+   "standard",
+   "feature",
+   "other"
+  ],
+  "product": [
+   "line",
+   "variant",
+   "dish",
+   "ingredient",
+   "wine",
+   "drink",
+   "physical_good",
+   "other"
+  ],
+  "concept": [
+   "category",
+   "method",
+   "discipline",
+   "metric",
+   "ui_pattern",
+   "license",
+   "designation",
+   "other"
+  ],
+  "place": [
+   "city",
+   "region",
+   "country",
+   "venue",
+   "other"
+  ],
+  "work": [
+   "article",
+   "case_study",
+   "book",
+   "course",
+   "other"
+  ],
+  "event": [
+   "conference",
+   "webinar",
+   "festival",
+   "other"
+  ],
+  "brand": [
+   "other"
+  ],
+  "person": []
+ }
+}

@@ -27,9 +27,10 @@
 - Módszertani lépés (4. pont): az LLM-ből jött, fő ajánlathoz és csomaghoz nem kötött service
   → concept / method, `tier = step` (`type_changed_from = service`).
 - Demótartalom (6. pont): nem-tech típusú entitás (`DEMO_TYPES`), amelynek blokkos említései
-  legalább `DEMO_SHARE` részben demó-környezetben állnak: kódblokk, „lorem ipsum” szöveg, vagy
+  legalább `DEMO_SHARE` részben demó-környezetben állnak: kódblokk, „lorem ipsum” szöveg,
+  kitöltőszöveg-oldal (`placeholder.placeholder_pages`: a szövege döntően lorem ipsum), vagy
   olyan oldal, ahol ugyanennek az entitásnak kódblokkos említése is van (a példa kimenete).
-  Jelölés: `flags` demo.
+  Jelölés: `flags` demo. A kitöltőszöveg-oldal oldalhoz kötött entitást sem hoz létre.
 - Sablonismétlés (6. pont): az említés egysége (kódblokkban a sora, máshol a blokk szövege,
   kulcs szerint, blokkfajtánként) legalább `TEMPLATE_MIN_GROUPS` és az oldalcsoportok
   `TEMPLATE_MIN_SHARE` részén áll → `page_entities.flags` template; az entitás template, ha
@@ -50,6 +51,8 @@
   a fő ajánlat és a csomag `offers` kapcsolattal kötődik ezekhez, és az olyan fogalomhoz,
   amelynek normalizált kulcsa a nevének vagy összetett címkéje egy részének kulcsa
   (`label_parts`: „UX & Konverzióoptimalizálás” → UX, Konverzióoptimalizálás).
+- Webshop-szintek (9a pont, `shop.py`): kategória, márka, termékcsalád, a termék tulajdonságai
+  és kapcsolatai, a csomagok után.
 - Site-szintű felülbírálat (4. pont, `overrides.py`, `config/sites/<domain>.toml`): az
   ajánlat szintje (core, package, work_mode) név vagy URL szerint, a szintszabály után
   (`apply_overrides`). A kanonikus név nyelve a beállításé, különben a site gyökér-URL-jéé
@@ -88,6 +91,7 @@ from aaa2.entities.pages import (
     representative,
     same_page,
 )
+from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import (
     SOURCE_STRENGTH,
     TITLE_SEPARATORS,
@@ -97,10 +101,12 @@ from aaa2.entities.rules import (
     title_endings,
     trivial_anchor,
 )
+from aaa2.entities.shop import run_shop
 
 ANCHOR_MAX_WORDS = 6
 CARD_LOOKBACK = 3
 CARD_TITLE_WORDS = 5
+SITE_PREFIX_MIN = 4
 IDENTITY_EXCLUDED_TYPES = ("person", "org", "brand", "place")
 PRICE_LOOKBACK = 4
 PACKAGE_NAME_WORDS = 6
@@ -125,7 +131,8 @@ CONJUNCTION = re.compile(r"\s*(?:\bes\b|\band\b|&)\s*")
 SUBTYPE_CLASS = {"package": "distribution", "library": "distribution",
                  "framework": "distribution", "software": "distribution",
                  "platform": "distribution", "language": "distribution",
-                 "component": "code", "api_symbol": "code", "feature": "code"}
+                 "component": "code", "api_symbol": "code", "feature": "code",
+                 "line": "line", "variant": "variant"}
 LABEL_SPLIT = re.compile(r"\s+(?:&|és|and|\+|–|—|-)\s+|\s*[/,]\s*")
 TIER_ORDER = {"core": 0, "package": 1, "work_mode": 1, None: 2, "step": 3}
 TIER_GROUP = {"work_mode": "package"}
@@ -152,7 +159,9 @@ class SiteRun:
     anchor_mentions: int = 0
     offers: int = 0
     overrides: int = 0
+    shop: dict = field(default_factory=dict)
     demo: list[str] = field(default_factory=list)
+    placeholder_pages: list[str] = field(default_factory=list)
     template_mentions: int = 0
     template_entities: int = 0
     thresholds: dict[str, float] = field(default_factory=dict)
@@ -165,7 +174,8 @@ class SiteRun:
 
 class Merger:
     """Entitások összevonása a `merge_log`-gal: az említések, a források, a bizonyítékok, a
-    kapcsolatok és az aliasok a megtartott entitáshoz kerülnek."""
+    kapcsolatok és az aliasok a megtartott entitáshoz kerülnek. Az azonos helyű (oldal, blokk,
+    szövegrész) említésből egy marad, a pozíciójától függetlenül (ez a `page_entities` kulcsa)."""
 
     def __init__(self, con: duckdb.DuckDBPyConnection, run_id: int,
                  clock: Callable[[], datetime]):
@@ -186,7 +196,8 @@ class Merger:
                 "SELECT r.mention_id, k.mention_id FROM page_entities r JOIN page_entities k "
                 "ON k.page_id = r.page_id AND k.block_id IS NOT DISTINCT FROM r.block_id "
                 "AND k.char_start IS NOT DISTINCT FROM r.char_start "
-                "AND k.char_end IS NOT DISTINCT FROM r.char_end AND k.position = r.position "
+                "AND k.char_end IS NOT DISTINCT FROM r.char_end "
+                "AND (k.position = r.position OR r.block_id IS NOT NULL) "
                 "WHERE r.entity_id = ? AND k.entity_id = ?", [remove, keep]).fetchall():
             con.execute(
                 "INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id, count) "
@@ -243,10 +254,15 @@ def run_site(con: duckdb.DuckDBPyConnection,
             "INSERT INTO entity_runs (started_at, method, llm_calls) VALUES (?, 'site', 0) "
             "RETURNING run_id", [started]).fetchone()
         run = SiteRun(run_id, dict(Counter(info.role for info in roles.values())))
+        # a korábbi körök óta törölt entitásokra mutató kapcsolatok (újrafuttatáskor a
+        # szabálykör az említés nélküli szabály-entitásokat törli)
+        con.execute("DELETE FROM entity_relations WHERE from_id NOT IN (SELECT entity_id FROM "
+                    "entities) OR to_id NOT IN (SELECT entity_id FROM entities)")
         merger = Merger(con, run_id, clock)
         context = _Context(con, roles, site_lang, run_id)
         anchored = _page_entities(context, merger, run)
         _packages(context, merger, run, anchored)
+        run.shop = run_shop(context, merger, config).as_dict()
         _hreflang_place(context, merger)
         _normalized_merges(con, merger)
         split = _type_split(con, merger)
@@ -254,7 +270,8 @@ def run_site(con: duckdb.DuckDBPyConnection,
         _normalized_merges(con, merger)
         run.overrides = apply_overrides(context, merger, config)
         run.offers = _offers(con, split)
-        _demo(con, run)
+        run.placeholder_pages = sorted(roles[p].url for p in context.placeholder if p in roles)
+        _demo(con, run, context.placeholder)
         _template(context, run)
         run.merges = merger.counts
         con.execute(
@@ -263,8 +280,8 @@ def run_site(con: duckdb.DuckDBPyConnection,
             [clock(), len(roles), run.page_entities + run.packages, run.anchor_mentions,
              json.dumps({"roles": run.roles, "merges": dict(run.merges),
                          "packages": run.packages, "steps": run.steps, "offers": run.offers,
-                         "overrides": run.overrides,
-                         "demo": run.demo,
+                         "overrides": run.overrides, "shop": run.shop,
+                         "demo": run.demo, "placeholder_pages": run.placeholder_pages,
                          "template_mentions": run.template_mentions,
                          "template_entities": run.template_entities,
                          "thresholds": run.thresholds}, ensure_ascii=False), run_id])
@@ -279,7 +296,9 @@ class _Context:
     def __init__(self, con: duckdb.DuckDBPyConnection, roles: dict[int, PageInfo],
                  site_lang: str | None, run_id: int):
         self.con, self.roles, self.site_lang, self.run_id = con, roles, site_lang, run_id
-        self.groups = entity_groups(roles)
+        self.placeholder = placeholder_pages(con)
+        self.groups = {group: members for group, members in entity_groups(roles).items()
+                       if not all(m.page_id in self.placeholder for m in members)}
         self.site_keys = _site_name_keys(con)
         self._dom: dict[int, list] = {}
 
@@ -303,7 +322,11 @@ class _Context:
 
 
 def _page_entities(ctx: _Context, merger: Merger, run: SiteRun) -> dict[str, int]:
-    """Csoportonként az oldalhoz kötött entitás azonosítója."""
+    """Csoportonként az oldalhoz kötött entitás azonosítója. A kitöltőszöveg-oldalhoz egy korábbi
+    futásban kötött entitás oldalkötése megszűnik (újrafuttatáskor is ugyanaz, mint frissen)."""
+    if ctx.placeholder:
+        ctx.con.execute("UPDATE entities SET anchor_page_id = NULL, tier = NULL "
+                        "WHERE list_contains(?, anchor_page_id)", [sorted(ctx.placeholder)])
     anchors = _qualified_anchors(ctx)
     cards = _card_headings(ctx)
     anchored: dict[str, int] = {}
@@ -399,7 +422,8 @@ def _page_names(ctx: _Context, members: list[PageInfo], rep: PageInfo,
         if info.h1:
             names.append(Name(info.h1.strip(), h1_source, info.lang))
         for form in _title_forms(info.title, ctx.site_keys):
-            names.append(Name(form, title_source, info.lang))
+            if not cut_off(form, info.h1):
+                names.append(Name(form, title_source, info.lang))
         for node in nodes.get(info.page_id, []):
             for value in (node.get("name"), node.get("headline"), node.get("alternateName")):
                 for text in _texts(value):
@@ -439,21 +463,39 @@ def _canonical(role: str, rep: PageInfo, names: list[Name]) -> str:
 
 def _title_forms(title: str | None, site_keys: set[str]) -> list[str]:
     """A title a site-nevet tartalmazó végződés nélkül, és az elválasztók (`TITLE_SEPARATORS`)
-    közötti szeletei, a site-nevűek nélkül."""
+    közötti szeletei, a site-nevűek nélkül. Site-név a csonkolt alak is (a title hosszkorlátja
+    levágja: „… - DUEX” a „DUEX Hungary Webshop” helyett; `site_name_form`)."""
     if not title:
         return []
     clean = title.strip()
     for ending in title_endings(clean)[1:]:
-        if alias_key(ending) in site_keys:
+        if site_name_form(ending, site_keys, minimum=1):
             clean = clean[: clean.rfind(ending)].rstrip(" |-–—·:»•").strip()
             break
-    forms = [clean] if clean and alias_key(clean) not in site_keys else []
+    forms = [clean] if clean and not site_name_form(clean, site_keys) else []
     pattern = "|".join(re.escape(sep) for sep in TITLE_SEPARATORS)
     for piece in re.split(pattern, clean):
         piece = piece.strip()
-        if piece and piece not in forms and alias_key(piece) not in site_keys:
+        if piece and piece not in forms and not site_name_form(piece, site_keys):
             forms.append(piece)
     return forms
+
+
+def site_name_form(text: str, site_keys: set[str], minimum: int = SITE_PREFIX_MIN) -> bool:
+    """A szöveg a site egyik neve, vagy annak legalább `minimum` jeles eleje (csonkolt alak; a
+    title végén, a site-név helyén bármilyen rövid: „… - D”)."""
+    key = alias_key(text)
+    return key in site_keys or (len(key) >= minimum
+                                and any(site.startswith(key) for site in site_keys))
+
+
+def cut_off(form: str, full: str | None) -> bool:
+    """A `form` a `full` levágott eleje, szó közben (a title hosszkorlátja: „… Hmv Tartá” a
+    „… Hmv Tartályal 14KW …” H1 helyett); az ilyen alak nem név."""
+    if not full:
+        return False
+    key, whole = alias_key(form), alias_key(full)
+    return len(key) < len(whole) and whole.startswith(key) and whole[len(key)].isalnum()
 
 
 def _self_nodes(con: duckdb.DuckDBPyConnection, members: list[PageInfo]) -> dict[int, list[dict]]:
@@ -1170,10 +1212,11 @@ def _override_entities(ctx: _Context, names: tuple[str, ...], url: str | None) -
 # ---------------------------------------------------------------------------
 
 
-def _demo(con: duckdb.DuckDBPyConnection, run: SiteRun) -> None:
+def _demo(con: duckdb.DuckDBPyConnection, run: SiteRun,
+          placeholder: set[int] = frozenset()) -> None:
     rows = con.execute(
         "SELECT pe.entity_id, pe.page_id, b.kind, b.text FROM page_entities pe "
-        "JOIN entities e USING (entity_id) JOIN blocks b USING (block_id) "
+        "JOIN entities e USING (entity_id) LEFT JOIN blocks b USING (block_id) "
         "WHERE list_contains(?, e.type)", [list(DEMO_TYPES)]).fetchall()
     code_pages: dict[int, set[int]] = defaultdict(set)
     for entity_id, page_id, kind, _ in rows:
@@ -1183,7 +1226,8 @@ def _demo(con: duckdb.DuckDBPyConnection, run: SiteRun) -> None:
     demo: Counter[int] = Counter()
     for entity_id, page_id, kind, text in rows:
         total[entity_id] += 1
-        if kind == "code" or LOREM.search(text or "") or page_id in code_pages[entity_id]:
+        if (kind == "code" or LOREM.search(text or "") or page_id in placeholder
+                or page_id in code_pages[entity_id]):
             demo[entity_id] += 1
     flagged = [e for e in total if demo[e] / total[e] >= DEMO_SHARE]
     _set_flag(con, "demo", flagged)
@@ -1246,11 +1290,13 @@ def _set_flag(con: duckdb.DuckDBPyConnection, flag: str, entity_ids: list[int]) 
 
 def _site_name_keys(con: duckdb.DuckDBPyConnection) -> set[str]:
     """A site nevei: a brand szerepű (site-név) entitások és a brand típusú szabály-entitások
-    neve és aliasai."""
+    neve és aliasai; a webshop termékmárkái (`brand_of` kapcsolattal) nem."""
     keys = set()
     for name, aliases in con.execute(
-            "SELECT name, aliases FROM entities WHERE role = 'brand' "
-            "OR (type = 'brand' AND source IN ('rule', 'schema'))").fetchall():
+            "SELECT name, aliases FROM entities e WHERE (role = 'brand' "
+            "OR (type = 'brand' AND source IN ('rule', 'schema'))) AND NOT EXISTS (SELECT 1 "
+            "FROM entity_relations r WHERE r.from_id = e.entity_id AND r.type = 'brand_of')"
+            ).fetchall():
         keys |= {alias_key(f) for f in [name, *(aliases or [])]}
     return keys - {""}
 

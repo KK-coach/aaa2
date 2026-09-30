@@ -5,16 +5,22 @@
 - `[[offers]]`: ajánlat-felülbírálat: `names` (bármelyik nyelven) vagy `url` (az oldala), `tier`
   (`TIERS`), `part_of` (a fő ajánlat neve vagy URL-je). A site-kör alkalmazza
   (`site.apply_overrides`).
+- `[crawl]`: a crawl beállítása: `seed`, `include` (regex), `exclude` (regexek listája; bármelyik
+  illeszkedése kizár), `concurrency`, `render_timeout` (másodperc). Az `aaa crawl` és a felvett
+  készletek ezt használják, ha a parancssor nem ad mást (`CrawlConfig`).
+- `[page_types]`: oldaltípus → regexek a normalizált URL-re, a site szerkezetéből (pl. a
+  márka × kategória oldal); a típusok: `pages.PAGE_TYPES` (`pages.page_types`).
 """
 from __future__ import annotations
 
+import re
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import duckdb
 
-from aaa2.entities.pages import page_url, primary_lang
+from aaa2.entities.pages import PAGE_TYPES, page_url, primary_lang
 
 SITES_DIR = Path(__file__).parent / "config" / "sites"
 TIERS = ("core", "package", "work_mode")
@@ -29,9 +35,25 @@ class OfferOverride:
 
 
 @dataclass(frozen=True)
+class CrawlConfig:
+    seed: str | None = None
+    include: str | None = None
+    exclude: tuple[str, ...] = ()
+    concurrency: int | None = None
+    render_timeout: float | None = None
+
+    @property
+    def exclude_pattern(self) -> str | None:
+        """Az `exclude` regexek egy mintában (vagy-kapcsolattal); None, ha nincs."""
+        return "|".join(f"(?:{p})" for p in self.exclude) or None
+
+
+@dataclass(frozen=True)
 class SiteConfig:
     canonical_lang: str | None = None
     offers: tuple[OfferOverride, ...] = field(default_factory=tuple)
+    crawl: CrawlConfig = field(default_factory=CrawlConfig)
+    page_types: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 def site_domain(con: duckdb.DuckDBPyConnection) -> str | None:
@@ -55,7 +77,23 @@ def load_site_config(domain: str | None, directory: Path | None = None) -> SiteC
         if not names and not entry.get("url"):
             raise ValueError(f"{path.name}: az ajánlatnak kell names vagy url")
         offers.append(OfferOverride(names, entry.get("url"), tier, entry.get("part_of")))
-    return SiteConfig(raw.get("canonical_lang"), tuple(offers))
+    section = raw.get("crawl", {})
+    exclude = section.get("exclude", ())
+    exclude = [exclude] if isinstance(exclude, str) else exclude
+    kinds = {kind: tuple([p] if isinstance(p, str) else p)
+             for kind, p in raw.get("page_types", {}).items()}
+    unknown = sorted(set(kinds) - set(PAGE_TYPES))
+    if unknown:
+        raise ValueError(f"{path.name}: ismeretlen oldaltípus: {', '.join(unknown)} "
+                         f"({', '.join(PAGE_TYPES)})")
+    for pattern in [section.get("include"), *exclude, *(p for ps in kinds.values() for p in ps)]:
+        try:
+            re.compile(pattern or "")
+        except re.error as exc:
+            raise ValueError(f"{path.name}: hibás regex {pattern!r}: {exc}") from exc
+    crawl = CrawlConfig(section.get("seed"), section.get("include"), tuple(exclude),
+                        section.get("concurrency"), section.get("render_timeout"))
+    return SiteConfig(raw.get("canonical_lang"), tuple(offers), crawl, kinds)
 
 
 def canonical_language(con: duckdb.DuckDBPyConnection, config: SiteConfig | None = None

@@ -178,31 +178,61 @@ def test_invalid_pipeline_config_is_refused(tmp_path, text, message):
 # ---------------------------------------------------------------------------
 
 
-def test_v3_keeps_structural_services_without_veto_and_concepts_with_evidence(tmp_path):
+def test_v3_keeps_structural_services_and_turns_the_dropped_ones_into_concepts(tmp_path):
     con = site({"/": html("Könyvelés és bérszámfejtés", BODY)})
     adapter = Scripted([PAGE_REPLY], [decisions(True, False)])
     run = pipeline_run(con, adapter, tmp_path, knowledge=Knowledge(wikidata=["Cash-flow"]))
-    # A „Számlázás” bekezdésben áll: hívás nélkül kiesik; a „Könyvelés” a Sol vétójával.
+    # A „Számlázás” bekezdésben áll: hívás nélkül nem ajánlat; a „Könyvelés” a Sol vétójával.
+    # Mindkettő fogalomként marad, a típusváltás a jelöltnaplóban.
     assert "[c0] service · Bérszámfejtés Csomag" in adapter.calls[1][1]
     assert "Számlázás" not in adapter.calls[1][1]
     assert entity_names(con) == [("Bérszámfejtés Csomag", "service"), ("Cash-flow", "concept"),
-                                 ("Készletforgás", "concept"), ("Számlázó", "tech")]
+                                 ("Készletforgás", "concept"), ("Könyvelés", "concept"),
+                                 ("Számlázás", "concept"), ("Számlázó", "tech")]
     checks = con.execute(
         "SELECT canonical, type, entity_id IS NOT NULL, structure, blocks, mentions, "
-        "prominent, rank, knowledge, sol, kept FROM soft_checks ORDER BY type, canonical"
-    ).fetchall()
+        "prominent, rank, knowledge, sol, kept, type_changed_from, type_change_reason "
+        "FROM soft_checks ORDER BY type, canonical").fetchall()
     assert checks == [
-        ("Cash-flow", "concept", True, None, 2, 2, False, 1, "wikidata:hu:Q1 (Cash-flow)",
-         None, True),
-        ("Készletforgás", "concept", True, None, 1, 1, False, 2, None, None, True),
+        ("Cash-flow", "concept", True, None, 2, 2, False, 2, "wikidata:hu:Q1 (Cash-flow)",
+         None, True, None, None),
+        ("Készletforgás", "concept", True, None, 1, 1, False, 4, None, None, True, None, None),
+        ("Könyvelés", "concept", True, "heading:b4", 2, 1, True, 1, None, None, True,
+         "service", "sol_veto"),
+        ("Számlázás", "concept", True, None, 1, 1, False, 3, None, None, True, "service",
+         "no_structure"),
         ("Bérszámfejtés Csomag", "service", True, "heading:b2", None, 1, None, None, None,
-         True, True),
-        ("Könyvelés", "service", False, "heading:b4", None, 1, None, None, None, False, False),
-        ("Számlázás", "service", False, None, None, 1, None, None, None, None, False),
+         True, True, None, None),
+        ("Könyvelés", "service", True, "heading:b4", None, 1, None, None, None, False, False,
+         None, None),
+        ("Számlázás", "service", True, None, None, 1, None, None, None, None, False, None,
+         None),
     ]
     assert (run.pages, run.llm_calls) == (1, 2)
     assert con.execute("SELECT status, call_ids, chunks FROM entity_run_pages").fetchall() == [
         ("done", [1, 2], 1)]
+
+
+def test_a_record_from_the_older_rule_is_refined_again_replaying_the_decisions(tmp_path):
+    con = site({"/": html("Könyvelés és bérszámfejtés", BODY)})
+    adapter = Scripted([PAGE_REPLY], [decisions(True, False)])
+    pipeline_run(con, adapter, tmp_path, reuse=True)
+    # a korábbi szabály rekordja: az elvetett service-ek nincsenek benne, és nincs `rule`
+    (refined,) = con.execute("SELECT refined FROM entity_run_pages").fetchone()
+    old = json.loads(refined)
+    old["entities"] = [e for e in old["entities"] if e.get("type_changed_from") is None]
+    del old["v3"]["rule"]
+    con.execute("UPDATE entity_run_pages SET refined = ?", [json.dumps(old)])
+    again = pipeline_run(con, adapter, tmp_path, reuse=True)
+    assert len(adapter.calls) == 2 and again.llm_calls == 0     # nincs új kinyerés, ellenőrzés
+    assert again.skipped == {"reused_extraction": 1, "refined_again": 1, "verify_replayed": 1}
+    (call_ids, refined) = con.execute("SELECT call_ids, refined FROM entity_run_pages "
+                                      "WHERE run_id = ?", [again.run_id]).fetchone()
+    new = json.loads(refined)
+    assert call_ids == [] and new["v3"]["rule"] == 2 and new["verify_replayed"] is True
+    assert new["verify_decisions"] == [["Bérszámfejtés Csomag", "service", True],
+                                       ["Könyvelés", "service", False]]
+    assert {("Könyvelés", "concept"), ("Számlázás", "concept")} <= set(entity_names(con))
 
 
 def test_steps_switch_off_the_service_rule_and_the_concept_evidence(tmp_path):
@@ -289,8 +319,8 @@ def test_without_save_nothing_is_stored_and_a_later_resume_saves_without_calls(t
     assert con.execute("SELECT count(*) FROM page_entities").fetchone() == (0,)
     assert con.execute("SELECT status FROM entity_run_pages").fetchone() == ("extracted",)
     saved = pipeline_run(con, adapter, tmp_path, resume=True)
-    assert len(adapter.calls) == 2 and saved.rows == 6
-    assert con.execute("SELECT count(*) FROM soft_checks").fetchone() == (5,)
+    assert len(adapter.calls) == 2 and saved.rows == 7          # a Számlázás fogalomként
+    assert con.execute("SELECT count(*) FROM soft_checks").fetchone() == (6,)
 
 
 def test_mentionless_llm_entities_are_removed_before_merging(tmp_path):
@@ -354,12 +384,13 @@ def test_entities_get_a_wikidata_status_and_errors_stay_unchecked(tmp_path):
                                 "Q2": (["human"], "a person")})
     run = link_entities(con, KnowledgeBase(source), lambda: NOON, "hu")
     # A service nem kapcsolható; a Készletforgás találata ember: none; a Számlázó hibás.
-    assert (run.entities, run.confident, run.probable, run.none, run.errors) == (5, 1, 0, 3, 1)
+    assert (run.entities, run.confident, run.probable, run.none, run.errors) == (6, 1, 0, 4, 1)
     assert con.execute("SELECT name, wikidata_id, wikipedia, wikidata_status FROM entities "
                        "WHERE wikidata_status IS NOT NULL ORDER BY name").fetchall() == [
         ("Bérszámfejtés Csomag", None, None, "none"),
         ("Cash-flow", "Q1", "hu:Cash-flow", "confident"),
-        ("Készletforgás", None, None, "none"), ("Könyvelés", None, None, "none")]
+        ("Készletforgás", None, None, "none"), ("Könyvelés", None, None, "none"),
+        ("Számlázás", None, None, "none")]                    # a szerkezeti hely nélküli service
     source.requests.clear()
     again = link_entities(con, KnowledgeBase(source), lambda: NOON, "hu")
     assert again.entities == 1 and {name for _, name in source.requests} == {"Számlázó"}
@@ -387,7 +418,8 @@ def test_entity_table_counts_pages_mentions_places_and_links(tmp_path):
         "entity": "Bérszámfejtés Csomag", "type": "service", "subtype": "", "tier": "",
         "flags": "", "source": "llm", "pages": 2, "mentions": 3, "title": 1, "heading": 1,
         "nav": 0, "card": 0, "table_row": 0, "anchor_page": "", "wikidata_qid": "",
-        "wikidata_status": "", "wikipedia": ""}
+        "wikidata_status": "", "wikipedia": "", "from_service_pages": 0}
+    assert rows["Számlázás"]["from_service_pages"] == 1      # szerkezeti hely nélküli service
     assert (rows["Cash-flow"]["pages"], rows["Cash-flow"]["mentions"], rows["Cash-flow"]["nav"],
             rows["Cash-flow"]["wikipedia"]) == (1, 2, 0, "https://hu.wikipedia.org/wiki/Cash_flow")
     assert rows["Könyvelés"]["nav"] == 1
@@ -423,10 +455,11 @@ def test_run_report_has_pages_calls_errors_types_and_the_regression(tmp_path):
     assert "- extract (gemini-3.8-flash): 2 hívás" in text
     assert "- verify (gemini-3.8-flash): 1 hívás" in text
     assert "- oldalszinten: schema_mismatch 1" in text
-    assert "| concept | 2 | 3 | 1 | 0 | 0 |" in text
-    assert "kiesett szerkezeti hely nélkül 1, az ellenőrzés vétójával 1" in text
+    assert "| concept | 4 | 5 | 1 | 0 | 0 |" in text
+    assert "fogalomként marad szerkezeti hely nélkül 1, az ellenőrzés vétójával 1" in text
+    assert "service-jelöltből 2" in text
     assert "| tech | 1 | 1 | 1 | 1 |" in text
-    assert "| concept | 0 | 2 | 0 | 3 |" in text
+    assert "| concept | 0 | 4 | 0 | 5 |" in text
 
 
 # ---------------------------------------------------------------------------

@@ -501,3 +501,20 @@ def test_canonical_language_is_the_root_page_language_unless_configured():
     run_site(con, clock=lambda: NOON)
     assert con.execute("SELECT name FROM entities WHERE tier = 'core'").fetchone() == (
         "Execution",)
+
+
+def test_merge_keeps_one_mention_per_span_whatever_its_position():
+    """Ugyanaz a szövegrész két entitáson, eltérő pozícióval (h1 és heading): az összevonás
+    után egy említés marad, a források egyesítve."""
+    from aaa2.entities.site import Merger
+    con = business_site()
+    run_rules(con)
+    url = "https://pelda.hu/blog/cikk/"
+    first = llm_entity(con, url, "Hogyan", "Hogyan", "concept")
+    second = llm_entity(con, url, "Hogyan", "Hogyan mérj", "concept")
+    con.execute("UPDATE page_entities SET position = 'heading' WHERE entity_id = ?", [second])
+    Merger(con, 1, lambda: NOON).merge(first, second, "test")
+    assert con.execute("SELECT count(*) FROM page_entities WHERE entity_id = ?",
+                       [first]).fetchone() == (1,)
+    assert con.execute("SELECT count(*) FROM entities WHERE entity_id = ?",
+                       [second]).fetchone() == (0,)

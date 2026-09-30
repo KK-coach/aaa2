@@ -48,7 +48,23 @@ EMPTY_GOLD = {"primary_entities": [], "entities": [], "optional": [], "negatives
 LOCKED_DIR = Path(__file__).parent / "locked_pages"
 LOCKED_FILE = Path(__file__).parent / "locked_pages.json"
 LOCKED_SITES = {"kk-coach-crawl": ("kk", "kk_coach_meres_hu"),
-                "ngx-bootstrap-crawl": ("ngx", "ngx_accordion_en")}
+                "ngx-bootstrap-crawl": ("ngx", "ngx_accordion_en"),
+                # M2/7 B: az idegen site-oknak nincs fejlesztési oldala; a szabályok és a
+                # szókészlet a kk.coach fejlesztési oldaláé, a webshopon a 9a pont szintjeivel.
+                "marketinglens-crawl": ("ml", "kk_coach_meres_hu"),
+                "duex-crawl": ("duex", "kk_coach_meres_hu")}
+SHOP_SITES = ("duex-crawl",)
+SHOP_RULE = ("webshop-szintek (M2/6 spec, 9a pont): a márka brand (Cascade, Fujitsu); a "
+             "termékcsalád product / line (Cascade VISION NORDIC, Fujitsu Waterstage High Power "
+             "V2); a termék (változat) product / variant, a saját oldalán (Cascade VISION NORDIC "
+             "3,5 kW); a kategória concept / category (Oldalfali Split Klímaberendezés). A "
+             "teljesítmény, a fázisszám és az energiaosztály a termék tulajdonsága, nem entitás; "
+             "a szakmai fogalmak (hűtőközeg: R290, R32; inverteres) fogalmak. Ha a terméknév "
+             "a márkát vagy a családot tartalmazza, a márka és a család is kötelező tétel, a "
+             "terméknév részeként álló szöveg szerinti alakkal")
+SHOP_GLOSSARY = {"product": {"line": "termékcsalád (a márka egy termékvonala)",
+                             "variant": "termékváltozat, a saját termékoldalával"},
+                 "concept": {"category": "a webshop termékkategóriája"}}
 CONCEPT_SCOPE = ("kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi "
                  "témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, "
                  "person, product, place) és a site saját ajánlata (service).")
@@ -171,10 +187,12 @@ def locked_page_id(prefix: str, url: str) -> str:
 
 
 def locked_sources(path: Path = LOCKED_FILE) -> list[tuple[str, str, str, str]]:
-    """A zárolt lista kk.coach és ngx oldalai: (page_id, adatbázis, URL, fejlesztési oldal)."""
+    """A zárolt lista oldalai a `LOCKED_SITES` site-jain: (page_id, adatbázis, URL, a szabályok
+    forrásául szolgáló fejlesztési oldal)."""
     sites = json.loads(path.read_text(encoding="utf-8"))["sites"]
     return [(locked_page_id(prefix, url), db, url, dev)
-            for db, (prefix, dev) in LOCKED_SITES.items() for url in sites[db]["urls"]]
+            for db, (prefix, dev) in LOCKED_SITES.items() if db in sites
+            for url in sites[db]["urls"]]
 
 
 def locked_template(page_id: str, db: Path, url: str, dev_page: Path) -> dict:
@@ -182,10 +200,17 @@ def locked_template(page_id: str, db: Path, url: str, dev_page: Path) -> dict:
     szókészletével, üres referencialistával."""
     page = template(page_id, db, url)
     dev = json.loads(dev_page.read_text(encoding="utf-8"))
+    rules = {**dev["rules"], "concept_scope": CONCEPT_SCOPE}
+    glossary = {kind: dict(values) for kind, values in dev["subtype_glossary"].items()}
+    vocabulary = {kind: list(values) for kind, values in dev["subtype_vocabulary"].items()}
+    if db.stem in SHOP_SITES:
+        rules["webshop_levels"] = SHOP_RULE
+        for kind, extra in SHOP_GLOSSARY.items():
+            glossary[kind] = {**extra, **glossary.get(kind, {})}
+            vocabulary[kind] = [*extra, *(v for v in vocabulary.get(kind, []) if v not in extra)]
     return {**page, "set": "locked", "gold_status": "sablon, annotálatlan",
-            "annotation_notes": [], "rules": {**dev["rules"], "concept_scope": CONCEPT_SCOPE},
-            "subtype_glossary": dev["subtype_glossary"],
-            "subtype_vocabulary": dev["subtype_vocabulary"]}
+            "annotation_notes": [], "rules": rules, "subtype_glossary": glossary,
+            "subtype_vocabulary": vocabulary}
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -193,8 +218,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--data-dir", type=Path, default=DATA_DIR / "compare")
     parser.add_argument("--out", type=Path, default=None)
     parser.add_argument("--locked", action="store_true",
-                        help="a zárolt lista kk.coach és ngx oldalai (tests/acceptance/"
-                             "locked_pages/); meglévő sablont nem ír felül")
+                        help="a zárolt lista oldalai (tests/acceptance/locked_pages/); meglévő "
+                             "sablont nem ír felül")
     args = parser.parse_args(argv)
     if args.locked:
         out = args.out or LOCKED_DIR

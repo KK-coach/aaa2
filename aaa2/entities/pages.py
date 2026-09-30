@@ -16,12 +16,15 @@
   - különben `support` (nincs entitásoldal-bizonyíték).
 - A csoport szerepe a tagjaié közül az erősebb (offer > product > component > article); ha a
   csoport bármely tagja kezdőoldal, jogi vagy köszönőoldal, a csoport `support`.
+- Oldaltípus (`page_types`, a crawl-jelentéshez és a webshop-szintekhez): termék, kategória,
+  márka × kategória, blog, szolgáltatás, egyéb.
 """
 from __future__ import annotations
 
 import json
 import re
 from collections import Counter, defaultdict
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from urllib.parse import urldefrag, urlsplit, urlunsplit
 
@@ -37,6 +40,8 @@ SUPPORT_URL_WORDS = ("privacy", "adatvedelem", "adatkezel", "cookie", "impressum
                      "terms", "aszf", "feltetelek", "thank-you", "thanks", "koszon", "grazie",
                      "404", "et_code_snippet")
 NAV_POSITIONS = ("nav", "aside", "footer")
+PAGE_TYPES = ("product", "category", "brand_category", "blog", "service", "other")
+BLOG_TYPES = frozenset({"BlogPosting", "NewsArticle"})
 COMPONENT_H1_WORDS = 4
 COMPONENT_MIN_LINKERS = 2
 
@@ -111,6 +116,67 @@ def page_roles(con: duckdb.DuckDBPyConnection) -> dict[int, PageInfo]:
                 out[page_id] = PageInfo(page_id, url, primary_lang(lang), title, h1, key, role,
                                         reason if mine == role else f"group:{role}")
     return out
+
+
+def page_types(con: duckdb.DuckDBPyConnection,
+               patterns: Mapping[str, Sequence[str]] | None = None) -> dict[int, str]:
+    """Oldaltípus (`PAGE_TYPES`) az alkalmas oldalakra, sorrendben:
+
+    1. a site-fájl `[page_types]` mintái (típus → regexek a normalizált URL-re, `re.search`),
+       a `PAGE_TYPES` sorrendjében; a site szerkezetéből, pl. a márka × kategória oldal;
+    2. az oldalra mutató JSON-LD `Product` → product, `Service` → service;
+    3. `BlogPosting` / `NewsArticle` csomópont → blog (az `Article` nem: a WordPress SEO-bővítménye
+       minden oldalra teszi);
+    4. különben other."""
+    compiled = {kind: [re.compile(p) for p in (patterns or {}).get(kind, ())]
+                for kind in PAGE_TYPES}
+    nodes = _schema_nodes(con)
+    found: dict[int, str] = {}
+    for page_id, url in con.execute(
+            "SELECT page_id, url FROM pages WHERE status BETWEEN 200 AND 299 AND error IS NULL "
+            "AND rendered_html IS NOT NULL ORDER BY page_id").fetchall():
+        kind = next((k for k in PAGE_TYPES if any(p.search(url) for p in compiled[k])), None)
+        own = nodes.get(page_id, [])
+        for schema, name in (("Product", "product"), ("Service", "service")):
+            if kind is None and any(
+                    schema in {_short(t) for t in _as_list(node.get("@type"))}
+                    and (same_page(node.get("url"), url) or same_page(node.get("@id"), url))
+                    for node in own):
+                kind = name
+        types = {_short(t) for node in own for t in _as_list(node.get("@type"))}
+        if kind is None and types & BLOG_TYPES:
+            kind = "blog"
+        found[page_id] = kind or "other"
+    return found
+
+
+def breadcrumbs(con: duckdb.DuckDBPyConnection) -> dict[int, list[tuple[str, str | None]]]:
+    """Oldalanként az első JSON-LD `BreadcrumbList` elemei sorrendben: (név, URL vagy None)."""
+    found: dict[int, list[tuple[str, str | None]]] = {}
+    for page_id, nodes in _schema_nodes(con).items():
+        for node in nodes:
+            if "BreadcrumbList" not in {_short(t) for t in _as_list(node.get("@type"))}:
+                continue
+            items = sorted((i for i in _as_list(node.get("itemListElement"))
+                            if isinstance(i, dict)), key=lambda i: _position(i.get("position")))
+            trail = []
+            for item in items:
+                target = item.get("item")
+                url = target.get("@id") or target.get("url") if isinstance(target, dict) \
+                    else target
+                name = item.get("name") or (target.get("name") if isinstance(target, dict)
+                                            else None)
+                if name:
+                    trail.append((str(name).strip(), str(url) if url else None))
+            found.setdefault(page_id, trail)
+    return found
+
+
+def _position(value: object) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float("inf")
 
 
 def entity_groups(roles: dict[int, PageInfo]) -> dict[str, list[PageInfo]]:

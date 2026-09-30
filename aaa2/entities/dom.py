@@ -85,6 +85,15 @@ KIND_OF = {**{f"h{i}": "heading" for i in range(1, 7)}, "p": "paragraph", "li": 
            "dt": "list_item", "dd": "list_item"}
 COOKIE = re.compile(r"cookie|consent|gdpr")
 WHITESPACE = re.compile(r"\s+")
+# Soron belüli elem, amelynek a teljes szövege technikai azonosító (számcsoportok „|”-vel,
+# pl. a menü AJAX-paramétere: `316001|709257`); a stíluslap rejti, nem látható szöveg.
+TECHNICAL_ID = re.compile(r"\s*\d+(?:\|\d+)+\s*")
+# Zárt, rálebbenő felületi panel (lenyíló, hamburger- és oldalsó menü, bejelentkezési doboz)
+# osztálya: navigáció és űrlap, nem tartalom (chrome). A Bootstrap `dropdown-menu` nem ilyen:
+# a dokumentációs példákban tartalom.
+OVERLAY_CLASS = re.compile(r"__dropdown|dropdown--|dropdown[-_]content|(?:^|[-_])hamburger|"
+                           r"(?:^|[-_])off-?canvas|^responsive[-_]menu")
+TAB_TABLE_MIN_LINES = 2
 
 
 @dataclass
@@ -132,7 +141,10 @@ def _hidden(node: Node) -> bool:
     if (attrs.get("aria-modal") or "").lower() == "true":
         return True
     marks = f"{attrs.get('class') or ''} {attrs.get('id') or ''}".lower()
-    return bool(COOKIE.search(marks))
+    if COOKIE.search(marks):
+        return True
+    return (node.tag in INLINE and node.tag != "a"
+            and bool(TECHNICAL_ID.fullmatch(node.text(deep=True) or "")))
 
 
 def _inactive_tab(node: Node) -> bool:
@@ -165,7 +177,49 @@ def _chips(node: Node) -> bool:
 def _chrome(node: Node) -> bool:
     role = (node.attributes.get("role") or "").lower()
     classes = set((node.attributes.get("class") or "").split())
-    return node.tag in CHROME or role in CHROME_ROLES or bool(classes & CHROME_CLASSES)
+    return (node.tag in CHROME or role in CHROME_ROLES or bool(classes & CHROME_CLASSES)
+            or any(OVERLAY_CLASS.search(c.lower()) for c in classes))
+
+
+def _tab_rows(node: Node) -> list[list[str]] | None:
+    """Tabulátorral tagolt táblázat egy szövegtárolóban (táblázatkezelőből bemásolt műszaki
+    adatok): a `<br>`-rel tört sorok közül legalább `TAB_TABLE_MIN_LINES` tartalmaz
+    tabulátort; soronként a tabulátorok mentén a cellák, az üresen maradt utolsó cellát a
+    következő, tabulátor nélküli sor tölti ki. Ha a tárolónak blokkszintű gyereke van, vagy nincs
+    elég tabulátoros sor: None."""
+    lines, current = [], []
+    child = node.child
+    while child is not None:
+        name = child.tag
+        if name == "-text":
+            current.append(child.text(deep=False) or "")
+        elif name == "br":
+            lines.append("".join(current))
+            current = []
+        elif name in SKIP or name == "-comment" or _hidden(child):
+            pass
+        elif name in INLINE:
+            current.append(child.text(deep=True) or "")
+        else:
+            return None
+        child = child.next
+    lines.append("".join(current))
+    # a forráskód behúzása (sortörés utáni szóköz és tabulátor) nem cellahatár
+    lines = [" ".join(piece.lstrip(" \t\r") for piece in line.split("\n")).strip(" \r")
+             for line in lines]
+    if sum("\t" in line for line in lines) < TAB_TABLE_MIN_LINES:
+        return None
+    rows: list[list[str]] = []
+    for line in lines:
+        if not line.strip():
+            continue
+        if "\t" in line:
+            rows.append([collapse(cell) for cell in line.strip("\r\n ").split("\t")])
+        elif rows and rows[-1][-1] == "":
+            rows[-1][-1] = collapse(line)
+        else:
+            rows.append([collapse(line)])
+    return rows if len(rows) >= TAB_TABLE_MIN_LINES else None
 
 
 def _signature(node: Node) -> tuple[str, str]:
@@ -387,6 +441,16 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
 
     def walk(node: Node, kind: str, region: str, in_card: bool, level: int | None) -> None:
         nonlocal pane
+        if tab_rows := _tab_rows(node):
+            names = tab_rows[0]
+            emit("table_row", region, " | ".join(n for n in names if n), [],
+                 cells=[{"header": None, "value": n} for n in names if n])
+            for values in tab_rows[1:]:
+                cells = [{"header": names[i] if i < len(names) and names[i] else None,
+                          "value": value} for i, value in enumerate(values) if value]
+                emit("table_row", region, " | ".join(c["value"] for c in cells), [],
+                     cells=cells)
+            return
         parts: list[str] = []
         anchors: list[str] = []
         chips = _chips(node)

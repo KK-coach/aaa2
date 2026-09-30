@@ -90,11 +90,13 @@ SETS = (DEVELOPMENT, "generalization", REAL, LOCKED, "all")
 def load_pages(pages_dir: Path | None = None, page_set: str = DEVELOPMENT) -> list[dict]:
     """A `page_set` oldalai (`all`: a mesterségesek mind); a `set` mező nélküli oldal
     fejlesztési. A valódi fejlesztési oldalak (`development-real`) a `dev_pages/`, a zárolt
-    tesztoldalak (`locked`) a `locked_pages/` alól."""
+    tesztoldalak (`locked`) a `locked_pages/` alól. Az annotálatlan sablon (`gold_status`
+    „sablon, …”) kimarad: nincs mihez mérni."""
     pages_dir = pages_dir or {REAL: DEV_PAGES_DIR, LOCKED: LOCKED_DIR}.get(page_set, PAGES_DIR)
     pages = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(pages_dir.glob("*.json"))]
     return [page for page in pages
-            if page_set == "all" or page.get("set", DEVELOPMENT) == page_set]
+            if (page_set == "all" or page.get("set", DEVELOPMENT) == page_set)
+            and not str(page.get("gold_status", "")).startswith("sablon")]
 
 
 # ---------------------------------------------------------------------------

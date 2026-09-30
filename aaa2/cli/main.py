@@ -23,6 +23,7 @@ from aaa2.entities.dom import build_blocks
 from aaa2.entities.extract import Worker, estimate_llm, run_llm
 from aaa2.entities.gate import KnowledgeBase
 from aaa2.entities.knowledge import link_entities
+from aaa2.entities.overrides import load_site_config
 from aaa2.entities.report import run_report, write_entity_table
 from aaa2.entities.rules import run_rules
 from aaa2.entities.site import run_site
@@ -51,8 +52,12 @@ def crawl(
         str | None, typer.Option(help="Sitemap URL; alapból robots.txt / sitemap.xml")
     ] = None,
     max_pages: Annotated[int, typer.Option(help="keményhatár a sor méretére")] = MAX_PAGES,
-    concurrency: Annotated[int, typer.Option(help="párhuzamos Playwright-contextek")] = CONCURRENCY,
-    render_timeout: Annotated[float, typer.Option(help="másodperc oldalanként")] = RENDER_TIMEOUT,
+    concurrency: Annotated[
+        int | None, typer.Option(help=f"párhuzamos Playwright-contextek (alapból {CONCURRENCY})")
+    ] = None,
+    render_timeout: Annotated[
+        float | None, typer.Option(help=f"másodperc oldalanként (alapból {RENDER_TIMEOUT})")
+    ] = None,
     respect_robots: Annotated[
         bool, typer.Option(help="robots.txt tiltásai; saját site-on kikapcsolható")
     ] = True,
@@ -65,12 +70,23 @@ def crawl(
     ] = None,
     quiet: Annotated[bool, typer.Option(help="oldalanként ne írjon sort")] = False,
 ) -> None:
-    """Egy site sitewide crawlja Playwright-renderrel a data/<domain>.duckdb-be."""
+    """Egy site sitewide crawlja Playwright-renderrel a data/<domain>.duckdb-be. Az include, az
+    exclude és a párhuzamosság alapja a site-fájl `[crawl]` része, ha van
+    (`aaa2/entities/config/sites/<domain>.toml`); a parancssor felülírja."""
+    try:
+        site = load_site_config(UrlPolicy.from_seed(url).domain).crawl
+    except ValueError as exc:
+        typer.echo(f"hiba: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
     options = CrawlOptions(
-        sitemap=sitemap, max_pages=max_pages, concurrency=concurrency,
-        render_timeout=render_timeout, respect_robots=respect_robots, resume=resume,
-        include=include, exclude=exclude,
+        sitemap=sitemap, max_pages=max_pages,
+        concurrency=concurrency or site.concurrency or CONCURRENCY,
+        render_timeout=render_timeout or site.render_timeout or RENDER_TIMEOUT,
+        respect_robots=respect_robots, resume=resume,
+        include=include or site.include, exclude=exclude or site.exclude_pattern,
     )
+    if site.include or site.exclude:
+        typer.echo(f"site-fájl: include={options.include!r} exclude={options.exclude!r}")
 
     def progress(page_url: str, page_status: int | None, error: str | None) -> None:
         if not quiet:

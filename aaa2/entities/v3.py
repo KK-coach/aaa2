@@ -7,7 +7,9 @@ A szabály (`apply_v3`), oldalanként, a kinyerés rekordján (3a prompt, elneve
 - saját ajánlat (`service`): marad, ha szerkezeti helyen áll (title, heading, card vagy
   table_row blokk, navigáció; anchor-szöveg nem elég), és az ellenőrző hívás nem vétózza. Csak
   a szerkezeti helyű szolgáltatások mennek a hívásba (`verify.verify_record`, `select`); ha
-  nincs ilyen, nincs hívás;
+  nincs ilyen, nincs hívás. Az elvetett service concept-jelöltként marad (a nyers tételen
+  `type_changed_from = service`; a `v3` mezőben a service-nél `as_concept`, a fogalomnál
+  `from_service`: `no_structure` vagy `sol_veto`);
 - fogalom (`concept`): kapu és ellenőrzés nélkül marad. A bizonyíték tételenként a rekord `v3`
   mezőjében: szerkezet (`gate.structure`), ismétlődés (blokkszám), tudásbázis-egyezés
   (Wikidata / Wikipedia, `gate.KnowledgeBase`), title- vagy heading-hely, említésszám és
@@ -16,6 +18,10 @@ A szabály (`apply_v3`), oldalanként, a kinyerés rekordján (3a prompt, elneve
 
 A navigáció (chrome-régió) és az anchor-szövegek az oldal renderelt DOM-jából jönnek
 (`dom_context`). A lépések ki-bekapcsolása: `config/pipeline.toml` (`load_pipeline`).
+
+A rekord a szabály változatát is hordozza (`v3.rule`, `RULE`). A régebbi szabállyal tárolt
+rekord újrahasznált kinyerésnél újraszámolódik (`V3Step.current`); a korábbi ellenőrző döntések
+ilyenkor hívás nélkül visszajátszódnak, ha minden kiválasztott tételről van döntés (`prior`).
 """
 from __future__ import annotations
 
@@ -47,6 +53,7 @@ VERIFY_OUTPUT_BASE = 200             # az ellenőrző hívás kimeneti tokenje: 
 VERIFY_OUTPUT_PER_ITEM = 40          # és tételenként
 STEPS = ("rules", "blocks", "extraction", "services", "concepts", "site", "knowledge",
          "save")
+RULE = 2                             # 2: az elvetett service concept-jelöltként marad
 
 
 @dataclass(frozen=True)
@@ -99,39 +106,77 @@ def service_place(item: SoftItem, page: PageContext) -> str | None:
 def apply_v3(record: Mapping, page: PageContext, verifier=None,
              knowledge: Callable[[Sequence[str], str], str | None] | None = None,
              page_id: int | None = None, *, services: bool = True,
-             concepts: bool = True) -> dict:
+             concepts: bool = True, prior: Mapping | None = None) -> dict:
     """A rekord a v3 szabállyal, a `v3` bizonyíték-mezővel. `verifier`: az ellenőrző hívás
     kliense (None: csak a szerkezeti hely); `knowledge`: a tudásbázis (None: nincs egyezés);
     `services` / `concepts`: kikapcsolva a service-tételek változatlanok, illetve a fogalmaknak
-    nincs bizonyítéka."""
+    nincs bizonyítéka; `prior`: ugyanennek a kinyerésnek egy korábbi szabály utáni rekordja,
+    az ellenőrző döntései hívás nélkül visszajátszódnak, ha minden kiválasztott tételről van
+    döntés ugyanattól a modelltől."""
     blocks = page.by_id()
     items = soft_items(record.get("entities") or [], blocks)
     places = {item.key: service_place(item, page) for item in items
               if item.type == "service"} if services else {}
-    out = verify_record(verifier, record, blocks, page_id,
-                        select=lambda item: item.type == "service" and places.get(item.key)
-                        is not None) if verifier is not None and services else dict(record)
+
+    def select(item: SoftItem) -> bool:
+        return item.type == "service" and places.get(item.key) is not None
+
+    if verifier is None or not services:
+        out = dict(record)
+    else:
+        out = (replay_verify(record, items, select, prior, verifier.model)
+               or verify_record(verifier, record, blocks, page_id, select=select))
     vetoed = {alias_key(name) for name, kind, keep in out.get("verify_decisions") or []
               if kind == "service" and keep is False}
-    dropped = {key for key, place in places.items() if place is None} | vetoed
-    out["entities"] = [raw for raw in record.get("entities") or []
-                       if alias_key(raw["canonical_name"]) not in dropped]
+    reasons = {key: "no_structure" for key, place in places.items() if place is None}
+    reasons.update({key: "sol_veto" for key in vetoed if key in places})
+    out["entities"] = [{**raw, "type": "concept", "subtype": None,
+                        "type_changed_from": "service"}
+                       if raw["type"] == "service" and alias_key(raw["canonical_name"]) in reasons
+                       else raw for raw in record.get("entities") or []]
     decided = {alias_key(name): keep for name, _, keep in out.get("verify_decisions") or []}
-    found = [item for item in items if item.type == "concept"] if concepts else []
+    found = [item for item in soft_items(out["entities"], blocks)
+             if item.type == "concept"] if concepts else []
     order = {id(item): index for index, item in enumerate(found)}
     prominent = {item.key: structure(item, page, PROMINENT_KINDS) is not None for item in found}
     ranked = sorted(found, key=lambda item: (not prominent[item.key], -len(item.mentions),
                                              order[id(item)]))
     out["v3"] = {
+        "rule": RULE,
         "services": [{"canonical": item.canonical, "structure": places[item.key],
                       "mentions": len(item.mentions), "sol": decided.get(item.key),
-                      "kept": item.key not in dropped}
+                      "kept": item.key not in reasons, "as_concept": item.key in reasons}
                      for item in items if item.type == "service" and item.key in places],
         "concepts": [{"canonical": item.canonical, "rank": rank + 1,
                       "mentions": len(item.mentions), "prominent": prominent[item.key],
                       "structure": structure(item, page), "blocks": repetition(item, page),
-                      "knowledge": knowledge(item.names(), page.lang) if knowledge else None}
+                      "knowledge": knowledge(item.names(), page.lang) if knowledge else None,
+                      "from_service": reasons.get(item.key)}
                      for rank, item in enumerate(ranked)]}
+    return out
+
+
+def replay_verify(record: Mapping, items: Sequence[SoftItem],
+                  select: Callable[[SoftItem], bool], prior: Mapping | None,
+                  model: str | None) -> dict | None:
+    """A `prior` ellenőrző döntései a `record` kiválasztott tételeire, hívás nélkül, a
+    `verify_record` kimenetének alakjában (`verify_replayed` = True). None, ha nincs korábbi
+    rekord, más modell döntött, hiba volt, vagy valamelyik kiválasztott tételről nincs döntés."""
+    if not prior or prior.get("verify_error") or prior.get("verify_model") != model:
+        return None
+    known = {alias_key(name): keep for name, kind, keep in prior.get("verify_decisions") or []
+             if kind == "service"}
+    chosen = [item for item in items if select(item)]
+    if any(item.key not in known for item in chosen):
+        return None
+    out = dict(record)
+    out.update(verify_model=model, verify_call_id=prior.get("verify_call_id"),
+               verify_decisions=[(item.canonical, item.type, known[item.key])
+                                 for item in chosen],
+               verify_missing=sum(known[item.key] is None for item in chosen),
+               verify_error=None, verify_replayed=True,
+               call_ids=list(record.get("call_ids")
+                             or [i for i in [record.get("call_id")] if i is not None]))
     return out
 
 
@@ -179,12 +224,18 @@ class V3Step:
     def fingerprint(self) -> str:
         return v3_fingerprint(self.steps, getattr(self.verifier, "model", None))
 
+    @staticmethod
+    def current(refined: Mapping) -> bool:
+        """A tárolt szabály utáni rekord a mostani szabállyal készült."""
+        return (refined.get("v3") or {}).get("rule") == RULE
+
     def __call__(self, record: Mapping, page_id: int, blocks: Sequence[Mapping],
-                 lang: str | None) -> dict:
+                 lang: str | None, prior: Mapping | None = None) -> dict:
         page = page_context(self.con, page_id, blocks, lang or self.site_lang)
         knowledge = self.knowledge if self.steps.knowledge else None
         return apply_v3(record, page, self.verifier, knowledge, page_id,
-                        services=self.steps.services, concepts=self.steps.concepts)
+                        services=self.steps.services, concepts=self.steps.concepts,
+                        prior=prior)
 
 
 def verify_items(record: Mapping, page: PageContext) -> list[SoftItem]:
@@ -211,15 +262,17 @@ def store_soft_checks(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int,
     """Az oldal `soft_checks` sorai a `v3` mezőből (a korábbiak helyett); `entity_of`: kulcs →
     a mentett entitás. Visszaad: a sorok száma."""
     con.execute("DELETE FROM soft_checks WHERE page_id = ?", [page_id])
-    rows = [[run_id, page_id, entity_of.get(alias_key(s["canonical"])) if s["kept"] else None,
+    rows = [[run_id, page_id, entity_of.get(alias_key(s["canonical"]))
+             if s["kept"] or s.get("as_concept") else None,
              s["canonical"], "service", s["structure"], None, s.get("mentions"), None, None,
-             None, s["sol"], s["kept"]] for s in v3.get("services") or []]
+             None, s["sol"], s["kept"], None, None] for s in v3.get("services") or []]
     rows += [[run_id, page_id, entity_of.get(alias_key(c["canonical"])), c["canonical"],
               "concept", c["structure"], c["blocks"], c["mentions"], c["prominent"], c["rank"],
-              c["knowledge"], None, True] for c in v3.get("concepts") or []]
+              c["knowledge"], None, True, "service" if c.get("from_service") else None,
+              c.get("from_service")] for c in v3.get("concepts") or []]
     if rows:
         con.executemany(
             "INSERT INTO soft_checks (run_id, page_id, entity_id, canonical, type, structure, "
-            "blocks, mentions, prominent, rank, knowledge, sol, kept) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", rows)
+            "blocks, mentions, prominent, rank, knowledge, sol, kept, type_changed_from, "
+            "type_change_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", rows)
     return len(rows)

@@ -26,7 +26,9 @@ entitásaival összevonva.
   a jelenlegi. A típust ez nem írja át.
 - Kinyerés utáni lépés (`refine`, a pipeline-ban `v3.V3Step`): a rekord a mentés előtt; a
   bizonyítékai (`v3` mező) a `soft_checks`-be. Ha az ellenőrző hívás hibára fut, az oldal nem
-  mentődik (`verify_error`).
+  mentődik (`verify_error`). Ha a lépésnek van `current` vizsgálata, és a tárolt rekord nem
+  aktuális, a lépés újra lefut a korábbi rekorddal (`prior`; `refined_again`), a visszajátszott
+  ellenőrzés nem új hívás (`verify_replayed`).
 - Újrafuttatható: a feldolgozott oldal korábbi llm-forrásai ugyanattól a kinyerő modelltől
   törlődnek, a forrás nélkül maradt említés is; az említés nélküli llm-entitás a futás előtt és
   után törlődik (az összevonás nem köt új említést korábbi, említés nélküli entitáshoz).
@@ -386,15 +388,25 @@ def _page_llm(worker: Worker, site: str, page_id: int, lang: str | None, blocks:
     if extraction["entities"] is None:
         log.extraction = None
         return log, "failed"
-    if log.refined is None and worker.refine is not None:
+    current = getattr(worker.refine, "current", None)
+    stale = log.refined is not None and current is not None and not current(log.refined)
+    if (log.refined is None or stale) and worker.refine is not None:
         try:
-            record = worker.refine(extraction, page_id, blocks, lang)
+            record = (worker.refine(extraction, page_id, blocks, lang, prior=log.refined)
+                      if stale else worker.refine(extraction, page_id, blocks, lang))
         except BudgetExceeded:
             log.status = "stopped"
             log.reasons = Counter(budget_stopped_pages=1)
             return log, "budget_refine"
+        if stale:
+            log.reasons["refined_again"] += 1
+        old = set(extraction["call_ids"]) if prior.get("reused") else set()
+        if record.get("verify_replayed"):
+            log.reasons["verify_replayed"] += 1
+            old.add(record.get("verify_call_id"))
         log.call_ids = list(dict.fromkeys(
-            [*log.call_ids, *(i for i in record.get("call_ids") or [] if i is not None)]))
+            [*log.call_ids, *(i for i in record.get("call_ids") or []
+                              if i is not None and i not in old)]))
         if record.get("verify_error"):
             log.status, log.error = "verify_error", record["verify_error"]
             log.reasons["verify_error"] += 1
