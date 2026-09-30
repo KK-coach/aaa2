@@ -3,9 +3,9 @@ a dokumentum sorrendjében (a headingek is saját blokként), azonosítóval; a 
 említésenként blokk-azonosító, a szöveg szerinti alak, a kanonikus név, típus, altípus (zárt
 lista) és egy rövid leírás, továbbá a `primary_entities` lista.
 
-- A blokkok most a mesterséges tesztoldalak JSON-jából jönnek (id, kind, heading_path, text;
-  táblázatnál cellák oszlopfejléccel); a valódi oldalak blokk-parsere külön feladat. A
-  `heading_path` a blokkban marad (a kód használja), a bemenetbe nem kerül.
+- A blokkok a renderelt DOM-ból (`entities.dom`), a mérőeszközökben a tesztoldalak JSON-jából
+  jönnek (id, kind, heading_path, text; táblázatnál cellák oszlopfejléccel). A `heading_path` a
+  blokkban marad (a kód használja), a bemenetbe nem kerül.
 - A prompt állandó; ismert entitás (a site vagy más kör találata) nem kerül bele, és a példái
   nem a tesztoldalakról valók.
 - Ellenőrzés: a `surface_form` (whitespace-normalizálva, kis-nagybetű-érzéketlenül) szóhatárral

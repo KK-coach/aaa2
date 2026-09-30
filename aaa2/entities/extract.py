@@ -1,7 +1,6 @@
 """LLM-es entitás-kör, blokkos bemenettel: oldalanként egy kinyerő hívás a content-régió
-blokkjaira (`blocks.BLOCK_PROMPT`, `BlockExtraction`), opcionálisan egy célzott elnevezési
-hívással (`naming.name_record`); az említések a `page_entities`-be, a determinisztikus kör
-entitásaival összevonva.
+blokkjaira (`blocks.BLOCK_PROMPT`, `BlockExtraction`); az említések a `page_entities`-be, a
+determinisztikus kör entitásaival összevonva.
 
 - Bemenet: a site-ról szóló mondat (`llm.site_line`), utána a content-régió blokkjai sorszám
   szerint, `[b<sorszám>]` azonosítóval (`blocks.block_input`); a chrome-régió nem kerül bele. A
@@ -36,12 +35,12 @@ entitásaival összevonva.
   lépés utáni rekord. Folytatás (`resume`): a modell legutóbbi futása megy tovább, a kész
   oldal kimarad, a meglévő rekord nem hív újra. A keret-őr leállítása és a költséghatár
   (`max_usd`, a futás hívásainak összege) a hátralévő oldalakat `stopped` állapotba teszi.
-- Párhuzamosság (`workers`, `fork`): az oldalak LLM-lépései (kinyerés, elnevezés, ellenőrzés)
+- Párhuzamosság (`workers`, `fork`): az oldalak LLM-lépései (kinyerés, ellenőrzés)
   szálanként saját kurzorral és klienssel futnak, egyszerre legfeljebb `2 × workers` oldal van
   folyamatban; a mentés és a napló a fő szálon, oldalsorrendben. A keret-őr a még futó
   hívásokat is beszámítja (`llm.client`).
 - `entity_runs`: method = llm, a kinyerő modell, a vizsgált oldalak, a hívások (kinyerés,
-  elnevezés, ellenőrzés) és a költségük, az említések, a kitaláltak, az időtartam; az
+  ellenőrzés) és a költségük, az említések, a kitaláltak, az időtartam; az
   oldalnaplóból és az említésekből, folytatásnál az egész futásra.
 - Költségbecslés a futás előtt: `estimate_llm` (a kinyerés darabonként; az ellenőrzés a
   meglévő kinyerésből, csak a szerkezeti helyű service-es oldalakra).
@@ -64,7 +63,6 @@ import duckdb
 from aaa2.entities.blocks import BLOCK_PROMPT, block_input, chunk_blocks
 from aaa2.entities.dom import build_blocks, page_blocks
 from aaa2.entities.llm import site_line
-from aaa2.entities.naming import name_record
 from aaa2.entities.rules import ATTACH_ORDER, SOURCE_STRENGTH, alias_key
 from aaa2.entities.v3 import (
     ESTIMATE_CHARS_PER_TOKEN,
@@ -81,7 +79,6 @@ from aaa2.llm.schemas import ENTITY_TYPES, BlockExtraction
 class LLMRun:
     run_id: int
     model: str
-    naming_model: str | None
     pages: int
     pages_with_entities: int
     entities: int
@@ -205,15 +202,14 @@ class _PageLog:
 
 @dataclass(frozen=True)
 class Worker:
-    """Egy szál LLM-lépései: a kinyerő kliens, az elnevezés kliense és a kinyerés utáni lépés,
-    a szál saját adatbázis-kurzorához kötve (`fork`)."""
+    """Egy szál LLM-lépései: a kinyerő kliens és a kinyerés utáni lépés, a szál saját
+    adatbázis-kurzorához kötve (`fork`)."""
     client: LLMClient
-    naming_client: LLMClient | None = None
     refine: Refine | None = None
 
 
 def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
-            naming_client: LLMClient | None = None, refine: Refine | None = None,
+            refine: Refine | None = None,
             save: bool = True, limit: int | None = None,
             page_ids: Sequence[int] | None = None, resume: bool = False,
             max_usd: float | None = None, workers: int = 1, reuse: bool = False,
@@ -221,8 +217,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
             clock: Callable[[], datetime] | None = None,
             monotonic: Callable[[], float] | None = None) -> LLMRun:
     """`page_ids`: csak ezek közül az alkalmas oldalak; `limit`: legfeljebb ennyi oldal;
-    `naming_client`: az elnevezési hívás kliense (None: nincs elnevezés); `refine`: a kinyerés
-    utáni lépés (`v3.V3Step`; None: nincs); `save`: mentés az említés- és entitástáblába;
+    `refine`: a kinyerés utáni lépés (`v3.V3Step`; None: nincs); `save`: mentés az említés- és entitástáblába;
     `resume`: a modell legutóbbi futásának folytatása; `max_usd`: a futás költséghatára (ha a
     futás hívásai elérik, a többi oldal kimarad). `workers`: ennyi oldal LLM-lépései futnak
     egyszerre, a `fork`-kal szálanként épített klienssel (a kapcsolat kurzorán); a mentés a fő
@@ -246,15 +241,15 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                 "(SELECT entity_id FROM page_entities)")
     index = _EntityIndex(con)
     site = site_line(con) or ""
-    models = (client.model, naming_client.model if naming_client else None,
-              getattr(refine, "fingerprint", None) if refine else None)
+    models = input_models(client.model,
+                          getattr(refine, "fingerprint", None) if refine else None)
     reusable = reusable_pages(con, client.model) if reuse else {}
     raw_hashes = dict(con.execute("SELECT page_id, raw_html_hash FROM pages").fetchall())
     hashes: dict[int, str] = {}
     parallel = workers > 1 and fork is not None
     pool = queue.Queue()
     for _ in range(workers if parallel else 1):
-        pool.put(fork(con.cursor()) if parallel else Worker(client, naming_client, refine))
+        pool.put(fork(con.cursor()) if parallel else Worker(client, refine))
 
     def work(page_id: int, lang: str | None, blocks: list,
              prior: dict) -> tuple[_PageLog, str, float]:
@@ -332,15 +327,20 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
         _stop(con, run_id, waiting, previous, stop_reason, clock)
     con.execute("DELETE FROM entities WHERE source = 'llm' AND entity_id NOT IN "
                 "(SELECT entity_id FROM page_entities)")
-    return _finish(con, run_id, client.model,
-                   naming_client.model if naming_client else None, monotonic() - began, clock)
+    return _finish(con, run_id, client.model, monotonic() - began, clock)
+
+
+def input_models(model: str, refine_fingerprint: str | None) -> tuple[str | None, ...]:
+    """A bemenet-hash modelljei: (kinyerés, None, a kinyerés utáni lépés beállítása). A
+    középső hely a megszűnt elnevezési lépésé; None marad, hogy a tárolt `input_hash`-ek
+    érvényesek maradjanak."""
+    return (model, None, refine_fingerprint)
 
 
 def input_fingerprint(site: str, blocks: Sequence[Mapping],
                       models: Sequence[str | None]) -> str:
     """A kinyerés bemenetének hash-e: a prompt, a site-leíró mondat, a content-blokkok
-    (azonosító, fajta, heading-útvonal, szöveg, cellák) és a modellek (kinyerés, elnevezés, a
-    kinyerés utáni lépés beállítása)."""
+    (azonosító, fajta, heading-útvonal, szöveg, cellák) és a modellek (`input_models`)."""
     payload = json.dumps([BLOCK_PROMPT, site, list(models),
                           [[b.get("id"), b.get("kind"), b.get("heading_path"), b.get("text"),
                             b.get("cells")] for b in blocks]],
@@ -367,7 +367,7 @@ def reusable_pages(con: duckdb.DuckDBPyConnection,
 
 def _page_llm(worker: Worker, site: str, page_id: int, lang: str | None, blocks: list,
               prior: Mapping) -> tuple[_PageLog, str]:
-    """Egy oldal LLM-lépései (kinyerés, elnevezés, a kinyerés utáni lépés), adatbázis-írás
+    """Egy oldal LLM-lépései (kinyerés, a kinyerés utáni lépés), adatbázis-írás
     nélkül a `site`-táblákba: (napló, kimenet). Kimenet: ok, failed (minden darab hibás),
     verify_error, budget_extract / budget_refine (a keret-őr megállította)."""
     log = _PageLog("failed", call_ids=list(prior.get("call_ids") or []),
@@ -376,8 +376,7 @@ def _page_llm(worker: Worker, site: str, page_id: int, lang: str | None, blocks:
         log.reasons["reused_extraction"] += 1
     if log.extraction is None:
         try:
-            log.extraction = _extract(worker.client, worker.naming_client, site, blocks,
-                                      page_id)
+            log.extraction = _extract(worker.client, site, blocks, page_id)
         except BudgetExceeded:
             return log, "budget_extract"
     extraction = log.extraction
@@ -415,9 +414,8 @@ def _page_llm(worker: Worker, site: str, page_id: int, lang: str | None, blocks:
     return log, "ok"
 
 
-def _extract(client: LLMClient, naming_client: LLMClient | None, site: str,
-             blocks: Sequence[dict], page_id: int) -> dict:
-    """A kinyerés (és az elnevezés) rekordja: `entities` (None: minden darab hibás),
+def _extract(client: LLMClient, site: str, blocks: Sequence[dict], page_id: int) -> dict:
+    """A kinyerés rekordja: `entities` (None: minden darab hibás),
     `primary_entities`, `call_id` (az első sikeres kinyerő hívás), `call_ids`, `chunks`,
     `reasons` (a kimaradás okai)."""
     page = extract_page(client, site, blocks, page_id)
@@ -430,18 +428,6 @@ def _extract(client: LLMClient, naming_client: LLMClient | None, site: str,
     reasons: Counter[str] = Counter(f"chunk_{reason}" for reason, _ in page.failures)
     record.update(entities=page.entities,
                   call_id=next(i for i in page.call_ids if i not in failed))
-    if naming_client is not None:
-        by_id = {block["id"]: block for block in blocks}
-        try:
-            named = name_record(naming_client, record, by_id, page_id=page_id)
-        except BudgetExceeded:
-            reasons["naming_budget_stopped"] += 1
-        else:
-            if named.get("naming_error"):
-                reasons["naming_error"] += 1
-            record = {**named, "chunks": page.chunks,
-                      "call_ids": list(dict.fromkeys([*record["call_ids"],
-                                                      *named.get("call_ids", [])]))}
     record["reasons"] = dict(reasons)
     return record
 
@@ -529,8 +515,8 @@ def _run_cost(con: duckdb.DuckDBPyConnection, run_id: int) -> float:
         [run_id]).fetchone()[0]
 
 
-def _finish(con: duckdb.DuckDBPyConnection, run_id: int, model: str, naming_model: str | None,
-            seconds: float, clock: Callable[[], datetime]) -> LLMRun:
+def _finish(con: duckdb.DuckDBPyConnection, run_id: int, model: str, seconds: float,
+            clock: Callable[[], datetime]) -> LLMRun:
     """A futás mérőszámai az oldalnaplóból és az említésekből (folytatásnál az egész
     futásra), az `entity_runs` sorába írva."""
     logs = con.execute("SELECT status, reasons, call_ids, fabricated FROM entity_run_pages "
@@ -560,7 +546,7 @@ def _finish(con: duckdb.DuckDBPyConnection, run_id: int, model: str, naming_mode
         "by_position = ?, skipped = ?, seconds = coalesce(seconds, 0) + ? WHERE run_id = ?",
         [clock(), done, pages_with, entities, rows, len(call_ids), cost, fabricated,
          json.dumps(positions), json.dumps(reasons), seconds, run_id])
-    return LLMRun(run_id, model, naming_model, done, pages_with, entities, rows, len(call_ids),
+    return LLMRun(run_id, model, done, pages_with, entities, rows, len(call_ids),
                   cost, fabricated, positions, reasons)
 
 
@@ -573,7 +559,7 @@ EXTRACT_OUTPUT_RATIO = 2.0           # kimeneti / bemeneti token a kinyerésnél
 
 @dataclass(frozen=True)
 class Estimate:
-    """A futás becsült költsége: a kinyerés (és az elnevezés) darabonként; az ellenőrzés csak a
+    """A futás becsült költsége: a kinyerés darabonként; az ellenőrzés csak a
     már meglévő kinyerésű oldalakra, ahol szerkezeti helyen áll service (`verify_pages`); a még
     kinyeretlen oldalakon a kinyerés után dől el (`verify_pending`), a futás közben a
     költséghatár őrzi."""
@@ -593,16 +579,16 @@ class Estimate:
 
 
 def estimate_llm(con: duckdb.DuckDBPyConnection, config: LLMConfig, model: str,
-                 naming_model: str | None, verify_model: str | None, day: date, *,
+                 verify_model: str | None, day: date, *,
                  limit: int | None = None, page_ids: Sequence[int] | None = None,
                  resume: bool = False,
                  reuse_models: Sequence[str | None] | None = None) -> Estimate:
     """A `run_llm` oldalaira, ugyanazzal a kiválasztással és folytatással: darabonként a
     prompt és a bemenet karakterei `v3.ESTIMATE_CHARS_PER_TOKEN`-nel, a kimenet
-    `EXTRACT_OUTPUT_RATIO`-val; az elnevezés a kinyeréssel azonos becsléssel. Az ellenőrzés a
+    `EXTRACT_OUTPUT_RATIO`-val. Az ellenőrzés a
     meglévő kinyerésből (`v3.verify_usage`), a kinyeretlen oldalak száma külön. A meglévő
     kinyerés nem számít újra. `reuse_models`: a `run_llm` újrahasználatának modelljei
-    (kinyerés, elnevezés, a lépés beállítása); a változatlan oldal nem számít (`reused`)."""
+    (`input_models`); a változatlan oldal nem számít (`reused`)."""
     pages = select_pages(con, page_ids, limit)
     build_blocks(con, [page_id for page_id, _ in pages])
     previous = run_pages(con, resumable_run(con, model) if resume else None)
@@ -632,8 +618,6 @@ def estimate_llm(con: duckdb.DuckDBPyConnection, config: LLMConfig, model: str,
                 tokens_in += tokens
                 usage = Usage(input=tokens, output=round(tokens * EXTRACT_OUTPUT_RATIO))
                 extract_usd += config.cost_usd(model, usage, day)
-                if naming_model:
-                    extract_usd += config.cost_usd(naming_model, usage, day)
         if not verify_model or prior.get("refined") is not None:
             continue
         if extraction is None:

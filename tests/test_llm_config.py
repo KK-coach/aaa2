@@ -84,12 +84,10 @@ def test_fallback_is_switched_from_config(tmp_path):
 
 
 def test_pipeline_steps_choose_their_models_independently(tmp_path):
-    assert CONFIG.pipeline == {"extraction": "gpt-6-luna", "naming": "off",
-                               "verify": "gpt-6-sol"}
-    config = load_config(variant(tmp_path, 'naming = "off"', 'naming = "claude-sonnet-5"'))
-    assert config.pipeline == {"extraction": "gpt-6-luna", "naming": "claude-sonnet-5",
-                               "verify": "gpt-6-sol"}
-    assert config.provider_of(config.pipeline["naming"]) == "anthropic"
+    assert CONFIG.pipeline == {"extraction": "gpt-6-luna", "verify": "gpt-6-sol"}
+    config = load_config(variant(tmp_path, 'verify = "gpt-6-sol"', 'verify = "claude-sonnet-5"'))
+    assert config.pipeline == {"extraction": "gpt-6-luna", "verify": "claude-sonnet-5"}
+    assert config.provider_of(config.pipeline["verify"]) == "anthropic"
     config = load_config(variant(tmp_path, 'verify = "gpt-6-sol"', 'verify = "off"'))
     assert config.pipeline["verify"] == "off"
 
@@ -109,9 +107,8 @@ def test_stop_threshold_is_read_from_config(tmp_path):
     ("valid_from = 2027-01-01", "valid_from = 2026-12-31", "gemini-3.8-flash: átfedő ársorok"),
     ("valid_until = 2026-12-31\n", "", "gemini-3.8-flash: átfedő ársorok"),
     ("[gemini]", "[google]", r"hiányzik a \[gemini\] szakasz"),
-    ('naming = "off"', 'naming = "gpt-6-x"',
-     r"\[pipeline\] naming: a gpt-6-x nincs a konfigurált modellek között"),
-    ('naming = "off"', "", r"\[pipeline\]: a lépések extraction, naming, verify"),
+    ('verify = "gpt-6-sol"', 'verify = "gpt-6-sol"\nnaming = "off"',
+     r"\[pipeline\]: a lépések extraction, verify"),                   # a megszűnt elnevezés
     ('verify = "gpt-6-sol"', 'verify = "gpt-6-x"',
      r"\[pipeline\] verify: a gpt-6-x nincs a konfigurált modellek között"),
     ('extraction = "gpt-6-luna"', 'extraction = "off"',

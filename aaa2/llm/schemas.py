@@ -55,23 +55,6 @@ Subtype = Literal[
 ]
 
 
-class ExtractedEntity(BaseModel):
-    name: str = Field(description="Canonical name, written as on the page, not translated.")
-    type: EntityType
-    description: str = Field(description="What this entity is in this text, in one short "
-                                         "sentence.")
-    evidence: str = Field(description="A quote copied verbatim from the page text that contains "
-                                      "the name.")
-    context: str = Field(description="The paragraph or list item that contains the evidence, "
-                                     "copied from the page.")
-
-
-class PageExtraction(BaseModel):
-    primary_entity: str = Field(description="The entity the page is mainly about, as written on "
-                                            "the page; it may be a common noun.")
-    entities: list[ExtractedEntity]
-
-
 class BlockEntity(BaseModel):
     """Egy entitás egy említése egy blokkban (blokkformátumú bemenetnél)."""
 
@@ -84,28 +67,6 @@ class BlockEntity(BaseModel):
     subtype: Subtype | None = Field(description="One value from the subtype list of the "
                                                 "entity's type; null for a person.")
     description: str = Field(description="What the entity is in this text, at most 10 words.")
-
-
-class NamedEntity(BaseModel):
-    """Egy entitás egy felismert említésben (célzott elnevezési hívás)."""
-
-    surface_form: str = Field(description="The words of the mention that name this entity, "
-                                          "exactly as in the block text, suffixes included.")
-    canonical_name: str = Field(description="The entity's own name: base form, uninflected, in "
-                                            "full, not translated.")
-    type: EntityType
-    subtype: Subtype | None = Field(description="One value from the subtype list of the "
-                                                "entity's type; null for a person.")
-
-
-class NamedMention(BaseModel):
-    mention_id: str = Field(description="The id of the mention, as given in the input.")
-    entities: list[NamedEntity] = Field(description="The entity or entities the mention names; "
-                                                    "at least one.")
-
-
-class NamingResult(BaseModel):
-    mentions: list[NamedMention]
 
 
 class BlockExtraction(BaseModel):

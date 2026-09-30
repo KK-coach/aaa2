@@ -3,7 +3,6 @@ pontozás a referencialista ellen a nyers kimenetből.
 
     python -m tests.acceptance.synthetic_eval run [--model gpt-6-luna] [--tag r2]
     python -m tests.acceptance.synthetic_eval report [--model gpt-6-luna] [--tag r2]
-    python -m tests.acceptance.synthetic_eval name --from r4a1 --tag r4a1n [--naming-model M]
 
 A tesztoldalak: `tests/acceptance/synthetic/*.json` (blokkok, site-leírás, referencialista:
 kötelező, opcionális, negatív). A `set` mező szerint fejlesztési (a mező nélküli oldalak, s1–s3)
@@ -43,11 +42,6 @@ Pontozás (`score_page`), oldalanként:
   üres referenciánál csak az üres lista jó;
 - költség, token be / ki.
 
-Elnevezés (`name`): egy meglévő kör rekordjaira a célzott elnevezési hívás
-(`entities.naming`), a kinyerés újrahívása nélkül; az új rekord a `--tag` alá kerül, a
-költsége a kinyerés és az elnevezés hívásainak összege (`call_ids`). A kinyerés modellje a
-`--model`, az elnevezésé a `--naming-model` (alapból a `models.toml` `[pipeline]` szakasza).
-
 Önkonzisztencia (`consensus`): több futás uniója és többsége, a felismerés szerint szavazva
 (blokk + átfedő szöveg szerinti alak), a név a jelölt említéseinek leggyakoribb kanonikus neve.
 """
@@ -65,7 +59,6 @@ from aaa2.db.connect import DATA_DIR, connect
 from aaa2.entities.blocks import check_surface, surface_spans
 from aaa2.entities.extract import extract_page
 from aaa2.entities.gate import SOFT_TYPES
-from aaa2.entities.naming import name_record
 from aaa2.entities.rules import alias_key
 from aaa2.llm.client import LLMError, open_clients
 from aaa2.llm.config import load_config
@@ -130,30 +123,6 @@ def run(model: str, data_dir: Path, pages: list[dict], tag: str = "") -> None:
             print(f"{page['page_id']}: {model}: "
                   + (record["error"] or f"{len(record['entities'])} említés, "
                      f"{len(record['primary_entities'])} elsődleges"))
-    finally:
-        con.close()
-
-
-def name_run(model: str, data_dir: Path, pages: list[dict], source: str, tag: str,
-             naming_model: str) -> None:
-    """A `source` kör (`model` kinyerése) rekordjaira az elnevezési hívás a `naming_model`-lel;
-    az eredmény a `tag` alá kerül."""
-    con = connect(data_dir / "synthetic.duckdb")
-    try:
-        client = _client(con, naming_model)
-        for page in pages:
-            path = output_path(data_dir, page["page_id"], model, source)
-            record = json.loads(path.read_text(encoding="utf-8"))
-            if record.get("entities") is None:
-                named = {**record, "call_ids": [i for i in [record.get("call_id")] if i]}
-            else:
-                named = name_record(client, record, {b["id"]: b for b in page["blocks"]})
-            output_path(data_dir, page["page_id"], model, tag).write_text(
-                json.dumps(named, ensure_ascii=False, indent=1), encoding="utf-8")
-            print(f"{page['page_id']}: {source} → {tag}: "
-                  + (named.get("naming_error") or record.get("error")
-                     or f"{len(record['entities'])} → {len(named['entities'])} említés, "
-                        f"válasz nélkül {named['naming_missing']}"))
     finally:
         con.close()
 
@@ -535,17 +504,6 @@ def table_row(label: str, s: PageScore) -> str:
             f"{s.tokens_in} / {s.tokens_out} |")
 
 
-def comparison_markdown(rows: list[tuple[str, list[PageScore]]]) -> str:
-    """Több kör vagy változat összesítve, egymás alatt; alatta oldalanként is."""
-    lines = [HEADER.format(first="kör"), RULE]
-    lines += [table_row(f"**{label}**", total_of(scores)) for label, scores in rows]
-    for page_id in [s.page_id for s in rows[0][1]]:
-        lines += ["", f"### {page_id}", "", HEADER.format(first="kör"), RULE]
-        lines += [table_row(label, s) for label, scores in rows for s in scores
-                  if s.page_id == page_id]
-    return "\n".join(lines) + "\n"
-
-
 def report_markdown(model: str, scores: list[PageScore]) -> str:
     lines = [f"# Mesterséges oldalak: `{model}`, blokkos prompt, egész oldal", "",
              ("Pontozás a nyers kimenetből. Találat: a kanonikus név vagy a szöveg szerinti alak "
@@ -838,14 +796,10 @@ def compare_markdown(model: str, data_dir: Path, pages: list[dict], single: list
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["run", "report", "compare", "name", "checkpoint"])
+    parser.add_argument("command", choices=["run", "report", "compare", "checkpoint"])
     parser.add_argument("--model", default=None,
                         help="a kinyerés modellje (alapból a [pipeline] extraction)")
-    parser.add_argument("--naming-model", default=None,
-                        help="name: az elnevezés modellje (alapból a [pipeline] naming)")
     parser.add_argument("--tag", default="", help="a kör címkéje (r1, r2, …)")
-    parser.add_argument("--from", dest="source", default="",
-                        help="name: a kör címkéje, amelynek a rekordjait elnevezi")
     parser.add_argument("--single", default="", help="compare: egyszeri körök címkéi, vesszővel")
     parser.add_argument("--repeated", action="append", default=[],
                         help="compare: név=címke1,címke2,… (ismételt futások)")
@@ -885,14 +839,6 @@ def main(argv: list[str] | None = None) -> None:
         return
     if args.command == "run":
         run(args.model, args.data_dir, pages, args.tag)
-    if args.command == "name":
-        if not args.source or not args.tag or args.source == args.tag:
-            raise SystemExit("name: --from és egy tőle eltérő --tag kell")
-        naming_model = args.naming_model or pipeline["naming"]
-        if naming_model == "off":
-            raise SystemExit("name: az elnevezés ki van kapcsolva ([pipeline] naming = off); "
-                             "a --naming-model adja meg a modellt")
-        name_run(args.model, args.data_dir, pages, args.source, args.tag, naming_model)
     args.out.mkdir(parents=True, exist_ok=True)
     out = args.out / f"{args.model}{'-' + args.tag if args.tag else ''}-report.md"
     out.write_text(report_markdown(args.model, measure(args.model, args.data_dir, pages,

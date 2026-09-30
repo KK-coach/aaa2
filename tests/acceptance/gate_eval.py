@@ -1,22 +1,17 @@
-"""Kapu (E1) és entitásonkénti ellenőrzés (E2) a tárolt kinyerési kimeneteken, verdikt-alapú
-precizitással.
+"""Verdikt-alapú precizitás a tárolt kinyerési kimeneteken, és a közös rekord- és
+verdikt-eszközök (a `v3_eval` is ezeket használja). Az M2/5 kapu-kísérletének (E1, E2)
+futtatói az M2 lezárásakor kikerültek; a tárolt kimeneteik a `report`-tal olvashatók.
 
-    python -m tests.acceptance.gate_eval e1 --from cp --tag cp-e1
-    python -m tests.acceptance.gate_eval e2 --from cp --tag cp-e2-luna --verify-model gpt-6-luna
     python -m tests.acceptance.gate_eval verdicts --series cp --series cp-e1 …
     python -m tests.acceptance.gate_eval report --series "szűrés nélkül=cp" --series "E1=cp-e1" …
+    python -m tests.acceptance.gate_eval realign --from cp --tag cp-new --old-pages-dir …
 
 Közös kapcsolók: `--model` (a kinyerés modellje, alapból a `[pipeline] extraction`),
 `--pages-dir` (az oldalak JSON-jai; alapból a `dev_pages/`), `--page`, `--data-dir`. Az oldalak
 a valódi fejlesztési oldalak (`synthetic_eval.REAL`).
 
-- `e1`: a `--from` kör rekordjaira a kapu (`entities.gate`); a navigáció (chrome-régió) és az
-  anchor-szövegek a rögzített készlet renderelt DOM-jából (`annotation.PAGES`, `v3.dom_context`),
-  a tartalmi blokkok az oldal JSON-jából. A tudásbázis-kérések gyorsítótára és naplója:
-  `<data-dir>/gate.duckdb`. Kimenet: a rekord a `--tag` alá, a döntések mellé
-  (`<oldal>.<modell>.<címke>.gate.json`).
-- `e2`: a `--from` kör rekordjaira az ellenőrző hívás (`entities.verify`) a `--verify-model`-lel;
-  a hívás a `synthetic.duckdb` `llm_calls`-ába kerül, a költsége a rekord `call_ids`-ában.
+- `realign`: a `--from` rekordjainak és a verdiktfájl blokkjainak igazítása új blokkokhoz,
+  szöveg szerint (`--old-pages-dir`: a régi blokkok oldalai); kimenet a `--tag` alá.
 - `verdicts`: a sorozatok kimenetéből a még nem megítélt concept- és service-tételek a
   verdiktfájlba (`tests/acceptance/verdicts/verdicts.json`): oldal, kanonikus név, típus, a
   tétel blokkja és szövege, a helye a referencialistában; tételenként (oldal, név kulcsa, típus)
@@ -35,33 +30,26 @@ from __future__ import annotations
 
 import argparse
 import json
-import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from pathlib import Path
 
 import duckdb
-import httpx
 import zstandard
 
 import tests.acceptance.synthetic_eval as se
-from aaa2.db.connect import DATA_DIR, connect
+from aaa2.db.connect import DATA_DIR
 from aaa2.entities.blocks import block_text, surface_spans
 from aaa2.entities.gate import (
     PROMINENT_KINDS,
-    KnowledgeBase,
     PageContext,
     SoftItem,
-    gate_record,
     soft_items,
     structure,
 )
 from aaa2.entities.rules import alias_key
 from aaa2.entities.v3 import dom_context
-from aaa2.entities.validate import _Api
-from aaa2.entities.verify import item_block, verify_record
-from aaa2.llm.client import Retry
+from aaa2.entities.verify import item_block
 from aaa2.llm.config import load_config
 from tests.acceptance.annotation import PAGES as CRAWLED
 from tests.acceptance.annotation import block_mapping, locked_sources
@@ -124,55 +112,6 @@ def write_record(data_dir: Path, page_id: str, model: str, tag: str, record: Map
 
 def decisions_path(data_dir: Path, page_id: str, model: str, tag: str) -> Path:
     return se.output_path(data_dir, page_id, model, tag).with_suffix(".gate.json")
-
-
-def run_e1(model: str, data_dir: Path, pages: list[dict], source: str, tag: str,
-           knowledge=None) -> None:
-    con = None
-    if knowledge is None:
-        con = connect(data_dir / "gate.duckdb")
-        api = _Api(con, None, httpx.Client(timeout=20.0), Retry(), _now, time.monotonic)
-        knowledge = KnowledgeBase(api.get)
-    try:
-        for page in pages:
-            record = read_record(data_dir, page["page_id"], model, source)
-            if record is None or record.get("entities") is None:
-                continue
-            gated, decisions = gate_record(record, page_context(page, data_dir), knowledge)
-            gated["gate_source"] = source
-            write_record(data_dir, page["page_id"], model, tag, gated)
-            decisions_path(data_dir, page["page_id"], model, tag).write_text(json.dumps(
-                [d.__dict__ for d in decisions], ensure_ascii=False, indent=1), encoding="utf-8")
-            kept = sum(d.keep for d in decisions)
-            print(f"{page['page_id']}: {source} → {tag}: {kept}/{len(decisions)} tétel marad")
-    finally:
-        if con is not None:
-            con.close()
-
-
-def _now() -> datetime:
-    return datetime.now(UTC).replace(tzinfo=None)
-
-
-def run_e2(model: str, data_dir: Path, pages: list[dict], source: str, tag: str,
-           verify_model: str) -> None:
-    con = connect(data_dir / "synthetic.duckdb")
-    try:
-        client = se._client(con, verify_model)
-        for page in pages:
-            record = read_record(data_dir, page["page_id"], model, source)
-            if record is None or record.get("entities") is None:
-                continue
-            blocks = {b["id"]: b for b in page["blocks"]}
-            verified = verify_record(client, record, blocks)
-            verified["verify_source"] = source
-            write_record(data_dir, page["page_id"], model, tag, verified)
-            dropped = sum(1 for _, _, keep in verified["verify_decisions"] if keep is False)
-            print(f"{page['page_id']}: {source} → {tag}: "
-                  + (verified["verify_error"] or f"{dropped}/{len(verified['verify_decisions'])}"
-                     f" tétel kiesik, válasz nélkül {verified['verify_missing']}"))
-    finally:
-        con.close()
 
 
 # ---------------------------------------------------------------------------
@@ -517,13 +456,12 @@ def realign_verdicts(path: Path, page: Mapping, record: Mapping) -> int:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["e1", "e2", "verdicts", "report", "realign"])
+    parser.add_argument("command", choices=["verdicts", "report", "realign"])
     parser.add_argument("--old-pages-dir", type=Path, default=None,
                         help="realign: a régi blokkok oldalai")
     parser.add_argument("--model", default=None)
     parser.add_argument("--from", dest="source", default="")
     parser.add_argument("--tag", default="")
-    parser.add_argument("--verify-model", default=None)
     parser.add_argument("--series", action="append", default=[],
                         help="report: név=címke; verdicts: címke")
     parser.add_argument("--page", action="append", default=[])
@@ -533,16 +471,10 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     model = args.model or load_config().pipeline["extraction"]
     pages = load_real_pages(args.pages_dir, args.page)
-    if args.command in ("e1", "e2", "realign") and (not args.source or not args.tag
-                                         or args.source == args.tag):
+    if args.command == "realign" and (not args.source or not args.tag
+                                      or args.source == args.tag):
         raise SystemExit(f"{args.command}: --from és egy tőle eltérő --tag kell")
-    if args.command == "e1":
-        run_e1(model, args.data_dir, pages, args.source, args.tag)
-    elif args.command == "e2":
-        if not args.verify_model:
-            raise SystemExit("e2: --verify-model kell")
-        run_e2(model, args.data_dir, pages, args.source, args.tag, args.verify_model)
-    elif args.command == "realign":
+    if args.command == "realign":
         old_pages = {p["page_id"]: p for p in load_real_pages(args.old_pages_dir, args.page)}
         for page in pages:
             record = read_record(args.data_dir, page["page_id"], model, args.source)

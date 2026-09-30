@@ -23,7 +23,6 @@ from pathlib import Path
 import duckdb
 
 import tests.acceptance.gate_eval as ge
-import tests.acceptance.synthetic_eval as se
 from aaa2.db.connect import connect
 from aaa2.llm.config import load_config
 from tests.acceptance.annotation import LOCKED_DIR, locked_sources
@@ -107,6 +106,3 @@ def main(argv: list[str] | None = None) -> None:
 
 if __name__ == "__main__":
     main()
-
-
-__all__ = ["main", "se"]

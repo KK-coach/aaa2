@@ -11,13 +11,12 @@
 # (OpenAI) a saját árán számol. A gondolkodási (thinking / reasoning) tokenek kimeneti áron.
 
 # A pipeline lépéseinek modellje; a lépések különböző modellt használhatnak. Mindegyik egy
-# szolgáltató konfigurált modellje (`model`, `fallback` vagy `alternatives`); az elnevezés és az
-# ellenőrzés "off" is lehet (nincs ilyen hívás). A lépések ki-bekapcsolása:
+# szolgáltató konfigurált modellje (`model`, `fallback` vagy `alternatives`); az ellenőrzés
+# "off" is lehet (nincs ilyen hívás). A lépések ki-bekapcsolása:
 # aaa2/entities/config/pipeline.toml.
 
 [pipeline]
 extraction = "gpt-6-luna"      # blokkos kinyerés (entities.blocks)
-naming = "off"                 # célzott elnevezési hívás (entities.naming); választható: gpt-6-luna, gpt-6-sol
 verify = "gpt-6-sol"           # a saját ajánlatok (service) ellenőrzése (entities.verify); off: csak a szerkezeti hely
 
 [anthropic]

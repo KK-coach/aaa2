@@ -1,22 +1,23 @@
-"""A puha típusok (concept, service) kapuja a kinyerés után, LLM nélkül.
+"""A puha típusok (concept, service) tételei és bizonyítékaik a v3 szabálynak (`entities.v3`),
+LLM nélkül, és a tudásbázis-egyezés.
 
-- Tétel: az oldal azonos kanonikus kulcsú (`alias_key`) említései; a típusa az első említésé.
-  Csak a concept és a service típusú tétel megy át a kapun, a többi érintetlen. A kitalált
-  említés (a szöveg szerinti alak nincs a blokkban) nem számít.
+- Tétel (`soft_items`): az oldal azonos kanonikus kulcsú (`alias_key`) említései; a típusa az
+  első említésé. Csak a concept és a service típusú tétel; a kitalált említés (a szöveg szerinti
+  alak nincs a blokkban) nem számít.
 - A tétel neve a kanonikus neve; a szöveg szerinti alak nem alias (lehet a névnek csak egy
-  része), a modell aliast nem ad. Előfordulás: a név kulcsa a normalizált (`alias_key`)
-  szövegben szókezdettől; 3 karakternél hosszabb névnél rag követheti, rövidebbnél csak teljes
-  szóként.
-- Feltételek:
-  - szerkezet: a tételnek van említése, vagy a neve előfordul title, heading, card vagy
-    table_row típusú blokkban, a chrome-régió (navigáció) szövegében, vagy egy anchor-szövegben;
-  - ismétlődés: legalább 2 különböző tartalmi blokk (az említések blokkjai és a név
-    előfordulásai együtt);
-  - tudásbázis: a kanonikus név pontosan (kulcs szerint) egyezik
-    egy Wikidata-címkével vagy -aliasszal (`wbsearchentities`, szigorú nyelv), vagy egy
-    Wikipedia-címmel vagy átirányítással, az oldal nyelvén vagy angolul; egyértelműsítő lap
-    nem számít.
-- A concept marad, ha legalább egy feltétel teljesül; a service csak a szerkezettel.
+  része), a modell aliast nem ad. Előfordulás (`occurs`): a név kulcsa a normalizált
+  (`alias_key`) szövegben szókezdettől; 3 karakternél hosszabb névnél rag követheti, rövidebbnél
+  csak teljes szóként.
+- Bizonyítékok:
+  - szerkezet (`structure`): a tételnek van említése, vagy a neve előfordul title, heading, card
+    vagy table_row típusú blokkban, a chrome-régió (navigáció) szövegében, vagy egy
+    anchor-szövegben;
+  - ismétlődés (`repetition`): a különböző tartalmi blokkok száma (az említések blokkjai és a
+    név előfordulásai együtt);
+  - tudásbázis (`KnowledgeBase`): a kanonikus név pontosan (kulcs szerint) egyezik egy
+    Wikidata-címkével vagy -aliasszal (`wbsearchentities`, szigorú nyelv), vagy egy
+    Wikipedia-címmel vagy átirányítással, az oldal nyelvén vagy angolul; egyértelműsítő lap nem
+    számít.
 - A tudásbázis-kérések a `validate` gyorsítótárán és naplóján át mennek (`validation_cache`,
   `validation_calls`); ismételt futásnál nincs újrahívás.
 """
@@ -119,48 +120,6 @@ def repetition(item: SoftItem, page: PageContext) -> int:
     return len(found)
 
 
-@dataclass(frozen=True)
-class GateDecision:
-    key: str
-    canonical: str
-    type: str
-    mentions: int
-    structure: str | None
-    blocks: int
-    knowledge: str | None
-    keep: bool
-
-    @property
-    def repeated(self) -> bool:
-        return self.blocks >= 2
-
-
-def decide(item: SoftItem, page: PageContext,
-           knowledge: Callable[[Sequence[str], str], str | None]) -> GateDecision:
-    """A tétel feltételei és a döntés; a tudásbázist minden concept-tételre megkérdezi (a
-    feltételenkénti mérés miatt), a service-tételre nem."""
-    where = structure(item, page)
-    count = repetition(item, page)
-    found = knowledge(item.names(), page.lang) if item.type == "concept" else None
-    keep = where is not None if item.type == "service" else bool(
-        where is not None or count >= 2 or found)
-    return GateDecision(item.key, item.canonical, item.type, len(item.mentions), where, count,
-                        found, keep)
-
-
-def gate_record(record: Mapping, page: PageContext,
-                knowledge: Callable[[Sequence[str], str], str | None]
-                ) -> tuple[dict, list[GateDecision]]:
-    """A rekord a kapu után (a kiesett tételek minden említése nélkül) és a döntések."""
-    decisions = [decide(item, page, knowledge)
-                 for item in soft_items(record.get("entities") or [], page.by_id())]
-    dropped = {d.key for d in decisions if not d.keep}
-    out = dict(record)
-    out["entities"] = [raw for raw in record.get("entities") or []
-                       if alias_key(raw["canonical_name"]) not in dropped]
-    return out, decisions
-
-
 # ---------------------------------------------------------------------------
 # tudásbázis: Wikidata és Wikipedia
 # ---------------------------------------------------------------------------
@@ -196,11 +155,6 @@ def wikidata_hit(body: Mapping | None, name: str, lang: str) -> dict | None:
     return first
 
 
-def wikidata_match(body: Mapping | None, name: str, lang: str) -> str | None:
-    hit = wikidata_hit(body, name, lang)
-    return hit["id"] if hit else None
-
-
 def wikipedia_page(body: Mapping | None) -> dict | None:
     """A lekérdezett címek közül az első létező, nem egyértelműsítő lap (`title`, és
     `redirect`: átirányításon át ért-e oda)."""
@@ -215,11 +169,6 @@ def wikipedia_page(body: Mapping | None) -> dict | None:
     return None
 
 
-def wikipedia_title(body: Mapping | None) -> str | None:
-    page = wikipedia_page(body)
-    return page["title"] if page else None
-
-
 def title_variants(name: str) -> list[str]:
     """A név, és ha más, a kis kezdőbetű utáni része kisbetűvel (a Wikipedia a kezdőbetűt maga
     normalizálja)."""
@@ -228,7 +177,7 @@ def title_variants(name: str) -> list[str]:
 
 
 class KnowledgeBase:
-    """A (c) feltétel: `get(service, url, params)` → (kulcs, válasz) kérő, pl. a
+    """A tudásbázis-egyezés: `get(service, url, params)` → (kulcs, válasz) kérő, pl. a
     `validate._Api` gyorsítótárral. `failures`: a válasz nélküli (hibás) kérések száma."""
 
     def __init__(self, get: Callable[[str, str, list[tuple[str, str]]], tuple[str, dict | None]]):

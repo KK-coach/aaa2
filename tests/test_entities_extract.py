@@ -1,7 +1,6 @@
 """A blokkos LLM-kör (aaa2/entities/extract.py) előre adott válaszokkal: a bemenet, a
-szöveg-szerinti-alak ellenőrzés, az említések, az összevonás, az elnevezési hívás és a
-mérőszámok. A hívások a valódi LLM-kliensen mennek át (llm_calls, főkönyv), csak az adapter
-hamis."""
+szöveg-szerinti-alak ellenőrzés, az említések, az összevonás és a mérőszámok. A hívások a
+valódi LLM-kliensen mennek át (llm_calls, főkönyv), csak az adapter hamis."""
 import json
 import re
 import threading
@@ -17,9 +16,14 @@ from aaa2.cli.main import app
 from aaa2.db.connect import connect, db_path
 from aaa2.entities.blocks import BLOCK_PROMPT, block_input
 from aaa2.entities.dom import build_blocks, page_blocks
-from aaa2.entities.extract import Worker, estimate_llm, run_llm, surface_offsets
+from aaa2.entities.extract import (
+    Worker,
+    estimate_llm,
+    input_models,
+    run_llm,
+    surface_offsets,
+)
 from aaa2.entities.llm import site_line
-from aaa2.entities.naming import NAMING_PROMPT
 from aaa2.entities.rules import run_rules
 from aaa2.llm import ledger
 from aaa2.llm.adapters import Reply, genai_errors
@@ -314,38 +318,6 @@ def test_same_llm_entity_on_two_pages_is_one_entity(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# elnevezési hívás
-# ---------------------------------------------------------------------------
-
-
-def test_naming_call_renames_and_splits_before_storing(tmp_path):
-    """Az elnevezés a birtokos szerkezetet szétbontja, a tapadó főnevet leválasztja; az
-    említés a saját szöveg szerinti alakjával kerül tárolásra; mindkét hívás költsége számít."""
-    con = site({"/": html("P", "<p>Az Apple ITP-je és a Shopify-integráció fontos.</p>")})
-    client, _ = client_for(con, [reply(
-        mention("b1", "Apple ITP-je", "Apple ITP", "tech"),
-        mention("b1", "Shopify-integráció", "Shopify-integráció", "tech"))], tmp_path)
-    naming, naming_adapter = client_for(con, [{"mentions": [
-        {"mention_id": "m0", "entities": [
-            {"surface_form": "Apple", "canonical_name": "Apple", "type": "org",
-             "subtype": "company"},
-            {"surface_form": "ITP-je", "canonical_name": "ITP", "type": "tech",
-             "subtype": "feature"}]},
-        {"mention_id": "m1", "entities": [
-            {"surface_form": "Shopify-integráció", "canonical_name": "Shopify", "type": "tech",
-             "subtype": "software"}]}]}], tmp_path, provider="openai")
-    run = run_llm(con, client, naming_client=naming)
-    assert naming_adapter.calls[0][0] == NAMING_PROMPT
-    assert mentions(con) == [("Apple", 1, 3, 8, "Apple", "body"),
-                             ("ITP", 1, 9, 15, "ITP-je", "body"),
-                             ("Shopify", 1, 21, 39, "Shopify-integráció", "body")]
-    assert (run.naming_model, run.llm_calls) == ("gpt-6-luna", 2)
-    assert con.execute("SELECT purpose, page_id FROM llm_calls ORDER BY call_id").fetchall() == [
-        ("extract", 1), ("naming", 1)]
-    assert con.execute("SELECT llm_calls FROM entity_runs").fetchone() == (2,)
-
-
-# ---------------------------------------------------------------------------
 # újrafuttatás, hibák, mérőszámok
 # ---------------------------------------------------------------------------
 
@@ -445,7 +417,7 @@ def test_live_three_pages_with_the_pipeline_models(reference_crawl):
     if provider not in clients:
         pytest.skip(skipped[provider])
     run_rules(con)
-    run = run_llm(con, clients[provider], naming_client=clients[provider], limit=3)
+    run = run_llm(con, clients[provider], limit=3)
     print(f"\n{run}")
     rows = con.execute(
         "SELECT e.name, pe.surface_form, b.text, pe.char_start, pe.char_end "
@@ -616,8 +588,8 @@ def test_a_changed_page_gets_new_blocks_and_only_it_is_extracted_again(tmp_path)
     assert build_blocks(con) == 1
     assert con.execute("SELECT count(*) FROM page_entities WHERE page_id = ?",
                        [page_id]).fetchone() == (0,)          # a régi blokkok említései
-    guess = estimate_llm(con, CONFIG, "gemini-3.8-flash", None, None, NOON.date(),
-                         reuse_models=("gemini-3.8-flash", None, None))
+    guess = estimate_llm(con, CONFIG, "gemini-3.8-flash", None, NOON.date(),
+                         reuse_models=input_models("gemini-3.8-flash", None))
     assert (guess.pages, guess.reused) == (1, 5)
     run = incremental_run(con, adapter, tmp_path)
     assert run.llm_calls == 1 and len(adapter.calls) == 7
