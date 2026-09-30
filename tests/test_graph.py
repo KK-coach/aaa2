@@ -189,6 +189,8 @@ def test_weights_skip_templates_and_scale_single_mentions():
         assert weight == round(expected * (config.single_mention if single else 1), 4), name
     assert con.execute("SELECT main_pages, inbound_anchors FROM entity_weights JOIN entities "
                        "USING (entity_id) WHERE name = 'Mérés'").fetchone() == (3, 9)
+    assert con.execute("SELECT count(*) FROM entity_weights WHERE pages = 0 AND main_pages = 0 "
+                       "AND secondary_pages = 0").fetchone() == (0,)
 
 
 def test_csv_exports(tmp_path):
@@ -198,8 +200,8 @@ def test_csv_exports(tmp_path):
     with paths["main_entity"].open(encoding="utf-8-sig", newline="") as handle:
         rows = list(csv.DictReader(handle))
     assert [r["fő entitás"] for r in rows if r["url"] == "https://pelda.hu/hu/meres/"] == ["Mérés"]
-    assert rows[0].keys() >= {"url", "szerep", "segédoldal", "állapot", "megbízhatóság",
-                              "bizonyítékok", "másodlagos"}
+    assert rows[0].keys() >= {"url", "szerep", "segédoldal", "állapot", "canonical",
+                              "megbízhatóság", "bizonyítékok", "másodlagos"}
     with paths["edges"].open(encoding="utf-8-sig", newline="") as handle:
         assert {r["él"] for r in csv.DictReader(handle)} == {"mentions", "main_entity",
                                                               "part_of", "about"}
@@ -303,6 +305,97 @@ def test_a_page_of_teasers_is_a_list():
                             "main_status FROM page_nodes").fetchall())
     assert rows["https://pelda.hu/blog/"] == "listing/list/support"
     assert rows["https://pelda.hu/blog/meres/"].startswith("article/")
+
+
+def test_canonical_duplicates_inherit_the_original_and_broken_canonicals_do_not_count():
+    con = business_site()
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    canonical = {"https://pelda.hu/blog/cikk/": "https://pelda.hu/hu/meres/",
+                 "https://pelda.hu/adatvedelem/": "/blog/cikk/",          # lánc, relatív
+                 "https://pelda.hu/kapcsolat/": "https://pelda.hu/nincs/",
+                 "https://pelda.hu/": "https://pelda.hu"}                  # önmaga
+    for url, target in canonical.items():
+        con.execute("UPDATE pages SET canonical = ? WHERE url = ?", [target, url])
+    run = build_graph(con)
+    assert (run.duplicates, dict(run.canonical_issues)) == (2, {"not_crawled": 1})
+    rows = {url: rest for url, *rest in con.execute(
+        "SELECT p.url, o.url, p.role, p.main_status, p.group_key = o.group_key, "
+        "p.canonical_issue FROM page_nodes p LEFT JOIN page_nodes o "
+        "ON o.page_id = p.canonical_page ORDER BY p.url").fetchall()}
+    meres = "https://pelda.hu/hu/meres/"
+    assert rows["https://pelda.hu/blog/cikk/"] == [meres, "offer", "main", True, None]
+    assert rows["https://pelda.hu/adatvedelem/"] == [meres, "offer", "main", True, None]
+    assert rows["https://pelda.hu/kapcsolat/"] == [None, "support", "support", None,
+                                                   "not_crawled"]
+    assert rows["https://pelda.hu/"][0] is None and rows["https://pelda.hu/"][4] is None
+    got = {r[0]: r for r in chosen(con) if r[2] == "main"}
+    assert got["https://pelda.hu/blog/cikk/"][1:4] == got[meres][1:4]
+    assert run.edges["duplicate_of"] == 2 and run.edges["about"] == 0
+    assert con.execute("SELECT count(*) FROM edges WHERE type = 'main_entity' AND from_id IN "
+                       "(SELECT page_id FROM page_nodes WHERE canonical_page IS NOT NULL)"
+                       ).fetchone() == (0,)
+    assert con.execute("SELECT main_pages FROM entity_weights JOIN entities USING (entity_id) "
+                       "WHERE name = 'Mérés'").fetchone() == (2,)     # a duplikátum nem számít
+
+
+def test_a_canonical_loop_does_not_count():
+    con = business_site()
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    con.execute("UPDATE pages SET canonical = 'https://pelda.hu/adatvedelem/' "
+                "WHERE url = 'https://pelda.hu/blog/cikk/'")
+    con.execute("UPDATE pages SET canonical = 'https://pelda.hu/blog/cikk/' "
+                "WHERE url = 'https://pelda.hu/adatvedelem/'")
+    run = build_graph(con)
+    assert (run.duplicates, dict(run.canonical_issues)) == (0, {"loop": 2})
+
+
+def test_contact_and_category_urls_and_articles_anchored_elsewhere():
+    post = ld({"@type": "BlogPosting", "headline": "x"})
+    con = site({
+        "/": html("Pelda", "<main><h1>Pelda</h1><p>Üdv.</p></main>"),
+        "/ceg-contact/": html("Írj nekünk · Pelda", "<main><h1>Írj nekünk</h1><p>Várjuk a "
+                              "leveled a hét minden napján.</p></main>", head=post),
+        "/category/hirek/": html("Hírek · Pelda", "<main><h1>Hírek</h1><p>A legfrissebb "
+                                 "írások egy helyen.</p></main>", head=post),
+        "/blog/meres/": html("Hogyan mérj jól · Pelda", "<main><h1>Hogyan mérj jól</h1><p>A "
+                             "mérés a döntések alapja.</p></main>",
+                             head=ld({"@type": "BlogPosting", "headline": "Hogyan mérj jól"})),
+        "/utmutato/": html("Útmutató · Pelda", "<main><h1>Hogyan mérj jól: útmutató</h1><p>A "
+                           "Hogyan mérj jól cikk folytatása.</p></main>", head=post)})
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    primary(con, "https://pelda.hu/utmutato/", ["Hogyan mérj jól"])
+    build_graph(con)
+    roles = dict(con.execute("SELECT url, role || '/' || coalesce(support_kind, '') "
+                             "FROM page_nodes").fetchall())
+    assert roles["https://pelda.hu/ceg-contact/"] == "support/contact"
+    assert roles["https://pelda.hu/category/hirek/"] == "listing/list"
+    (article,) = con.execute("SELECT entity_id FROM entities WHERE type = 'work' AND "
+                             "anchor_page_id IS NOT NULL AND name = 'Hogyan mérj jól'"
+                             ).fetchone()
+    assert con.execute("SELECT count(*) FROM page_main_entity WHERE entity_id = ?",
+                       [article]).fetchone() == (0,)                # a más oldal cikke sem
+
+
+def test_on_a_profile_page_the_person_wins():
+    about = ld({"@context": "https://schema.org", "@graph": [
+        {"@type": "Organization", "@id": "https://pelda.hu/#org", "name": "Pelda"},
+        {"@type": "ProfilePage", "about": {"@id": "https://pelda.hu/#org"}}]})
+    con = site({"/": html("Pelda", "<main><h1>Pelda</h1><p>Üdv.</p></main>"),
+                "/author/anna/": html("Pelda", "<main><h1>Pelda szerzői</h1><p>Kiss Anna "
+                                      "írásai. Kiss Anna a Pelda szerzője.</p></main>",
+                                      head=about)})
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    llm_entity(con, "https://pelda.hu/author/anna/", "Kiss Anna", "Kiss Anna", "person")
+    primary(con, "https://pelda.hu/author/anna/", ["Pelda"])
+    build_graph(con)
+    got = {r[0]: r for r in chosen(con) if r[2] == "main"}
+    assert con.execute("SELECT role FROM page_nodes WHERE url = 'https://pelda.hu/author/anna/'"
+                       ).fetchone() == ("profile",)
+    assert got["https://pelda.hu/author/anna/"][1:3] == ("Kiss Anna", "main")
 
 
 def test_wikidata_is_a_rules():

@@ -4,12 +4,15 @@
 --   component, product, category, listing, home, profile, support), a segédoldal fajtája (legal, contact,
 --   list, checkout, placeholder), title, H1, nyelv, az oldalcsoport és a hreflang-pár URL-jei;
 --   main_status: main (van fő entitása), support (segédoldal, nincs), none (nincs elég
---   bizonyíték); decision: a döntés az összes jelölttel és bizonyítékkal (visszakövetéshez).
+--   bizonyíték); canonical_page: a canonical szerinti eredeti oldal (a duplikátum döntése az
+--   eredetié); canonical_issue: miért nem számít a más oldalra mutató canonical (not_crawled,
+--   error_status, not_a_node, loop); decision: a döntés az összes jelölttel és bizonyítékkal
+--   (visszakövetéshez).
 -- edges: from → to él (page vagy entity végpontokkal): mentions (oldal → entitás, az említések
 --   súlyozva), main_entity (oldal → entitás), part_of, brand_of, offers (az M2/6 kapcsolatai),
 --   is_a (termék → kategória a kategóriaoldalból; entitás → entitás a biztos Wikidata-osztályból),
---   about (a cikk entitása → a témája, a cikkoldal fő entitása); a forrással, a bizonyítékkal és
---   a súllyal.
+--   about (a cikk entitása → a témája, a cikkoldal fő entitása), duplicate_of (oldal → a
+--   canonical szerinti eredeti oldal); a forrással, a bizonyítékkal és a súllyal.
 -- page_main_entity: az oldal fő (main) és legfeljebb két másodlagos (secondary) entitása, a
 --   megbízhatósággal (strong / medium / weak) és a bizonyítékok listájával;
 --   external_confirmation: a külső megerősítés helye (M3b), üres.
@@ -27,6 +30,9 @@ CREATE TABLE IF NOT EXISTS page_nodes (
     group_key       VARCHAR NOT NULL,
     hreflang_pages  VARCHAR[],
     main_status     VARCHAR NOT NULL CHECK (main_status IN ('main', 'support', 'none')),
+    canonical_page  INTEGER,
+    canonical_issue VARCHAR CHECK (canonical_issue IN ('not_crawled', 'error_status',
+                                                       'not_a_node', 'loop')),
     decision        JSON
 );
 
@@ -40,7 +46,7 @@ CREATE TABLE IF NOT EXISTS edges (
     to_id           INTEGER NOT NULL,
     type            VARCHAR NOT NULL CHECK (type IN (
                         'mentions', 'main_entity', 'part_of', 'brand_of', 'offers', 'is_a',
-                        'about')),
+                        'about', 'duplicate_of')),
     source          VARCHAR NOT NULL,
     evidence        JSON,
     weight          DOUBLE

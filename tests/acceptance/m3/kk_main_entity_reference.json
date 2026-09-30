@@ -1,6 +1,6 @@
 {
  "rules": "Az oldal fő entitása (M3 spec, 3. pont): az az entitás, amelyről az oldal ténylegesen szól; a kanonikus nevén, ahogy az oldalon áll. `main_entity`: a név, vagy null, ha az oldal segédoldal (kapcsolat, jogi oldal, lista) vagy nem szól egy entitásról; `support`: true, ha segédoldal; `secondary`: legfeljebb két további entitás, ha az oldal összehasonlító vagy több témájú; `note`: rövid indoklás, ha a döntés nem magától értetődő.",
- "status": "draft (Claude, 2026-09-30), Krisztián jóváhagyására",
+ "status": "final (Krisztián, 2026-09-30)",
  "pages": [
   {
    "url": "https://kk.coach/",
@@ -186,10 +186,10 @@
    "h1": "A legtöbb weboldal nem csupán marketing problémákkal küzd, hanem rendszerszintű kihívásokkal is.",
    "role": "support",
    "lang": "hu",
-   "main_entity": null,
+   "main_entity": "Organic Growth System",
    "secondary": [],
-   "support": true,
-   "note": "a megoldások gyűjtőoldala (lista); a /hu/megoldasok/ duplikátuma; elfogadható alternatíva: 'Organic Growth System'"
+   "support": false,
+   "note": "a megoldások hubja; a fő entitás a rendszer (Krisztián, 2026-09-30); canonical: a /hu/megoldasok/ duplikátuma"
   },
   {
    "url": "https://kk.coach/hu/megoldasok/",
@@ -197,10 +197,10 @@
    "h1": "A legtöbb weboldal nem csupán marketing problémákkal küzd, hanem rendszerszintű kihívásokkal is.",
    "role": "support",
    "lang": "hu",
-   "main_entity": null,
+   "main_entity": "Organic Growth System",
    "secondary": [],
-   "support": true,
-   "note": "a megoldások gyűjtőoldala (lista); elfogadható alternatíva: 'Organic Growth System'"
+   "support": false,
+   "note": "a megoldások hubja; a fő entitás a rendszer (Krisztián, 2026-09-30)"
   },
   {
    "url": "https://kk.coach/hu/megoldasok/geo-ai-kereso-optimalizalas/",
@@ -287,7 +287,7 @@
     "SEO tools"
    ],
    "support": false,
-   "note": "cikk",
+   "note": "cikk; elfogadható alternatíva: 'SERP Observer' (a saját eszköz neve)",
    "aliases": [
     "SERP figyelő",
     "SERP-figyelő",
@@ -413,7 +413,7 @@
     "SEO tools"
    ],
    "support": false,
-   "note": "cikk",
+   "note": "cikk; elfogadható alternatíva: 'SERP Observer' (a saját eszköz neve)",
    "aliases": [
     "SERP figyelő",
     "SERP-figyelő",
@@ -510,10 +510,10 @@
    "h1": "Most companies don’t have a marketing problem. They have a system problem.",
    "role": "support",
    "lang": "en",
-   "main_entity": null,
+   "main_entity": "Organic Growth System",
    "secondary": [],
-   "support": true,
-   "note": "a megoldások gyűjtőoldala (lista); elfogadható alternatíva: 'Organic Growth System'"
+   "support": false,
+   "note": "a megoldások hubja; a fő entitás a rendszer (Krisztián, 2026-09-30)"
   },
   {
    "url": "https://kk.coach/solutions/execution/",
@@ -590,5 +590,5 @@
    ]
   }
  ],
- "article_rule": "cikkoldalon a fő entitás a cikk témája (a cikk maga az oldal csomópontja, 'about' éllel a témához) — javaslat, Krisztián döntése"
+ "article_rule": "cikkoldalon a fő entitás a cikk témája (a cikk maga az oldal csomópontja, 'about' éllel a témához) — Krisztián döntése, 2026-09-30"
 }

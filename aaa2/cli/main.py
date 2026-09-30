@@ -390,6 +390,9 @@ def graph(
     typer.echo(f"oldalak: {run.pages}; fő entitással {run.main} "
                f"({', '.join(f'{k} {v}' for k, v in sorted(run.confidence.items()))}), "
                f"segédoldal {run.support}, bizonyíték nélkül {run.none}")
+    typer.echo(f"canonical-duplikátum: {run.duplicates}; nem számító canonical: "
+               + (", ".join(f"{k} {v}" for k, v in sorted(run.canonical_issues.items()))
+                  or "0"))
     typer.echo("élek: " + ", ".join(f"{k} {v}" for k, v in sorted(run.edges.items()))
                + f"; Wikidata-osztály: {run.class_lookups} lekérdezés, "
                  f"{run.class_failures} hibás")

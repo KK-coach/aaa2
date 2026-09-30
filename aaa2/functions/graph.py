@@ -12,15 +12,23 @@ kimenetéből. Minden futás újraépíti a `page_nodes`, `edges`, `page_main_en
   (`CollectionPage`, `SearchResultsPage`, márka × kategória lista, a kategóriaoldal oldalhoz
   kötött entitás nélkül, pl. a gyökérkategória, és a segéd- vagy cikkoldal, amelynek
   content-blokkjai `LIST_MIN_SHARE`-nél nagyobb részben kivonatok, `teaser_share`),
-  `checkout`, `placeholder` (kitöltőszöveg-oldal). Segédoldalnak nincs fő entitása.
+  `checkout`, `placeholder` (kitöltőszöveg-oldal). Segédoldalnak nincs fő entitása. A segéd- vagy
+  cikkszerepű oldal az URL szerint is kapcsolat (`CONTACT_URL_WORDS`) vagy lista (a
+  `CATEGORY_SEGMENTS` teljes útvonalszegmens).
+- Canonical: ha az oldal canonicalja (a láncot követve) egy másik oldal-csomópontra mutat, az
+  oldal duplikátum (`canonical_page`): nem kap saját döntést, az eredeti szerepét, fő és
+  másodlagos entitásait örökli, a csoportja az eredetié, és `duplicate_of` él köti hozzá; a
+  súlyba nem számít. Ha a cél nincs a készletben, nem sikeres válasz, nem oldal-csomópont vagy
+  a lánc körbeér, a canonical nem számít, és a `canonical_issue` jelöli.
 - Fő entitás (`page_main_entity`), a bizonyítékok erőssége szerint (`EVIDENCE_RANK`):
   1. az oldalhoz kötött entitás (az oldalcsoport bármely tagjához, `anchored`); a kezdőoldalon a
      site entitása (`home`: a `role = brand` entitás, és a márkakapcsolat nélküli, szabályból
-     vagy schemából jött `brand`, mint a `site._site_name_keys`-ben); az oldalhoz kötött cikk
-     (work/article) nem jelölt: a cikkoldal fő entitása a téma;
+     vagy schemából jött `brand`, mint a `site._site_name_keys`-ben); a site bármely oldalához
+     kötött cikk (work/article) nem jelölt: a cikkoldal fő entitása a téma;
   2. a JSON-LD `about` / `mainEntity` az oldalcsoport bármely tagjáról (a név, vagy az `@id` a
      site csomópontjai vagy oldalai szerint; a kérdés-válasz csomópontok nem számítanak;
-     `schema_about`); a profiloldalon a legtöbbet említett személy (`profile`);
+     `schema_about`); a profiloldalon a legtöbbet említett személy (`profile`; a profiloldal
+     fő entitása ő, ha van);
   3. a kinyerés `primary_entities` listája (a sorszámmal; `primary`);
   4. a title, a H1 és a headingek nem sablon-említései (`title`, `h1`, `heading`); a már
      bizonyítékkal bíró jelöltnél a neve vagy aliasa a H1 és a title szövegében is (`occurs`);
@@ -41,6 +49,7 @@ kimenetéből. Minden futás újraépíti a `page_nodes`, `edges`, `page_main_en
 - Élek (`edges`): `mentions` (oldal → entitás, a nem sablon-említések pozíció szerinti
   súlyával, `config/graph.toml`), `main_entity` (oldal → entitás; fő 1, másodlagos 0,5), az M2/6
   kapcsolatai (`part_of`, `brand_of`, `offers`), `about` (cikk → a cikkoldal fő entitása),
+  `duplicate_of` (oldal → a canonical szerinti eredeti),
   `is_a`: termék → kategória a kategóriaoldalból (`category_page`, az M2/6 `in_category`-ja), és
   entitás → entitás a biztos Wikidata-osztályból (`wikidata`: az entitás P31 vagy P279 osztálya
   egy másik, biztos QID-jű site-entitás; `is_a_reason` szerint kimarad: az általános osztály,
@@ -48,8 +57,10 @@ kimenetéből. Minden futás újraépíti a `page_nodes`, `edges`, `page_main_en
   azonos típusú osztályhoz; az elvetettek `export_rejected`).
 - Súly (`entity_weights`): az oldalszám, az említésszám, a szerkezeti helyű oldalak (title, H1,
   heading, navigáció), a fő és a másodlagos oldalak száma, a bejövő belső anchorok (a más
-  oldalcsoportokról az entitás fő oldalaira); a sablon-említés és a demó nem számít. A képlet:
-  Σ súly × log2(1 + összetevő), egyetlen említésnél × `single_mention` (`config/graph.toml`).
+  oldalcsoportokról az entitás fő oldalaira); a sablon-említés, a demó és a canonical-duplikátum
+  nem számít, és kimarad az az entitás, amelynek nincs tartalmi említése, fő vagy másodlagos
+  oldala. A képlet: Σ súly × log2(1 + összetevő), egyetlen említésnél × `single_mention`
+  (`config/graph.toml`).
 """
 from __future__ import annotations
 
@@ -62,7 +73,7 @@ from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 import duckdb
 
@@ -91,6 +102,9 @@ SUPPORT_SCHEMA = {"ContactPage": "contact", "CollectionPage": "list",
 CONTACT_URL_WORDS = ("contact", "kapcsolat", "kontakt", "contatti")
 PROFILE_TYPES = frozenset({"AboutPage", "ProfilePage"})
 PROFILE_URL_WORDS = ("about", "rolam", "rolunk", "author", "szerzo")
+CATEGORY_SEGMENTS = frozenset({"category", "kategoria"})
+CANONICAL_ISSUES = {"not_crawled": "a cél nincs a készletben", "error_status": "a cél hibás",
+                    "not_a_node": "a cél nem oldal-csomópont", "loop": "körbeérő lánc"}
 LIST_MIN_SHARE = 0.5                     # a teaser-blokkok aránya ennél nagyobb: lista
 EXCERPT_CHARS = 40                       # a kivonat-teaser legalább ennyi jelnyi eleje
 INSTANCE_TYPES = frozenset({"tech", "org", "product", "place", "person"})
@@ -146,6 +160,8 @@ class GraphRun:
     main: int = 0
     support: int = 0
     none: int = 0
+    duplicates: int = 0                                   # canonical szerint (a fentiekben is)
+    canonical_issues: Counter = field(default_factory=Counter)
     confidence: Counter = field(default_factory=Counter)
     edges: Counter = field(default_factory=Counter)
     weights: int = 0
@@ -200,11 +216,16 @@ def build_graph(con: duckdb.DuckDBPyConnection, config: GraphConfig | None = Non
     for table in ("page_nodes", "edges", "page_main_entity", "entity_weights"):
         con.execute(f"DELETE FROM {table}")
     graph = _Graph(con, page_type_patterns or {})
-    decisions = {}
+    decisions = {page_id: graph.decide(info) for page_id, info in sorted(graph.roles.items())
+                 if page_id not in graph.canonical}
+    for page_id, original in sorted(graph.canonical.items()):
+        decisions[page_id] = graph.duplicate(decisions[original], original)
     for page_id, info in sorted(graph.roles.items()):
-        decision = graph.decide(info)
-        decisions[page_id] = decision
+        decision = decisions[page_id]
         run.pages += 1
+        run.duplicates += decision["canonical"] is not None
+        if decision["canonical_issue"]:
+            run.canonical_issues[decision["canonical_issue"]["issue"]] += 1
         if decision["status"] == "main":
             run.main += 1
             run.confidence[decision["main"].confidence()] += 1
@@ -282,6 +303,43 @@ class _Graph:
                 self.texts[page_id].append(alias_key(text))
         self.articles = {e for e, row in self.entities.items() if row[7] is not None
                          and row[2] == "work" and row[3] == "article"}
+        self.canonical: dict[int, int] = {}          # duplikátum → az eredeti oldal
+        self.canonical_issue: dict[int, dict] = {}
+        self._canonicals()
+
+    def _canonicals(self) -> None:
+        """A canonical szerinti duplikátumok (a láncot az eredetiig követve) és a canonical
+        nélküli döntés okai (`CANONICAL_ISSUES`)."""
+        node = {canonical_key(info.url): page_id for page_id, info in self.roles.items()}
+        status = {canonical_key(url): code for url, code in self.con.execute(
+            "SELECT url, status FROM pages").fetchall()}
+        declared: dict[int, int] = {}
+        for page_id, canonical in self.con.execute(
+                "SELECT page_id, canonical FROM pages WHERE canonical IS NOT NULL").fetchall():
+            if page_id not in self.roles:
+                continue
+            target = canonical_key(urljoin(self.roles[page_id].url, canonical))
+            if target == canonical_key(self.roles[page_id].url):
+                continue
+            if target in node:
+                declared[page_id] = node[target]
+                continue
+            code = status.get(target)
+            issue = "not_crawled" if target not in status \
+                else "not_a_node" if code is not None and 200 <= code < 300 else "error_status"
+            self.canonical_issue[page_id] = {"issue": issue, "canonical": canonical,
+                                             "status": code}
+        for page_id, target in declared.items():
+            seen = {page_id}
+            while target in declared and target not in seen:
+                seen.add(target)
+                target = declared[target]
+            if target in seen:
+                self.canonical_issue[page_id] = {"issue": "loop",
+                                                 "canonical": self.urls[declared[page_id]],
+                                                 "status": None}
+            else:
+                self.canonical[page_id] = target
 
     def _index(self, entity_id: int, form: str | None) -> None:
         if form and alias_key(form):
@@ -336,8 +394,11 @@ class _Graph:
             return info.role, "placeholder"
         if support_url(info.url):
             return "support", "legal"
-        if info.role == "support" and url_has_word(info.url, CONTACT_URL_WORDS):
-            return info.role, "contact"
+        if info.role in ("support", "article") and url_has_word(info.url, CONTACT_URL_WORDS):
+            return "support", "contact"
+        if info.role in ("support", "article") and CATEGORY_SEGMENTS & set(
+                urlsplit(info.url).path.lower().split("/")):
+            return "listing", "list"
         types = {_short(t) for node in self.nodes.get(info.page_id, [])
                  for t in _as_list(node.get("@type"))}
         if info.role == "support" and (types & PROFILE_TYPES
@@ -376,11 +437,14 @@ class _Graph:
         role, support = self.role_of(info)
         group = set(self.groups[info.group])
         articles = sorted(e for e in self.articles if self.entities[e][7] in group)
-        candidates = self.candidates(info, home=role == "home", profile=role == "profile",
-                                     articles=set(articles))
+        candidates = self.candidates(info, home=role == "home", profile=role == "profile")
         ranked = sorted(candidates.values(), key=Candidate.key)
+        if role == "profile":
+            ranked.sort(key=lambda item: "profile" not in item.evidence)
         decision = {"role": role, "support": support, "candidates": ranked, "main": None,
-                    "secondary": [], "articles": articles}
+                    "secondary": [], "articles": articles, "canonical": None,
+                    "canonical_issue": self.canonical_issue.get(info.page_id),
+                    "group": info.group}
         if support is not None:
             decision["status"] = "support"
             return decision
@@ -399,13 +463,19 @@ class _Graph:
                 names.add(name)
         return decision
 
-    def candidates(self, info: PageInfo, home: bool = False, profile: bool = False,
-                   articles: set[int] = frozenset()) -> dict[int, Candidate]:
-        """Az oldal jelöltjei a bizonyítékaikkal. `articles`: az oldalhoz kötött cikk-
-        entitások; nem jelöltek (a cikkoldal fő entitása a téma). `profile`: rólam- vagy
-        szerzői oldal; a legtöbbet említett személy `profile` bizonyítékot kap."""
+    def duplicate(self, original: dict, original_id: int) -> dict:
+        """A canonical-duplikátum döntése: az eredetié (szerep, fő és másodlagos entitások,
+        csoport); a cikk `about`-éle az eredetiről jön."""
+        return {**original, "articles": [], "canonical": original_id, "canonical_issue": None}
+
+    def candidates(self, info: PageInfo, home: bool = False,
+                   profile: bool = False) -> dict[int, Candidate]:
+        """Az oldal jelöltjei a bizonyítékaikkal. A site oldalaihoz kötött cikk-entitások nem
+        jelöltek (a cikkoldal fő entitása a téma). `profile`: rólam- vagy szerzői oldal; a
+        legtöbbet említett személy `profile` bizonyítékot kap."""
         page_id = info.page_id
         found: dict[int, Candidate] = {}
+        articles = self.articles
 
         def add(entity_id: int | None, kind: str, detail: object) -> None:
             if entity_id is None or entity_id in self.excluded or entity_id in articles:
@@ -511,13 +581,17 @@ def _store_page(con: duckdb.DuckDBPyConnection, graph: _Graph, info: PageInfo,
     members = [graph.urls[p] for p in sorted(graph.groups[info.group]) if p != info.page_id]
     record = {"status": decision["status"], "support": decision["support"],
               "articles": decision["articles"],
+              "canonical": graph.urls[decision["canonical"]] if decision["canonical"] else None,
+              "canonical_issue": decision["canonical_issue"],
               "candidates": [c.as_dict() for c in decision["candidates"]]}
+    issue = decision["canonical_issue"]
     con.execute(
         "INSERT INTO page_nodes (page_id, url, role, support_kind, title, h1, lang, group_key, "
-        "hreflang_pages, main_status, decision) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "hreflang_pages, main_status, canonical_page, canonical_issue, decision) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [info.page_id, info.url, decision["role"], decision["support"], info.title, info.h1,
-         info.lang, info.group, members, decision["status"],
-         json.dumps(record, ensure_ascii=False)])
+         info.lang, decision["group"], members, decision["status"], decision["canonical"],
+         issue["issue"] if issue else None, json.dumps(record, ensure_ascii=False)])
     chosen = ([("main", decision["main"])] if decision["main"] else []) \
         + [("secondary", c) for c in decision["secondary"]]
     for rank, (role, item) in enumerate(chosen, start=1):
@@ -545,6 +619,10 @@ def _edges(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig,
             rows.append(("page", page_id, "entity", entity_id, "mentions", "m2_mentions",
                          dict(counts), weight))
         decision = decisions[page_id]
+        if decision["canonical"] is not None:
+            rows.append(("page", page_id, "page", decision["canonical"], "duplicate_of",
+                         "canonical", {"canonical": graph.urls[decision["canonical"]]}, None))
+            continue
         chosen = ([("main", decision["main"])] if decision["main"] else []) \
             + [("secondary", c) for c in decision["secondary"]]
         for role, item in chosen:
@@ -632,6 +710,8 @@ def _weights(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig)
     structural: dict[int, set[int]] = defaultdict(set)
     present: set[int] = set()
     for page_id, rows in graph.mentions.items():
+        if page_id in graph.canonical:
+            continue
         for entity_id, position, template, region in rows:
             if entity_id in graph.excluded or entity_id not in graph.entities:
                 continue
@@ -646,6 +726,8 @@ def _weights(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig)
     main_pages: dict[int, set[int]] = defaultdict(set)
     for page_id, entity_id, role in con.execute(
             "SELECT page_id, entity_id, role FROM page_main_entity").fetchall():
+        if page_id in graph.canonical:
+            continue
         roles[entity_id][role] += 1
         if role == "main":
             main_pages[entity_id].add(page_id)
@@ -659,6 +741,8 @@ def _weights(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig)
                  "structural": len(structural[entity_id]),
                  "main_pages": roles[entity_id]["main"],
                  "inbound_anchors": inbound[entity_id]}
+        if not (parts["pages"] or parts["main_pages"] or roles[entity_id]["secondary"]):
+            continue
         single = parts["mentions"] == 1
         weight = sum(w[k] * math.log2(1 + v) for k, v in parts.items())
         if single:
@@ -694,13 +778,23 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
         chosen[page_id].append((entity_id, role, confidence, json.loads(evidence)))
     paths = {}
     pages = []
-    for page_id, url, role, support, title, h1, lang, status in con.execute(
-            "SELECT page_id, url, role, support_kind, title, h1, lang, main_status "
-            "FROM page_nodes ORDER BY url").fetchall():
+    for page_id, url, role, support, title, h1, lang, status, canonical, issue, decision in \
+            con.execute(
+                "SELECT page_id, url, role, support_kind, title, h1, lang, main_status, "
+                "canonical_page, canonical_issue, decision FROM page_nodes ORDER BY url"
+                ).fetchall():
         main = [c for c in chosen[page_id] if c[1] == "main"]
         secondary = [c for c in chosen[page_id] if c[1] == "secondary"]
+        if canonical is not None:
+            note = f"duplikátum: {urls[canonical]}"
+        elif issue:
+            note = f"nem számít ({CANONICAL_ISSUES[issue]}): " \
+                f"{json.loads(decision)['canonical_issue']['canonical']}"
+        else:
+            note = ""
         pages.append({
             "url": url, "szerep": role, "segédoldal": support or "", "állapot": status,
+            "canonical": note,
             "fő entitás": names.get(main[0][0], "") if main else "",
             "típus": "/".join(filter(None, kinds.get(main[0][0], ("", "")))) if main else "",
             "megbízhatóság": main[0][2] if main else "",
@@ -781,6 +875,14 @@ def _write(path: Path, rows: list[dict]) -> Path:
 # ---------------------------------------------------------------------------
 # segédek
 # ---------------------------------------------------------------------------
+
+
+def canonical_key(url: str) -> str:
+    """A canonical-összevetés kulcsa: töredék és záró perjel nélkül, a lekérdezéssel (a
+    `?tab=` változatok külön oldalak)."""
+    parts = urlsplit(url.split("#", 1)[0])
+    return f"{parts.scheme}://{parts.netloc}{parts.path.rstrip('/') or '/'}" \
+        + (f"?{parts.query}" if parts.query else "")
 
 
 def url_has_word(url: str, stems: Sequence[str]) -> bool:
