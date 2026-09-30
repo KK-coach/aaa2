@@ -89,6 +89,42 @@ class ProviderConfig:
                 + tuple(m for m in self.alternatives if m != self.model and m != self.fallback))
 
 
+@dataclass(frozen=True)
+class Credentials:
+    """Egy szolgáltató kulcsa és projektje egy site-hoz: `key_env` (a kulcsot tartó
+    környezeti változó neve, a `models.toml` alapértéke helyett), `project` (OpenAI-projekt,
+    `OpenAI-Project` fejléc)."""
+    key_env: str | None = None
+    project: str | None = None
+
+
+# A site-fájlok helye (`entities/config/sites/<domain>.toml`); az LLM-réteg csak az `[llm]`
+# részt olvassa belőlük, a többit az entitás-réteg.
+SITES_DIR = Path(__file__).resolve().parents[1] / "entities" / "config" / "sites"
+PROJECT_PROVIDERS = ("openai",)
+
+
+def load_site_credentials(domain: str | None, directory: Path | None = None
+                          ) -> dict[str, Credentials]:
+    """A site-fájl `[llm.<szolgáltató>]` részei: `key_env`, `project`. Ügyfélmunkánál a site a
+    saját kulcsával és projektjével fut (pl. kikapcsolt adatmegosztású OpenAI-projekt). Nincs
+    fájl vagy rész: üres (a `models.toml` kulcsai). Ismeretlen kulcs, projekt nem OpenAI-nál,
+    vagy nem szöveg: ValueError."""
+    path = (directory or SITES_DIR) / f"{domain}.toml" if domain else None
+    if path is None or not path.exists():
+        return {}
+    section = tomllib.loads(path.read_text(encoding="utf-8")).get("llm", {})
+    found: dict[str, Credentials] = {}
+    for provider, values in section.items():
+        unknown = set(values) - {"key_env", "project"}
+        if unknown or not all(isinstance(v, str) and v for v in values.values()):
+            raise ValueError(f"{path.name} [llm.{provider}]: key_env és project, szövegként")
+        if values.get("project") and provider not in PROJECT_PROVIDERS:
+            raise ValueError(f"{path.name} [llm.{provider}]: projekt csak az OpenAI-nál van")
+        found[provider] = Credentials(values.get("key_env"), values.get("project"))
+    return found
+
+
 PIPELINE_STEPS = ("extraction", "naming", "verify")
 PIPELINE_OFF = "off"                     # a lépés kikapcsolva (az elnevezésnél és az ellenőrzésnél)
 PIPELINE_OPTIONAL = ("naming", "verify")
