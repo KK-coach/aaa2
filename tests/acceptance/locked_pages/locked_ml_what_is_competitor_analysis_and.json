@@ -236,13 +236,514 @@
   }
  ],
  "gold": {
-  "primary_entities": [],
-  "entities": [],
-  "optional": [],
-  "negatives": []
+  "primary_entities": [
+   "competitor analysis",
+   "benchmarking"
+  ],
+  "entities": [
+   {
+    "canonical": "competitor analysis",
+    "type": "concept",
+    "subtype": "method",
+    "aliases": [
+     "competitive analysis",
+     "versenytárs-elemzés"
+    ],
+    "note": "az oldal témája",
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Competitor Analysis"
+     },
+     {
+      "block": "b30",
+      "text": "Competitor Analysis"
+     },
+     {
+      "block": "b32",
+      "text": "competitor analysis"
+     },
+     {
+      "block": "b33",
+      "text": "Competitor Analysis"
+     },
+     {
+      "block": "b40",
+      "text": "Competitor analysis"
+     },
+     {
+      "block": "b42",
+      "text": "competitor analysis"
+     },
+     {
+      "block": "b43",
+      "text": "Competitor research"
+     },
+     {
+      "block": "b44",
+      "text": "competitor analysis"
+     }
+    ]
+   },
+   {
+    "canonical": "benchmarking",
+    "type": "concept",
+    "subtype": "method",
+    "aliases": [
+     "benchmark research"
+    ],
+    "note": "az oldal témája",
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Benchmarking"
+     },
+     {
+      "block": "b30",
+      "text": "Benchmarking"
+     },
+     {
+      "block": "b32",
+      "text": "benchmarking"
+     },
+     {
+      "block": "b33",
+      "text": "Benchmarking"
+     },
+     {
+      "block": "b41",
+      "text": "Benchmarking"
+     },
+     {
+      "block": "b41",
+      "text": "benchmarking"
+     },
+     {
+      "block": "b42",
+      "text": "benchmarking"
+     },
+     {
+      "block": "b42",
+      "text": "benchmark"
+     },
+     {
+      "block": "b43",
+      "text": "benchmarking"
+     },
+     {
+      "block": "b45",
+      "text": "benchmarking"
+     },
+     {
+      "block": "b45",
+      "text": "benchmark"
+     },
+     {
+      "block": "b49",
+      "text": "Benchmarking"
+     }
+    ]
+   },
+   {
+    "canonical": "MarketingLens",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b47",
+      "text": "MarketingLens"
+     },
+     {
+      "block": "b52",
+      "text": "MarketingLens"
+     }
+    ]
+   },
+   {
+    "canonical": "Google",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b47",
+      "text": "Google"
+     },
+     {
+      "block": "b51",
+      "text": "Google"
+     }
+    ]
+   },
+   {
+    "canonical": "Starbucks",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b44",
+      "text": "Starbucks"
+     }
+    ]
+   },
+   {
+    "canonical": "Luckin Coffee",
+    "type": "org",
+    "subtype": "company",
+    "aliases": [
+     "Luckin"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b44",
+      "text": "Luckin Coffee"
+     },
+     {
+      "block": "b44",
+      "text": "Luckin"
+     }
+    ]
+   },
+   {
+    "canonical": "China",
+    "type": "place",
+    "subtype": "country",
+    "aliases": [
+     "Kína"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b44",
+      "text": "China"
+     }
+    ]
+   },
+   {
+    "canonical": "LinkedIn",
+    "type": "org",
+    "subtype": "company",
+    "acceptable_types": [
+     "org",
+     "tech"
+    ],
+    "acceptable_subtypes": [
+     "company",
+     "software"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b52",
+      "text": "LinkedIn"
+     }
+    ]
+   }
+  ],
+  "optional": [
+   {
+    "canonical": "Blue Ocean Strategy",
+    "type": "concept",
+    "subtype": "method",
+    "aliases": [
+     "Blue Ocean"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b37",
+      "text": "Blue Ocean"
+     }
+    ]
+   },
+   {
+    "canonical": "marketing mix",
+    "type": "concept",
+    "subtype": "method",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "marketing mix"
+     }
+    ]
+   },
+   {
+    "canonical": "SEO",
+    "type": "concept",
+    "subtype": "discipline",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b48",
+      "text": "SEO"
+     },
+     {
+      "block": "b51",
+      "text": "SEO"
+     }
+    ]
+   },
+   {
+    "canonical": "social media",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b48",
+      "text": "social media"
+     },
+     {
+      "block": "b51",
+      "text": "social presence"
+     }
+    ]
+   },
+   {
+    "canonical": "tech stack",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b49",
+      "text": "tech stack"
+     },
+     {
+      "block": "b51",
+      "text": "tech stack"
+     }
+    ]
+   },
+   {
+    "canonical": "value proposition",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b44",
+      "text": "value proposition"
+     }
+    ]
+   },
+   {
+    "canonical": "business model",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b44",
+      "text": "business model"
+     }
+    ]
+   },
+   {
+    "canonical": "third place",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b44",
+      "text": "third place"
+     }
+    ]
+   },
+   {
+    "canonical": "electric vehicle",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "EV"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b45",
+      "text": "EV"
+     }
+    ]
+   },
+   {
+    "canonical": "digital marketing strategy",
+    "type": "concept",
+    "subtype": "method",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b52",
+      "text": "digital marketing strategy"
+     }
+    ]
+   },
+   {
+    "canonical": "digital analytics",
+    "type": "concept",
+    "subtype": "discipline",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b52",
+      "text": "digital analytics"
+     }
+    ]
+   },
+   {
+    "canonical": "competitive landscape",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b40",
+      "text": "competitive landscape"
+     },
+     {
+      "block": "b42",
+      "text": "competitive landscape"
+     }
+    ]
+   },
+   {
+    "canonical": "best practice",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b41",
+      "text": "best practices"
+     }
+    ]
+   },
+   {
+    "canonical": "industry average",
+    "type": "concept",
+    "subtype": "metric",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b36",
+      "text": "industry average"
+     }
+    ]
+   },
+   {
+    "canonical": "Deep-Dive Analysis",
+    "type": "service",
+    "subtype": "audit",
+    "acceptable_types": [
+     "service",
+     "concept"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b48",
+      "text": "Deep-Dive Analysis"
+     }
+    ]
+   },
+   {
+    "canonical": "Technical Benchmarking",
+    "type": "service",
+    "subtype": "audit",
+    "acceptable_types": [
+     "service",
+     "concept"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b49",
+      "text": "Technical Benchmarking"
+     }
+    ]
+   },
+   {
+    "canonical": "Actionable Roadmaps",
+    "type": "service",
+    "subtype": "consulting",
+    "acceptable_types": [
+     "service",
+     "concept"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b50",
+      "text": "Actionable Roadmaps"
+     }
+    ]
+   },
+   {
+    "canonical": "free strategy consultation",
+    "type": "service",
+    "subtype": "consulting",
+    "acceptable_types": [
+     "service",
+     "concept"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b52",
+      "text": "free strategy consultation"
+     }
+    ]
+   }
+  ],
+  "negatives": [
+   {
+    "text": "Jan 27, 2026"
+   },
+   {
+    "text": "Why You need both"
+   },
+   {
+    "text": "How We Can Help"
+   },
+   {
+    "text": "Book a free strategy call"
+   },
+   {
+    "text": "Follow"
+   }
+  ]
  },
- "gold_status": "sablon, annotálatlan",
- "annotation_notes": [],
+ "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+ "annotation_notes": [
+  "Blogcikk: a két fő fogalom és a megnevezett cégek, hely és platform kötelezők.",
+  "A 'How We Can Help' lista elemei (Deep-Dive Analysis stb.) listaelemek, nem szerkezeti helyű ajánlatok: opcionálisak."
+ ],
  "rules": {
   "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
   "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",

@@ -79,14 +79,186 @@
   },
   {
    "id": "b43",
-   "kind": "other",
+   "kind": "table_row",
    "heading_path": [
     "LG ThermaV R32 12KW 3Fázis"
    ],
-   "text": "Energiaosztály fűtés (35°C-os előremenő víz) A+++ Energiaosztály fűtés (55°C-os előremenő víz) A++ Tápfeszültség 1/220-240/50 Ph/V/Hz Hangnyomás szint fűtés 38 dB(A) Beltéri méret 1239x1380x330 mm Hűtőközeg/alaptöltet R32 / 2 kg Üzemi tartomány, hűtés +5 - +48 °C Üzemi tartomány, fűtés -25/+35 °C Betáp 6.0 x 3C Vízoldali csatlakozás (előremenő/visszatérő) Apa PT 1\" az ISO 7-1 szerint (kúpos cső menetek) coll"
+   "text": "Energiaosztály fűtés (35°C-os előremenő víz) | A+++",
+   "cells": [
+    {
+     "header": null,
+     "value": "Energiaosztály fűtés (35°C-os előremenő víz)"
+    },
+    {
+     "header": null,
+     "value": "A+++"
+    }
+   ]
   },
   {
    "id": "b44",
+   "kind": "table_row",
+   "heading_path": [
+    "LG ThermaV R32 12KW 3Fázis"
+   ],
+   "text": "Energiaosztály fűtés (55°C-os előremenő víz) | A++",
+   "cells": [
+    {
+     "header": "Energiaosztály fűtés (35°C-os előremenő víz)",
+     "value": "Energiaosztály fűtés (55°C-os előremenő víz)"
+    },
+    {
+     "header": "A+++",
+     "value": "A++"
+    }
+   ]
+  },
+  {
+   "id": "b45",
+   "kind": "table_row",
+   "heading_path": [
+    "LG ThermaV R32 12KW 3Fázis"
+   ],
+   "text": "Tápfeszültség | 1/220-240/50 Ph/V/Hz",
+   "cells": [
+    {
+     "header": "Energiaosztály fűtés (35°C-os előremenő víz)",
+     "value": "Tápfeszültség"
+    },
+    {
+     "header": "A+++",
+     "value": "1/220-240/50 Ph/V/Hz"
+    }
+   ]
+  },
+  {
+   "id": "b46",
+   "kind": "table_row",
+   "heading_path": [
+    "LG ThermaV R32 12KW 3Fázis"
+   ],
+   "text": "Hangnyomás szint fűtés | 38 dB(A)",
+   "cells": [
+    {
+     "header": "Energiaosztály fűtés (35°C-os előremenő víz)",
+     "value": "Hangnyomás szint fűtés"
+    },
+    {
+     "header": "A+++",
+     "value": "38 dB(A)"
+    }
+   ]
+  },
+  {
+   "id": "b47",
+   "kind": "table_row",
+   "heading_path": [
+    "LG ThermaV R32 12KW 3Fázis"
+   ],
+   "text": "Beltéri méret | 1239x1380x330 mm",
+   "cells": [
+    {
+     "header": "Energiaosztály fűtés (35°C-os előremenő víz)",
+     "value": "Beltéri méret"
+    },
+    {
+     "header": "A+++",
+     "value": "1239x1380x330 mm"
+    }
+   ]
+  },
+  {
+   "id": "b48",
+   "kind": "table_row",
+   "heading_path": [
+    "LG ThermaV R32 12KW 3Fázis"
+   ],
+   "text": "Hűtőközeg/alaptöltet | R32 / 2 kg",
+   "cells": [
+    {
+     "header": "Energiaosztály fűtés (35°C-os előremenő víz)",
+     "value": "Hűtőközeg/alaptöltet"
+    },
+    {
+     "header": "A+++",
+     "value": "R32 / 2 kg"
+    }
+   ]
+  },
+  {
+   "id": "b49",
+   "kind": "table_row",
+   "heading_path": [
+    "LG ThermaV R32 12KW 3Fázis"
+   ],
+   "text": "Üzemi tartomány, hűtés | +5 - +48 °C",
+   "cells": [
+    {
+     "header": "Energiaosztály fűtés (35°C-os előremenő víz)",
+     "value": "Üzemi tartomány, hűtés"
+    },
+    {
+     "header": "A+++",
+     "value": "+5 - +48 °C"
+    }
+   ]
+  },
+  {
+   "id": "b50",
+   "kind": "table_row",
+   "heading_path": [
+    "LG ThermaV R32 12KW 3Fázis"
+   ],
+   "text": "Üzemi tartomány, fűtés | -25/+35 °C",
+   "cells": [
+    {
+     "header": "Energiaosztály fűtés (35°C-os előremenő víz)",
+     "value": "Üzemi tartomány, fűtés"
+    },
+    {
+     "header": "A+++",
+     "value": "-25/+35 °C"
+    }
+   ]
+  },
+  {
+   "id": "b51",
+   "kind": "table_row",
+   "heading_path": [
+    "LG ThermaV R32 12KW 3Fázis"
+   ],
+   "text": "Betáp | 6.0 x 3C",
+   "cells": [
+    {
+     "header": "Energiaosztály fűtés (35°C-os előremenő víz)",
+     "value": "Betáp"
+    },
+    {
+     "header": "A+++",
+     "value": "6.0 x 3C"
+    }
+   ]
+  },
+  {
+   "id": "b52",
+   "kind": "table_row",
+   "heading_path": [
+    "LG ThermaV R32 12KW 3Fázis"
+   ],
+   "text": "Vízoldali csatlakozás (előremenő/visszatérő) | Apa PT 1\" az ISO 7-1 szerint (kúpos cső menetek) coll",
+   "cells": [
+    {
+     "header": "Energiaosztály fűtés (35°C-os előremenő víz)",
+     "value": "Vízoldali csatlakozás (előremenő/visszatérő)"
+    },
+    {
+     "header": "A+++",
+     "value": "Apa PT 1\" az ISO 7-1 szerint (kúpos cső menetek) coll"
+    }
+   ]
+  },
+  {
+   "id": "b53",
    "kind": "other",
    "heading_path": [
     "LG ThermaV R32 12KW 3Fázis"
@@ -94,7 +266,7 @@
    "text": "Adatok"
   },
   {
-   "id": "b45",
+   "id": "b54",
    "kind": "other",
    "heading_path": [
     "LG ThermaV R32 12KW 3Fázis"
@@ -102,222 +274,318 @@
    "text": "Cikkszám"
   },
   {
-   "id": "b46",
+   "id": "b55",
    "kind": "other",
    "heading_path": [
     "LG ThermaV R32 12KW 3Fázis"
    ],
    "text": "_HM123MR-U34-3F"
-  },
-  {
-   "id": "b63",
-   "kind": "other",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": ".. / · Termékek · » · Monoblokk Hőszivattyú"
-  },
-  {
-   "id": "b64",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "723924|546546Termékek"
-  },
-  {
-   "id": "b65",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "945071|546546Oldalfali Split Klímaberendezés"
-  },
-  {
-   "id": "b66",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "986378|546546Multi Kültéri Klímaberendezés"
-  },
-  {
-   "id": "b67",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "903061|546546Multi Beltéri Klímaberendezés"
-  },
-  {
-   "id": "b68",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "246786|546546Osztott Hőszivattyú"
-  },
-  {
-   "id": "b69",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "316001|546546Osztott Hőszivattyú DUO"
-  },
-  {
-   "id": "b70",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "889124|546546Monoblokk Hőszivattyú"
-  },
-  {
-   "id": "b71",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "421775|546546CASCADE"
-  },
-  {
-   "id": "b72",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "546546|546546LG"
-  },
-  {
-   "id": "b73",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "123472|546546Hydrosplit Hőszivattyú"
-  },
-  {
-   "id": "b74",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "434316|546546Hővisszanyerős szellőztető"
-  },
-  {
-   "id": "b75",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "996476|546546Légtisztító"
-  },
-  {
-   "id": "b76",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "967026|546546Vízlágyító"
-  },
-  {
-   "id": "b77",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "9999999999922|0DUEX Hungary"
-  },
-  {
-   "id": "b78",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "9999999725776|0Katalógusok"
-  },
-  {
-   "id": "b79",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "9999999525773|0Rólunk"
-  },
-  {
-   "id": "b80",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "9999999140634|0Épületgépészeti tervezés"
-  },
-  {
-   "id": "b81",
-   "kind": "list_item",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "9999999833066|0Kapcsolat"
-  },
-  {
-   "id": "b82",
-   "kind": "other",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "Belépés"
-  },
-  {
-   "id": "b83",
-   "kind": "other",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "Email"
-  },
-  {
-   "id": "b84",
-   "kind": "other",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "Jelszó"
-  },
-  {
-   "id": "b85",
-   "kind": "other",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "Belép"
-  },
-  {
-   "id": "b86",
-   "kind": "other",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "Elfelejtettem a jelszavamat"
-  },
-  {
-   "id": "b87",
-   "kind": "other",
-   "heading_path": [
-    "LG ThermaV R32 12KW 3Fázis"
-   ],
-   "text": "Regisztráció"
   }
  ],
  "gold": {
-  "primary_entities": [],
-  "entities": [],
-  "optional": [],
-  "negatives": []
+  "primary_entities": [
+   "LG ThermaV R32 12KW 3Fázis"
+  ],
+  "entities": [
+   {
+    "canonical": "LG ThermaV R32 12KW 3Fázis",
+    "type": "product",
+    "subtype": "physical_good",
+    "note": "a termék (változat), az oldal témája",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "LG ThermaV R32 12KW 3Fázis"
+     },
+     {
+      "block": "b33",
+      "text": "LG ThermaV R32 12KW 3Fázis"
+     },
+     {
+      "block": "b37",
+      "text": "LG ThermaV R32 12KW 3Fázis"
+     }
+    ]
+   },
+   {
+    "canonical": "Monoblokk Hőszivattyú",
+    "type": "concept",
+    "subtype": "category",
+    "note": "a breadcrumbból",
+    "acceptable_types": [
+     "concept",
+     "product"
+    ],
+    "acceptable_subtypes": [
+     "category",
+     "other",
+     "line"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": []
+   },
+   {
+    "canonical": "R32",
+    "type": "concept",
+    "subtype": "designation",
+    "aliases": [
+     "difluormetán",
+     "R-32"
+    ],
+    "note": "hűtőközeg a leírásban és az adatokban",
+    "acceptable_types": [
+     "concept",
+     "product"
+    ],
+    "acceptable_subtypes": [
+     "designation",
+     "other",
+     "physical_good"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "R32"
+     },
+     {
+      "block": "b48",
+      "text": "R32"
+     }
+    ]
+   }
+  ],
+  "optional": [
+   {
+    "canonical": "LG",
+    "type": "brand",
+    "subtype": "other",
+    "note": "márka: site-szintű (9a)",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "LG"
+     },
+     {
+      "block": "b33",
+      "text": "LG"
+     },
+     {
+      "block": "b37",
+      "text": "LG"
+     }
+    ]
+   },
+   {
+    "canonical": "LG ThermaV",
+    "type": "product",
+    "subtype": "line",
+    "note": "termékcsalád: site-szintű (9a)",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "LG ThermaV"
+     },
+     {
+      "block": "b33",
+      "text": "LG ThermaV"
+     },
+     {
+      "block": "b37",
+      "text": "LG ThermaV"
+     }
+    ]
+   },
+   {
+    "canonical": "R1 kompresszor",
+    "type": "tech",
+    "subtype": "feature",
+    "aliases": [
+     "R1 compressor"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "R1 kompresszor"
+     }
+    ]
+   },
+   {
+    "canonical": "Black Fin hőcserélő",
+    "type": "tech",
+    "subtype": "feature",
+    "aliases": [
+     "Black Fin"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "Black Fin hőcserélő"
+     }
+    ]
+   },
+   {
+    "canonical": "GWP",
+    "type": "concept",
+    "subtype": "metric",
+    "aliases": [
+     "global warming potential"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "GWP"
+     }
+    ]
+   },
+   {
+    "canonical": "Hydrosplit",
+    "type": "concept",
+    "subtype": "other",
+    "note": "a leírásban 'Hydrosplit koncepció', a site-on kategória is",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "Hydrosplit"
+     }
+    ]
+   },
+   {
+    "canonical": "HMV recirkuláció",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "használati melegvíz"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "HMV recirkuláció"
+     }
+    ]
+   },
+   {
+    "canonical": "ISO 7-1",
+    "type": "tech",
+    "subtype": "standard",
+    "acceptable_types": [
+     "tech",
+     "concept"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b52",
+      "text": "ISO 7-1"
+     }
+    ]
+   },
+   {
+    "canonical": "energiaosztály",
+    "type": "concept",
+    "subtype": "designation",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b43",
+      "text": "Energiaosztály"
+     }
+    ]
+   },
+   {
+    "canonical": "napkollektor",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "Napkollektoros"
+     }
+    ]
+   },
+   {
+    "canonical": "Esztrich szárítási program",
+    "type": "tech",
+    "subtype": "feature",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "Esztrich szárítási program"
+     }
+    ]
+   },
+   {
+    "canonical": "DUEX Hungary",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "DUEX Hungary"
+     }
+    ]
+   }
+  ],
+  "negatives": [
+   {
+    "text": "2 299 900 Ft"
+   },
+   {
+    "text": "Kosárba"
+   },
+   {
+    "text": "Bővebben"
+   },
+   {
+    "text": "Részletek"
+   },
+   {
+    "text": "Adatok"
+   },
+   {
+    "text": "Cikkszám"
+   },
+   {
+    "text": "Belépés"
+   },
+   {
+    "text": "Jelszó"
+   },
+   {
+    "text": "Regisztráció"
+   },
+   {
+    "text": "Elfelejtettem a jelszavamat"
+   }
+  ]
  },
- "gold_status": "sablon, annotálatlan",
- "annotation_notes": [],
+ "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+ "annotation_notes": [
+  "Termékoldal: a termék, a kategória és a hűtőközeg kötelező.",
+  "A 'Cascade 2 fokozatú konfigurációs technológia' itt nem a Cascade márka, hanem LG-technológia; ha a modell ebből Cascade márkát hoz, az téves.",
+  "Parser-megfigyelés: mint a Cascade-oldalon."
+ ],
  "rules": {
   "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
   "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
@@ -332,7 +600,8 @@
   "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
   "ambiguous_aliases": "a többértelmű rövidítés (pl. GTM) felismerésnek elég, de az elnevezés csak a kontextus szerinti teljes névvel helyes; site-szinten azonos rövidítés nem vonható össze automatikusan",
   "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service).",
-  "webshop_levels": "webshop-szintek (M2/6 spec, 9a pont): a márka brand (Cascade, Fujitsu); a termékcsalád product / line (Cascade VISION NORDIC, Fujitsu Waterstage High Power V2); a termék (változat) product / variant, a saját oldalán (Cascade VISION NORDIC 3,5 kW); a kategória concept / category (Oldalfali Split Klímaberendezés). A teljesítmény, a fázisszám és az energiaosztály a termék tulajdonsága, nem entitás; a szakmai fogalmak (hűtőközeg: R290, R32; inverteres) fogalmak. Ha a terméknév a márkát vagy a családot tartalmazza, a márka és a család is kötelező tétel, a terméknév részeként álló szöveg szerinti alakkal"
+  "webshop_levels": "webshop-szintek (M2/6 spec, 9a pont): a márka brand (Cascade, Fujitsu); a termékcsalád product / line (Cascade VISION NORDIC, Fujitsu Waterstage High Power V2); a termék (változat) product / variant, a saját oldalán (Cascade VISION NORDIC 3,5 kW); a kategória concept / category (Oldalfali Split Klímaberendezés). A teljesítmény, a fázisszám és az energiaosztály a termék tulajdonsága, nem entitás; a szakmai fogalmak (hűtőközeg: R290, R32; inverteres) fogalmak. Ha a terméknév a márkát vagy a családot tartalmazza, a márka és a család is kötelező tétel, a terméknév részeként álló szöveg szerinti alakkal",
+  "ecommerce_rule": "webshop: a termék (változat) kötelező, a saját oldalán; a termékcsalád és a márka a site-szintű lépés dolga (9a), oldalszinten opcionális; a kategória a breadcrumbból kötelező; a navigációs kategória- és márkafa, a bejelentkezési űrlap és a kosár-gombok nem entitások; a teljesítmény, a fázis, az energiaosztály és a méretek attribútumok, nem entitások"
  },
  "subtype_glossary": {
   "service": {

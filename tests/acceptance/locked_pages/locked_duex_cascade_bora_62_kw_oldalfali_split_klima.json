@@ -79,14 +79,384 @@
   },
   {
    "id": "b43",
-   "kind": "other",
+   "kind": "table_row",
    "heading_path": [
     "Cascade BORA 6,2 kW oldalfali split klíma szett"
    ],
-   "text": "Tulajdonság Adat Kivitel Magasoldalfali klímaszett Energiaosztály hűtés A++ Energiaosztály fűtés A+ Hűtőteljesítmény 6.2 kW Fűtőteljesítmény 6.5 kW Hatékonysági mutató SEER 6.8 W/W Hatékonysági mutató SCOP 4 W/W Tápfeszültség 1/220-240/50 Ph/V/Hz Párátlanítás 1.8 liter/h Beltéri Hangnyomás szint (max) 48 dB(A) Beltéri Hangnyomás szint (min) 30 dB(A) Kültéri Hangnyomás szint 57 dB(A) Beltéri méret 970×300×225 mm Kültéri méret 873x555x376 mm Cső átmérő, folyadék/gáz 6/12 mm Hűtőközeg/alaptöltet R32 / 1,23 kg Üzemi tartomány, hűtés -15 - +43 °C Üzemi tartomány, fűtés -15/+24 °C Csepptálcafűtés nincs Fűtési besorolás Fűtés rásegítésre"
+   "text": "Tulajdonság | Adat",
+   "cells": [
+    {
+     "header": null,
+     "value": "Tulajdonság"
+    },
+    {
+     "header": null,
+     "value": "Adat"
+    }
+   ]
   },
   {
    "id": "b44",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Kivitel | Magasoldalfali klímaszett",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Kivitel"
+    },
+    {
+     "header": "Adat",
+     "value": "Magasoldalfali klímaszett"
+    }
+   ]
+  },
+  {
+   "id": "b45",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Energiaosztály hűtés | A++",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Energiaosztály hűtés"
+    },
+    {
+     "header": "Adat",
+     "value": "A++"
+    }
+   ]
+  },
+  {
+   "id": "b46",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Energiaosztály fűtés | A+",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Energiaosztály fűtés"
+    },
+    {
+     "header": "Adat",
+     "value": "A+"
+    }
+   ]
+  },
+  {
+   "id": "b47",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Hűtőteljesítmény | 6.2 kW",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Hűtőteljesítmény"
+    },
+    {
+     "header": "Adat",
+     "value": "6.2 kW"
+    }
+   ]
+  },
+  {
+   "id": "b48",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Fűtőteljesítmény | 6.5 kW",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Fűtőteljesítmény"
+    },
+    {
+     "header": "Adat",
+     "value": "6.5 kW"
+    }
+   ]
+  },
+  {
+   "id": "b49",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Hatékonysági mutató SEER | 6.8 W/W",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Hatékonysági mutató SEER"
+    },
+    {
+     "header": "Adat",
+     "value": "6.8 W/W"
+    }
+   ]
+  },
+  {
+   "id": "b50",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Hatékonysági mutató SCOP | 4 W/W",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Hatékonysági mutató SCOP"
+    },
+    {
+     "header": "Adat",
+     "value": "4 W/W"
+    }
+   ]
+  },
+  {
+   "id": "b51",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Tápfeszültség | 1/220-240/50 Ph/V/Hz",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Tápfeszültség"
+    },
+    {
+     "header": "Adat",
+     "value": "1/220-240/50 Ph/V/Hz"
+    }
+   ]
+  },
+  {
+   "id": "b52",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Párátlanítás | 1.8 liter/h",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Párátlanítás"
+    },
+    {
+     "header": "Adat",
+     "value": "1.8 liter/h"
+    }
+   ]
+  },
+  {
+   "id": "b53",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Beltéri Hangnyomás szint (max) | 48 dB(A)",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Beltéri Hangnyomás szint (max)"
+    },
+    {
+     "header": "Adat",
+     "value": "48 dB(A)"
+    }
+   ]
+  },
+  {
+   "id": "b54",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Beltéri Hangnyomás szint (min) | 30 dB(A)",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Beltéri Hangnyomás szint (min)"
+    },
+    {
+     "header": "Adat",
+     "value": "30 dB(A)"
+    }
+   ]
+  },
+  {
+   "id": "b55",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Kültéri Hangnyomás szint | 57 dB(A)",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Kültéri Hangnyomás szint"
+    },
+    {
+     "header": "Adat",
+     "value": "57 dB(A)"
+    }
+   ]
+  },
+  {
+   "id": "b56",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Beltéri méret | 970×300×225 mm",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Beltéri méret"
+    },
+    {
+     "header": "Adat",
+     "value": "970×300×225 mm"
+    }
+   ]
+  },
+  {
+   "id": "b57",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Kültéri méret | 873x555x376 mm",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Kültéri méret"
+    },
+    {
+     "header": "Adat",
+     "value": "873x555x376 mm"
+    }
+   ]
+  },
+  {
+   "id": "b58",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Cső átmérő, folyadék/gáz | 6/12 mm",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Cső átmérő, folyadék/gáz"
+    },
+    {
+     "header": "Adat",
+     "value": "6/12 mm"
+    }
+   ]
+  },
+  {
+   "id": "b59",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Hűtőközeg/alaptöltet | R32 / 1,23 kg",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Hűtőközeg/alaptöltet"
+    },
+    {
+     "header": "Adat",
+     "value": "R32 / 1,23 kg"
+    }
+   ]
+  },
+  {
+   "id": "b60",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Üzemi tartomány, hűtés | -15 - +43 °C",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Üzemi tartomány, hűtés"
+    },
+    {
+     "header": "Adat",
+     "value": "-15 - +43 °C"
+    }
+   ]
+  },
+  {
+   "id": "b61",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Üzemi tartomány, fűtés | -15/+24 °C",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Üzemi tartomány, fűtés"
+    },
+    {
+     "header": "Adat",
+     "value": "-15/+24 °C"
+    }
+   ]
+  },
+  {
+   "id": "b62",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Csepptálcafűtés | nincs",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Csepptálcafűtés"
+    },
+    {
+     "header": "Adat",
+     "value": "nincs"
+    }
+   ]
+  },
+  {
+   "id": "b63",
+   "kind": "table_row",
+   "heading_path": [
+    "Cascade BORA 6,2 kW oldalfali split klíma szett"
+   ],
+   "text": "Fűtési besorolás | Fűtés rásegítésre",
+   "cells": [
+    {
+     "header": "Tulajdonság",
+     "value": "Fűtési besorolás"
+    },
+    {
+     "header": "Adat",
+     "value": "Fűtés rásegítésre"
+    }
+   ]
+  },
+  {
+   "id": "b64",
    "kind": "other",
    "heading_path": [
     "Cascade BORA 6,2 kW oldalfali split klíma szett"
@@ -94,7 +464,7 @@
    "text": "Adatok"
   },
   {
-   "id": "b45",
+   "id": "b65",
    "kind": "other",
    "heading_path": [
     "Cascade BORA 6,2 kW oldalfali split klíma szett"
@@ -102,230 +472,290 @@
    "text": "Cikkszám"
   },
   {
-   "id": "b46",
+   "id": "b66",
    "kind": "other",
    "heading_path": [
     "Cascade BORA 6,2 kW oldalfali split klíma szett"
    ],
    "text": "CWH24AAD"
-  },
-  {
-   "id": "b63",
-   "kind": "other",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": ".. / · Termékek · » · Oldalfali Split Klímaberendezés"
-  },
-  {
-   "id": "b64",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "723924|430542Termékek"
-  },
-  {
-   "id": "b65",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "945071|430542Oldalfali Split Klímaberendezés"
-  },
-  {
-   "id": "b66",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "276405|430542FISHER"
-  },
-  {
-   "id": "b67",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "524425|430542AUX"
-  },
-  {
-   "id": "b68",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "430542|430542CASCADE"
-  },
-  {
-   "id": "b69",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "986378|430542Multi Kültéri Klímaberendezés"
-  },
-  {
-   "id": "b70",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "903061|430542Multi Beltéri Klímaberendezés"
-  },
-  {
-   "id": "b71",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "246786|430542Osztott Hőszivattyú"
-  },
-  {
-   "id": "b72",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "316001|430542Osztott Hőszivattyú DUO"
-  },
-  {
-   "id": "b73",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "889124|430542Monoblokk Hőszivattyú"
-  },
-  {
-   "id": "b74",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "123472|430542Hydrosplit Hőszivattyú"
-  },
-  {
-   "id": "b75",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "434316|430542Hővisszanyerős szellőztető"
-  },
-  {
-   "id": "b76",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "996476|430542Légtisztító"
-  },
-  {
-   "id": "b77",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "967026|430542Vízlágyító"
-  },
-  {
-   "id": "b78",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "9999999999922|0DUEX Hungary"
-  },
-  {
-   "id": "b79",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "9999999725776|0Katalógusok"
-  },
-  {
-   "id": "b80",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "9999999525773|0Rólunk"
-  },
-  {
-   "id": "b81",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "9999999140634|0Épületgépészeti tervezés"
-  },
-  {
-   "id": "b82",
-   "kind": "list_item",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "9999999833066|0Kapcsolat"
-  },
-  {
-   "id": "b83",
-   "kind": "other",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "Belépés"
-  },
-  {
-   "id": "b84",
-   "kind": "other",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "Email"
-  },
-  {
-   "id": "b85",
-   "kind": "other",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "Jelszó"
-  },
-  {
-   "id": "b86",
-   "kind": "other",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "Belép"
-  },
-  {
-   "id": "b87",
-   "kind": "other",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "Elfelejtettem a jelszavamat"
-  },
-  {
-   "id": "b88",
-   "kind": "other",
-   "heading_path": [
-    "Cascade BORA 6,2 kW oldalfali split klíma szett"
-   ],
-   "text": "Regisztráció"
   }
  ],
  "gold": {
-  "primary_entities": [],
-  "entities": [],
-  "optional": [],
-  "negatives": []
+  "primary_entities": [
+   "Cascade BORA 6,2 kW oldalfali split klíma szett"
+  ],
+  "entities": [
+   {
+    "canonical": "Cascade BORA 6,2 kW oldalfali split klíma szett",
+    "type": "product",
+    "subtype": "physical_good",
+    "note": "a termék (változat), az oldal témája",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Cascade BORA 6,2 kW oldalfali split klíma szett"
+     },
+     {
+      "block": "b33",
+      "text": "Cascade BORA 6,2 kW oldalfali split klíma szett"
+     },
+     {
+      "block": "b37",
+      "text": "Cascade BORA 6,2 kW oldalfali split klíma szett"
+     }
+    ]
+   },
+   {
+    "canonical": "Oldalfali Split Klímaberendezés",
+    "type": "concept",
+    "subtype": "category",
+    "note": "a breadcrumbból; a kategóriaoldalhoz kötve",
+    "acceptable_types": [
+     "concept",
+     "product"
+    ],
+    "acceptable_subtypes": [
+     "category",
+     "other",
+     "line"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": []
+   },
+   {
+    "canonical": "R32",
+    "type": "concept",
+    "subtype": "designation",
+    "aliases": [
+     "difluormetán",
+     "R-32"
+    ],
+    "note": "hűtőközeg a műszaki adatokban",
+    "acceptable_types": [
+     "concept",
+     "product"
+    ],
+    "acceptable_subtypes": [
+     "designation",
+     "other",
+     "physical_good"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b59",
+      "text": "R32"
+     }
+    ]
+   }
+  ],
+  "optional": [
+   {
+    "canonical": "Cascade",
+    "type": "brand",
+    "subtype": "other",
+    "note": "márka: site-szintű (9a)",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Cascade"
+     },
+     {
+      "block": "b33",
+      "text": "Cascade"
+     },
+     {
+      "block": "b37",
+      "text": "Cascade"
+     }
+    ]
+   },
+   {
+    "canonical": "Cascade BORA",
+    "type": "product",
+    "subtype": "line",
+    "note": "termékcsalád: site-szintű (9a)",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Cascade BORA"
+     },
+     {
+      "block": "b33",
+      "text": "Cascade BORA"
+     },
+     {
+      "block": "b37",
+      "text": "Cascade BORA"
+     }
+    ]
+   },
+   {
+    "canonical": "Cold Plasma ionizátor",
+    "type": "tech",
+    "subtype": "feature",
+    "aliases": [
+     "Cold Plasma"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "Cold Plasma ionizátor"
+     }
+    ]
+   },
+   {
+    "canonical": "I feel funkció",
+    "type": "tech",
+    "subtype": "feature",
+    "aliases": [
+     "I feel"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "\"I feel\" funkció"
+     }
+    ]
+   },
+   {
+    "canonical": "SEER",
+    "type": "concept",
+    "subtype": "metric",
+    "aliases": [
+     "seasonal energy efficiency ratio"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b49",
+      "text": "SEER"
+     }
+    ]
+   },
+   {
+    "canonical": "SCOP",
+    "type": "concept",
+    "subtype": "metric",
+    "aliases": [
+     "seasonal coefficient of performance"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b50",
+      "text": "SCOP"
+     }
+    ]
+   },
+   {
+    "canonical": "energiaosztály",
+    "type": "concept",
+    "subtype": "designation",
+    "aliases": [
+     "energy efficiency class",
+     "energiacímke"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "energiaosztály"
+     },
+     {
+      "block": "b45",
+      "text": "Energiaosztály"
+     }
+    ]
+   },
+   {
+    "canonical": "Wi-fi",
+    "type": "tech",
+    "subtype": "standard",
+    "aliases": [
+     "Wi-Fi",
+     "WiFi"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "Wi-fi"
+     }
+    ]
+   },
+   {
+    "canonical": "aktív szénszűrő",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "activated carbon filter"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "Aktív szénszűrő"
+     }
+    ]
+   },
+   {
+    "canonical": "DUEX Hungary",
+    "type": "org",
+    "subtype": "company",
+    "note": "a site saját cége; a title csonka, a navigációban ID-előtaggal áll",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": []
+   }
+  ],
+  "negatives": [
+   {
+    "text": "432 900 Ft"
+   },
+   {
+    "text": "Kosárba"
+   },
+   {
+    "text": "Bővebben"
+   },
+   {
+    "text": "Részletek"
+   },
+   {
+    "text": "Adatok"
+   },
+   {
+    "text": "Cikkszám"
+   },
+   {
+    "text": "Belépés"
+   },
+   {
+    "text": "Jelszó"
+   },
+   {
+    "text": "Regisztráció"
+   },
+   {
+    "text": "Elfelejtettem a jelszavamat"
+   }
+  ]
  },
- "gold_status": "sablon, annotálatlan",
- "annotation_notes": [],
+ "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+ "annotation_notes": [
+  "Termékoldal: a termék és a kategória kötelező, a márka és a termékcsalád site-szinten dől el (9a).",
+  "Parser-megfigyelés: a navigációs lista elemei numerikus ID-előtaggal állnak ('430542|430542CASCADE'), a műszaki adatok táblázata egyetlen 'other' blokk lett, és a bejelentkezési űrlap a tartalomba került."
+ ],
  "rules": {
   "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
   "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
@@ -340,7 +770,8 @@
   "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
   "ambiguous_aliases": "a többértelmű rövidítés (pl. GTM) felismerésnek elég, de az elnevezés csak a kontextus szerinti teljes névvel helyes; site-szinten azonos rövidítés nem vonható össze automatikusan",
   "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service).",
-  "webshop_levels": "webshop-szintek (M2/6 spec, 9a pont): a márka brand (Cascade, Fujitsu); a termékcsalád product / line (Cascade VISION NORDIC, Fujitsu Waterstage High Power V2); a termék (változat) product / variant, a saját oldalán (Cascade VISION NORDIC 3,5 kW); a kategória concept / category (Oldalfali Split Klímaberendezés). A teljesítmény, a fázisszám és az energiaosztály a termék tulajdonsága, nem entitás; a szakmai fogalmak (hűtőközeg: R290, R32; inverteres) fogalmak. Ha a terméknév a márkát vagy a családot tartalmazza, a márka és a család is kötelező tétel, a terméknév részeként álló szöveg szerinti alakkal"
+  "webshop_levels": "webshop-szintek (M2/6 spec, 9a pont): a márka brand (Cascade, Fujitsu); a termékcsalád product / line (Cascade VISION NORDIC, Fujitsu Waterstage High Power V2); a termék (változat) product / variant, a saját oldalán (Cascade VISION NORDIC 3,5 kW); a kategória concept / category (Oldalfali Split Klímaberendezés). A teljesítmény, a fázisszám és az energiaosztály a termék tulajdonsága, nem entitás; a szakmai fogalmak (hűtőközeg: R290, R32; inverteres) fogalmak. Ha a terméknév a márkát vagy a családot tartalmazza, a márka és a család is kötelező tétel, a terméknév részeként álló szöveg szerinti alakkal",
+  "ecommerce_rule": "webshop: a termék (változat) kötelező, a saját oldalán; a termékcsalád és a márka a site-szintű lépés dolga (9a), oldalszinten opcionális; a kategória a breadcrumbból kötelező; a navigációs kategória- és márkafa, a bejelentkezési űrlap és a kosár-gombok nem entitások; a teljesítmény, a fázis, az energiaosztály és a méretek attribútumok, nem entitások"
  },
  "subtype_glossary": {
   "service": {

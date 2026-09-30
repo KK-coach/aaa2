@@ -233,13 +233,694 @@
   }
  ],
  "gold": {
-  "primary_entities": [],
-  "entities": [],
-  "optional": [],
-  "negatives": []
+  "primary_entities": [
+   "Consent Mode v2"
+  ],
+  "entities": [
+   {
+    "canonical": "Consent Mode v2",
+    "type": "tech",
+    "subtype": "feature",
+    "aliases": [
+     "Google Consent Mode v2",
+     "Consent Mode"
+    ],
+    "note": "az oldal témája",
+    "namespace": "Google",
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b30",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b32",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b33",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b33",
+      "text": "v2"
+     },
+     {
+      "block": "b34",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b36",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b38",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b40",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b41",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b42",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b44",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b45",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b48",
+      "text": "Consent Mode v2"
+     },
+     {
+      "block": "b51",
+      "text": "Consent Mode v2"
+     }
+    ]
+   },
+   {
+    "canonical": "Advanced Consent Mode",
+    "type": "tech",
+    "subtype": "feature",
+    "namespace": "Google",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b37",
+      "text": "Advanced Consent Mode"
+     }
+    ]
+   },
+   {
+    "canonical": "Basic Consent Mode",
+    "type": "tech",
+    "subtype": "feature",
+    "namespace": "Google",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b37",
+      "text": "Basic Consent Mode"
+     }
+    ]
+   },
+   {
+    "canonical": "Google",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b32",
+      "text": "Google"
+     },
+     {
+      "block": "b33",
+      "text": "Google"
+     },
+     {
+      "block": "b44",
+      "text": "Google"
+     }
+    ]
+   },
+   {
+    "canonical": "Google Analytics 4",
+    "type": "tech",
+    "subtype": "software",
+    "aliases": [
+     "GA4"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b37",
+      "text": "Google Analytics 4"
+     }
+    ]
+   },
+   {
+    "canonical": "GDPR",
+    "type": "work",
+    "subtype": "legislation",
+    "aliases": [
+     "General Data Protection Regulation",
+     "általános adatvédelmi rendelet"
+    ],
+    "note": "headingben is",
+    "acceptable_types": [
+     "work",
+     "concept"
+    ],
+    "acceptable_subtypes": [
+     "legislation",
+     "other",
+     "designation"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b34",
+      "text": "GDPR"
+     },
+     {
+      "block": "b37",
+      "text": "GDPR"
+     },
+     {
+      "block": "b39",
+      "text": "GDPR"
+     },
+     {
+      "block": "b40",
+      "text": "General Data Protection Regulation"
+     },
+     {
+      "block": "b40",
+      "text": "GDPR"
+     },
+     {
+      "block": "b42",
+      "text": "GDPR"
+     }
+    ]
+   },
+   {
+    "canonical": "ePrivacy Directive",
+    "type": "work",
+    "subtype": "legislation",
+    "aliases": [
+     "ePrivacy",
+     "e-Privacy irányelv"
+    ],
+    "note": "headingben is",
+    "acceptable_types": [
+     "work",
+     "concept"
+    ],
+    "acceptable_subtypes": [
+     "legislation",
+     "other",
+     "designation"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b34",
+      "text": "ePrivacy"
+     },
+     {
+      "block": "b37",
+      "text": "ePrivacy"
+     },
+     {
+      "block": "b39",
+      "text": "ePrivacy"
+     },
+     {
+      "block": "b40",
+      "text": "ePrivacy Directive"
+     },
+     {
+      "block": "b40",
+      "text": "ePrivacy"
+     },
+     {
+      "block": "b42",
+      "text": "ePrivacy"
+     }
+    ]
+   },
+   {
+    "canonical": "MarketingLens",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Marketinglens"
+     },
+     {
+      "block": "b52",
+      "text": "MarketingLens"
+     }
+    ]
+   },
+   {
+    "canonical": "LinkedIn",
+    "type": "org",
+    "subtype": "company",
+    "acceptable_types": [
+     "org",
+     "tech"
+    ],
+    "acceptable_subtypes": [
+     "company",
+     "software"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b52",
+      "text": "LinkedIn"
+     }
+    ]
+   },
+   {
+    "canonical": "consent management",
+    "type": "service",
+    "subtype": "consulting",
+    "aliases": [
+     "consent management services"
+    ],
+    "note": "saját ajánlat headingben (b47)",
+    "acceptable_types": [
+     "service",
+     "concept"
+    ],
+    "acceptable_subtypes": [
+     "consulting",
+     "other",
+     "method"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b47",
+      "text": "consent management services"
+     },
+     {
+      "block": "b48",
+      "text": "consent management services"
+     }
+    ]
+   }
+  ],
+  "optional": [
+   {
+    "canonical": "Consent Mode v1",
+    "type": "tech",
+    "subtype": "feature",
+    "namespace": "Google",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b33",
+      "text": "Consent Mode v1"
+     }
+    ]
+   },
+   {
+    "canonical": "analytics_storage",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "namespace": "Consent Mode",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b36",
+      "text": "analytics_storage"
+     }
+    ]
+   },
+   {
+    "canonical": "ad_storage",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "namespace": "Consent Mode",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b36",
+      "text": "ad_storage"
+     }
+    ]
+   },
+   {
+    "canonical": "ad_user_data",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "namespace": "Consent Mode",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b36",
+      "text": "ad_user_data"
+     }
+    ]
+   },
+   {
+    "canonical": "ad_personalization",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "namespace": "Consent Mode",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b36",
+      "text": "ad_personalization"
+     }
+    ]
+   },
+   {
+    "canonical": "GDPR Article 6",
+    "type": "work",
+    "subtype": "legislation",
+    "acceptable_types": [
+     "work",
+     "concept"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b40",
+      "text": "Article 6"
+     }
+    ]
+   },
+   {
+    "canonical": "GDPR Article 7",
+    "type": "work",
+    "subtype": "legislation",
+    "acceptable_types": [
+     "work",
+     "concept"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b40",
+      "text": "Article 7"
+     }
+    ]
+   },
+   {
+    "canonical": "ePrivacy and GDPR diagnostics",
+    "type": "service",
+    "subtype": "audit",
+    "note": "megnevezett szolgáltatás, de bekezdésben",
+    "acceptable_types": [
+     "service",
+     "concept"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b34",
+      "text": "ePrivacy and GDPR diagnostics"
+     },
+     {
+      "block": "b37",
+      "text": "ePrivacy and GDPR diagnostics"
+     }
+    ]
+   },
+   {
+    "canonical": "behavioral modeling",
+    "type": "concept",
+    "subtype": "method",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b36",
+      "text": "behavioral modeling"
+     },
+     {
+      "block": "b37",
+      "text": "behavioral modeling"
+     },
+     {
+      "block": "b46",
+      "text": "behavioral modeling"
+     }
+    ]
+   },
+   {
+    "canonical": "cookieless tracking",
+    "type": "concept",
+    "subtype": "method",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b36",
+      "text": "cookieless"
+     }
+    ]
+   },
+   {
+    "canonical": "conversion tracking",
+    "type": "concept",
+    "subtype": "method",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b33",
+      "text": "conversion tracking"
+     },
+     {
+      "block": "b38",
+      "text": "conversion tracking"
+     },
+     {
+      "block": "b44",
+      "text": "conversion tracking"
+     }
+    ]
+   },
+   {
+    "canonical": "machine learning",
+    "type": "concept",
+    "subtype": "discipline",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b37",
+      "text": "machine learning"
+     }
+    ]
+   },
+   {
+    "canonical": "consent",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b32",
+      "text": "consent"
+     },
+     {
+      "block": "b33",
+      "text": "consent"
+     },
+     {
+      "block": "b34",
+      "text": "consent"
+     },
+     {
+      "block": "b36",
+      "text": "consent"
+     },
+     {
+      "block": "b37",
+      "text": "consent-related"
+     },
+     {
+      "block": "b38",
+      "text": "consent"
+     },
+     {
+      "block": "b40",
+      "text": "consent"
+     },
+     {
+      "block": "b41",
+      "text": "consent"
+     },
+     {
+      "block": "b42",
+      "text": "consent"
+     },
+     {
+      "block": "b44",
+      "text": "consent-related"
+     },
+     {
+      "block": "b44",
+      "text": "consent"
+     },
+     {
+      "block": "b45",
+      "text": "consent"
+     },
+     {
+      "block": "b46",
+      "text": "consent"
+     },
+     {
+      "block": "b47",
+      "text": "consent"
+     },
+     {
+      "block": "b48",
+      "text": "consent"
+     },
+     {
+      "block": "b49",
+      "text": "consent"
+     },
+     {
+      "block": "b50",
+      "text": "consent"
+     },
+     {
+      "block": "b51",
+      "text": "consent"
+     }
+    ]
+   },
+   {
+    "canonical": "marketing attribution",
+    "type": "concept",
+    "subtype": "method",
+    "aliases": [
+     "attribution"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "marketing attribution"
+     }
+    ]
+   },
+   {
+    "canonical": "audience development",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b33",
+      "text": "audience development"
+     },
+     {
+      "block": "b44",
+      "text": "audience development"
+     }
+    ]
+   },
+   {
+    "canonical": "privacy audit",
+    "type": "service",
+    "subtype": "audit",
+    "acceptable_types": [
+     "service",
+     "concept"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "privacy audits"
+     }
+    ]
+   },
+   {
+    "canonical": "Europe",
+    "type": "place",
+    "subtype": "region",
+    "aliases": [
+     "Európa"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "European"
+     },
+     {
+      "block": "b41",
+      "text": "European"
+     }
+    ]
+   },
+   {
+    "canonical": "cookie",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b36",
+      "text": "cookieless"
+     },
+     {
+      "block": "b40",
+      "text": "cookie"
+     }
+    ]
+   }
+  ],
+  "negatives": [
+   {
+    "text": "Sep 9, 2025"
+   },
+   {
+    "text": "Business benefits"
+   },
+   {
+    "text": "Impact on tracking and analytics"
+   },
+   {
+    "text": "Book a free strategy call"
+   },
+   {
+    "text": "Follow"
+   }
+  ]
  },
- "gold_status": "sablon, annotálatlan",
- "annotation_notes": [],
+ "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+ "annotation_notes": [
+  "Blogcikk: a Consent Mode v2 és módjai, a Google, a GA4, a két jogszabály, a cég és a saját ajánlat (b47 heading) kötelező.",
+  "A négy consent-paraméter dokumentált API-tag: opcionális (dokumentációs szabály).",
+  "A 'v2' minta bőkezű: a verziójelölés önmagában is a Consent Mode v2 említése."
+ ],
  "rules": {
   "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
   "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",

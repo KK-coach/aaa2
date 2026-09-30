@@ -34,216 +34,145 @@
     "Osztott Hőszivattyú"
    ],
    "text": "FUJITSU WATERSTAGE"
-  },
-  {
-   "id": "b53",
-   "kind": "other",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": ".. / · Termékek · » · Osztott Hőszivattyú"
-  },
-  {
-   "id": "b54",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "723924|246786Termékek"
-  },
-  {
-   "id": "b55",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "945071|246786Oldalfali Split Klímaberendezés"
-  },
-  {
-   "id": "b56",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "986378|246786Multi Kültéri Klímaberendezés"
-  },
-  {
-   "id": "b57",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "903061|246786Multi Beltéri Klímaberendezés"
-  },
-  {
-   "id": "b58",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "246786|246786Osztott Hőszivattyú"
-  },
-  {
-   "id": "b59",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "488784|246786AUX"
-  },
-  {
-   "id": "b60",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "680806|246786FUJITSU WATERSTAGE"
-  },
-  {
-   "id": "b61",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "316001|246786Osztott Hőszivattyú DUO"
-  },
-  {
-   "id": "b62",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "889124|246786Monoblokk Hőszivattyú"
-  },
-  {
-   "id": "b63",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "123472|246786Hydrosplit Hőszivattyú"
-  },
-  {
-   "id": "b64",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "434316|246786Hővisszanyerős szellőztető"
-  },
-  {
-   "id": "b65",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "996476|246786Légtisztító"
-  },
-  {
-   "id": "b66",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "967026|246786Vízlágyító"
-  },
-  {
-   "id": "b67",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "9999999999922|-1DUEX Hungary"
-  },
-  {
-   "id": "b68",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "9999999725776|-1Katalógusok"
-  },
-  {
-   "id": "b69",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "9999999525773|-1Rólunk"
-  },
-  {
-   "id": "b70",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "9999999140634|-1Épületgépészeti tervezés"
-  },
-  {
-   "id": "b71",
-   "kind": "list_item",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "9999999833066|-1Kapcsolat"
-  },
-  {
-   "id": "b72",
-   "kind": "other",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "Belépés"
-  },
-  {
-   "id": "b73",
-   "kind": "other",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "Email"
-  },
-  {
-   "id": "b74",
-   "kind": "other",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "Jelszó"
-  },
-  {
-   "id": "b75",
-   "kind": "other",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "Belép"
-  },
-  {
-   "id": "b76",
-   "kind": "other",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "Elfelejtettem a jelszavamat"
-  },
-  {
-   "id": "b77",
-   "kind": "other",
-   "heading_path": [
-    "Osztott Hőszivattyú"
-   ],
-   "text": "Regisztráció"
   }
  ],
  "gold": {
-  "primary_entities": [],
-  "entities": [],
-  "optional": [],
-  "negatives": []
+  "primary_entities": [
+   "Osztott Hőszivattyú"
+  ],
+  "entities": [
+   {
+    "canonical": "Osztott Hőszivattyú",
+    "type": "concept",
+    "subtype": "category",
+    "note": "a kategóriaoldal témája",
+    "acceptable_types": [
+     "concept",
+     "product"
+    ],
+    "acceptable_subtypes": [
+     "category",
+     "other",
+     "line"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Osztott Hőszivattyú"
+     },
+     {
+      "block": "b34",
+      "text": "Osztott Hőszivattyú"
+     }
+    ]
+   },
+   {
+    "canonical": "AUX",
+    "type": "brand",
+    "subtype": "other",
+    "note": "a kategórián belüli márkaszűrő a tartalomban (nem a navigációs fában)",
+    "acceptable_types": [
+     "brand",
+     "org"
+    ],
+    "acceptable_subtypes": [
+     "other",
+     "company"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b35",
+      "text": "AUX"
+     }
+    ]
+   },
+   {
+    "canonical": "Fujitsu Waterstage",
+    "type": "product",
+    "subtype": "line",
+    "aliases": [
+     "FUJITSU WATERSTAGE",
+     "Waterstage"
+    ],
+    "note": "márka + termékcsalád a tartalomban",
+    "acceptable_types": [
+     "product",
+     "brand"
+    ],
+    "acceptable_subtypes": [
+     "line",
+     "other"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b36",
+      "text": "FUJITSU WATERSTAGE"
+     }
+    ]
+   }
+  ],
+  "optional": [
+   {
+    "canonical": "Fujitsu",
+    "type": "brand",
+    "subtype": "other",
+    "note": "márka: site-szintű (9a)",
+    "acceptable_types": [
+     "brand",
+     "org"
+    ],
+    "acceptable_subtypes": [
+     "other",
+     "company"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b36",
+      "text": "FUJITSU"
+     }
+    ]
+   },
+   {
+    "canonical": "DUEX Hungary",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "DUEX Hungary"
+     }
+    ]
+   }
+  ],
+  "negatives": [
+   {
+    "text": "Belépés"
+   },
+   {
+    "text": "Jelszó"
+   },
+   {
+    "text": "Regisztráció"
+   },
+   {
+    "text": "Elfelejtettem a jelszavamat"
+   }
+  ]
  },
- "gold_status": "sablon, annotálatlan",
- "annotation_notes": [],
+ "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+ "annotation_notes": [
+  "Kategóriaoldal: a kategória és a tartalomban felsorolt márkák/termékcsaládok kötelezők; a navigációs kategóriafa nem.",
+  "Parser-megfigyelés: a navigációs fa elemei ID-előtaggal állnak ('488784|246786AUX'); a referencia csak a tartalmi b35/b36 blokkot várja."
+ ],
  "rules": {
   "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
   "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
@@ -258,7 +187,8 @@
   "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
   "ambiguous_aliases": "a többértelmű rövidítés (pl. GTM) felismerésnek elég, de az elnevezés csak a kontextus szerinti teljes névvel helyes; site-szinten azonos rövidítés nem vonható össze automatikusan",
   "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service).",
-  "webshop_levels": "webshop-szintek (M2/6 spec, 9a pont): a márka brand (Cascade, Fujitsu); a termékcsalád product / line (Cascade VISION NORDIC, Fujitsu Waterstage High Power V2); a termék (változat) product / variant, a saját oldalán (Cascade VISION NORDIC 3,5 kW); a kategória concept / category (Oldalfali Split Klímaberendezés). A teljesítmény, a fázisszám és az energiaosztály a termék tulajdonsága, nem entitás; a szakmai fogalmak (hűtőközeg: R290, R32; inverteres) fogalmak. Ha a terméknév a márkát vagy a családot tartalmazza, a márka és a család is kötelező tétel, a terméknév részeként álló szöveg szerinti alakkal"
+  "webshop_levels": "webshop-szintek (M2/6 spec, 9a pont): a márka brand (Cascade, Fujitsu); a termékcsalád product / line (Cascade VISION NORDIC, Fujitsu Waterstage High Power V2); a termék (változat) product / variant, a saját oldalán (Cascade VISION NORDIC 3,5 kW); a kategória concept / category (Oldalfali Split Klímaberendezés). A teljesítmény, a fázisszám és az energiaosztály a termék tulajdonsága, nem entitás; a szakmai fogalmak (hűtőközeg: R290, R32; inverteres) fogalmak. Ha a terméknév a márkát vagy a családot tartalmazza, a márka és a család is kötelező tétel, a terméknév részeként álló szöveg szerinti alakkal",
+  "ecommerce_rule": "webshop: a termék (változat) kötelező, a saját oldalán; a termékcsalád és a márka a site-szintű lépés dolga (9a), oldalszinten opcionális; a kategória a breadcrumbból kötelező; a navigációs kategória- és márkafa, a bejelentkezési űrlap és a kosár-gombok nem entitások; a teljesítmény, a fázis, az energiaosztály és a méretek attribútumok, nem entitások"
  },
  "subtype_glossary": {
   "service": {

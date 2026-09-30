@@ -530,13 +530,713 @@
   }
  ],
  "gold": {
-  "primary_entities": [],
-  "entities": [],
-  "optional": [],
-  "negatives": []
+  "primary_entities": [
+   "MarketingLens"
+  ],
+  "entities": [
+   {
+    "canonical": "MarketingLens",
+    "type": "org",
+    "subtype": "company",
+    "note": "a site saját cége, az oldal témája",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "MarketingLens"
+     },
+     {
+      "block": "b30",
+      "text": "MarketingLens"
+     },
+     {
+      "block": "b37",
+      "text": "MarketingLens"
+     },
+     {
+      "block": "b53",
+      "text": "MarketingLens"
+     },
+     {
+      "block": "b59",
+      "text": "MarketingLens"
+     },
+     {
+      "block": "b62",
+      "text": "MarketingLens"
+     },
+     {
+      "block": "b67",
+      "text": "MarketingLens"
+     }
+    ]
+   },
+   {
+    "canonical": "Google",
+    "type": "org",
+    "subtype": "company",
+    "aliases": [
+     "ex-Google"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b31",
+      "text": "Google"
+     },
+     {
+      "block": "b33",
+      "text": "Google"
+     },
+     {
+      "block": "b33",
+      "text": "ex-Google"
+     },
+     {
+      "block": "b37",
+      "text": "Google"
+     },
+     {
+      "block": "b41",
+      "text": "Google"
+     },
+     {
+      "block": "b56",
+      "text": "Google"
+     },
+     {
+      "block": "b67",
+      "text": "Google"
+     }
+    ]
+   },
+   {
+    "canonical": "Google Ads",
+    "type": "tech",
+    "subtype": "software",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b33",
+      "text": "Google Ads"
+     },
+     {
+      "block": "b56",
+      "text": "Google Ads"
+     }
+    ]
+   },
+   {
+    "canonical": "Meta",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b37",
+      "text": "Meta"
+     }
+    ]
+   },
+   {
+    "canonical": "Oracle",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b37",
+      "text": "Oracle"
+     }
+    ]
+   },
+   {
+    "canonical": "Accenture",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b37",
+      "text": "Accenture"
+     }
+    ]
+   },
+   {
+    "canonical": "BigQuery",
+    "type": "tech",
+    "subtype": "software",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "BigQuery"
+     }
+    ]
+   },
+   {
+    "canonical": "Berti B.",
+    "type": "person",
+    "aliases": [
+     "Berti"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b44",
+      "text": "BERTI B."
+     },
+     {
+      "block": "b56",
+      "text": "Berti"
+     }
+    ]
+   },
+   {
+    "canonical": "Balazs V.",
+    "type": "person",
+    "aliases": [
+     "Balázs V."
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b46",
+      "text": "BALAZS V. PH.D"
+     }
+    ]
+   },
+   {
+    "canonical": "Ely L.",
+    "type": "person",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b48",
+      "text": "ELY L."
+     }
+    ]
+   },
+   {
+    "canonical": "A. M. Algharawi",
+    "type": "person",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b54",
+      "text": "A. M. Algharawi"
+     }
+    ]
+   },
+   {
+    "canonical": "N. Huang",
+    "type": "person",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b57",
+      "text": "N. Huang"
+     }
+    ]
+   },
+   {
+    "canonical": "A. Domingo",
+    "type": "person",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b60",
+      "text": "A. Domingo"
+     }
+    ]
+   },
+   {
+    "canonical": "R. Farkas",
+    "type": "person",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b63",
+      "text": "R. Farkas"
+     }
+    ]
+   },
+   {
+    "canonical": "Xeropan",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b55",
+      "text": "Xeropan"
+     },
+     {
+      "block": "b75",
+      "text": "Xeropan"
+     }
+    ]
+   },
+   {
+    "canonical": "IWG plc",
+    "type": "org",
+    "subtype": "company",
+    "aliases": [
+     "IWG"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b58",
+      "text": "IWG plc"
+     }
+    ]
+   },
+   {
+    "canonical": "Elite International Motors",
+    "type": "org",
+    "subtype": "company",
+    "aliases": [
+     "Elite International Motors LLC"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b59",
+      "text": "Elite International Motors"
+     },
+     {
+      "block": "b61",
+      "text": "Elite International Motors"
+     }
+    ]
+   },
+   {
+    "canonical": "Schrack",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b64",
+      "text": "Schrack"
+     }
+    ]
+   },
+   {
+    "canonical": "Raketech",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b66",
+      "text": "Raketech"
+     },
+     {
+      "block": "b67",
+      "text": "Raketech"
+     }
+    ]
+   },
+   {
+    "canonical": "Tradewind Finance",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b69",
+      "text": "Tradewind Finance"
+     }
+    ]
+   },
+   {
+    "canonical": "DroneDeploy",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b72",
+      "text": "DroneDeploy"
+     }
+    ]
+   },
+   {
+    "canonical": "OTP Bank",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b78",
+      "text": "OTP Bank"
+     }
+    ]
+   },
+   {
+    "canonical": "Extreme Digital",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b81",
+      "text": "Extreme Digital"
+     }
+    ]
+   },
+   {
+    "canonical": "digital marketing",
+    "type": "concept",
+    "subtype": "discipline",
+    "aliases": [
+     "digitális marketing"
+    ],
+    "note": "headingben",
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Digital Marketing"
+     },
+     {
+      "block": "b32",
+      "text": "Digital Marketing"
+     },
+     {
+      "block": "b37",
+      "text": "digital marketing"
+     },
+     {
+      "block": "b39",
+      "text": "digital marketing"
+     },
+     {
+      "block": "b53",
+      "text": "digital marketing"
+     }
+    ]
+   }
+  ],
+  "optional": [
+   {
+    "canonical": "Google Analytics",
+    "type": "tech",
+    "subtype": "software",
+    "aliases": [
+     "Analytics"
+    ],
+    "difficulty": "hard",
+    "surface_forms": [
+     {
+      "block": "b33",
+      "text": "Analytics"
+     }
+    ]
+   },
+   {
+    "canonical": "MarTech",
+    "type": "concept",
+    "subtype": "discipline",
+    "aliases": [
+     "marketing technology"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b39",
+      "text": "MarTech"
+     }
+    ]
+   },
+   {
+    "canonical": "data analytics",
+    "type": "concept",
+    "subtype": "discipline",
+    "aliases": [
+     "digital data analytics"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b37",
+      "text": "data analytics"
+     },
+     {
+      "block": "b38",
+      "text": "Data Analytics"
+     },
+     {
+      "block": "b38",
+      "text": "data analytics"
+     }
+    ]
+   },
+   {
+    "canonical": "AI",
+    "type": "concept",
+    "subtype": "discipline",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "AI-Powered"
+     }
+    ]
+   },
+   {
+    "canonical": "KPI",
+    "type": "concept",
+    "subtype": "metric",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b42",
+      "text": "KPIs"
+     }
+    ]
+   },
+   {
+    "canonical": "ROAS",
+    "type": "concept",
+    "subtype": "metric",
+    "aliases": [
+     "return on ad spend"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b62",
+      "text": "ROAS"
+     }
+    ]
+   },
+   {
+    "canonical": "PPC",
+    "type": "concept",
+    "subtype": "discipline",
+    "aliases": [
+     "pay-per-click"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b62",
+      "text": "PPC"
+     }
+    ]
+   },
+   {
+    "canonical": "CPC",
+    "type": "concept",
+    "subtype": "metric",
+    "aliases": [
+     "cost per click"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b70",
+      "text": "CPC"
+     }
+    ]
+   },
+   {
+    "canonical": "broad match",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b70",
+      "text": "broad match"
+     }
+    ]
+   },
+   {
+    "canonical": "negative keyword",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b82",
+      "text": "negative keyword"
+     }
+    ]
+   },
+   {
+    "canonical": "customer retention rate",
+    "type": "concept",
+    "subtype": "metric",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b76",
+      "text": "customer retention rate"
+     },
+     {
+      "block": "b79",
+      "text": "customer retention rate"
+     }
+    ]
+   },
+   {
+    "canonical": "B2B e-commerce",
+    "type": "concept",
+    "subtype": "discipline",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b62",
+      "text": "B2B e-commerce"
+     }
+    ]
+   },
+   {
+    "canonical": "competitive analysis",
+    "type": "concept",
+    "subtype": "method",
+    "aliases": [
+     "competitor analysis"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b67",
+      "text": "competitive analysis"
+     }
+    ]
+   },
+   {
+    "canonical": "benchmarking",
+    "type": "concept",
+    "subtype": "method",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b67",
+      "text": "benchmarking"
+     }
+    ]
+   },
+   {
+    "canonical": "market expansion strategy",
+    "type": "concept",
+    "subtype": "method",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b67",
+      "text": "market expansion strategy"
+     }
+    ]
+   },
+   {
+    "canonical": "Data-Driven Assets",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b76",
+      "text": "Data-Driven Assets"
+     },
+     {
+      "block": "b79",
+      "text": "Data-Driven Assets"
+     }
+    ]
+   },
+   {
+    "canonical": "data strategy",
+    "type": "concept",
+    "subtype": "method",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "data strategies"
+     }
+    ]
+   },
+   {
+    "canonical": "mobile app",
+    "type": "concept",
+    "subtype": "other",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b53",
+      "text": "mobile app"
+     }
+    ]
+   }
+  ],
+  "negatives": [
+   {
+    "text": "Contact us"
+   },
+   {
+    "text": "More about our services"
+   },
+   {
+    "text": "More about the leadership team"
+   },
+   {
+    "text": "More about our clients"
+   },
+   {
+    "text": "View Case Study"
+   },
+   {
+    "text": "Previous · Next"
+   },
+   {
+    "text": "Client Testimonials"
+   },
+   {
+    "text": "We partner with leading brands"
+   }
+  ]
  },
- "gold_status": "sablon, annotálatlan",
- "annotation_notes": [],
+ "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+ "annotation_notes": [
+  "Főoldal: a cég, a partnerek, az ügyfelek és a vezetők (személyek) kötelezők.",
+  "Saját ajánlat nincs megnevezve szerkezeti helyen; a 'Digital Marketing Agency' heading a digitális marketing fogalmát adja.",
+  "A rövidített személynevek (Berti B., A. M. Algharawi) így szerepelnek a forrásban; a teljes név nem ismert."
+ ],
  "rules": {
   "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
   "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
