@@ -20,16 +20,23 @@
   legalább két terméke osztozik rajta (kis-nagybetű nélkül). A többi terméknél: a leghosszabb
   közös token-előtag legalább két termék között, ha a termékek utána eltérő, számjegyet
   tartalmazó tokennel folytatódnak („BlueSoft Eco” 12 / 18 / 25). A család neve a tagok H1-ében
-  álló leggyakoribb alak (a márkával, ha a H1 azzal kezdődik). Kapcsolat: termék `part_of`
-  család, márka `brand_of` család; család nélküli terméknél márka `brand_of` termék. Említés: a
-  tagtermékek H1-ében a családnév.
+  álló leggyakoribb alak (a márkával, ha a H1 azzal kezdődik). Ha a márka a termékneveinek
+  elején áll, a márka nélküli családnév kanonikus alakja márkával kiegészítve, az eredeti alias.
+- Egymásba ágyazott családok (`nest_families`): a hűtőközeg-jelölés (R32, R290) és a
+  konfigurációs szavak („egységgel”, „szett”, „beltéri / kültéri egység”) előtt vágott név, ha
+  legalább két családé közös, szülőcsalád (`family_parent`); ha egy család tokenjei egy másikéi
+  előtt állnak, a hosszabb `part_of` a rövidebb (a leghosszabb ilyen). A család nélküli termék
+  a nevét kezdő leghosszabb család tagja. Kapcsolat: termék `part_of` család, alcsalád
+  `part_of` szülőcsalád, márka `brand_of` a legfelső család; család nélküli terméknél márka
+  `brand_of` termék. Említés: a tagtermékek H1-ében a családnév.
 - Kapcsolat nélküli márka (brand, `brand_of` nélkül, oldalhoz nem kötve): ha a neve a site neve
   (`site._site_name_keys`), a site-szervezet (org, role = brand) aliasa lesz
   (`orphan_brand_site`); különben, ha az írásmód-normalizált neve (`site.normal_key`, legalább
   `ORPHAN_MIN_CHARS` jel) egy termékcsalád vagy egy terméket hordozó márka nevével egyezik, vagy
-  annak elő- vagy utótagja, és egyetlen ilyen cél van, annak aliasa (`orphan_brand`; a pontos
-  egyezés megelőzi a részlegest); egyébként marad, `orphan` jelöléssel (több cél esetén azok is
-  a futás kimenetében).
+  annak elő- vagy utótagja (a cél aliasai is), és egyetlen ilyen cél van, vagy a célok közül
+  egy a többi szülőcsaládja, annak aliasa (`orphan_brand`; a pontos egyezés megelőzi a
+  részlegest); egyébként marad, `orphan` jelöléssel (több cél esetén azok is a futás
+  kimenetében).
 - A kapcsolatok forrása `shop`; a beolvasztások a `merge_log`-ban.
 """
 from __future__ import annotations
@@ -58,6 +65,9 @@ MODEL_MIN_CHARS = 6
 FAMILY_STOP = ("capacity", "phase", "energy_class", "model")
 FAMILY_MIN_PRODUCTS = 2
 ORPHAN_MIN_CHARS = 4
+REFRIGERANT = re.compile(r"^R-?\d{2,4}[A-Za-z]?$")
+CONFIG_WORDS = {"egységgel", "szett"}
+UNIT_PLACES = {"beltéri", "kültéri"}
 
 
 @dataclass
@@ -67,6 +77,8 @@ class ShopRun:
     families: int = 0
     products: int = 0
     in_family: int = 0
+    parents: int = 0
+    nested: int = 0
     with_attributes: int = 0
     unbranded: list[str] = field(default_factory=list)
     orphan_aliases: dict[str, str] = field(default_factory=dict)     # márka → cél
@@ -75,7 +87,8 @@ class ShopRun:
     def as_dict(self) -> dict:
         return {"categories": self.categories, "brands": self.brands,
                 "families": self.families, "products": self.products,
-                "in_family": self.in_family, "with_attributes": self.with_attributes,
+                "in_family": self.in_family, "parents": self.parents, "nested": self.nested,
+                "with_attributes": self.with_attributes,
                 "unbranded": self.unbranded, "orphan_aliases": self.orphan_aliases,
                 "orphans": self.orphans}
 
@@ -270,12 +283,14 @@ def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
         else:
             run.unbranded.append(product.name)
     brand_ids: dict[str, int] = {}
+    brand_names: dict[str, str] = {}
     for key, members in sorted(by_brand.items()):
         listing_forms = sorted({p.brand for p in members if p.brand})
         branded = Counter(" ".join(p.name.split()[:len(listing_forms[0].split())])
                           for p in members if strip_brand(p.name, listing_forms[0])[1])
         canonical = branded.most_common(1)[0][0] if branded else listing_forms[0]
         brand_ids[key] = _brand_entity(ctx, merger, key, canonical, listing_forms)
+        brand_names[key] = canonical
         run.brands += 1
         for info in pages_of["brand_category"]:
             if alias_key((info.h1 or "").strip()) == key:
@@ -300,28 +315,129 @@ def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
     # termékcsaládok
     family_ids: list[int] = []
     for key, members in sorted(by_brand.items()):
-        brand_id = brand_ids[key]
+        brand_id, brand = brand_ids[key], brand_names[key]
         brand_name = members[0].brand
+        prefixed = any(strip_brand(p.name, brand)[1] for p in members)
         found = families({p.entity_id: p.name for p in members}, brand_name)
         grouped: dict[tuple[str, ...], list[Product]] = defaultdict(list)
+        loose: list[Product] = []
         for product in members:
             if product.entity_id in found:
                 grouped[found[product.entity_id]].append(product)
             else:
-                _relate(ctx, brand_id, product.entity_id, "brand_of", {"family": None})
+                loose.append(product)
+        lines: list[Line] = []
         for family_key, group in sorted(grouped.items()):
             name = family_name(family_key, [p.name for p in group], brand_name)
-            family_id = _family_entity(ctx, name, group)
-            family_ids.append(family_id)
-            run.families += 1
-            _relate(ctx, brand_id, family_id, "brand_of", {"brand": brand_name})
+            canonical = (f"{brand} {name}" if prefixed and not strip_brand(name, brand)[1]
+                         else name)
+            family_id = _family_entity(ctx, canonical, [name])
+            lines.append(Line(family_id, canonical, name, group))
             for product in group:
                 _relate(ctx, product.entity_id, family_id, "part_of",
                         {"family": " ".join(family_key)})
                 _h1_mention(ctx, family_id, product.page_id, name)
                 run.in_family += 1
+        for parent_name, h1_forms, children in family_parents(lines):
+            parent_id = _family_entity(ctx, parent_name, [])
+            group = [p for child in children for p in child.products]
+            lines.append(Line(parent_id, parent_name, parent_name, group))
+            run.parents += 1
+            for product in group:
+                _h1_mention(ctx, parent_id, product.page_id, h1_forms[product.entity_id])
+        parent_of = nest_families([(line.entity_id, line.name) for line in lines])
+        for line in lines:
+            family_ids.append(line.entity_id)
+            run.families += 1
+            if line.entity_id in parent_of:
+                _relate(ctx, line.entity_id, parent_of[line.entity_id], "part_of",
+                        {"nested": line.name})
+                run.nested += 1
+            else:
+                _relate(ctx, brand_id, line.entity_id, "brand_of", {"brand": brand_name})
+        names = [(line.entity_id, line.name) for line in lines]
+        for product in loose:
+            full = (product.name if not prefixed or strip_brand(product.name, brand)[1]
+                    else f"{brand} {product.name}")
+            owner = longest_prefix(full, names)
+            if owner is None:
+                _relate(ctx, brand_id, product.entity_id, "brand_of", {"family": None})
+            else:
+                _relate(ctx, product.entity_id, owner, "part_of", {"name_prefix": full})
+                run.in_family += 1
     _orphan_brands(ctx, merger, run, sorted(set(brand_ids.values())), family_ids)
     return run
+
+
+@dataclass
+class Line:
+    """Egy termékcsalád a futásban: entitás, kanonikus név, a H1-beli alak és a tagjai."""
+
+    entity_id: int
+    name: str
+    h1_name: str
+    products: list[Product]
+
+
+def trim_family(tokens: Sequence[str]) -> list[str]:
+    """A családnév tokenjei az első hűtőközeg-jelölés (R32, R290) vagy konfigurációs szó
+    („egységgel”, „szett”, „beltéri / kültéri egység…”) előtt."""
+    for i, token in enumerate(tokens):
+        low = _bare(token).lower()
+        following = _bare(tokens[i + 1]).lower() if i + 1 < len(tokens) else ""
+        if REFRIGERANT.match(_bare(token)) or low in CONFIG_WORDS or (
+                low in UNIT_PLACES and following.startswith("egység")):
+            return list(tokens[:i])
+    return list(tokens)
+
+
+def family_parents(lines: Sequence[Line]) -> list[tuple[str, dict[int, str], list[Line]]]:
+    """A közös szülőcsaládok: a vágott név (`trim_family`), ha legalább két családé közös,
+    rövidebb náluk, és nincs már ilyen nevű család. (név, termék → a H1-beli alak, alcsaládok)."""
+    existing = {alias_key(line.name) for line in lines}
+    groups: dict[str, list[tuple[Line, str, str]]] = defaultdict(list)
+    for line in lines:
+        tokens, h1_tokens = line.name.split(), line.h1_name.split()
+        kept = trim_family(tokens)
+        if 0 < len(kept) < len(tokens):
+            cut = len(tokens) - len(kept)
+            h1_kept = " ".join(h1_tokens[:len(h1_tokens) - cut])
+            groups[alias_key(" ".join(kept))].append((line, " ".join(kept), h1_kept))
+    found = []
+    for key, members in sorted(groups.items()):
+        if len(members) < FAMILY_MIN_PRODUCTS or key in existing or not key:
+            continue
+        name = Counter(n for _, n, _ in members).most_common(1)[0][0]
+        forms = {p.entity_id: h1 for line, _, h1 in members for p in line.products}
+        found.append((name, forms, [line for line, _, _ in members]))
+    return found
+
+
+def nest_families(lines: Sequence[tuple[int, str]]) -> dict[int, int]:
+    """Család → a szülője: a leghosszabb másik család, amelynek tokenjei (`alias_key`) a
+    család tokenjei előtt állnak."""
+    tokens = {entity_id: alias_key(name).split() for entity_id, name in lines}
+    parents = {}
+    for entity_id, mine in tokens.items():
+        best = None
+        for other, theirs in tokens.items():
+            if other != entity_id and len(theirs) < len(mine) and mine[:len(theirs)] == theirs \
+                    and (best is None or len(theirs) > len(tokens[best])):
+                best = other
+        if best is not None:
+            parents[entity_id] = best
+    return parents
+
+
+def longest_prefix(name: str, lines: Sequence[tuple[int, str]]) -> int | None:
+    """A család, amelynek tokenjei a név elején állnak (a leghosszabb), vagy None."""
+    mine = alias_key(name).split()
+    best, size = None, 0
+    for entity_id, other in lines:
+        theirs = alias_key(other).split()
+        if size < len(theirs) < len(mine) and mine[:len(theirs)] == theirs:
+            best, size = entity_id, len(theirs)
+    return best
 
 
 def orphan_target(name: str, targets: Sequence[tuple[int, str]]) -> tuple[list[int], str]:
@@ -347,9 +463,15 @@ def _orphan_brands(ctx: _Context, merger: Merger, run: ShopRun, brand_ids: list[
     from aaa2.entities.site import _set_flag, _site_name_keys
 
     con = ctx.con
-    names = dict(con.execute("SELECT entity_id, name FROM entities WHERE list_contains(?, "
-                             "entity_id)", [brand_ids + family_ids]).fetchall())
-    targets = [(i, names[i]) for i in family_ids + brand_ids if i in names]
+    names, targets = {}, []
+    for entity_id, name, aliases in con.execute(
+            "SELECT entity_id, name, aliases FROM entities WHERE list_contains(?, entity_id) "
+            "ORDER BY entity_id", [brand_ids + family_ids]).fetchall():
+        names[entity_id] = name
+        targets += [(entity_id, form) for form in [name, *(aliases or [])]]
+    parent_of = dict(con.execute("SELECT from_id, to_id FROM entity_relations WHERE type = "
+                                 "'part_of' AND source = 'shop' AND list_contains(?, from_id)",
+                                 [family_ids]).fetchall())
     site_org = con.execute("SELECT min(entity_id) FROM entities WHERE type = 'org' "
                            "AND role = 'brand'").fetchone()[0]
     site_keys = _site_name_keys(con)
@@ -365,6 +487,12 @@ def _orphan_brands(ctx: _Context, merger: Merger, run: ShopRun, brand_ids: list[
                 "SELECT name FROM entities WHERE entity_id = ?", [site_org]).fetchone()[0]
             continue
         found, match = orphan_target(name, targets)
+        found = sorted(set(found))
+        if len(found) > 1:
+            common = [i for i in found if all(o == i or i in _ancestors(o, parent_of)
+                                              for o in found)]
+            found, match = (common, f"{match}, szülőcsalád") if len(common) == 1 else (
+                found, match)
         if len(found) == 1:
             merger.merge(found[0], entity_id, "orphan_brand",
                          {"brand": name, "target": names[found[0]], "match": match})
@@ -373,6 +501,14 @@ def _orphan_brands(ctx: _Context, merger: Merger, run: ShopRun, brand_ids: list[
         orphans.append(entity_id)
         run.orphans[name] = sorted(names[i] for i in found)
     _set_flag(con, "orphan", orphans)
+
+
+def _ancestors(entity_id: int, parent_of: dict[int, int]) -> set[int]:
+    found = set()
+    while entity_id in parent_of and parent_of[entity_id] not in found:
+        entity_id = parent_of[entity_id]
+        found.add(entity_id)
+    return found
 
 
 def _anchored_entity(ctx: _Context, merger: Merger, members: list[PageInfo], kind: str,
@@ -441,20 +577,30 @@ def _brand_entity(ctx: _Context, merger: Merger, key: str, canonical: str,
     return entity_id
 
 
-def _family_entity(ctx: _Context, name: str, group: list[Product]) -> int:
-    """A termékcsalád (product / line) entitása: a meglévő, oldalhoz nem kötött azonos kulcsú
-    line altípusú product, különben új."""
-    key = alias_key(name)
-    for entity_id, other, aliases in ctx.con.execute(
-            "SELECT entity_id, name, aliases FROM entities WHERE type = 'product' "
-            "AND subtype = 'line' AND anchor_page_id IS NULL ORDER BY entity_id").fetchall():
-        if key in {alias_key(f) for f in [other, *(aliases or [])]}:
-            return entity_id
-    (entity_id,) = ctx.con.execute(
-        "INSERT INTO entities (name, lang, type, subtype, aliases, source, created_at) "
-        "VALUES (?, ?, 'product', 'line', [], 'rule', current_timestamp) RETURNING entity_id",
-        [name, ctx.site_lang]).fetchone()
-    return entity_id
+def _family_entity(ctx: _Context, name: str, forms: Sequence[str]) -> int:
+    """A termékcsalád (product / line) entitása a `name` kanonikus névvel és a `forms`
+    aliasokkal: a meglévő, oldalhoz nem kötött line altípusú product, amelynek neve vagy
+    aliasa egyezik a nevek valamelyikével (kulcs szerint), különben új."""
+    keys = {alias_key(f) for f in [name, *forms]}
+    aliases = sorted({f for f in forms if f != name})
+    found = next((entity_id for entity_id, other, known in ctx.con.execute(
+        "SELECT entity_id, name, aliases FROM entities WHERE type = 'product' "
+        "AND subtype = 'line' AND anchor_page_id IS NULL ORDER BY entity_id").fetchall()
+        if keys & {alias_key(f) for f in [other, *(known or [])]}), None)
+    if found is None:
+        (found,) = ctx.con.execute(
+            "INSERT INTO entities (name, lang, type, subtype, aliases, source, created_at) "
+            "VALUES (?, ?, 'product', 'line', [], 'rule', current_timestamp) "
+            "RETURNING entity_id", [name, ctx.site_lang]).fetchone()
+    ctx.con.execute(
+        "UPDATE entities SET name = ?, aliases = list_distinct(list_filter(list_concat("
+        "coalesce(aliases, []), ?, [name]), x -> x <> ?)) WHERE entity_id = ?",
+        [name, aliases, name, found])
+    if aliases:
+        ctx.con.executemany("INSERT INTO entity_aliases (entity_id, alias, lang, source) "
+                            "VALUES (?, ?, NULL, 'nav') ON CONFLICT DO NOTHING",
+                            [(found, form) for form in aliases])
+    return found
 
 
 def _h1_mention(ctx: _Context, entity_id: int, page_id: int, name: str) -> None:

@@ -40,25 +40,44 @@ def collect(db: Path) -> dict[str, list[dict]]:
         brand_of_target = {to: frm for frm, to in brand_of}
         urls = dict(rows(con, "SELECT e.entity_id, p.url FROM entities e JOIN pages p "
                               "ON p.page_id = e.anchor_page_id"))
+        lines = {eid for (eid,) in rows(con, "SELECT entity_id FROM entities WHERE type = "
+                                             "'product' AND subtype = 'line'")}
+
+        def root(eid: int | None) -> int | None:
+            """A család láncának legfelső tagja (a szülőcsaládok mentén)."""
+            seen = set()
+            while eid in part_of and part_of[eid] in lines and eid not in seen:
+                seen.add(eid)
+                eid = part_of[eid]
+            return eid
+
+        def brand_of_entity(eid: int | None) -> int | None:
+            return brand_of_target.get(root(eid)) if eid is not None else None
+
         brands = [{"márka": name, "aliasok": "; ".join(aliases or []),
-                   "családok": sum(1 for f, t in brand_of if f == eid and t not in part_of
-                                   and t not in urls),
+                   "családok": sum(1 for f in lines if brand_of_entity(f) == eid),
+                   "felső szintű családok": sum(1 for f, t in brand_of if f == eid
+                                                and t in lines),
                    "közvetlen termékek": sum(1 for f, t in brand_of if f == eid and t in urls)}
                   for eid, name, aliases in rows(
                       con, "SELECT entity_id, name, aliases FROM entities WHERE type = 'brand' "
                            "AND entity_id IN (SELECT from_id FROM entity_relations "
                            "WHERE type = 'brand_of') ORDER BY name")]
-        families = [{"termékcsalád": name, "márka": names.get(brand_of_target.get(eid), ""),
-                     "termékek": sum(1 for t in part_of.values() if t == eid)}
-                    for eid, name in rows(con, "SELECT entity_id, name FROM entities "
-                                               "WHERE type = 'product' AND subtype = 'line' "
-                                               "ORDER BY name")]
+        families = [{"termékcsalád": name, "szülőcsalád": names.get(part_of.get(eid), "")
+                     if part_of.get(eid) in lines else "",
+                     "márka": names.get(brand_of_entity(eid), ""),
+                     "aliasok": "; ".join(aliases or []),
+                     "alcsaládok": sum(1 for f, t in part_of.items() if t == eid and f in lines),
+                     "termékek": sum(1 for f, t in part_of.items() if t == eid and f in urls)}
+                    for eid, name, aliases in rows(con, "SELECT entity_id, name, aliases FROM "
+                                                        "entities WHERE type = 'product' AND "
+                                                        "subtype = 'line' ORDER BY name")]
         products = []
         for eid, name, attributes in rows(
                 con, "SELECT entity_id, name, attributes FROM entities WHERE type = 'product' "
                      "AND subtype = 'variant' ORDER BY name"):
             family = part_of.get(eid)
-            brand = brand_of_target.get(family) if family else brand_of_target.get(eid)
+            brand = brand_of_entity(family) if family else brand_of_target.get(eid)
             products.append({
                 "termék": name, "termékcsalád": names.get(family, ""),
                 "márka": names.get(brand, ""), "kategória": names.get(in_category.get(eid), ""),
@@ -91,10 +110,10 @@ def collect(db: Path) -> dict[str, list[dict]]:
                                                   "coalesce(flags, []), 'orphan') ORDER BY name")]
         orphan_brands += [{"márka": removed, "sors": "alias", "cél": kept, "szabály": rule}
                           for removed, kept, rule in rows(
-                              con, "SELECT removed_name, kept_name, rule FROM merge_log "
-                                   "WHERE rule LIKE 'orphan_brand%' AND run_id = (SELECT max("
-                                   "run_id) FROM merge_log WHERE rule LIKE 'orphan_brand%') "
-                                   "ORDER BY removed_name")]
+                              con, "SELECT removed_name, arg_max(e.name, m.merge_id), "
+                                   "arg_max(m.rule, m.merge_id) FROM merge_log m JOIN entities "
+                                   "e ON e.entity_id = m.kept_id WHERE m.rule LIKE "
+                                   "'orphan_brand%' GROUP BY removed_name ORDER BY removed_name")]
     finally:
         con.close()
     return {"brands": brands, "families": families, "products": products,
@@ -116,9 +135,13 @@ def assembly(data: dict[str, list[dict]]) -> list[dict]:
 
     for b in data["brands"]:
         row("márka", b["márka"], count=b["közvetlen termékek"],
-            note=f"családok: {b['családok']}; aliasok: {b['aliasok']}")
+            note=f"családok: {b['családok']} (felső szinten {b['felső szintű családok']}); "
+                 f"aliasok: {b['aliasok']}")
     for f in data["families"]:
-        row("termékcsalád", f["termékcsalád"], brand=f["márka"], count=f["termékek"])
+        row("termékcsalád", f["termékcsalád"], brand=f["márka"], family=f["szülőcsalád"],
+            count=f["termékek"], note="; ".join(filter(None, [
+                f"alcsaládok: {f['alcsaládok']}" if f["alcsaládok"] else "",
+                f"aliasok: {f['aliasok']}" if f["aliasok"] else ""])))
     for p in data["products"]:
         row("termék", p["termék"], brand=p["márka"], family=p["termékcsalád"],
             category=p["kategória"], attributes=p["tulajdonságok"], url=p["url"])

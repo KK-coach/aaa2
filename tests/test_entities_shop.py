@@ -8,7 +8,15 @@ from aaa2.entities import overrides
 from aaa2.entities.overrides import load_site_config
 from aaa2.entities.pages import breadcrumbs, page_types
 from aaa2.entities.rules import run_rules
-from aaa2.entities.shop import base_tokens, families, name_attributes, orphan_target
+from aaa2.entities.shop import (
+    base_tokens,
+    families,
+    longest_prefix,
+    name_attributes,
+    nest_families,
+    orphan_target,
+    trim_family,
+)
 from aaa2.entities.site import cut_off, run_site, site_name_form
 from tests.test_entities_rules import html, ld, site
 from tests.test_entities_site import NOON, llm_entity
@@ -209,3 +217,65 @@ def test_brands_without_products_become_aliases_or_orphans(shop_config):
     assert sorted(con.execute("SELECT removed_name, rule FROM merge_log WHERE rule LIKE "
                               "'orphan%'").fetchall()) == [("Nordic", "orphan_brand"),
                                                            ("Pelda Webshop", "orphan_brand_site")]
+
+
+def test_family_trimming_nesting_and_prefix_owner():
+    assert trim_family(["LG", "ThermaV", "R290", "HYDRO", "EGYSÉGGEL"]) == ["LG", "ThermaV"]
+    assert trim_family(["Cascade", "Nordic", "ECO"]) == ["Cascade", "Nordic", "ECO"]
+    assert trim_family(["Acme", "X", "kültéri", "egység"]) == ["Acme", "X"]
+    lines = [(1, "Cascade FREE MATCH"), (2, "Cascade FREE MATCH BORA"),
+             (3, "Cascade FREE MATCH VISION NORDIC"), (4, "Cascade VISION NORDIC"),
+             (5, "Cascade BORA")]
+    assert nest_families(lines) == {2: 1, 3: 1}
+    assert longest_prefix("Cascade FREE MATCH LEGEND CWH09YC klíma", lines) == 1
+    assert longest_prefix("Cascade LEGEND 2,5 kW", lines) is None
+
+
+def nested_shop():
+    brand = ("ACME", "/spl/3/ACME")
+    pages = {"/": html("Pelda Webshop", "<main><h1>Pelda Webshop</h1></main>",
+                       head=ld({"@type": "Organization", "name": "Pelda Webshop",
+                                "url": f"{SHOP}/"})),
+             "/sct/1/Termekek": listing("Termékek", ("Főoldal", "/"),
+                                        ("Termékek", "/sct/1/Termekek")),
+             "/sct/2/Klima": listing("Klíma", ("Főoldal", "/"), ("Termékek", "/sct/1/Termekek"),
+                                     ("Klíma", "/sct/2/Klima")),
+             "/spl/3/ACME": listing("ACME", ("Főoldal", "/"), ("Termékek", "/sct/1/Termekek"),
+                                    ("Klíma", "/sct/2/Klima"), brand)}
+    names = ["Acme FREE MATCH 4,1KW CWHD14NK6OO Multi kültéri egység",
+             "Acme FREE MATCH 5,3KW CWHD18NK600 Multi kültéri egység",
+             "FREE MATCH BORA CWH09AAA-K6DNA5A klíma Multi beltéri egység",
+             "FREE MATCH BORA CWH12AABXB-K6DNA5A klíma Multi beltéri egység",
+             "Acme FREE MATCH LEGEND CWH09YC-K6DNA2A klíma multi beltéri egység",
+             "Acme Therma R32 12KW 3Fázis", "Acme Therma R32 14KW 3Fázis",
+             "Acme Therma R290 HYDRO EGYSÉGGEL 9KW 3Fázis",
+             "Acme Therma R290 HYDRO EGYSÉGGEL 12KW 3Fázis"]
+    for i, name in enumerate(names):
+        pages[f"/spd/{i}"] = product_page(name, f"/spd/{i}", brand[1], brand[0])
+    return site(pages)
+
+
+def test_nested_families_with_brand_prefix_parent_and_orphan(shop_config):
+    con = nested_shop()
+    run_rules(con)
+    llm_entity(con, f"{SHOP}/spd/5", "Acme Therm", "Acme Therm", "brand")    # a szülő előtagja
+    run = run_site(con, clock=lambda: NOON)
+    ids = dict(con.execute("SELECT name, entity_id FROM entities").fetchall())
+    part_of = {(a, b) for a, b in con.execute(
+        "SELECT f.name, t.name FROM entity_relations r JOIN entities f ON f.entity_id = r.from_id "
+        "JOIN entities t ON t.entity_id = r.to_id WHERE r.type = 'part_of'").fetchall()}
+    assert {("Acme FREE MATCH BORA", "Acme FREE MATCH"), ("Acme Therma R32", "Acme Therma"),
+            ("Acme Therma R290 HYDRO EGYSÉGGEL", "Acme Therma"),
+            ("Acme FREE MATCH LEGEND CWH09YC-K6DNA2A klíma multi beltéri egység",
+             "Acme FREE MATCH")} <= part_of
+    assert "FREE MATCH BORA" in con.execute("SELECT aliases FROM entities WHERE name = "
+                                            "'Acme FREE MATCH BORA'").fetchone()[0]
+    brand_of = {name for (name,) in con.execute(
+        "SELECT t.name FROM entity_relations r JOIN entities t ON t.entity_id = r.to_id "
+        "WHERE r.type = 'brand_of'").fetchall()}
+    assert brand_of == {"Acme FREE MATCH", "Acme Therma"}                  # csak a legfelső
+    assert (run.shop["parents"], run.shop["nested"]) == (1, 3)
+    assert run.shop["orphan_aliases"] == {"Acme Therm": "Acme Therma"}
+    assert "Acme Therm" not in ids and con.execute(
+        "SELECT count(*) FROM page_entities WHERE entity_id = ?",
+        [ids["Acme Therma"]]).fetchone()[0] >= 4                            # H1-említések
