@@ -230,3 +230,32 @@ def test_inline_elements_join_like_rendered_text():
     assert [b.text for b in parsed] == ["SEO & Technikai alapok, keresőoptimalizálás",
                                         "Mérés Kiss Anna", "Első második", "Technika"]
     assert parsed[1].anchors == ["Mérés", "Kiss Anna"]
+
+
+def test_webshop_menu_ids_overlay_panels_and_tab_separated_tables():
+    """A menü technikai azonosítója (a stíluslap rejti) nem kerül a szövegbe; a zárt
+    lenyíló panel (kategóriafa, bejelentkezés) chrome; a tabulátorral tagolt, `<br>`-rel tört
+    műszaki adatok táblázatsorok, a forráskód behúzása nem cellahatár."""
+    page = (
+        "<html><body>"
+        "<div class='hamburger__dropdown dropdown--content'><ul class='responsive_menu'>"
+        "<li><span class='ajax_param'>316001|709257</span><a href='/sct/1'>Klíma</a></li>"
+        "</ul></div>"
+        "<div class='profile__dropdown dropdown--content'><form><p>Belépés</p>"
+        "<input type='password'></form></div>"
+        "<main><h1>Termék</h1>"
+        "<ul class='dropdown-menu'><li>Demó menüpont</li></ul>"
+        "<div class='desc'>\n\t\t\tCold Plasma ionizátor<br>Wi-fi<br>Turbo funkció\n\t\t</div>"
+        "<div class='specs'>Tulajdonság\tAdat<br>Kivitel\t<br>Oldalfali klíma<br>"
+        "Hűtőteljesítmény\t<br>2.5 kW</div>"
+        "</main></body></html>")
+    parsed = parse_blocks(page)
+    assert not any("316001" in b.text for b in parsed)
+    assert [b.region for b in parsed if b.text in ("Klíma", "Belépés")] == ["chrome", "chrome"]
+    assert [b.region for b in parsed if b.text == "Demó menüpont"] == ["content"]
+    rows = [b for b in parsed if b.kind == "table_row"]
+    assert [b.text for b in rows] == ["Tulajdonság | Adat", "Kivitel | Oldalfali klíma",
+                                      "Hűtőteljesítmény | 2.5 kW"]
+    assert rows[1].cells == [{"header": "Tulajdonság", "value": "Kivitel"},
+                             {"header": "Adat", "value": "Oldalfali klíma"}]
+    assert "Cold Plasma ionizátor Wi-fi Turbo funkció" in [b.text for b in parsed]
