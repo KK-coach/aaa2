@@ -112,6 +112,12 @@ A pontok a fejlesztés sorrendjét követik; a később megszűnt eszközöket �
 
 - M3 riportréteg: a megjelenítési nyelv riportonként választható legyen, a nyelvvel jelölt aliasokból (a kanonikus név nyelvétől függetlenül). Nincs megcsinálva.
 
+## M3 — folyamatban
+
+A spec a projektdokumentum „M3 — Entitásgráf (spec)” fülén (M3a: gráf és az első három SEO-megállapítás; M3b: a szövegben kimondott kapcsolatok, linkelési javaslatok, topical map, külső megerősítés). Az M3 az M2 tárolt kimenetéből dolgozik, LLM-hívás nélkül; a kód az `aaa2/functions/` alatt (a rétegsorrend: motor → entitás-réteg → funkciók).
+
+1. Oldal-csomópont, fő entitás, élek, súlyozás (M3/1, AAAV2-62). `aaa graph <domain> [--db] [--out] [--wikidata/--no-wikidata]` → `aaa2/functions/graph.py` (`build_graph`, `export_csv`): `page_nodes` (oldalszerep az M2/6-ból, a webshopon `category` / `listing`, a kezdőoldal `home`; a segédoldal fajtája: legal, contact, list, checkout, placeholder), `page_main_entity` (egy fő és legfeljebb két másodlagos entitás a bizonyítékokkal és megbízhatósággal; a döntés az összes jelölttel a `page_nodes.decision`-ben; `external_confirmation` az M3b-nek), `edges` (mentions, main_entity, part_of, brand_of, offers, is_a a kategóriaoldalból és a biztos Wikidata-osztályból, `gate.KnowledgeBase.superclasses`, a tudásbázis gyorsítótárán át), `entity_weights` (az összetevők külön oszlopban; a súlyok: `aaa2/functions/config/graph.toml`). A 018-as migráció. Mérés: `python -m tests.acceptance.m3_main_entity compare|template` (a zárolt és fejlesztési oldalak `primary_entities`-e a kimenettel szemben; a kk.coach annotálósablonja: `tests/acceptance/m3/kk_main_entity_reference.json`). Munkamásolatok: `data/m3/` (a kk.coach és az ngx a mostani M2-kódra hozva, hívás nélkül).
+
 ## Stack
 
 Python 3.12, asyncio, Playwright (Chromium), selectolax, DuckDB, Typer, pydantic, zstandard, pytest; az LLM-hez anthropic, openai, google-genai, python-dotenv. `pip install -e ".[dev]"`, `playwright install chromium`, `pytest`, `aaa --help`.

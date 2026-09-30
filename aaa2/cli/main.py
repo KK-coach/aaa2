@@ -29,6 +29,7 @@ from aaa2.entities.rules import run_rules
 from aaa2.entities.site import run_site
 from aaa2.entities.v3 import V3Step, load_pipeline, v3_fingerprint
 from aaa2.entities.validate import KG_DAILY_QUOTA, _Api, validate_entities
+from aaa2.functions.graph import build_graph, export_csv
 from aaa2.llm import ledger
 from aaa2.llm.client import Retry, check_models, open_clients
 from aaa2.llm.config import PIPELINE_OFF, load_config, load_site_credentials
@@ -352,6 +353,47 @@ def entity_report(
     count = write_entity_table(con, table)
     typer.echo(f"{report}")
     typer.echo(f"{table} ({count} entitás)")
+
+
+@app.command()
+def graph(
+    domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
+    db: Annotated[Path | None, typer.Option(
+        help="a site-adatbázis útvonala (alapból data/<domain>.duckdb)")] = None,
+    out: Annotated[Path, typer.Option(help="a kimeneti mappa")] = Path("data/reports"),
+    wikidata: Annotated[bool, typer.Option(
+        "--wikidata/--no-wikidata",
+        help="is_a-élek a biztos Wikidata-osztályokból (a tudásbázis gyorsítótárán át)")] = True,
+) -> None:
+    """Entitásgráf az M2 tárolt kimenetéből, LLM nélkül: oldal-csomópontok, az oldal fő
+    entitása a bizonyítékaival, élek, az entitások súlya; CSV-ben: `<out>/<név>-main-entity.csv`,
+    `<név>-edges.csv`, `<név>-weights.csv`."""
+    con = _open(domain, db)
+    stem = db.stem if db is not None else _domain(domain)
+    shared = None
+    try:
+        superclasses = None
+        if wikidata:
+            shared = connect(shared_path())
+            api = _Api(con, shared, httpx.Client(timeout=20.0), Retry(), _utcnow,
+                       time.monotonic)
+            superclasses = KnowledgeBase(api.get).superclasses
+        site = _site_domain(con)
+        patterns = load_site_config(site).page_types if site else {}
+        run = build_graph(con, page_type_patterns=patterns, superclasses=superclasses)
+        paths = export_csv(con, out, stem)
+    finally:
+        if shared is not None:
+            shared.close()
+    typer.echo(f"oldalak: {run.pages}; fő entitással {run.main} "
+               f"({', '.join(f'{k} {v}' for k, v in sorted(run.confidence.items()))}), "
+               f"segédoldal {run.support}, bizonyíték nélkül {run.none}")
+    typer.echo("élek: " + ", ".join(f"{k} {v}" for k, v in sorted(run.edges.items()))
+               + f"; Wikidata-osztály: {run.class_lookups} lekérdezés, "
+                 f"{run.class_failures} hibás")
+    typer.echo(f"súlyozott entitás: {run.weights}")
+    for path in paths.values():
+        typer.echo(str(path))
 
 
 def _step_model(value: str) -> str | None:

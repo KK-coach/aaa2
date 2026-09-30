@@ -84,8 +84,8 @@ def page_roles(con: duckdb.DuckDBPyConnection) -> dict[int, PageInfo]:
         "SELECT page_id, url, lang, title, h1, hreflang FROM pages "
         "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL "
         "ORDER BY page_id").fetchall()
-    homes = {page_url(u) for u in _home_urls(con)}
-    nodes = _schema_nodes(con)
+    homes = {page_url(u) for u in home_urls(con)}
+    nodes = schema_nodes(con)
     code_pages = {page_id for (page_id,) in con.execute(
         "SELECT DISTINCT page_id FROM blocks WHERE kind = 'code' AND region = 'content'"
     ).fetchall()}
@@ -130,7 +130,7 @@ def page_types(con: duckdb.DuckDBPyConnection,
     4. különben other."""
     compiled = {kind: [re.compile(p) for p in (patterns or {}).get(kind, ())]
                 for kind in PAGE_TYPES}
-    nodes = _schema_nodes(con)
+    nodes = schema_nodes(con)
     found: dict[int, str] = {}
     for page_id, url in con.execute(
             "SELECT page_id, url FROM pages WHERE status BETWEEN 200 AND 299 AND error IS NULL "
@@ -153,7 +153,7 @@ def page_types(con: duckdb.DuckDBPyConnection,
 def breadcrumbs(con: duckdb.DuckDBPyConnection) -> dict[int, list[tuple[str, str | None]]]:
     """Oldalanként az első JSON-LD `BreadcrumbList` elemei sorrendben: (név, URL vagy None)."""
     found: dict[int, list[tuple[str, str | None]]] = {}
-    for page_id, nodes in _schema_nodes(con).items():
+    for page_id, nodes in schema_nodes(con).items():
         for node in nodes:
             if "BreadcrumbList" not in {_short(t) for t in _as_list(node.get("@type"))}:
                 continue
@@ -218,7 +218,7 @@ def _own_role(page_id: int, url: str, h1: str | None, homes: set[str], nodes: li
     return "support", "no_entity_evidence"
 
 
-def _schema_nodes(con: duckdb.DuckDBPyConnection) -> dict[int, list[dict]]:
+def schema_nodes(con: duckdb.DuckDBPyConnection) -> dict[int, list[dict]]:
     """Oldalanként a JSON-LD blokkok legfelső szintű típusos csomópontjai (és a `@graph`
     elemei)."""
     found: dict[int, list[dict]] = defaultdict(list)
@@ -237,7 +237,7 @@ def _schema_nodes(con: duckdb.DuckDBPyConnection) -> dict[int, list[dict]]:
     return found
 
 
-def _home_urls(con: duckdb.DuckDBPyConnection) -> set[str]:
+def home_urls(con: duckdb.DuckDBPyConnection) -> set[str]:
     row = con.execute("SELECT home_urls, seed_url FROM site").fetchone()
     if row is None:
         return set()

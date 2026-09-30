@@ -1,0 +1,706 @@
+"""Entitásgráf (M3 spec, „M3 — Entitásgráf”, 2–3. és 5–6. pont), LLM nélkül, az M2 tárolt
+kimenetéből. Minden futás újraépíti a `page_nodes`, `edges`, `page_main_entity` és
+`entity_weights` táblát.
+
+- Oldal-csomópont (`page_nodes`): az M2/6 oldalszerepe (`pages.page_roles`), a webshopon a
+  kategória- és a márka × kategória oldal (`category`, `listing`), a kezdőoldal (`home`: maga a
+  kezdőoldal, vagy a saját hreflang-listájában álló nyelvi változata); a segédoldal fajtája:
+  `legal` (jogi, köszönő, hibaoldal: az útvonalban vagy a lekérdezésben szókezdettől álló
+  `pages.SUPPORT_URL_WORDS` szó, `url_has_word`), `contact` (`ContactPage`, vagy entitásoldal-
+  szerep nélkül a `CONTACT_URL_WORDS` szó), `list` (`CollectionPage`, `SearchResultsPage`,
+  márka × kategória lista, és a kategóriaoldal oldalhoz kötött entitás nélkül, pl. a
+  gyökérkategória), `checkout`, `placeholder` (kitöltőszöveg-oldal). Segédoldalnak
+  nincs fő entitása.
+- Fő entitás (`page_main_entity`), a bizonyítékok erőssége szerint (`EVIDENCE_RANK`):
+  1. az oldalhoz kötött entitás (az oldalcsoport bármely tagjához, `anchored`); a kezdőoldalon a
+     site entitása (`home`: a `role = brand` entitás, és a márkakapcsolat nélküli, szabályból
+     vagy schemából jött `brand`, mint a `site._site_name_keys`-ben);
+  2. a JSON-LD `about` / `mainEntity` (a név, vagy az `@id` a site csomópontjai vagy oldalai
+     szerint; a kérdés-válasz csomópontok nem számítanak; `schema_about`);
+  3. a kinyerés `primary_entities` listája (a sorszámmal; `primary`);
+  4. a title, a H1 és a headingek nem sablon-említései (`title`, `h1`, `heading`); a már
+     bizonyítékkal bíró jelöltnél a neve vagy aliasa a H1 és a title szövegében is (`occurs`);
+  5. az oldal legtöbbet említett entitása, ha legalább `TOP_MIN_MENTIONS` említése van és
+     egyértelműen az első (`top_mentions`; a sablon-említések nélkül);
+  6. a más oldalcsoportokról érkező anchorok szövege (`inbound_anchor`) és az URL utolsó
+     szakasza (`url`).
+  A jelöltek sorrendje: a legerősebb bizonyíték, a `primary` sorszáma, a bizonyítékfajták
+  száma, az említésszám. Jelölt nem lehet a demó- és a navigációs jelölésű entitás; a site
+  entitása csak a kezdőoldalon, ha oldalhoz kötött vagy JSON-LD bizonyítéka van, vagy ha a
+  `primary_entities` első eleme. Megbízhatóság (`confidence`): erős, ha oldalhoz kötött,
+  kezdőoldali vagy JSON-LD, vagy `primary` és title / H1; közepes, ha a `primary` első eleme,
+  vagy `primary` és heading / említéseloszlás, vagy title / H1 és egy további bizonyíték;
+  különben gyenge. Másodlagos (legfeljebb `MAX_SECONDARY`): a többi jelölt, ha oldalhoz kötött
+  vagy JSON-LD, vagy a H1 megnevezi és a `primary_entities` között van; nem a fő entitás
+  névrokona, és a site entitása csak JSON-LD-vel. A döntés az összes jelölttel a
+  `page_nodes.decision`-ben.
+- Élek (`edges`): `mentions` (oldal → entitás, a nem sablon-említések pozíció szerinti
+  súlyával, `config/graph.toml`), `main_entity` (oldal → entitás; fő 1, másodlagos 0,5), az M2/6
+  kapcsolatai (`part_of`, `brand_of`, `offers`), `is_a`: termék → kategória a kategóriaoldalból
+  (`category_page`, az M2/6 `in_category`-ja), és entitás → entitás a biztos Wikidata-osztályból
+  (`wikidata`: az entitás P31 vagy P279 osztálya egy másik, biztos QID-jű site-entitás; az
+  általános osztályok, `GENERIC_CLASSES`, kimaradnak).
+- Súly (`entity_weights`): az oldalszám, az említésszám, a szerkezeti helyű oldalak (title, H1,
+  heading, navigáció), a fő és a másodlagos oldalak száma, a bejövő belső anchorok (a más
+  oldalcsoportokról az entitás fő oldalaira); a sablon-említés és a demó nem számít. A képlet:
+  Σ súly × log2(1 + összetevő), egyetlen említésnél × `single_mention` (`config/graph.toml`).
+"""
+from __future__ import annotations
+
+import csv
+import json
+import math
+import re
+import tomllib
+from collections import Counter, defaultdict
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, field
+from pathlib import Path
+from urllib.parse import urlsplit
+
+import duckdb
+
+from aaa2.entities.gate import occurs
+from aaa2.entities.pages import (
+    SUPPORT_URL_WORDS,
+    PageInfo,
+    home_urls,
+    page_roles,
+    page_types,
+    page_url,
+)
+from aaa2.entities.pages import schema_nodes as page_schema_nodes
+from aaa2.entities.placeholder import placeholder_pages
+from aaa2.entities.rules import alias_key
+from aaa2.entities.site import normal_key
+
+CONFIG_FILE = Path(__file__).parent / "config" / "graph.toml"
+EVIDENCE_RANK = {"anchored": 1, "home": 1, "schema_about": 2, "primary": 3, "h1": 4,
+                 "title": 4, "heading": 4, "top_mentions": 5, "inbound_anchor": 6, "url": 6}
+STRONG = frozenset({"anchored", "home", "schema_about"})
+EXCLUDED_FLAGS = ("demo", "navigational")
+SUPPORT_SCHEMA = {"ContactPage": "contact", "CollectionPage": "list",
+                  "SearchResultsPage": "list", "CheckoutPage": "checkout"}
+CONTACT_URL_WORDS = ("contact", "kapcsolat", "kontakt", "contatti")
+_SEPARATORS = re.compile(r"[/\-_.?=&]+")
+QUESTION_TYPES = frozenset({"Question", "Answer", "FAQPage"})
+CONTENT_POSITIONS = ("title", "h1", "heading", "body")
+STRUCTURAL_POSITIONS = ("title", "h1", "heading")
+TOP_MIN_MENTIONS = 2
+MAX_SECONDARY = 2
+MAIN_WEIGHT = {"main": 1.0, "secondary": 0.5}
+# entity, concept, thing, object, abstract object, physical object, class, idea
+GENERIC_CLASSES = frozenset({"Q35120", "Q151885", "Q1293220", "Q488383", "Q7184903",
+                             "Q223557", "Q16889133", "Q131841"})
+
+
+# ---------------------------------------------------------------------------
+# beállítás
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class GraphConfig:
+    mention_weights: Mapping[str, float]
+    weights: Mapping[str, float]
+    single_mention: float
+
+
+def load_graph_config(path: Path = CONFIG_FILE) -> GraphConfig:
+    """A súlyok; minden összetevő és pozíció megadva, nem negatív számmal."""
+    raw = tomllib.loads(path.read_text(encoding="utf-8"))
+    mention = raw.get("mention_weights") or {}
+    weight = dict(raw.get("weight") or {})
+    single = weight.pop("single_mention", None)
+    needed = {"pages", "mentions", "structural", "main_pages", "inbound_anchors"}
+    if set(mention) != {"title", "h1", "heading", "other"} or set(weight) != needed \
+            or not isinstance(single, int | float) \
+            or not all(isinstance(v, int | float) and v >= 0
+                       for v in [*mention.values(), *weight.values(), single]):
+        raise ValueError(f"{path.name}: [mention_weights] title, h1, heading, other; [weight] "
+                         f"{', '.join(sorted(needed))}, single_mention; nem negatív számok")
+    return GraphConfig(mention, weight, float(single))
+
+
+# ---------------------------------------------------------------------------
+# a futás
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class GraphRun:
+    pages: int = 0
+    main: int = 0
+    support: int = 0
+    none: int = 0
+    confidence: Counter = field(default_factory=Counter)
+    edges: Counter = field(default_factory=Counter)
+    weights: int = 0
+    class_lookups: int = 0
+    class_failures: int = 0
+
+
+@dataclass
+class Candidate:
+    entity_id: int
+    evidence: dict = field(default_factory=dict)          # fajta → részlet
+    mentions: int = 0
+    primary_index: int | None = None
+
+    def key(self) -> tuple:
+        best = min(EVIDENCE_RANK[kind] for kind in self.evidence)
+        return (best, 99 if self.primary_index is None else self.primary_index,
+                -len(self.evidence), -self.mentions, self.entity_id)
+
+    def confidence(self) -> str:
+        kinds = set(self.evidence)
+        headline = kinds & {"title", "h1"}
+        if kinds & STRONG or ("primary" in kinds and headline):
+            return "strong"
+        if self.primary_index == 0 or ("primary" in kinds and kinds & {"heading", "top_mentions"}) \
+                or (headline and len(kinds - headline) >= 1):
+            return "medium"
+        return "weak"
+
+    def secondary(self) -> bool:
+        """Másodlagos entitás lehet: oldalhoz kötött vagy JSON-LD, vagy a H1 megnevezi és a
+        kinyerés fő entitásai között van."""
+        kinds = set(self.evidence)
+        return bool(kinds & STRONG) or {"h1", "primary"} <= kinds
+
+    def as_dict(self) -> dict:
+        return {"entity_id": self.entity_id, "evidence": self.evidence,
+                "mentions": self.mentions, "confidence": self.confidence()}
+
+
+def build_graph(con: duckdb.DuckDBPyConnection, config: GraphConfig | None = None, *,
+                page_type_patterns: Mapping[str, Sequence[str]] | None = None,
+                superclasses: Callable[[str], list[tuple[str, str]] | None] | None = None
+                ) -> GraphRun:
+    """A gráf újraépítése (lásd a modul leírását). `page_type_patterns`: a site-fájl
+    `[page_types]` mintái (a webshop kategória- és márka × kategória oldalaihoz);
+    `superclasses`: QID → (tulajdonság, osztály-QID) párok (`gate.KnowledgeBase.superclasses`;
+    None: nincs Wikidata-él)."""
+    config = config or load_graph_config()
+    run = GraphRun()
+    for table in ("page_nodes", "edges", "page_main_entity", "entity_weights"):
+        con.execute(f"DELETE FROM {table}")
+    graph = _Graph(con, page_type_patterns or {})
+    decisions = {}
+    for page_id, info in sorted(graph.roles.items()):
+        decision = graph.decide(info)
+        decisions[page_id] = decision
+        run.pages += 1
+        if decision["status"] == "main":
+            run.main += 1
+            run.confidence[decision["main"].confidence()] += 1
+        else:
+            setattr(run, decision["status"], getattr(run, decision["status"]) + 1)
+        _store_page(con, graph, info, decision)
+    _edges(con, graph, config, decisions, superclasses, run)
+    run.weights = _weights(con, graph, config)
+    run.edges = Counter(dict(con.execute("SELECT type, count(*) FROM edges GROUP BY 1")
+                             .fetchall()))
+    return run
+
+
+class _Graph:
+    """Az M2 tárolt kimenete a döntéshez: oldalak, entitások, névindex, említések, JSON-LD,
+    a kinyerés `primary_entities`-e, linkek."""
+
+    def __init__(self, con: duckdb.DuckDBPyConnection,
+                 page_type_patterns: Mapping[str, Sequence[str]]):
+        self.con = con
+        self.roles: dict[int, PageInfo] = page_roles(con)
+        self.types = page_types(con, page_type_patterns) if page_type_patterns else {}
+        self.homes = {page_url(u) for u in home_urls(con)}
+        self.placeholder = placeholder_pages(con)
+        self.groups: dict[str, list[int]] = defaultdict(list)
+        for page_id, info in self.roles.items():
+            self.groups[info.group].append(page_id)
+        self.urls = {info.page_id: info.url for info in self.roles.values()}
+        self.alternates = {page_id: {page_url(entry.split("|", 1)[-1]) for entry in hreflang or []}
+                           for page_id, hreflang in con.execute(
+                               "SELECT page_id, hreflang FROM pages").fetchall()}
+        self.page_of_url = {page_url(info.url): info.page_id for info in self.roles.values()}
+        rows = con.execute("SELECT entity_id, name, type, subtype, aliases, flags, role, "
+                           "anchor_page_id, wikidata_id, wikidata_status FROM entities"
+                           ).fetchall()
+        self.entities = {row[0]: row for row in rows}
+        self.excluded = {row[0] for row in rows if set(row[5] or []) & set(EXCLUDED_FLAGS)}
+        self.site_entities = {entity_id for (entity_id,) in con.execute(
+            "SELECT entity_id FROM entities e WHERE role = 'brand' OR (type = 'brand' AND "
+            "source IN ('rule', 'schema') AND NOT EXISTS (SELECT 1 FROM entity_relations r "
+            "WHERE r.from_id = e.entity_id AND r.type = 'brand_of'))").fetchall()}
+        self.index: dict[str, set[int]] = defaultdict(set)
+        self.normal: dict[str, set[int]] = defaultdict(set)
+        for entity_id, name, *_, aliases in [(r[0], r[1], r[4]) for r in rows]:
+            for form in [name, *(aliases or [])]:
+                self._index(entity_id, form)
+        for entity_id, alias in con.execute("SELECT entity_id, alias FROM entity_aliases"
+                                            ).fetchall():
+            if entity_id in self.entities:
+                self._index(entity_id, alias)
+        self.mentions: dict[int, list[tuple]] = defaultdict(list)
+        for page_id, entity_id, position, flags, region in con.execute(
+                "SELECT pe.page_id, pe.entity_id, pe.position, pe.flags, b.region "
+                "FROM page_entities pe LEFT JOIN blocks b USING (block_id)").fetchall():
+            self.mentions[page_id].append((entity_id, position, "template" in (flags or []),
+                                           region))
+        self.counts = Counter(m[0] for rows in self.mentions.values() for m in rows)
+        self.nodes = page_schema_nodes(con)
+        self.id_names = self._schema_ids()
+        self.primary = self._primary()
+        self.inbound: dict[int, list[tuple[int, str]]] = defaultdict(list)
+        for from_id, to_id, anchor in con.execute(
+                "SELECT from_page_id, to_page_id, anchor FROM links WHERE to_page_id IS NOT NULL"
+                ).fetchall():
+            if from_id in self.roles and to_id in self.roles \
+                    and self.roles[from_id].group != self.roles[to_id].group:
+                self.inbound[to_id].append((from_id, anchor or ""))
+
+    def _index(self, entity_id: int, form: str | None) -> None:
+        if form and alias_key(form):
+            self.index[alias_key(form)].add(entity_id)
+            self.normal[normal_key(form)].add(entity_id)
+
+    def _schema_ids(self) -> dict[str, str]:
+        """A site JSON-LD csomópontjainak `@id` → név térképe (az összes oldalról)."""
+        found: dict[str, str] = {}
+        for nodes in self.nodes.values():
+            for node in nodes:
+                for item in _walk(node):
+                    if isinstance(item.get("@id"), str) and isinstance(item.get("name"), str):
+                        found.setdefault(item["@id"], item["name"])
+        return found
+
+    def _primary(self) -> dict[int, list[str]]:
+        """Oldalanként a kinyerő modell legutóbbi kész rekordjának `primary_entities`-e."""
+        found: dict[int, list[str]] = {}
+        for page_id, value in self.con.execute(
+                "SELECT p.page_id, json_extract(coalesce(p.refined, p.extraction), "
+                "'$.primary_entities') FROM entity_run_pages p JOIN entity_runs r USING (run_id) "
+                "WHERE r.method = 'llm' AND p.status = 'done' "
+                "ORDER BY p.run_id DESC, p.finished_at DESC").fetchall():
+            if page_id not in found and value is not None:
+                names = json.loads(value)
+                found[page_id] = [n for n in names if isinstance(n, str)]
+        return found
+
+    def resolve(self, name: str, page_id: int | None = None, normal: bool = False) -> int | None:
+        """A név entitása (kulcs szerint); több közül a nem kizárt, az oldalon említett, a
+        több említésű."""
+        pool = (self.normal if normal else self.index).get(
+            (normal_key if normal else alias_key)(name or ""), set())
+        pool = {e for e in pool if e not in self.excluded}
+        if not pool:
+            return None
+        on_page = {m[0] for m in self.mentions.get(page_id, [])}
+        return min(pool, key=lambda e: (e not in on_page, -self.counts[e], e))
+
+    # -- oldalszerep és segédoldal ---------------------------------------------
+
+    def role_of(self, info: PageInfo) -> tuple[str, str | None]:
+        """(szerep, a segédoldal fajtája vagy None)."""
+        kind = self.types.get(info.page_id)
+        members = self.groups[info.group]
+        own = page_url(info.url)
+        if own in self.homes or (own in self.alternates.get(info.page_id, set()) and any(
+                page_url(self.urls[p]) in self.homes for p in members)):
+            return "home", None
+        if info.page_id in self.placeholder:
+            return info.role, "placeholder"
+        if url_has_word(info.url, SUPPORT_URL_WORDS):
+            return "support", "legal"
+        if info.role == "support" and url_has_word(info.url, CONTACT_URL_WORDS):
+            return info.role, "contact"
+        types = {_short(t) for node in self.nodes.get(info.page_id, [])
+                 for t in _as_list(node.get("@type"))}
+        for schema_type, support in SUPPORT_SCHEMA.items():
+            if schema_type in types:
+                return info.role, support
+        if kind == "brand_category":
+            return "listing", "list"
+        if kind == "category":
+            anchored = any(row[7] in members for e, row in self.entities.items()
+                           if row[7] is not None and e not in self.excluded)
+            return ("category", None) if anchored else ("listing", "list")
+        return info.role, None
+
+    # -- a fő entitás ----------------------------------------------------------
+
+    def decide(self, info: PageInfo) -> dict:
+        role, support = self.role_of(info)
+        candidates = self.candidates(info, home=role == "home")
+        ranked = sorted(candidates.values(), key=Candidate.key)
+        decision = {"role": role, "support": support, "candidates": ranked, "main": None,
+                    "secondary": []}
+        if support is not None:
+            decision["status"] = "support"
+            return decision
+        if not ranked:
+            decision["status"] = "none"
+            return decision
+        decision["status"] = "main"
+        main = decision["main"] = ranked[0]
+        names = {alias_key(self.entities[main.entity_id][1] or "")}
+        for item in ranked[1:]:
+            name = alias_key(self.entities[item.entity_id][1] or "")
+            if len(decision["secondary"]) < MAX_SECONDARY and item.secondary() \
+                    and name not in names and (item.entity_id not in self.site_entities
+                                               or item.evidence.keys() & STRONG):
+                decision["secondary"].append(item)
+                names.add(name)
+        return decision
+
+    def candidates(self, info: PageInfo, home: bool = False) -> dict[int, Candidate]:
+        page_id = info.page_id
+        found: dict[int, Candidate] = {}
+
+        def add(entity_id: int | None, kind: str, detail: object) -> None:
+            if entity_id is None or entity_id in self.excluded:
+                return
+            item = found.setdefault(entity_id, Candidate(entity_id))
+            item.evidence.setdefault(kind, detail)
+
+        group = set(self.groups[info.group])
+        for entity_id, row in self.entities.items():
+            if row[7] is not None and row[7] in group:
+                add(entity_id, "anchored", self.urls.get(row[7]))
+        if home:
+            for entity_id in sorted(self.site_entities):
+                add(entity_id, "home", self.urls.get(page_id))
+        for node in self.nodes.get(page_id, []):
+            for key in ("about", "mainEntity"):
+                for value in _as_list(node.get(key)):
+                    name, target = self._about(value)
+                    add(self.resolve(name, page_id) if name else target, "schema_about",
+                        {"property": key, "name": name, "page": self.urls.get(target)
+                         if target in self.urls else None} if name or target else None)
+        for index, name in enumerate(self.primary.get(page_id, [])):
+            entity_id = self.resolve(name, page_id)
+            add(entity_id, "primary", {"index": index, "name": name})
+            if entity_id in found and found[entity_id].primary_index is None:
+                found[entity_id].primary_index = index
+        content = Counter()
+        for entity_id, position, template, _ in self.mentions.get(page_id, []):
+            if template:
+                continue
+            if position in STRUCTURAL_POSITIONS:
+                add(entity_id, position, True)
+            if position in CONTENT_POSITIONS:
+                content[entity_id] += 1
+        ranked = [(e, n) for e, n in content.most_common() if e not in self.excluded]
+        if ranked and ranked[0][1] >= TOP_MIN_MENTIONS \
+                and (len(ranked) == 1 or ranked[0][1] > ranked[1][1]):
+            add(ranked[0][0], "top_mentions", ranked[0][1])
+        anchors = Counter()
+        for _, anchor in self.inbound.get(page_id, []):
+            entity_id = self.resolve(anchor, page_id)
+            if entity_id is not None:
+                anchors[entity_id] += 1
+        for entity_id, count in anchors.items():
+            add(entity_id, "inbound_anchor", count)
+        slug = urlsplit(info.url).path.rstrip("/").rsplit("/", 1)[-1]
+        if slug:
+            add(self.resolve(slug.replace("-", " ").replace("_", " "), page_id, normal=True),
+                "url", slug)
+        for item in found.values():
+            item.mentions = content.get(item.entity_id, 0)
+            forms = [self.entities[item.entity_id][1], *(self.entities[item.entity_id][4] or [])]
+            for kind, text in (("h1", info.h1), ("title", info.title)):
+                if text and kind not in item.evidence and any(
+                        form and occurs(form, text) for form in forms):
+                    item.evidence[kind] = "text"
+        for entity_id in list(found):
+            if entity_id in self.site_entities and not home \
+                    and not set(found[entity_id].evidence) & {"anchored", "schema_about"} \
+                    and found[entity_id].primary_index != 0:
+                del found[entity_id]
+        return found
+
+    def _about(self, value: object) -> tuple[str | None, int | None]:
+        """Az `about` / `mainEntity` értéke: (név, vagy None; a célzott oldalhoz kötött
+        entitás, vagy None). A kérdés-válasz csomópont nem számít."""
+        if isinstance(value, str):
+            return value, None
+        if not isinstance(value, dict):
+            return None, None
+        if {_short(t) for t in _as_list(value.get("@type"))} & QUESTION_TYPES:
+            return None, None
+        name = value.get("name") if isinstance(value.get("name"), str) else None
+        ref = value.get("@id") if isinstance(value.get("@id"), str) else None
+        if name is None and ref is not None:
+            name = self.id_names.get(ref)
+        if name is None and ref is not None:
+            page = self.page_of_url.get(page_url(ref))
+            if page is not None:
+                anchored = [e for e, row in self.entities.items() if row[7] is not None
+                            and row[7] in self.groups[self.roles[page].group]
+                            and e not in self.excluded]
+                return None, min(anchored) if anchored else None
+        return name, None
+
+
+# ---------------------------------------------------------------------------
+# tárolás
+# ---------------------------------------------------------------------------
+
+
+def _store_page(con: duckdb.DuckDBPyConnection, graph: _Graph, info: PageInfo,
+                decision: dict) -> None:
+    members = [graph.urls[p] for p in sorted(graph.groups[info.group]) if p != info.page_id]
+    record = {"status": decision["status"], "support": decision["support"],
+              "candidates": [c.as_dict() for c in decision["candidates"]]}
+    con.execute(
+        "INSERT INTO page_nodes (page_id, url, role, support_kind, title, h1, lang, group_key, "
+        "hreflang_pages, main_status, decision) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [info.page_id, info.url, decision["role"], decision["support"], info.title, info.h1,
+         info.lang, info.group, members, decision["status"],
+         json.dumps(record, ensure_ascii=False)])
+    chosen = ([("main", decision["main"])] if decision["main"] else []) \
+        + [("secondary", c) for c in decision["secondary"]]
+    for rank, (role, item) in enumerate(chosen, start=1):
+        con.execute(
+            "INSERT INTO page_main_entity (page_id, entity_id, role, rank, confidence, evidence) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            [info.page_id, item.entity_id, role, rank, item.confidence(),
+             json.dumps(item.evidence, ensure_ascii=False)])
+
+
+def _edges(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig,
+           decisions: Mapping[int, dict], superclasses, run: GraphRun) -> None:
+    rows = []
+    weights = config.mention_weights
+    for page_id in sorted(graph.roles):
+        per: dict[int, Counter] = defaultdict(Counter)
+        for entity_id, position, template, _ in graph.mentions.get(page_id, []):
+            if entity_id in graph.excluded or entity_id not in graph.entities:
+                continue
+            per[entity_id]["template" if template else position] += 1
+        for entity_id, counts in sorted(per.items()):
+            weight = sum(n * weights.get(pos, weights["other"]) for pos, n in counts.items()
+                         if pos != "template")
+            rows.append(("page", page_id, "entity", entity_id, "mentions", "m2_mentions",
+                         dict(counts), weight))
+        decision = decisions[page_id]
+        chosen = ([("main", decision["main"])] if decision["main"] else []) \
+            + [("secondary", c) for c in decision["secondary"]]
+        for role, item in chosen:
+            rows.append(("page", page_id, "entity", item.entity_id, "main_entity",
+                         "m3_main_entity", {"role": role, "confidence": item.confidence(),
+                                            "evidence": item.evidence}, MAIN_WEIGHT[role]))
+    for from_id, to_id, kind, source, evidence in con.execute(
+            "SELECT from_id, to_id, type, source, evidence FROM entity_relations "
+            "ORDER BY type, from_id, to_id").fetchall():
+        if from_id in graph.excluded or to_id in graph.excluded \
+                or from_id not in graph.entities or to_id not in graph.entities:
+            continue
+        detail = json.loads(evidence) if evidence else None
+        if kind == "in_category":
+            rows.append(("entity", from_id, "entity", to_id, "is_a", "category_page", detail,
+                         None))
+        else:
+            rows.append(("entity", from_id, "entity", to_id, kind, source, detail, None))
+    if superclasses is not None:
+        rows += _wikidata_is_a(graph, superclasses, run)
+    if rows:
+        con.executemany(
+            "INSERT INTO edges (from_kind, from_id, to_kind, to_id, type, source, evidence, "
+            "weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [(fk, fi, tk, ti, t, s, json.dumps(e, ensure_ascii=False) if e is not None
+              else None, w) for fk, fi, tk, ti, t, s, e, w in rows])
+
+
+def _wikidata_is_a(graph: _Graph, superclasses, run: GraphRun) -> list[tuple]:
+    """Entitás → entitás `is_a`: az entitás biztos QID-jének P31 / P279 osztálya egy másik site-
+    entitás biztos QID-je; az általános osztályok nélkül."""
+    confident = {row[0]: row[8] for row in graph.entities.values()
+                 if row[9] == "confident" and row[8] and row[0] not in graph.excluded}
+    by_qid: dict[str, list[int]] = defaultdict(list)
+    for entity_id, qid in confident.items():
+        by_qid[qid].append(entity_id)
+    rows: dict[tuple[int, int], tuple] = {}
+    for entity_id, qid in sorted(confident.items()):
+        run.class_lookups += 1
+        found = superclasses(qid)
+        if found is None:
+            run.class_failures += 1
+            continue
+        for prop, target_qid in found:
+            if target_qid in GENERIC_CLASSES or target_qid == qid:
+                continue
+            for target in by_qid.get(target_qid, []):
+                if target != entity_id:
+                    rows.setdefault((entity_id, target), (
+                        "entity", entity_id, "entity", target, "is_a", "wikidata",
+                        {"property": prop, "qid": qid, "class": target_qid}, None))
+    return list(rows.values())
+
+
+def _weights(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig) -> int:
+    pages: dict[int, set[int]] = defaultdict(set)
+    mentions: Counter = Counter()
+    structural: dict[int, set[int]] = defaultdict(set)
+    present: set[int] = set()
+    for page_id, rows in graph.mentions.items():
+        for entity_id, position, template, region in rows:
+            if entity_id in graph.excluded or entity_id not in graph.entities:
+                continue
+            present.add(entity_id)
+            if template or position not in CONTENT_POSITIONS:
+                continue
+            pages[entity_id].add(page_id)
+            mentions[entity_id] += 1
+            if position in STRUCTURAL_POSITIONS or region == "chrome":
+                structural[entity_id].add(page_id)
+    roles: dict[int, Counter] = defaultdict(Counter)
+    main_pages: dict[int, set[int]] = defaultdict(set)
+    for page_id, entity_id, role in con.execute(
+            "SELECT page_id, entity_id, role FROM page_main_entity").fetchall():
+        roles[entity_id][role] += 1
+        if role == "main":
+            main_pages[entity_id].add(page_id)
+    inbound: Counter = Counter()
+    for entity_id, targets in main_pages.items():
+        inbound[entity_id] = sum(len(graph.inbound.get(page_id, [])) for page_id in targets)
+    w = config.weights
+    rows = []
+    for entity_id in sorted(present):
+        parts = {"pages": len(pages[entity_id]), "mentions": mentions[entity_id],
+                 "structural": len(structural[entity_id]),
+                 "main_pages": roles[entity_id]["main"],
+                 "inbound_anchors": inbound[entity_id]}
+        single = parts["mentions"] == 1
+        weight = sum(w[k] * math.log2(1 + v) for k, v in parts.items())
+        if single:
+            weight *= config.single_mention
+        rows.append((entity_id, parts["pages"], parts["mentions"], parts["structural"],
+                     parts["main_pages"], roles[entity_id]["secondary"],
+                     parts["inbound_anchors"], single, round(weight, 4)))
+    if rows:
+        con.executemany(
+            "INSERT INTO entity_weights (entity_id, pages, mentions, structural, main_pages, "
+            "secondary_pages, inbound_anchors, single_mention, weight) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", rows)
+    return len(rows)
+
+
+# ---------------------------------------------------------------------------
+# kivonatok
+# ---------------------------------------------------------------------------
+
+
+def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str, Path]:
+    """A három táblázat: oldalanként a fő entitás (`<név>-main-entity.csv`), az éltábla
+    (`<név>-edges.csv`) és az entitások súlya (`<név>-weights.csv`)."""
+    out.mkdir(parents=True, exist_ok=True)
+    names = dict(con.execute("SELECT entity_id, name FROM entities").fetchall())
+    kinds = {row[0]: (row[1], row[2]) for row in con.execute(
+        "SELECT entity_id, type, subtype FROM entities").fetchall()}
+    urls = dict(con.execute("SELECT page_id, url FROM page_nodes").fetchall())
+    chosen: dict[int, list[tuple]] = defaultdict(list)
+    for page_id, entity_id, role, confidence, evidence in con.execute(
+            "SELECT page_id, entity_id, role, confidence, evidence FROM page_main_entity "
+            "ORDER BY page_id, rank").fetchall():
+        chosen[page_id].append((entity_id, role, confidence, json.loads(evidence)))
+    paths = {}
+    pages = []
+    for page_id, url, role, support, title, h1, lang, status in con.execute(
+            "SELECT page_id, url, role, support_kind, title, h1, lang, main_status "
+            "FROM page_nodes ORDER BY url").fetchall():
+        main = [c for c in chosen[page_id] if c[1] == "main"]
+        secondary = [c for c in chosen[page_id] if c[1] == "secondary"]
+        pages.append({
+            "url": url, "szerep": role, "segédoldal": support or "", "állapot": status,
+            "fő entitás": names.get(main[0][0], "") if main else "",
+            "típus": "/".join(filter(None, kinds.get(main[0][0], ("", "")))) if main else "",
+            "megbízhatóság": main[0][2] if main else "",
+            "bizonyítékok": evidence_text(main[0][3]) if main else "",
+            "másodlagos": "; ".join(f"{names.get(e, e)} ({c})" for e, _, c, _ in secondary),
+            "title": title or "", "h1": h1 or "", "nyelv": lang or ""})
+    paths["main_entity"] = _write(out / f"{name}-main-entity.csv", pages)
+    edges = []
+    for from_kind, from_id, to_kind, to_id, kind, source, evidence, weight in con.execute(
+            "SELECT from_kind, from_id, to_kind, to_id, type, source, evidence, weight "
+            "FROM edges ORDER BY type, from_kind, from_id, to_id").fetchall():
+        edges.append({
+            "honnan": urls.get(from_id, from_id) if from_kind == "page" else names.get(from_id),
+            "honnan fajta": from_kind,
+            "hová": urls.get(to_id, to_id) if to_kind == "page" else names.get(to_id),
+            "hová fajta": to_kind, "él": kind, "forrás": source,
+            "súly": "" if weight is None else round(weight, 4),
+            "bizonyíték": evidence or ""})
+    paths["edges"] = _write(out / f"{name}-edges.csv", edges)
+    weights = []
+    for rank, row in enumerate(con.execute(
+            "SELECT w.entity_id, w.pages, w.mentions, w.structural, w.main_pages, "
+            "w.secondary_pages, w.inbound_anchors, w.single_mention, w.weight FROM "
+            "entity_weights w JOIN entities e USING (entity_id) "
+            "ORDER BY w.weight DESC, e.name").fetchall(), start=1):
+        entity_id, *parts, weight = row
+        weights.append({"rang": rank, "entitás": names.get(entity_id),
+                        "típus": "/".join(filter(None, kinds.get(entity_id, ("", "")))),
+                        "oldalak": parts[0], "említések": parts[1], "szerkezeti": parts[2],
+                        "fő oldalak": parts[3], "másodlagos oldalak": parts[4],
+                        "bejövő anchorok": parts[5], "egy említés": parts[6], "súly": weight})
+    paths["weights"] = _write(out / f"{name}-weights.csv", weights)
+    return paths
+
+
+def evidence_text(evidence: Mapping) -> str:
+    """A bizonyítékok rövid szövege az erősség sorrendjében."""
+    parts = []
+    for kind in sorted(evidence, key=lambda k: (EVIDENCE_RANK[k], k)):
+        detail = evidence[kind]
+        if kind == "primary":
+            parts.append(f"primary#{detail['index']}")
+        elif kind in ("top_mentions", "inbound_anchor"):
+            parts.append(f"{kind}:{detail}")
+        else:
+            parts.append(kind)
+    return "; ".join(parts)
+
+
+def _write(path: Path, rows: list[dict]) -> Path:
+    with path.open("w", encoding="utf-8-sig", newline="") as handle:
+        if rows:
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
+    return path
+
+
+# ---------------------------------------------------------------------------
+# segédek
+# ---------------------------------------------------------------------------
+
+
+def url_has_word(url: str, stems: Sequence[str]) -> bool:
+    """Az URL útvonalában vagy lekérdezésében szókezdettől áll-e valamelyik minta (az
+    elválasztók egységesítve): a „privacy-centre” és a `?tab=privacy_policy` igen, az
+    „eprivacy-and-gdpr” nem."""
+    parts = urlsplit(url)
+    text = _SEPARATORS.sub("-", f"{parts.path}-{parts.query}".lower())
+    return any(re.search(rf"(?:^|-){re.escape(_SEPARATORS.sub('-', stem))}", text)
+               for stem in stems)
+
+
+def _walk(node: object):
+    """A JSON-LD csomópont és a beágyazott csomópontjai."""
+    if isinstance(node, dict):
+        yield node
+        for value in node.values():
+            yield from _walk(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _walk(item)
+
+
+def _short(value: object) -> str:
+    text = str(value).strip()
+    return text.replace("#", "/").replace(":", "/").rsplit("/", 1)[-1] if text else text
+
+
+def _as_list(value: object) -> list:
+    return value if isinstance(value, list) else [value] if value is not None else []
