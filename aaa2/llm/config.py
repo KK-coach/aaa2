@@ -125,9 +125,9 @@ def load_site_credentials(domain: str | None, directory: Path | None = None
     return found
 
 
-PIPELINE_STEPS = ("extraction", "naming", "verify")
-PIPELINE_OFF = "off"                     # a lépés kikapcsolva (az elnevezésnél és az ellenőrzésnél)
-PIPELINE_OPTIONAL = ("naming", "verify")
+PIPELINE_STEPS = ("extraction", "verify")
+PIPELINE_OFF = "off"                     # a lépés kikapcsolva (az ellenőrzésnél)
+PIPELINE_OPTIONAL = ("verify",)
 
 
 @dataclass(frozen=True)
@@ -153,7 +153,7 @@ def load_config(path: Path = CONFIG_PATH) -> LLMConfig:
     """Beolvas és ellenőriz: mindhárom szolgáltató, 0 < küszöb ≤ keret, a fallback csak
     megadott modellre kapcsolható, modellenként legalább egy ársor, egy modell ársorainak
     érvényessége nem fedi át egymást, és a `[pipeline]` minden lépésének modellje konfigurált
-    (az elnevezésé és az ellenőrzésé "off" is lehet)."""
+    (az ellenőrzésé "off" is lehet)."""
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
     providers = {}
     for name in PROVIDERS:

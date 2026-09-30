@@ -61,7 +61,6 @@ COOKIE_SELECTORS = (
     '[class*="consent"]', '[id*="consent"]', '[class*="gdpr"]',
 )
 
-KINDS = ("title", "heading", "paragraph", "list_item", "table_row", "code", "card", "other")
 INLINE = frozenset({
     "a", "abbr", "b", "bdi", "bdo", "br", "cite", "code", "data", "dfn", "em", "font", "i", "img",
     "kbd", "mark", "q", "s", "samp", "small", "span", "strong", "sub", "sup", "time", "u", "var",

@@ -1,5 +1,5 @@
 # Az `aaa entities <domain>` lépései (M2 spec, „Megközelítés v3”). A lépések modelljei a
-# models.toml [pipeline] szakaszában (kinyerés, elnevezés, ellenőrzés).
+# models.toml [pipeline] szakaszában (kinyerés, ellenőrzés).
 
 [steps]
 rules = true          # szabálykör: JSON-LD, a site neve a title-ben és a H1-ben, ismétlődő anchorok

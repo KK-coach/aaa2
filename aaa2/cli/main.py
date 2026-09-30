@@ -20,7 +20,7 @@ from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
 from aaa2.entities.dom import build_blocks
-from aaa2.entities.extract import Worker, estimate_llm, run_llm
+from aaa2.entities.extract import Worker, estimate_llm, input_models, run_llm
 from aaa2.entities.gate import KnowledgeBase
 from aaa2.entities.knowledge import link_entities
 from aaa2.entities.overrides import load_site_config
@@ -181,9 +181,6 @@ def entities(
         help="tudásbázis-egyezés (alapból a pipeline.toml knowledge)")] = None,
     extraction_model: Annotated[str | None, typer.Option(
         help="a kinyerés modellje (alapból a models.toml [pipeline] extraction)")] = None,
-    naming_model: Annotated[str | None, typer.Option(
-        help="az elnevezés modellje (alapból a [pipeline] naming); off: elnevezés nélkül")
-    ] = None,
     verify_model: Annotated[str | None, typer.Option(
         help="a saját ajánlatok ellenőrzésének modellje (alapból a [pipeline] verify); off: "
              "csak a szerkezeti hely")] = None,
@@ -232,13 +229,12 @@ def entities(
             config = load_config()
             models = config.pipeline
             chosen = extraction_model or models["extraction"]
-            naming_choice = _step_model(naming_model or models["naming"])
             verify_choice = (_step_model(verify_model or models["verify"])
                              if steps.services else None)
             refines = steps.services or steps.concepts
-            reuse_models = None if fresh else (
-                chosen, naming_choice, v3_fingerprint(steps, verify_choice) if refines else None)
-            guess = estimate_llm(con, config, chosen, naming_choice, verify_choice,
+            reuse_models = None if fresh else input_models(
+                chosen, v3_fingerprint(steps, verify_choice) if refines else None)
+            guess = estimate_llm(con, config, chosen, verify_choice,
                                  _utcnow().date(), limit=limit, resume=resume,
                                  reuse_models=reuse_models)
             typer.echo(
@@ -264,10 +260,7 @@ def entities(
                 typer.echo(f"site-kulcs: {name}: {own.key_env or 'alapkulcs'}"
                            + (f", projekt {own.project}" if own.project else ""))
             client = _pipeline_client(con, chosen, credentials)
-            naming = verifier = None
-            if naming_choice:
-                naming = (client if naming_choice == client.model
-                          else _pipeline_client(con, naming_choice, credentials))
+            verifier = None
             if verify_choice:
                 verifier = (client if verify_choice == client.model
                             else _pipeline_client(con, verify_choice, credentials))
@@ -283,15 +276,14 @@ def entities(
                     thread_kb = KnowledgeBase(_Api(
                         cursor, shared.cursor() if shared is not None else None,
                         httpx.Client(timeout=20.0), Retry(), _utcnow, time.monotonic).get)
-                naming_bound = own.get(id(naming)) or (naming.bind(cursor) if naming else None)
                 verifier_bound = (own.get(id(verifier))
                                   or (verifier.bind(cursor) if verifier else None))
-                return Worker(bound, naming_bound, V3Step(
+                return Worker(bound, V3Step(
                     cursor, steps, verifier_bound, thread_kb, site_lang) if refine else None)
 
             count = workers or pipeline.workers
             typer.echo(f"párhuzamosság: {count} oldal egyszerre")
-            runs.append(run_llm(con, client, naming_client=naming, refine=refine,
+            runs.append(run_llm(con, client, refine=refine,
                                 save=steps.save, limit=limit, resume=resume,
                                 max_usd=cap, workers=count, fork=fork,
                                 reuse=not fresh).run_id)

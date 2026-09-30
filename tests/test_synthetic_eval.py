@@ -13,13 +13,6 @@ from aaa2.entities.blocks import (
     block_text,
     check_surface,
 )
-from aaa2.entities.naming import (
-    NAMING_PROMPT,
-    apply_naming,
-    name_record,
-    naming_input,
-    recognized_mentions,
-)
 from aaa2.llm.adapters import Reply
 from aaa2.llm.client import LLMClient, Retry
 from aaa2.llm.config import Usage, load_config
@@ -27,7 +20,6 @@ from aaa2.llm.schemas import (
     SUBTYPE_GLOSSARY,
     SUBTYPE_VOCABULARY,
     BlockEntity,
-    NamingResult,
     Subtype,
 )
 
@@ -333,86 +325,6 @@ def test_misses_list_counts_runs_and_reasons():
             "többségben: megvan") in text
     assert "  - caprese (product): 2/3 futásból kimaradt (2× felismerési); többségben: megvan" \
         in text
-
-
-def naming_reply(*mentions):
-    return {"mentions": [{"mention_id": mid, "entities": [
-        {"surface_form": s, "canonical_name": n, "type": k, "subtype": None}
-        for s, n, k in entities]} for mid, entities in mentions]}
-
-
-NAMING_RECORD = {"page_id": "x", "call_id": 7, "primary_entities": ["Shopify"], "entities": [
-    mention("b1", "Apple ITP-je", "Apple ITP", "tech"),
-    mention("b1", "Kitalált", "Kitalált", "tech"),
-    mention("b1", "Shopify", "Shopify", "tech"),
-    mention("b2", "Notion", "Notion", "tech")]}
-
-
-def test_naming_input_lists_the_recognized_mentions_with_their_blocks():
-    blocks = {b["id"]: b for b in VOTE_PAGE["blocks"]}
-    mentions = recognized_mentions(NAMING_RECORD, blocks)
-    assert [index for index, _ in mentions] == [0, 2, 3]
-    text = naming_input(blocks, mentions)
-    assert text.startswith("Blocks:\n\n[b1]\nAz Apple ITP-je és a Shopify.\n\n[b2]\nStripe")
-    assert ("[m0] block b1 | surface form: Apple ITP-je | first-round name: Apple ITP"
-            in text)
-    assert "[m3] block b2 | surface form: Notion" in text
-    assert "Kitalált" not in text
-
-
-def test_naming_splits_a_possessive_and_keeps_what_it_did_not_answer():
-    blocks = {b["id"]: b for b in VOTE_PAGE["blocks"]}
-    mentions = recognized_mentions(NAMING_RECORD, blocks)
-    result = NamingResult.model_validate(naming_reply(
-        ("m0", [("Apple", "Apple", "org"), ("ITP-je", "ITP", "tech")]),
-        ("[m2]", [("Shopify", "Shopify", "tech")])))
-    entities, missing = apply_naming(NAMING_RECORD, mentions, result, blocks)
-    assert [(e["block_id"], e["surface_form"], e["canonical_name"]) for e in entities] == [
-        ("b1", "Apple", "Apple"), ("b1", "ITP-je", "ITP"), ("b1", "Kitalált", "Kitalált"),
-        ("b1", "Shopify", "Shopify"), ("b2", "Notion", "Notion")]
-    assert missing == 1
-
-
-def test_naming_keeps_the_first_surface_form_when_its_own_is_not_in_the_block():
-    blocks = {b["id"]: b for b in VOTE_PAGE["blocks"]}
-    mentions = recognized_mentions(NAMING_RECORD, blocks)
-    result = NamingResult.model_validate(naming_reply(
-        ("m3", [("Notion app", "Notion", "tech")])))
-    entities, _ = apply_naming(NAMING_RECORD, mentions, result, blocks)
-    assert ("b2", "Notion", "Notion") in [
-        (e["block_id"], e["surface_form"], e["canonical_name"]) for e in entities]
-
-
-def test_name_record_logs_a_naming_call_and_sums_both_calls(tmp_path):
-    from aaa2.db.connect import connect
-
-    con = connect(":memory:")
-    adapter = Scripted([naming_reply(("m0", [("Apple", "Apple", "org"),
-                                             ("ITP-je", "ITP", "tech")]),
-                                     ("m2", [("Shopify", "Shopify", "tech")]),
-                                     ("m3", [("Notion", "Notion", "tech")]))])
-    client = LLMClient(con, adapter, CONFIG, tmp_path / "l.jsonl",
-                       retry=Retry(sleep=lambda _: None))
-    blocks = {b["id"]: b for b in VOTE_PAGE["blocks"]}
-    named = name_record(client, NAMING_RECORD, blocks)
-    assert adapter.inputs[0][0] == NAMING_PROMPT
-    assert named["call_ids"] == [7, named["naming_call_id"]]
-    assert named["naming_model"] == "gpt-6-luna"
-    assert (named["naming_missing"], named["naming_error"]) == (0, None)
-    assert len(named["naming_raw"]["mentions"]) == 3
-    assert named["primary_entities"] == ["Shopify"]
-    assert len(named["entities"]) == 5
-    assert con.execute("SELECT purpose FROM llm_calls WHERE call_id = ?",
-                       [named["naming_call_id"]]).fetchone() == ("naming",)
-    assert NAMING_RECORD["entities"][0]["canonical_name"] == "Apple ITP"
-
-
-def test_naming_prompt_examples_are_not_from_the_synthetic_pages():
-    examples = ["Mailchimp", "Notion", "mascarpone", "Figma", "Stripe", "Radar", "Photoshop"]
-    assert all(name in NAMING_PROMPT for name in examples)
-    for page in EVERY_PAGE.values():
-        text = "\n".join(block_text(b) for b in page["blocks"]).casefold()
-        assert [name for name in examples if name.casefold() in text] == [], page["page_id"]
 
 
 def test_pages_without_a_set_are_development():

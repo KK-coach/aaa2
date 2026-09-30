@@ -113,14 +113,38 @@ def test_dropped_reference_items():
         ("Havi zárás", "opcionális: havi zárás")]
 
 
+# A megszűnt E1-futtató (M2/5) tárolt kimenete ezekre a rekordokra: a kapu utáni rekord és a
+# döntések; a report ilyen tárolt kimenetet olvas.
+E1_DECISIONS = {
+    "kk_coach_meres_hu": [
+        {"key": "berszamfejtes csomag", "canonical": "Bérszámfejtés Csomag", "type": "service",
+         "mentions": 1, "structure": "heading:b1", "blocks": 1, "knowledge": None, "keep": True},
+        {"key": "keszletforgasi sebesseg", "canonical": "Készletforgási sebesség",
+         "type": "concept", "mentions": 2, "structure": None, "blocks": 2, "knowledge": None,
+         "keep": True},
+        {"key": "raktari rendetlenseg", "canonical": "Raktári rendetlenség", "type": "concept",
+         "mentions": 1, "structure": None, "blocks": 1, "knowledge": None, "keep": False},
+        {"key": "havi zaras", "canonical": "Havi zárás", "type": "concept", "mentions": 1,
+         "structure": None, "blocks": 1, "knowledge": "wikidata:hu:Q1", "keep": True}],
+    "materia_etlap_hu": [
+        {"key": "d.o.p.", "canonical": "D.O.P.", "type": "concept", "mentions": 1,
+         "structure": None, "blocks": 1, "knowledge": None, "keep": False}]}
+
+
+def stored_e1(tmp_path, page_id, record):
+    dropped = {d["canonical"] for d in E1_DECISIONS[page_id] if not d["keep"]}
+    write(tmp_path, page_id, "cp-e1", {**record, "gate_source": "cp", "entities": [
+        e for e in record["entities"] if e["canonical_name"] not in dropped]})
+    ge.decisions_path(tmp_path, page_id, MODEL, "cp-e1").write_text(
+        json.dumps(E1_DECISIONS[page_id], ensure_ascii=False), encoding="utf-8")
+
+
 def test_report_main_row_regression_row_conditions_and_dropped(tmp_path, monkeypatch):
     write(tmp_path, "kk_coach_meres_hu", "cp", FULL)
     write(tmp_path, "materia_etlap_hu", "cp", REGRESSION)
     pages = [MAIN_PAGE, REGRESSION_PAGE]
-    known = {"Havi zárás": "wikidata:hu:Q1"}
-    ge.run_e1(MODEL, tmp_path, pages, "cp", "cp-e1", lambda names, lang: known.get(names[0]))
-    gated = ge.read_record(tmp_path, "kk_coach_meres_hu", MODEL, "cp-e1")
-    assert "Raktári rendetlenség" not in {e["canonical_name"] for e in gated["entities"]}
+    stored_e1(tmp_path, "kk_coach_meres_hu", FULL)
+    stored_e1(tmp_path, "materia_etlap_hu", REGRESSION)
     path = tmp_path / "verdicts.json"
     path.write_text(json.dumps({"items": [
         {"page_id": p, "canonical": n, "type": t, "verdict": v}

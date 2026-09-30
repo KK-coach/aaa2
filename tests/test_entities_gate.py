@@ -1,5 +1,5 @@
-"""A puha típusok kapuja (aaa2/entities/gate.py): előfordulás, szerkezet, ismétlődés,
-tudásbázis (Wikidata, Wikipedia) és a döntés, hálózat nélkül."""
+"""A puha típusok tételei és bizonyítékai (aaa2/entities/gate.py): előfordulás, szerkezet,
+ismétlődés, tudásbázis (Wikidata, Wikipedia), hálózat nélkül."""
 from datetime import UTC, datetime
 
 import httpx
@@ -9,15 +9,13 @@ from aaa2.db.connect import connect
 from aaa2.entities.gate import (
     KnowledgeBase,
     PageContext,
-    decide,
-    gate_record,
     occurs,
     repetition,
     soft_items,
     structure,
     title_variants,
-    wikidata_match,
-    wikipedia_title,
+    wikidata_hit,
+    wikipedia_page,
 )
 from aaa2.entities.validate import WIKI_MIN_INTERVAL, _Api
 from aaa2.llm.client import Retry
@@ -91,29 +89,6 @@ def test_repetition_counts_mention_blocks_and_occurrences():
     assert repetition(single, PAGE) == 1
 
 
-def test_a_concept_needs_one_condition_a_service_needs_structure():
-    blocks = {b["id"]: b for b in BLOCKS}
-    record = {"entities": [
-        mention("b2", "készletforgási sebességet", "Készletforgási sebesség"),    # ismétlődés
-        mention("b3", "raktári rendetlenség", "Raktári rendetlenség"),            # semmi
-        mention("b3", "rendetlenség", "Rendetlenség"),                           # tudásbázis
-        mention("b6", "számlázást", "Számlázás átvétele", "service"),             # semmi
-        mention("b1", "Bérszámfejtés Csomag", "Bérszámfejtés Csomag", "service"),
-        mention("b6", "számlázást", "Számlázó", "tech"),
-    ]}
-    known = {"Rendetlenség": "wikidata:hu:Q1"}
-    gated, decisions = gate_record(record, PAGE, lambda names, lang: known.get(names[0]))
-    assert [(d.canonical, d.keep) for d in decisions] == [
-        ("Készletforgási sebesség", True), ("Raktári rendetlenség", False),
-        ("Rendetlenség", True), ("Számlázás átvétele", False), ("Bérszámfejtés Csomag", True)]
-    assert [e["canonical_name"] for e in gated["entities"]] == [
-        "Készletforgási sebesség", "Rendetlenség", "Bérszámfejtés Csomag", "Számlázó"]
-    service = decide(soft_items([mention("b4", "Készletforgási sebesség", "Készletforgási "
-                                         "sebesség", "service")], blocks)[0], PAGE,
-                     lambda names, lang: "wikidata:hu:Q2")
-    assert (service.blocks, service.knowledge, service.keep) == (2, None, False)
-
-
 # ---------------------------------------------------------------------------
 # tudásbázis
 # ---------------------------------------------------------------------------
@@ -134,8 +109,9 @@ def hit(qid, text, kind="label", lang="hu", description=""):
     ({"search": [hit("Q7", "Készletforgási sebesség", "description")]}, None),
     (None, None),
 ])
-def test_wikidata_match_is_exact_in_the_asked_language(body, found):
-    assert wikidata_match(body, "készletforgási sebesség", "hu") == found
+def test_wikidata_hit_is_exact_in_the_asked_language(body, found):
+    hit_ = wikidata_hit(body, "készletforgási sebesség", "hu")
+    assert (hit_["id"] if hit_ else None) == found
 
 
 @pytest.mark.parametrize(("pages", "title"), [
@@ -143,8 +119,9 @@ def test_wikidata_match_is_exact_in_the_asked_language(body, found):
     ([{"title": "Forgás", "pageprops": {"disambiguation": ""}}], None),
     ([{"title": "Készletforgás", "missing": True}, {"title": "Készlet forgás"}], "Készlet forgás"),
 ])
-def test_wikipedia_title_exists_and_is_not_a_disambiguation(pages, title):
-    assert wikipedia_title({"query": {"pages": pages}}) == title
+def test_wikipedia_page_exists_and_is_not_a_disambiguation(pages, title):
+    page = wikipedia_page({"query": {"pages": pages}})
+    assert (page["title"] if page else None) == title
 
 
 def test_title_variants():

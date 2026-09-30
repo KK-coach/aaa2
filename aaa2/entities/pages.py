@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections import Counter, defaultdict
+from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from urllib.parse import urldefrag, urlsplit, urlunsplit
@@ -193,10 +193,6 @@ def representative(members: list[PageInfo], site_lang: str | None) -> PageInfo:
     lekérdezés nélküli URL, aztán a legkisebb oldalszám."""
     pool = [m for m in members if m.lang and m.lang == site_lang] or members
     return min(pool, key=lambda m: ("?" in m.url, m.page_id))
-
-
-def role_counts(roles: dict[int, PageInfo]) -> Counter[str]:
-    return Counter(info.role for info in roles.values())
 
 
 def _own_role(page_id: int, url: str, h1: str | None, homes: set[str], nodes: list[dict],

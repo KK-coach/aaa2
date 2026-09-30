@@ -46,3 +46,4 @@ markers = ["live: élő site-ot vagy fizetős LLM-API-t hív; csak kézzel, `pyt
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = ["legacy"]       # a v1 referenciakódja, nem része a csomagnak
