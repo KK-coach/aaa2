@@ -310,24 +310,6 @@
     ]
    },
    {
-    "canonical": "Monoblokk Hőszivattyú",
-    "type": "concept",
-    "subtype": "category",
-    "note": "a breadcrumbból",
-    "acceptable_types": [
-     "concept",
-     "product"
-    ],
-    "acceptable_subtypes": [
-     "category",
-     "other",
-     "line"
-    ],
-    "difficulty": "easy",
-    "aliases": [],
-    "surface_forms": []
-   },
-   {
     "canonical": "R32",
     "type": "concept",
     "subtype": "designation",
@@ -538,13 +520,63 @@
     "type": "org",
     "subtype": "company",
     "difficulty": "easy",
-    "aliases": [],
+    "aliases": [
+     "DUEX Hungary Webshop"
+    ],
     "surface_forms": [
      {
       "block": "b0",
       "text": "DUEX Hungary"
      }
     ]
+   },
+   {
+    "canonical": "Cascade 2 fokozatú konfigurációs technológia",
+    "type": "tech",
+    "subtype": "feature",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "Cascade 2 fokozatú konfigurációs technológia"
+     }
+    ]
+   },
+   {
+    "canonical": "Wi-Fi",
+    "type": "tech",
+    "subtype": "feature",
+    "aliases": [
+     "Wi-fi",
+     "WiFi",
+     "Wifi"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "Wifi-s"
+     }
+    ]
+   },
+   {
+    "canonical": "Monoblokk Hőszivattyú",
+    "type": "concept",
+    "subtype": "category",
+    "note": "a breadcrumbból; a termékoldalon opcionális, mert a morzsamenü chrome; a kategória–termék kapcsolatot a site-szintű összeállítás méri",
+    "acceptable_types": [
+     "concept",
+     "product"
+    ],
+    "acceptable_subtypes": [
+     "category",
+     "other",
+     "line"
+    ],
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": []
    }
   ],
   "negatives": [
@@ -580,7 +612,7 @@
    }
   ]
  },
- "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+ "gold_status": "final (Krisztián jóváhagyta, 2026-09-30)",
  "annotation_notes": [
   "Termékoldal: a termék, a kategória és a hűtőközeg kötelező.",
   "A 'Cascade 2 fokozatú konfigurációs technológia' itt nem a Cascade márka, hanem LG-technológia; ha a modell ebből Cascade márkát hoz, az téves.",

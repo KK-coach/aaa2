@@ -144,7 +144,9 @@
     "type": "org",
     "subtype": "company",
     "difficulty": "easy",
-    "aliases": [],
+    "aliases": [
+     "DUEX Hungary Webshop"
+    ],
     "surface_forms": [
      {
       "block": "b0",
@@ -168,7 +170,7 @@
    }
   ]
  },
- "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+ "gold_status": "final (Krisztián jóváhagyta, 2026-09-30)",
  "annotation_notes": [
   "Kategóriaoldal: a kategória és a tartalomban felsorolt márkák/termékcsaládok kötelezők; a navigációs kategóriafa nem.",
   "Parser-megfigyelés: a navigációs fa elemei ID-előtaggal állnak ('488784|246786AUX'); a referencia csak a tartalmi b35/b36 blokkot várja."

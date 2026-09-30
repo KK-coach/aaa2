@@ -895,6 +895,33 @@
       "text": "cookie"
      }
     ]
+   },
+   {
+    "canonical": "consent management system",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "consent management systems"
+    ],
+    "acceptable_types": [
+     "concept",
+     "tech"
+    ],
+    "acceptable_subtypes": [
+     "other",
+     "software"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b34",
+      "text": "consent management systems"
+     },
+     {
+      "block": "b49",
+      "text": "consent management system"
+     }
+    ]
    }
   ],
   "negatives": [
@@ -915,7 +942,7 @@
    }
   ]
  },
- "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+ "gold_status": "final (Krisztián jóváhagyta, 2026-09-30)",
  "annotation_notes": [
   "Blogcikk: a Consent Mode v2 és módjai, a Google, a GA4, a két jogszabály, a cég és a saját ajánlat (b47 heading) kötelező.",
   "A négy consent-paraméter dokumentált API-tag: opcionális (dokumentációs szabály).",

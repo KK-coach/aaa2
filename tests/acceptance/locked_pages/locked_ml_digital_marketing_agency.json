@@ -702,7 +702,8 @@
     "canonical": "Balazs V.",
     "type": "person",
     "aliases": [
-     "Balázs V."
+     "Balázs V.",
+     "Balazs V. Ph.D"
     ],
     "difficulty": "easy",
     "surface_forms": [
@@ -1231,7 +1232,7 @@
    }
   ]
  },
- "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+ "gold_status": "final (Krisztián jóváhagyta, 2026-09-30)",
  "annotation_notes": [
   "Főoldal: a cég, a partnerek, az ügyfelek és a vezetők (személyek) kötelezők.",
   "Saját ajánlat nincs megnevezve szerkezeti helyen; a 'Digital Marketing Agency' heading a digitális marketing fogalmát adja.",

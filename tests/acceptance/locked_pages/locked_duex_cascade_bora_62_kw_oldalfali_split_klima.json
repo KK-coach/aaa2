@@ -508,24 +508,6 @@
     ]
    },
    {
-    "canonical": "Oldalfali Split Klímaberendezés",
-    "type": "concept",
-    "subtype": "category",
-    "note": "a breadcrumbból; a kategóriaoldalhoz kötve",
-    "acceptable_types": [
-     "concept",
-     "product"
-    ],
-    "acceptable_subtypes": [
-     "category",
-     "other",
-     "line"
-    ],
-    "difficulty": "easy",
-    "aliases": [],
-    "surface_forms": []
-   },
-   {
     "canonical": "R32",
     "type": "concept",
     "subtype": "designation",
@@ -714,6 +696,41 @@
     "subtype": "company",
     "note": "a site saját cége; a title csonka, a navigációban ID-előtaggal áll",
     "difficulty": "easy",
+    "aliases": [
+     "DUEX Hungary Webshop"
+    ],
+    "surface_forms": []
+   },
+   {
+    "canonical": "Turbo funkció",
+    "type": "tech",
+    "subtype": "feature",
+    "aliases": [
+     "Turbo"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b38",
+      "text": "Turbo funkció"
+     }
+    ]
+   },
+   {
+    "canonical": "Oldalfali Split Klímaberendezés",
+    "type": "concept",
+    "subtype": "category",
+    "note": "a breadcrumbból; a termékoldalon opcionális, mert a morzsamenü chrome; a kategória–termék kapcsolatot a site-szintű összeállítás méri",
+    "acceptable_types": [
+     "concept",
+     "product"
+    ],
+    "acceptable_subtypes": [
+     "category",
+     "other",
+     "line"
+    ],
+    "difficulty": "easy",
     "aliases": [],
     "surface_forms": []
    }
@@ -751,7 +768,7 @@
    }
   ]
  },
- "gold_status": "draft (Claude, forrásból), Krisztián átnézi",
+ "gold_status": "final (Krisztián jóváhagyta, 2026-09-30)",
  "annotation_notes": [
   "Termékoldal: a termék és a kategória kötelező, a márka és a termékcsalád site-szinten dől el (9a).",
   "Parser-megfigyelés: a navigációs lista elemei numerikus ID-előtaggal állnak ('430542|430542CASCADE'), a műszaki adatok táblázata egyetlen 'other' blokk lett, és a bejelentkezési űrlap a tartalomba került."

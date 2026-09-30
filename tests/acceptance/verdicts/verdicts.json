@@ -2039,8 +2039,9 @@
    "kind": "table_row",
    "block_text": "Tulajdonság: Energiaosztály hűtés; Adat: A++",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "attribútumérték (energiaosztály), nem entitás",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_duex_cascade_bora_62_kw_oldalfali_split_klima",
@@ -2050,8 +2051,9 @@
    "kind": "table_row",
    "block_text": "Tulajdonság: Hatékonysági mutató SEER; Adat: 6.8 W/W",
    "reference": "opcionális: SEER",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_duex_cascade_bora_62_kw_oldalfali_split_klima",
@@ -2061,8 +2063,9 @@
    "kind": "table_row",
    "block_text": "Tulajdonság: Hatékonysági mutató SCOP; Adat: 4 W/W",
    "reference": "opcionális: SCOP",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_duex_lg_thermav_r32_12kw_3fazis",
@@ -2072,8 +2075,9 @@
    "kind": "other",
    "block_text": "R1 kompresszor Alacsony GWP hűtőközeg R32 Gyors gázbefecskendezés Széles működési tartomány Black Fin hőcserélő Napkollektoros rendszerrel kombinálás Energia állapot Cascade 2 fokozatú konfigurációs technológia Nagyon alacsony zajszint Rugalmas hűtőközegcső kialakítás Kapcsos típusú csatlakoztatás a könnyed karbantartás érdekében Minden-egyben megoldás az integrált víztartály típussal Hydrosplit koncepció Intuitív kezelőfelületű vezérlő LF saját Wifi-s megoldása Szekunder kör Számos hőmérsékletszabályozási lehetőség Beépített nyomásérzékelő Beépített áramlásérzékelő Fejlett szivattyú vezérlés HMV recirkuláció Együttműködés harmadik féltől származó kazánnal Energia-felhasználás monitorozás Szezonális automatikus üzemmód Alacsony zajszint mód és ütemező Esztrich szárítási program 2 távirányító Kifinomult és harmonikus megjelenés Kompatibilis a már meglévő radiátorhoz is",
    "reference": "opcionális: Hydrosplit",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "a site-on kategória is",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_duex_lg_thermav_r32_12kw_3fazis",
@@ -2083,8 +2087,9 @@
    "kind": "table_row",
    "block_text": "Energiaosztály fűtés (35°C-os előremenő víz); A+++",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "attribútumérték",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_duex_lg_thermav_r32_12kw_3fazis",
@@ -2094,8 +2099,9 @@
    "kind": "table_row",
    "block_text": "Energiaosztály fűtés (35°C-os előremenő víz): Energiaosztály fűtés (55°C-os előremenő víz); A+++: A++",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "attribútumérték",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2105,8 +2111,9 @@
    "kind": "paragraph",
    "block_text": "Looking to supercharge your growth within the Google ecosystem? Look no further! We’re a team of ex-Google specialists laser-focused on Google Ads, Analytics, and Data Platforms, dedicated to unlocking your full potential on the world’s most powerful advertising platform.",
    "reference": "kötelező: Google",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2116,8 +2123,9 @@
    "kind": "paragraph",
    "block_text": "Looking to supercharge your growth within the Google ecosystem? Look no further! We’re a team of ex-Google specialists laser-focused on Google Ads, Analytics, and Data Platforms, dedicated to unlocking your full potential on the world’s most powerful advertising platform.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2127,8 +2135,9 @@
    "kind": "paragraph",
    "block_text": "Industry-Leading Expertise at Your Service! Our team at MarketingLens embodies expertise, with industry leaders hailing from top tech giants such as Google, Meta, Oracle, and Accenture. Together, we offer decades of collective experience in digital marketing, data analytics, and strategic consulting.",
    "reference": "opcionális: data analytics",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2138,8 +2147,9 @@
    "kind": "paragraph",
    "block_text": "Unlock Hidden Potential in Your Business with AI-Powered Data Analytics! Harness the Power of Advanced Data Insights to Drive Growth. In today’s data-driven world, extracting actionable insights from your information is crucial for success. Our cutting-edge approach leverages BigQuery and advanced digital data analytics to create bespoke data strategies.",
    "reference": "opcionális: AI",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2149,8 +2159,9 @@
    "kind": "paragraph",
    "block_text": "Unlock Hidden Potential in Your Business with AI-Powered Data Analytics! Harness the Power of Advanced Data Insights to Drive Growth. In today’s data-driven world, extracting actionable insights from your information is crucial for success. Our cutting-edge approach leverages BigQuery and advanced digital data analytics to create bespoke data strategies.",
    "reference": "opcionális: data analytics",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "a data analytics leíró változata",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2160,8 +2171,9 @@
    "kind": "paragraph",
    "block_text": "Harness the Power of MarTech for Growth! We help businesses leverage emerging technology to craft winning digital marketing strategies and unlock data insights. This empowers data-driven decision-making and drives business growth.",
    "reference": "opcionális: MarTech",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2171,8 +2183,9 @@
    "kind": "paragraph",
    "block_text": "Harness the Power of MarTech for Growth! We help businesses leverage emerging technology to craft winning digital marketing strategies and unlock data insights. This empowers data-driven decision-making and drives business growth.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2182,8 +2195,9 @@
    "kind": "paragraph",
    "block_text": "Custom Strategies, Breakthrough Results. We combine deep industry knowledge, media expertise, and platform mastery to craft customer-centric marketing. Automated processes ensure efficient workflows. Dedicated teams (3-6 experts) provide focused attention. Transparent dashboards with clear KPIs empower collaboration and track progress towards your goals.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2193,8 +2207,9 @@
    "kind": "paragraph",
    "block_text": "Custom Strategies, Breakthrough Results. We combine deep industry knowledge, media expertise, and platform mastery to craft customer-centric marketing. Automated processes ensure efficient workflows. Dedicated teams (3-6 experts) provide focused attention. Transparent dashboards with clear KPIs empower collaboration and track progress towards your goals.",
    "reference": "opcionális: KPI",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2204,8 +2219,9 @@
    "kind": "paragraph",
    "block_text": "MarketingLens isn’t just a digital marketing agency; they’re true business growth consultants. Their deep understanding of our core business, combined with a concise strategy, robust tracking, and expert data analysis, has been instrumental in scaling our mobile app globally. Thanks to their 15-20 years of experience, we’ve consistently reached our business goals for years. They truly get it.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2215,8 +2231,9 @@
    "kind": "paragraph",
    "block_text": "For years, MarketingLens has been our trusted advisor, propelling our B2B e-commerce webshop to a consistently high ROAS. They see beyond the PPC universe, acting as true partners in our entire digital journey. What sets them apart is their proactive approach; they’re always ahead of the curve, pushing us to implement the latest innovations that directly impact our profitability. They don’t just manage campaigns; they genuinely drive our business forward.",
    "reference": "opcionális: B2B e-commerce",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "B2B",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2226,8 +2243,9 @@
    "kind": "paragraph",
    "block_text": "For years, MarketingLens has been our trusted advisor, propelling our B2B e-commerce webshop to a consistently high ROAS. They see beyond the PPC universe, acting as true partners in our entire digital journey. What sets them apart is their proactive approach; they’re always ahead of the curve, pushing us to implement the latest innovations that directly impact our profitability. They don’t just manage campaigns; they genuinely drive our business forward.",
    "reference": "opcionális: B2B e-commerce",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2237,8 +2255,9 @@
    "kind": "paragraph",
    "block_text": "For years, MarketingLens has been our trusted advisor, propelling our B2B e-commerce webshop to a consistently high ROAS. They see beyond the PPC universe, acting as true partners in our entire digital journey. What sets them apart is their proactive approach; they’re always ahead of the curve, pushing us to implement the latest innovations that directly impact our profitability. They don’t just manage campaigns; they genuinely drive our business forward.",
    "reference": "opcionális: ROAS",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2248,8 +2267,9 @@
    "kind": "paragraph",
    "block_text": "For years, MarketingLens has been our trusted advisor, propelling our B2B e-commerce webshop to a consistently high ROAS. They see beyond the PPC universe, acting as true partners in our entire digital journey. What sets them apart is their proactive approach; they’re always ahead of the curve, pushing us to implement the latest innovations that directly impact our profitability. They don’t just manage campaigns; they genuinely drive our business forward.",
    "reference": "opcionális: PPC",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2259,8 +2279,9 @@
    "kind": "paragraph",
    "block_text": "MarketingLens, leveraging the expertise of former Google strategists, partnered with Raketech to deliver a comprehensive market expansion strategy. Our approach centred around competitive analysis and benchmarking to uncover the best opportunities.",
    "reference": "opcionális: competitive analysis",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2270,8 +2291,9 @@
    "kind": "paragraph",
    "block_text": "MarketingLens, leveraging the expertise of former Google strategists, partnered with Raketech to deliver a comprehensive market expansion strategy. Our approach centred around competitive analysis and benchmarking to uncover the best opportunities.",
    "reference": "opcionális: benchmarking",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2281,8 +2303,9 @@
    "kind": "paragraph",
    "block_text": "Driving conversions and lower CPC through broad match & automatization.",
    "reference": "opcionális: CPC",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2292,8 +2315,9 @@
    "kind": "paragraph",
    "block_text": "Seized new market opportunity with a strategic video and display launch.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2303,8 +2327,9 @@
    "kind": "paragraph",
    "block_text": "Seized new market opportunity with a strategic video and display launch.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_digital_marketing_agency",
@@ -2314,8 +2339,9 @@
    "kind": "paragraph",
    "block_text": "Boosted customer retention rate using Data-Driven Assets analytics.",
    "reference": "opcionális: customer retention rate",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2325,8 +2351,9 @@
    "kind": "title",
    "block_text": "What is Competitor Analysis and Benchmarking?",
    "reference": "kötelező: competitor analysis",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2336,8 +2363,9 @@
    "kind": "title",
    "block_text": "What is Competitor Analysis and Benchmarking?",
    "reference": "kötelező: benchmarking",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2347,8 +2375,9 @@
    "kind": "list_item",
    "block_text": "A Reality Check: You’ll see if your “great” performance is actually trailing behind the industry average.",
    "reference": "opcionális: industry average",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2358,8 +2387,9 @@
    "kind": "list_item",
    "block_text": "Better Strategy: You can identify “Blue Ocean” opportunities, areas where competitors are weak and you can easily win.",
    "reference": "opcionális: Blue Ocean Strategy",
-   "verdict": null,
-   "note": ""
+   "verdict": "wrong_name",
+   "note": "a fogalom neve Blue Ocean Strategy",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2369,8 +2399,9 @@
    "kind": "list_item",
    "block_text": "Agility: You can spot emerging trends early and adjust your “marketing mix” before the market leaves you behind",
    "reference": "opcionális: marketing mix",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2380,8 +2411,9 @@
    "kind": "paragraph",
    "block_text": "Competitor analysis is a strategic process that involves identifying, researching, and evaluating your business rivals to understand their positioning, offerings, strengths, and weaknesses. This comprehensive examination focuses on gaining insights into competitors’ overall strategies, including their marketing approaches, product features, pricing models, and customer engagement tactics. The goal is to identify opportunities to improve your own company’s strategy by understanding the competitive landscape.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2391,8 +2423,9 @@
    "kind": "paragraph",
    "block_text": "Competitor analysis is a strategic process that involves identifying, researching, and evaluating your business rivals to understand their positioning, offerings, strengths, and weaknesses. This comprehensive examination focuses on gaining insights into competitors’ overall strategies, including their marketing approaches, product features, pricing models, and customer engagement tactics. The goal is to identify opportunities to improve your own company’s strategy by understanding the competitive landscape.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2402,8 +2435,9 @@
    "kind": "paragraph",
    "block_text": "Benchmarking, on the other hand, is a comparative analysis method that measures your company’s performance against specific metrics and industry standards. Rather than providing a holistic view of competitors, benchmarking focuses on comparing particular performance indicators to establish concrete targets for improvement. This practice helps businesses identify performance gaps and implement best practices to enhance efficiency and effectiveness.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2413,8 +2447,9 @@
    "kind": "paragraph",
    "block_text": "Benchmarking, on the other hand, is a comparative analysis method that measures your company’s performance against specific metrics and industry standards. Rather than providing a holistic view of competitors, benchmarking focuses on comparing particular performance indicators to establish concrete targets for improvement. This practice helps businesses identify performance gaps and implement best practices to enhance efficiency and effectiveness.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2424,8 +2459,9 @@
    "kind": "paragraph",
    "block_text": "Benchmarking, on the other hand, is a comparative analysis method that measures your company’s performance against specific metrics and industry standards. Rather than providing a holistic view of competitors, benchmarking focuses on comparing particular performance indicators to establish concrete targets for improvement. This practice helps businesses identify performance gaps and implement best practices to enhance efficiency and effectiveness.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "a KPI leíró változata",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2435,8 +2471,9 @@
    "kind": "paragraph",
    "block_text": "Benchmarking, on the other hand, is a comparative analysis method that measures your company’s performance against specific metrics and industry standards. Rather than providing a holistic view of competitors, benchmarking focuses on comparing particular performance indicators to establish concrete targets for improvement. This practice helps businesses identify performance gaps and implement best practices to enhance efficiency and effectiveness.",
    "reference": "opcionális: best practice",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2446,8 +2483,9 @@
    "kind": "paragraph",
    "block_text": "The key difference lies in their scope and application: competitor analysis provides a broad understanding of the competitive landscape, while benchmarking offers specific, metric-based comparisons that drive targeted improvements. For example, a digital marketing competitor analysis framework helps you identify and evaluate rivals in the online marketplace, while benchmark research measures your business performance against key metrics to identify specific improvement opportunities.",
    "reference": "kötelező: competitor analysis",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2457,8 +2495,9 @@
    "kind": "paragraph",
    "block_text": "The key difference lies in their scope and application: competitor analysis provides a broad understanding of the competitive landscape, while benchmarking offers specific, metric-based comparisons that drive targeted improvements. For example, a digital marketing competitor analysis framework helps you identify and evaluate rivals in the online marketplace, while benchmark research measures your business performance against key metrics to identify specific improvement opportunities.",
    "reference": "kötelező: benchmarking",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "a benchmarking leíró változata",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2468,8 +2507,9 @@
    "kind": "heading",
    "block_text": "Competitor research and benchmarking examples from real businesses",
    "reference": "kötelező: competitor analysis",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "a competitor analysis szinonimája",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2479,8 +2519,9 @@
    "kind": "paragraph",
    "block_text": "Starbucks and Luckin Coffee provide an illuminating case study in the coffee industry. When Luckin Coffee rapidly expanded throughout China with its quick online ordering capabilities and competitive pricing, Starbucks faced intense competition. Through comprehensive competitor analysis, Starbucks identified Luckin’s strengths in speed and affordability but also recognized its own unique advantage in providing a “third place” experience with beautifully decorated stores where customers could work or study. This analysis allowed Starbucks to emphasize its distinctive value proposition while adapting certain aspects of its business model to remain competitive in the changing market.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2490,8 +2531,9 @@
    "kind": "paragraph",
    "block_text": "Starbucks and Luckin Coffee provide an illuminating case study in the coffee industry. When Luckin Coffee rapidly expanded throughout China with its quick online ordering capabilities and competitive pricing, Starbucks faced intense competition. Through comprehensive competitor analysis, Starbucks identified Luckin’s strengths in speed and affordability but also recognized its own unique advantage in providing a “third place” experience with beautifully decorated stores where customers could work or study. This analysis allowed Starbucks to emphasize its distinctive value proposition while adapting certain aspects of its business model to remain competitive in the changing market.",
    "reference": "opcionális: third place",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2501,8 +2543,9 @@
    "kind": "paragraph",
    "block_text": "Starbucks and Luckin Coffee provide an illuminating case study in the coffee industry. When Luckin Coffee rapidly expanded throughout China with its quick online ordering capabilities and competitive pricing, Starbucks faced intense competition. Through comprehensive competitor analysis, Starbucks identified Luckin’s strengths in speed and affordability but also recognized its own unique advantage in providing a “third place” experience with beautifully decorated stores where customers could work or study. This analysis allowed Starbucks to emphasize its distinctive value proposition while adapting certain aspects of its business model to remain competitive in the changing market.",
    "reference": "opcionális: value proposition",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2512,8 +2555,9 @@
    "kind": "list_item",
    "block_text": "Deep-Dive Analysis: We tear down your rivals’ SEO, social media, and paid ad strategies.",
    "reference": "opcionális: SEO",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2523,8 +2567,9 @@
    "kind": "list_item",
    "block_text": "Deep-Dive Analysis: We tear down your rivals’ SEO, social media, and paid ad strategies.",
    "reference": "opcionális: social media",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_what_is_competitor_analysis_and",
@@ -2534,8 +2579,9 @@
    "kind": "list_item",
    "block_text": "Technical Benchmarking: We audit your tech stack, pricing, and creative assets against the best in the business.",
    "reference": "opcionális: tech stack",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2545,8 +2591,9 @@
    "kind": "paragraph",
    "block_text": "Why Consent Mode v2 matters has become a critical question for businesses navigating the evolving digital privacy landscape. Understanding why Consent Mode v2 matters is essential for organizations seeking to maintain effective data collection while respecting user privacy preferences and regulatory requirements. Google’s implementation of Consent Mode v2 in March 2024 represents a fundamental shift in how websites manage user consent and data collection, introducing new parameters and operational modes that directly impact analytics tracking, advertising effectiveness, and regulatory compliance across digital platforms.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2556,8 +2603,9 @@
    "kind": "paragraph",
    "block_text": "The digital marketing ecosystem underwent a significant transformation when Google mandated Consent Mode v2 implementation, fundamentally altering how businesses collect and process user data. This evolution extends beyond simple compliance requirements, affecting core business operations including conversion tracking, audience development, and performance measurement. The transition from Consent Mode v1 to v2 introduced two additional consent signals alongside enhanced operational flexibility, enabling organizations to balance privacy compliance with data-driven decision making. Companies operating in regulated markets particularly benefit from understanding these changes, as non-compliance can result in reduced advertising effectiveness and potential regulatory penalties.",
    "reference": "opcionális: conversion tracking",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2567,8 +2615,9 @@
    "kind": "paragraph",
    "block_text": "The digital marketing ecosystem underwent a significant transformation when Google mandated Consent Mode v2 implementation, fundamentally altering how businesses collect and process user data. This evolution extends beyond simple compliance requirements, affecting core business operations including conversion tracking, audience development, and performance measurement. The transition from Consent Mode v1 to v2 introduced two additional consent signals alongside enhanced operational flexibility, enabling organizations to balance privacy compliance with data-driven decision making. Companies operating in regulated markets particularly benefit from understanding these changes, as non-compliance can result in reduced advertising effectiveness and potential regulatory penalties.",
    "reference": "opcionális: audience development",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2578,8 +2627,9 @@
    "kind": "paragraph",
    "block_text": "The digital marketing ecosystem underwent a significant transformation when Google mandated Consent Mode v2 implementation, fundamentally altering how businesses collect and process user data. This evolution extends beyond simple compliance requirements, affecting core business operations including conversion tracking, audience development, and performance measurement. The transition from Consent Mode v1 to v2 introduced two additional consent signals alongside enhanced operational flexibility, enabling organizations to balance privacy compliance with data-driven decision making. Companies operating in regulated markets particularly benefit from understanding these changes, as non-compliance can result in reduced advertising effectiveness and potential regulatory penalties.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2589,8 +2639,9 @@
    "kind": "heading",
    "block_text": "Compliance with GDPR, ePrivacy",
    "reference": "kötelező: ePrivacy Directive",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "jogszabály rövid neve; a concept típus elfogadott",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2600,8 +2651,9 @@
    "kind": "heading",
    "block_text": "Compliance with GDPR, ePrivacy",
    "reference": "kötelező: GDPR",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "jogszabály; a concept típus elfogadott",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2611,8 +2663,9 @@
    "kind": "paragraph",
    "block_text": "Consent Mode v2 fundamentally transforms data collection methodologies by introducing four distinct consent signals that govern how tracking systems operate. The framework utilizes analytics_storage, ad_storage, ad_user_data, and ad_personalization parameters to control data collection behavior based on user preferences. When users decline consent, the system switches to cookieless data transmission, enabling continued insights through behavioral modeling while respecting privacy choices. This approach maintains analytical capabilities even when traditional tracking methods are restricted, providing businesses with essential performance metrics despite consent limitations.",
    "reference": "opcionális: behavioral modeling",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2622,8 +2675,9 @@
    "kind": "paragraph",
    "block_text": "Consent Mode v2 fundamentally transforms data collection methodologies by introducing four distinct consent signals that govern how tracking systems operate. The framework utilizes analytics_storage, ad_storage, ad_user_data, and ad_personalization parameters to control data collection behavior based on user preferences. When users decline consent, the system switches to cookieless data transmission, enabling continued insights through behavioral modeling while respecting privacy choices. This approach maintains analytical capabilities even when traditional tracking methods are restricted, providing businesses with essential performance metrics despite consent limitations.",
    "reference": "opcionális: cookieless tracking",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2633,8 +2687,9 @@
    "kind": "paragraph",
    "block_text": "The Advanced Consent Mode implementation enables behavioral modeling through limited data collection from non-consenting users, while Basic Consent Mode completely blocks data transmission without user approval. Google Analytics 4 compensates for consent-related data loss through machine learning algorithms that extrapolate user behavior patterns from consented user segments. However, effective modeling requires specific thresholds including 1,000 daily events with denied analytics storage and 1,000 daily users with granted analytics storage over consecutive measurement periods. Organizations implementing professional ePrivacy and GDPR diagnostics solutions can optimize these configurations to maximize data collection while maintaining compliance standards.",
    "reference": "opcionális: machine learning",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2644,8 +2699,9 @@
    "kind": "paragraph",
    "block_text": "The General Data Protection Regulation and ePrivacy Directive establish fundamental requirements for user consent management that Consent Mode v2 directly addresses through its operational framework. GDPR Article 6 and Article 7 mandate explicit consent for personal data processing, while ePrivacy regulations specifically govern electronic communications and cookie usage. Consent Mode v2 facilitates compliance by providing granular control over data processing activities based on user preferences, ensuring organizations meet legal requirements across multiple jurisdictions. The framework’s dual-mode operation enables businesses to choose between complete data blocking or limited collection approaches based on their specific compliance needs.",
    "reference": "kötelező: ePrivacy Directive",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2655,8 +2711,9 @@
    "kind": "paragraph",
    "block_text": "The General Data Protection Regulation and ePrivacy Directive establish fundamental requirements for user consent management that Consent Mode v2 directly addresses through its operational framework. GDPR Article 6 and Article 7 mandate explicit consent for personal data processing, while ePrivacy regulations specifically govern electronic communications and cookie usage. Consent Mode v2 facilitates compliance by providing granular control over data processing activities based on user preferences, ensuring organizations meet legal requirements across multiple jurisdictions. The framework’s dual-mode operation enables businesses to choose between complete data blocking or limited collection approaches based on their specific compliance needs.",
    "reference": "kötelező: GDPR",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "jogszabály-cikk",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2666,8 +2723,9 @@
    "kind": "paragraph",
    "block_text": "The General Data Protection Regulation and ePrivacy Directive establish fundamental requirements for user consent management that Consent Mode v2 directly addresses through its operational framework. GDPR Article 6 and Article 7 mandate explicit consent for personal data processing, while ePrivacy regulations specifically govern electronic communications and cookie usage. Consent Mode v2 facilitates compliance by providing granular control over data processing activities based on user preferences, ensuring organizations meet legal requirements across multiple jurisdictions. The framework’s dual-mode operation enables businesses to choose between complete data blocking or limited collection approaches based on their specific compliance needs.",
    "reference": "opcionális: GDPR Article 7",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "jogszabály-cikk",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2677,8 +2735,9 @@
    "kind": "paragraph",
    "block_text": "Strategic implementation of Consent Mode v2 delivers measurable business advantages beyond basic compliance requirements, including improved conversion tracking accuracy and enhanced audience development capabilities. The framework’s modeling features enable businesses to maintain marketing effectiveness despite reduced data collection, with Google’s algorithms compensating for consent-related information gaps. Organizations report conversion measurement improvements of 15-25% compared to implementations without consent mode, demonstrating the technology’s value for performance-driven marketing strategies. Advanced implementations provide competitive advantages through superior data utilization and more accurate attribution modeling across customer touchpoints.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "a conversion tracking leíró változata",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2688,8 +2747,9 @@
    "kind": "paragraph",
    "block_text": "Strategic implementation of Consent Mode v2 delivers measurable business advantages beyond basic compliance requirements, including improved conversion tracking accuracy and enhanced audience development capabilities. The framework’s modeling features enable businesses to maintain marketing effectiveness despite reduced data collection, with Google’s algorithms compensating for consent-related information gaps. Organizations report conversion measurement improvements of 15-25% compared to implementations without consent mode, demonstrating the technology’s value for performance-driven marketing strategies. Advanced implementations provide competitive advantages through superior data utilization and more accurate attribution modeling across customer touchpoints.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2699,8 +2759,9 @@
    "kind": "heading",
    "block_text": "We are offering consent management services",
    "reference": "kötelező: consent management",
-   "verdict": null,
-   "note": ""
+   "verdict": "valid",
+   "note": "saját ajánlat headingben (b47)",
+   "judged_by": "Claude (chat), 2026-09-30"
   },
   {
    "page_id": "locked_ml_why_consent_mode_v2_matters",
@@ -2710,8 +2771,9 @@
    "kind": "paragraph",
    "block_text": "Comprehensive support services extend beyond initial implementation to include ongoing monitoring, optimization, and regulatory updates that ensure continued compliance effectiveness. Professional privacy assessment frameworks provide regular evaluations of consent management performance, helping organizations adapt to changing regulations and market conditions. These services include technical support for consent mode configuration, analytical reporting on compliance metrics, and strategic guidance for privacy program enhancement. Organizations investing in professional consent management support achieve superior compliance outcomes while maintaining competitive advantages through optimized data collection and utilization strategies.",
    "reference": "referencián kívül",
-   "verdict": null,
-   "note": ""
+   "verdict": "descriptive",
+   "note": "",
+   "judged_by": "Claude (chat), 2026-09-30"
   }
  ]
 }
