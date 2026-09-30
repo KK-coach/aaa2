@@ -418,11 +418,11 @@ def test_a_call_with_its_own_output_limit_is_budgeted_and_sent_with_it(con, api,
 
 
 def test_budget_counts_every_model_of_the_provider(con, api, env, ledger_path):
-    spend(ledger_path, "gpt-5.6-terra", 4.4)
+    spend(ledger_path, "gpt-5.6-terra", 9.4)
     spend(ledger_path, "gpt-6-luna", 0.11)
     spend(ledger_path, "gemini-3.8-flash", 3.9)
     clients = clients_for(con, api, env, ledger_path)
-    with pytest.raises(BudgetExceeded, match="openai: 4.5100 USD"):
+    with pytest.raises(BudgetExceeded, match="openai: 9.5100 USD"):
         clients["openai"].extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
     clients["gemini"].extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
     assert [route for route, _, _ in api.requests] == ["gemini"]
@@ -481,7 +481,7 @@ def test_status_prints_cumulative_usd_per_model(tmp_path, monkeypatch):
     monkeypatch.setattr(connect_module, "DATA_DIR", tmp_path)
     spend(ledger.default_path(), "claude-opus-5-5", 1.25)
     spend(ledger.default_path(), "claude-opus-5-5", 0.5)
-    spend(ledger.default_path(), "gpt-5.6-terra", 4.6)
+    spend(ledger.default_path(), "gpt-5.6-terra", 9.6)
     spend(ledger.default_path(), "gpt-6-astra", 0.01)
     result = CliRunner().invoke(app, ["status"])
     assert result.exit_code == 0, result.output
@@ -489,8 +489,8 @@ def test_status_prints_cumulative_usd_per_model(tmp_path, monkeypatch):
     assert "claude-opus-5-5: 1.7500 USD" in lines
     assert ("anthropic összesen 1.7500 USD; leállás 10.00 USD felett, keret 10.00 USD" in lines)
     assert "gpt-6-luna (aktív): 0.0000 USD" in lines
-    assert "gpt-5.6-terra: 4.6000 USD" in lines
-    assert ("openai összesen 4.6000 USD; leállás 4.50 USD felett, keret 5.00 USD; LEÁLLVA"
+    assert "gpt-5.6-terra: 9.6000 USD" in lines
+    assert ("openai összesen 9.6000 USD; leállás 9.50 USD felett, keret 10.00 USD; LEÁLLVA"
             in lines)
     assert "gemini-3.8-flash: 0.0000 USD" in lines
     assert "gpt-6-astra (nincs a konfigurációban): 0.0100 USD" in lines
