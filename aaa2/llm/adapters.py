@@ -87,9 +87,11 @@ class AnthropicAdapter:
 
 
 class OpenAIAdapter:
-    def __init__(self, config: ProviderConfig, api_key: str, base_url: str | None = None):
+    def __init__(self, config: ProviderConfig, api_key: str, base_url: str | None = None,
+                 project: str | None = None):
         self.config = config
-        self.client = openai.OpenAI(api_key=api_key, base_url=base_url, max_retries=0)
+        self.client = openai.OpenAI(api_key=api_key, base_url=base_url, project=project,
+                                    max_retries=0)
 
     def call(self, model: str, schema: type[BaseModel], prompt: str, input: str,
              max_output_tokens: int | None = None) -> Reply:

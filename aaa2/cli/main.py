@@ -30,7 +30,7 @@ from aaa2.entities.v3 import V3Step, load_pipeline, v3_fingerprint
 from aaa2.entities.validate import KG_DAILY_QUOTA, _Api, validate_entities
 from aaa2.llm import ledger
 from aaa2.llm.client import Retry, check_models, open_clients
-from aaa2.llm.config import PIPELINE_OFF, load_config
+from aaa2.llm.config import PIPELINE_OFF, load_config, load_site_credentials
 
 app = typer.Typer(no_args_is_help=True, help="AAA v2 — sitewide SEO/GEO elemzőmotor")
 
@@ -239,14 +239,22 @@ def entities(
             if guess.total_usd > cap:
                 typer.echo("a becslés a határ fölött van, a futás nem indul", err=True)
                 raise typer.Exit(code=2)
-            client = _pipeline_client(con, chosen)
+            try:
+                credentials = load_site_credentials(_site_domain(con))
+            except ValueError as exc:
+                typer.echo(f"hiba: {exc}", err=True)
+                raise typer.Exit(code=1) from exc
+            for name, own in sorted(credentials.items()):
+                typer.echo(f"site-kulcs: {name}: {own.key_env or 'alapkulcs'}"
+                           + (f", projekt {own.project}" if own.project else ""))
+            client = _pipeline_client(con, chosen, credentials)
             naming = verifier = None
             if naming_choice:
                 naming = (client if naming_choice == client.model
-                          else _pipeline_client(con, naming_choice))
+                          else _pipeline_client(con, naming_choice, credentials))
             if verify_choice:
                 verifier = (client if verify_choice == client.model
-                            else _pipeline_client(con, verify_choice))
+                            else _pipeline_client(con, verify_choice, credentials))
             refine = (V3Step(con, steps, verifier, kb if steps.knowledge else None, site_lang)
                       if steps.services or steps.concepts else None)
 
@@ -346,12 +354,17 @@ def _utcnow() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-def _pipeline_client(con, model: str):
+def _site_domain(con) -> str | None:
+    row = con.execute("SELECT domain FROM site").fetchone()
+    return row[0] if row else None
+
+
+def _pipeline_client(con, model: str, credentials=None):
     provider = load_config().provider_of(model)
     if provider is None:
         typer.echo(f"a {model} nincs a konfigurált modellek között", err=True)
         raise typer.Exit(code=1)
-    clients, skipped = open_clients(con, models={provider: model})
+    clients, skipped = open_clients(con, models={provider: model}, credentials=credentials)
     if provider not in clients:
         typer.echo(f"nincs {model}-kliens: {skipped.get(provider, 'ismeretlen')}", err=True)
         raise typer.Exit(code=1)

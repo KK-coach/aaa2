@@ -18,7 +18,7 @@ import os
 import random
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -30,7 +30,7 @@ from pydantic import BaseModel, ValidationError
 
 from aaa2.llm import ledger
 from aaa2.llm.adapters import ADAPTERS, API_ERRORS, Reply, describe_error, is_transient
-from aaa2.llm.config import LLMConfig, ProviderConfig, Usage, load_config
+from aaa2.llm.config import Credentials, LLMConfig, ProviderConfig, Usage, load_config
 
 ENV_PATH = Path(".env")
 # A költségőr bemenet-becslése: ennyi karakter egy token (konzervatív; a magyar szöveg ~3).
@@ -220,17 +220,23 @@ def open_clients(con: duckdb.DuckDBPyConnection, *, config: LLMConfig | None = N
                  base_urls: dict[str, str] | None = None,
                  clock: Callable[[], datetime] | None = None, retry: Retry | None = None,
                  models: dict[str, str] | None = None,
+                 credentials: Mapping[str, Credentials] | None = None,
                  ) -> tuple[dict[str, LLMClient], dict[str, str]]:
     """A kulccsal rendelkező szolgáltatók kliensei, és a kimaradtak az okukkal. `models`:
-    szolgáltatónként egy konfigurált modell az aktív helyett."""
+    szolgáltatónként egy konfigurált modell az aktív helyett. `credentials`: a site saját
+    kulcsa és projektje (`config.load_site_credentials`); ha a site saját kulcsot ad meg, és az
+    hiányzik, a szolgáltató kimarad, az alapkulcs nem lép a helyére."""
     config = config or load_config()
     clients, skipped = {}, {}
     for name, provider in config.providers.items():
-        key = api_key(provider.key_env, env_file)
+        own = (credentials or {}).get(name, Credentials())
+        key_env = own.key_env or provider.key_env
+        key = api_key(key_env, env_file)
         if key is None:
-            skipped[name] = f"nincs {provider.key_env}"
+            skipped[name] = f"nincs {key_env}"
             continue
-        adapter = ADAPTERS[name](provider, key, (base_urls or {}).get(name))
+        extra = {"project": own.project} if own.project else {}
+        adapter = ADAPTERS[name](provider, key, (base_urls or {}).get(name), **extra)
         clients[name] = LLMClient(con, adapter, config, ledger_path, clock, retry,
                                   (models or {}).get(name))
     return clients, skipped
