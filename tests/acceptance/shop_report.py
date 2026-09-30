@@ -1,10 +1,12 @@
 """A webshop site-szintű összeállítása (M2/7 B, 9a): márkák, termékcsaládok a márkájukkal,
-termékek a családjukkal és a kategóriájukkal, kategóriák, demó-jelölések.
+termékek a családjukkal és a kategóriájukkal, kategóriák, demó-jelölések, és a kapcsolat
+nélküli márkák sorsa (alias lett vagy `orphan`).
 
     python -m tests.acceptance.shop_report data/m27/duex2.duckdb --out data/m27/shop
 
-Kimenet: `<out>/brands.csv`, `families.csv`, `products.csv`, `categories.csv`, `demo.csv` és
-`summary.md` (darabszámok és listák). Csak olvas.
+Kimenet: `<out>/brands.csv`, `families.csv`, `products.csv`, `categories.csv`, `demo.csv`,
+`orphan_brands.csv`, az összevont `assembly.csv` (szintenként egy sor) és `summary.md`
+(darabszámok). Csak olvas.
 """
 from __future__ import annotations
 
@@ -77,22 +79,71 @@ def collect(db: Path) -> dict[str, list[dict]]:
                          "LEFT JOIN pages p ON p.page_id = pe.page_id "
                          "WHERE list_contains(coalesce(e.flags, []), 'demo') "
                          "GROUP BY e.entity_id, e.name, e.type, e.subtype ORDER BY e.name")]
+        last = rows(con, "SELECT skipped FROM entity_runs WHERE method = 'site' "
+                         "ORDER BY run_id DESC LIMIT 1")
+        candidates = ((json.loads(last[0][0] or "{}").get("shop") or {}).get("orphans") or {}
+                      if last else {})
+        orphan_brands = [{"márka": name, "sors": "orphan",
+                          "cél": "; ".join(candidates.get(name) or []),
+                          "szabály": "több jelölt" if len(candidates.get(name) or []) > 1
+                          else ""}
+                         for (name,) in rows(con, "SELECT name FROM entities WHERE list_contains("
+                                                  "coalesce(flags, []), 'orphan') ORDER BY name")]
+        orphan_brands += [{"márka": removed, "sors": "alias", "cél": kept, "szabály": rule}
+                          for removed, kept, rule in rows(
+                              con, "SELECT removed_name, kept_name, rule FROM merge_log "
+                                   "WHERE rule LIKE 'orphan_brand%' AND run_id = (SELECT max("
+                                   "run_id) FROM merge_log WHERE rule LIKE 'orphan_brand%') "
+                                   "ORDER BY removed_name")]
     finally:
         con.close()
     return {"brands": brands, "families": families, "products": products,
-            "categories": categories, "demo": demo}
+            "categories": categories, "demo": demo, "orphan_brands": orphan_brands}
+
+
+def assembly(data: dict[str, list[dict]]) -> list[dict]:
+    """Az összeállítás egy táblában: szint, név, márka, termékcsalád, kategória, termékszám,
+    tulajdonságok, URL, megjegyzés."""
+    out = []
+
+    def row(level, name, **fields):
+        out.append({"szint": level, "név": name, "márka": fields.get("brand", ""),
+                    "termékcsalád": fields.get("family", ""),
+                    "kategória": fields.get("category", ""),
+                    "termékek": fields.get("count", ""),
+                    "tulajdonságok": fields.get("attributes", ""), "url": fields.get("url", ""),
+                    "megjegyzés": fields.get("note", "")})
+
+    for b in data["brands"]:
+        row("márka", b["márka"], count=b["közvetlen termékek"],
+            note=f"családok: {b['családok']}; aliasok: {b['aliasok']}")
+    for f in data["families"]:
+        row("termékcsalád", f["termékcsalád"], brand=f["márka"], count=f["termékek"])
+    for p in data["products"]:
+        row("termék", p["termék"], brand=p["márka"], family=p["termékcsalád"],
+            category=p["kategória"], attributes=p["tulajdonságok"], url=p["url"])
+    for c in data["categories"]:
+        row("kategória", c["kategória"], count=c["termékek"], url=c["url"])
+    for o in data["orphan_brands"]:
+        row("kapcsolat nélküli márka", o["márka"],
+            note=(f"orphan; jelöltek: {o['cél']}" if o["sors"] == "orphan" and o["cél"]
+                  else f"{o['sors']}" + (f" → {o['cél']} ({o['szabály']})" if o["cél"] else "")))
+    for d in data["demo"]:
+        row("demó", d["entitás"], note=f"{d['típus']}/{d['altípus']}; {d['oldalak']}")
+    return out
 
 
 def write(data: dict[str, list[dict]], out: Path) -> str:
     out.mkdir(parents=True, exist_ok=True)
-    for name, items in data.items():
+    for name, items in {**data, "assembly": assembly(data)}.items():
         with (out / f"{name}.csv").open("w", encoding="utf-8", newline="") as handle:
             if items:
                 writer = csv.DictWriter(handle, fieldnames=list(items[0]))
                 writer.writeheader()
                 writer.writerows(items)
     labels = {"brands": "Márkák", "families": "Termékcsaládok", "products": "Termékek",
-              "categories": "Kategóriák", "demo": "Demó-jelölések"}
+              "categories": "Kategóriák", "demo": "Demó-jelölések",
+              "orphan_brands": "Kapcsolat nélküli márkák"}
     lines = ["# Webshop site-szintű összeállítás", ""]
     lines += [f"- {labels[name]}: {len(items)}" for name, items in data.items()]
     summary = "\n".join(lines) + "\n"

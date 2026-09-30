@@ -51,7 +51,7 @@ class Scripted:
                      usage=Usage(input=100, output=10))
 
 
-def test_services_need_structure_and_no_sol_veto_concepts_all_stay(tmp_path):
+def test_services_need_structure_and_no_sol_veto_the_rest_become_concepts(tmp_path):
     adapter = Scripted([{"decisions": [{"candidate_id": "c0", "keep": True},
                                        {"candidate_id": "c1", "keep": False}]}])
     client = LLMClient(connect(":memory:"), adapter, CONFIG, tmp_path / "l.jsonl",
@@ -60,28 +60,38 @@ def test_services_need_structure_and_no_sol_veto_concepts_all_stay(tmp_path):
     out = apply_v3(RECORD, PAGE, client, lambda names, lang: known.get(names[0]))
     assert "[c0] service · Bérszámfejtés Csomag" in adapter.inputs[0]
     assert "Számlázás" not in adapter.inputs[0]                 # nincs szerkezeti helye
-    assert [e["canonical_name"] for e in out["entities"]] == [
-        "Bérszámfejtés Csomag", "Számlázó", "Cash-flow", "Készletforgás", "Készletforgás",
-        "Bérszámfejtés"]
+    assert [(e["canonical_name"], e["type"], e.get("type_changed_from"))
+            for e in out["entities"]] == [
+        ("Bérszámfejtés Csomag", "service", None), ("Éves zárás", "concept", "service"),
+        ("Számlázás", "concept", "service"), ("Számlázó", "tech", None),
+        ("Cash-flow", "concept", None), ("Készletforgás", "concept", None),
+        ("Készletforgás", "concept", None), ("Bérszámfejtés", "concept", None)]
+    assert out["v3"]["rule"] == 2
     assert out["v3"]["services"] == [
         {"canonical": "Bérszámfejtés Csomag", "structure": "heading:b1", "mentions": 1,
-         "sol": True, "kept": True},
+         "sol": True, "kept": True, "as_concept": False},
         {"canonical": "Éves zárás", "structure": "heading:b2", "mentions": 1, "sol": False,
-         "kept": False},
+         "kept": False, "as_concept": True},
         {"canonical": "Számlázás", "structure": None, "mentions": 1, "sol": None,
-         "kept": False}]
+         "kept": False, "as_concept": True}]
     assert [(c["canonical"], c["rank"], c["mentions"], c["prominent"], c["blocks"],
-             c["knowledge"]) for c in out["v3"]["concepts"]] == [
-        ("Bérszámfejtés", 1, 1, True, 2, None),
-        ("Készletforgás", 2, 2, False, 1, None),
-        ("Cash-flow", 3, 1, False, 1, "wikidata:hu:Q1")]
+             c["knowledge"], c["from_service"]) for c in out["v3"]["concepts"]] == [
+        ("Éves zárás", 1, 1, True, 1, None, "sol_veto"),
+        ("Bérszámfejtés", 2, 1, True, 2, None, None),
+        ("Készletforgás", 3, 2, False, 1, None, None),
+        ("Számlázás", 4, 1, False, 1, None, "no_structure"),
+        ("Cash-flow", 5, 1, False, 1, "wikidata:hu:Q1", None)]
     assert out["call_ids"] == [5, out["verify_call_id"]]
 
 
 def test_no_structural_service_no_call():
     record = {"entities": [mention("b3", "számlázást", "Számlázás", "service")]}
     out = apply_v3(record, PAGE, None, lambda names, lang: None)
-    assert out["entities"] == [] and out["v3"]["services"][0]["kept"] is False
+    assert [(e["canonical_name"], e["type"], e["subtype"], e["type_changed_from"])
+            for e in out["entities"]] == [("Számlázás", "concept", None, "service")]
+    assert out["v3"]["services"][0]["kept"] is False
+    assert out["v3"]["services"][0]["as_concept"] is True
+    assert out["v3"]["concepts"][0]["from_service"] == "no_structure"
 
 
 def test_locked_page_ids_and_sources():
@@ -127,19 +137,19 @@ def test_scoring_named_services_concepts_and_the_rule(tmp_path):
     assert (score.good_hard, score.wrong_hard) == (1, 0)
     assert (score.services, score.services_found, score.service_verdicts) == (2, 1, ["valid"])
     assert (score.concepts, score.concepts_recognized) == (1, 1)
-    assert score.top[10] == ["valid", "descriptive", None]
+    assert score.top[10] == ["valid", "descriptive", None, None]   # + a Számlázás fogalomként
     assert score.missed == [("Éves zárás", "service", "felismerési")]
     assert score.rule_dropped == [("Éves zárás", "kötelező: Éves zárás")]
     text = report_markdown([("zárolt oldalak", [score]), ("fejlesztési oldalak", [])])
     assert "| **zárolt oldalak** | 100.0 (1/1) | 100.0 (1/1) | 100.0 (1/1) | 50.0 (1/2) | " \
-           "100.0 (1/1) | 100.0 (1/1) | 50.0 (1/2) | 50.0 (1/2) | 1 |" in text
+           "100.0 (1/1) | 100.0 (1/1) | 50.0 (1/2) | 50.0 (1/2) | 2 |" in text
     assert "- saját ajánlat recall: 50.0 (1/2) (≥ 90: NEM)" in text
     assert total([score, score], "x").services == 4
     path = tmp_path / "v.json"
-    assert export_v3_verdicts([GOLD_PAGE], {"p": out}, path) == 4
+    assert export_v3_verdicts([GOLD_PAGE], {"p": out}, path) == 5
     items = json.loads(path.read_text(encoding="utf-8"))["items"]
     assert [(i["canonical"], i["type"]) for i in items] == [
-        ("Bérszámfejtés Csomag", "service"), ("Cash-flow", "concept"),
+        ("Bérszámfejtés Csomag", "service"), ("Számlázás", "concept"), ("Cash-flow", "concept"),
         ("Készletforgás", "concept"), ("Bérszámfejtés", "concept")]
 
 

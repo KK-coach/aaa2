@@ -23,6 +23,13 @@
   álló leggyakoribb alak (a márkával, ha a H1 azzal kezdődik). Kapcsolat: termék `part_of`
   család, márka `brand_of` család; család nélküli terméknél márka `brand_of` termék. Említés: a
   tagtermékek H1-ében a családnév.
+- Kapcsolat nélküli márka (brand, `brand_of` nélkül, oldalhoz nem kötve): ha a neve a site neve
+  (`site._site_name_keys`), a site-szervezet (org, role = brand) aliasa lesz
+  (`orphan_brand_site`); különben, ha az írásmód-normalizált neve (`site.normal_key`, legalább
+  `ORPHAN_MIN_CHARS` jel) egy termékcsalád vagy egy terméket hordozó márka nevével egyezik, vagy
+  annak elő- vagy utótagja, és egyetlen ilyen cél van, annak aliasa (`orphan_brand`; a pontos
+  egyezés megelőzi a részlegest); egyébként marad, `orphan` jelöléssel (több cél esetén azok is
+  a futás kimenetében).
 - A kapcsolatok forrása `shop`; a beolvasztások a `merge_log`-ban.
 """
 from __future__ import annotations
@@ -50,6 +57,7 @@ ENERGY = re.compile(r"^A\+{1,4}$")
 MODEL_MIN_CHARS = 6
 FAMILY_STOP = ("capacity", "phase", "energy_class", "model")
 FAMILY_MIN_PRODUCTS = 2
+ORPHAN_MIN_CHARS = 4
 
 
 @dataclass
@@ -61,12 +69,15 @@ class ShopRun:
     in_family: int = 0
     with_attributes: int = 0
     unbranded: list[str] = field(default_factory=list)
+    orphan_aliases: dict[str, str] = field(default_factory=dict)     # márka → cél
+    orphans: dict[str, list[str]] = field(default_factory=dict)      # márka → jelölt célok
 
     def as_dict(self) -> dict:
         return {"categories": self.categories, "brands": self.brands,
                 "families": self.families, "products": self.products,
                 "in_family": self.in_family, "with_attributes": self.with_attributes,
-                "unbranded": self.unbranded}
+                "unbranded": self.unbranded, "orphan_aliases": self.orphan_aliases,
+                "orphans": self.orphans}
 
 
 @dataclass(frozen=True)
@@ -287,6 +298,7 @@ def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
                     {"breadcrumb": product.category})
 
     # termékcsaládok
+    family_ids: list[int] = []
     for key, members in sorted(by_brand.items()):
         brand_id = brand_ids[key]
         brand_name = members[0].brand
@@ -300,6 +312,7 @@ def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
         for family_key, group in sorted(grouped.items()):
             name = family_name(family_key, [p.name for p in group], brand_name)
             family_id = _family_entity(ctx, name, group)
+            family_ids.append(family_id)
             run.families += 1
             _relate(ctx, brand_id, family_id, "brand_of", {"brand": brand_name})
             for product in group:
@@ -307,7 +320,59 @@ def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
                         {"family": " ".join(family_key)})
                 _h1_mention(ctx, family_id, product.page_id, name)
                 run.in_family += 1
+    _orphan_brands(ctx, merger, run, sorted(set(brand_ids.values())), family_ids)
     return run
+
+
+def orphan_target(name: str, targets: Sequence[tuple[int, str]]) -> tuple[list[int], str]:
+    """A kapcsolat nélküli márka lehetséges céljai (azonosító, név) közül az egyezők:
+    (azonosítók, egyezés). A pontos egyezés (`equal`) megelőzi az elő- vagy utótagot
+    (`affix`); `ORPHAN_MIN_CHARS`-nál rövidebb normalizált névnek nincs célja."""
+    from aaa2.entities.site import normal_key
+
+    key = normal_key(name)
+    if len(key) < ORPHAN_MIN_CHARS:
+        return [], "none"
+    equal = [i for i, target in targets if normal_key(target) == key]
+    if equal:
+        return equal, "equal"
+    return [i for i, target in targets if normal_key(target).startswith(key)
+            or normal_key(target).endswith(key)], "affix"
+
+
+def _orphan_brands(ctx: _Context, merger: Merger, run: ShopRun, brand_ids: list[int],
+                   family_ids: list[int]) -> None:
+    """A kapcsolat nélküli márkák: a site-szervezet vagy egy termékcsalád, illetve terméket
+    hordozó márka aliasa, vagy `orphan` jelölés (lásd a modul leírását)."""
+    from aaa2.entities.site import _set_flag, _site_name_keys
+
+    con = ctx.con
+    names = dict(con.execute("SELECT entity_id, name FROM entities WHERE list_contains(?, "
+                             "entity_id)", [brand_ids + family_ids]).fetchall())
+    targets = [(i, names[i]) for i in family_ids + brand_ids if i in names]
+    site_org = con.execute("SELECT min(entity_id) FROM entities WHERE type = 'org' "
+                           "AND role = 'brand'").fetchone()[0]
+    site_keys = _site_name_keys(con)
+    orphans: list[int] = []
+    for entity_id, name in con.execute(
+            "SELECT entity_id, name FROM entities e WHERE type = 'brand' "
+            "AND anchor_page_id IS NULL AND NOT list_contains(?, entity_id) AND NOT EXISTS "
+            "(SELECT 1 FROM entity_relations r WHERE r.type = 'brand_of' "
+            "AND r.from_id = e.entity_id) ORDER BY name, entity_id", [brand_ids]).fetchall():
+        if site_org is not None and alias_key(name) in site_keys:
+            merger.merge(site_org, entity_id, "orphan_brand_site", {"brand": name})
+            run.orphan_aliases[name] = con.execute(
+                "SELECT name FROM entities WHERE entity_id = ?", [site_org]).fetchone()[0]
+            continue
+        found, match = orphan_target(name, targets)
+        if len(found) == 1:
+            merger.merge(found[0], entity_id, "orphan_brand",
+                         {"brand": name, "target": names[found[0]], "match": match})
+            run.orphan_aliases[name] = names[found[0]]
+            continue
+        orphans.append(entity_id)
+        run.orphans[name] = sorted(names[i] for i in found)
+    _set_flag(con, "orphan", orphans)
 
 
 def _anchored_entity(ctx: _Context, merger: Merger, members: list[PageInfo], kind: str,

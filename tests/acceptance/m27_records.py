@@ -73,7 +73,11 @@ def main(argv: list[str] | None = None) -> None:
             db_page, extraction, refined, call_ids = row
             extraction = json.loads(extraction)
             refined = json.loads(refined) if refined else extraction
-            ids = [i for i in call_ids or [] if i is not None]
+            # a rekordot létrehozó hívások: újrahasznált kinyerésnél a futás sora üres, a
+            # visszajátszott ellenőrzés hívása a korábbi
+            ids = list(dict.fromkeys(
+                i for i in [*(extraction.get("call_ids") or []), refined.get("verify_call_id"),
+                            *(call_ids or [])] if i is not None))
             ge.write_record(args.out, page_id, model, args.source, shift(extraction, offset))
             ge.write_record(args.out, page_id, model, args.tag,
                             {**shift(refined, offset), "call_ids": [i + offset for i in ids]})

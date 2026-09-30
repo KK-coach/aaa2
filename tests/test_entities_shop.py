@@ -8,9 +8,10 @@ from aaa2.entities import overrides
 from aaa2.entities.overrides import load_site_config
 from aaa2.entities.pages import breadcrumbs, page_types
 from aaa2.entities.rules import run_rules
-from aaa2.entities.shop import base_tokens, families, name_attributes
+from aaa2.entities.shop import base_tokens, families, name_attributes, orphan_target
 from aaa2.entities.site import cut_off, run_site, site_name_form
 from tests.test_entities_rules import html, ld, site
+from tests.test_entities_site import NOON, llm_entity
 
 SHOP = "https://pelda.hu"
 
@@ -176,3 +177,35 @@ def test_a_rerun_keeps_the_relations_consistent(shop_config):
     assert con.execute("SELECT count(*) FROM entity_relations WHERE from_id NOT IN (SELECT "
                        "entity_id FROM entities) OR to_id NOT IN (SELECT entity_id FROM "
                        "entities)").fetchone() == (0,)
+
+
+def test_orphan_brand_targets_by_normalized_name_prefix_or_suffix():
+    assert orphan_target("Waterstage", [(1, "Fujitsu Waterstage"),
+                                        (2, "Fujitsu Waterstage Comfort")]) == ([1], "affix")
+    assert orphan_target("LG THERMA", [(1, "LG ThermaV R32"), (2, "LG ThermaV R290 HYDRO"),
+                                       (3, "LG")]) == ([1, 2], "affix")
+    assert orphan_target("acme", [(1, "Acme"), (2, "Acme Nordic")]) == ([1], "equal")
+    assert orphan_target("LG", [(1, "LG ThermaV R32")]) == ([], "none")     # túl rövid
+
+
+def test_brands_without_products_become_aliases_or_orphans(shop_config):
+    con = shop_site()
+    run_rules(con)
+    llm_entity(con, f"{SHOP}/spd/a", "Nordic", "Nordic", "brand")          # a család utótagja
+    llm_entity(con, f"{SHOP}/", "Pelda Webshop", "Pelda Webshop", "brand")  # a site neve
+    llm_entity(con, f"{SHOP}/spd/e", "Leírás", "Leírás", "brand")           # nincs cél
+    run = run_site(con, clock=lambda: NOON)
+    assert run.shop["orphan_aliases"] == {"Nordic": "Acme Nordic",
+                                          "Pelda Webshop": "Pelda Webshop"}
+    assert run.shop["orphans"] == {"Leírás": []}
+    rows = dict(con.execute("SELECT name, type FROM entities").fetchall())
+    assert "Nordic" not in rows and rows["Leírás"] == "brand"
+    assert "orphan" in con.execute("SELECT flags FROM entities WHERE name = 'Leírás'"
+                                   ).fetchone()[0]
+    assert "Nordic" in con.execute("SELECT aliases FROM entities WHERE name = 'Acme Nordic'"
+                                   ).fetchone()[0]
+    assert con.execute("SELECT type, role FROM entities WHERE name = 'Pelda Webshop'"
+                       ).fetchall() == [("org", "brand")]
+    assert sorted(con.execute("SELECT removed_name, rule FROM merge_log WHERE rule LIKE "
+                              "'orphan%'").fetchall()) == [("Nordic", "orphan_brand"),
+                                                           ("Pelda Webshop", "orphan_brand_site")]

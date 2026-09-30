@@ -8,7 +8,8 @@
 - Entitástábla: minden említéssel bíró entitás egy sorban: név, típus, altípus, szint (tier),
   jelölések (flags), forrás, hány oldalon és hány említésben szerepel, és hány oldalon áll
   szerkezeti helyen (title, heading, navigáció, kártya, táblázatsor), az oldala (oldalhoz
-  kötött entitásnál), a tudásbázis-egyezés (Wikidata QID és státusz, Wikipedia-URL).
+  kötött entitásnál), a tudásbázis-egyezés (Wikidata QID és státusz, Wikipedia-URL), és hány
+  oldalon jött fogalomként elvetett service-jelöltből (`from_service_pages`, `soft_checks`).
   Navigáció: az említés a chrome-régióban áll, vagy a név (`gate.occurs`) az említés oldalának
   chrome-régiójában. Sorrend: oldalszám, említésszám, név.
 """
@@ -26,7 +27,8 @@ from aaa2.entities.gate import occurs
 
 PLACES = ("title", "heading", "nav", "card", "table_row")
 TABLE_FIELDS = ("entity", "type", "subtype", "tier", "flags", "source", "pages", "mentions",
-                *PLACES, "anchor_page", "wikidata_qid", "wikidata_status", "wikipedia")
+                *PLACES, "anchor_page", "wikidata_qid", "wikidata_status", "wikipedia",
+                "from_service_pages")
 
 
 def wikipedia_url(value: str | None) -> str:
@@ -46,6 +48,9 @@ def entity_table(con: duckdb.DuckDBPyConnection) -> list[dict]:
             "SELECT page_id, text FROM blocks WHERE region = 'chrome' ORDER BY page_id, ordinal"
     ).fetchall():
         chrome[page_id].append(text)
+    converted = dict(con.execute(
+        "SELECT entity_id, count(DISTINCT page_id) FROM soft_checks WHERE type = 'concept' "
+        "AND type_changed_from = 'service' AND entity_id IS NOT NULL GROUP BY 1").fetchall())
     pages: dict[int, set[int]] = defaultdict(set)
     count: Counter[int] = Counter()
     places: dict[int, dict[str, set[int]]] = defaultdict(lambda: defaultdict(set))
@@ -71,7 +76,8 @@ def entity_table(con: duckdb.DuckDBPyConnection) -> list[dict]:
                      "pages": len(pages[entity_id]), "mentions": count[entity_id],
                      **{place: len(places[entity_id][place]) for place in PLACES},
                      "anchor_page": anchor or "", "wikidata_qid": qid or "",
-                     "wikidata_status": status or "", "wikipedia": wikipedia_url(wiki)})
+                     "wikidata_status": status or "", "wikipedia": wikipedia_url(wiki),
+                     "from_service_pages": converted.get(entity_id, 0)})
     return sorted(rows, key=lambda r: (-r["pages"], -r["mentions"], r["entity"].lower()))
 
 
@@ -237,18 +243,20 @@ def _soft_section(con: duckdb.DuckDBPyConnection) -> list[str]:
     concepts = con.execute(
         "SELECT count(*), count(DISTINCT entity_id), count(*) FILTER (WHERE prominent), "
         "count(*) FILTER (WHERE structure IS NOT NULL), count(*) FILTER (WHERE blocks >= 2), "
-        "count(*) FILTER (WHERE knowledge IS NOT NULL), count(DISTINCT page_id) "
+        "count(*) FILTER (WHERE knowledge IS NOT NULL), count(DISTINCT page_id), "
+        "count(*) FILTER (WHERE type_changed_from = 'service') "
         "FROM soft_checks WHERE type = 'concept'").fetchone()
     total, kept, no_place, vetoed, unanswered, distinct = services
-    c_total, c_entities, prominent, placed, repeated, known, c_pages = concepts
+    c_total, c_entities, prominent, placed, repeated, known, c_pages, converted = concepts
     return [
         "## Saját ajánlatok és fogalmak", "",
         (f"- saját ajánlat (service), oldal × tétel: {total}; marad {kept} ({distinct} "
-         f"különböző név); kiesett szerkezeti hely nélkül {no_place}, az ellenőrzés vétójával "
-         f"{vetoed}; megmaradt válasz nélkül {unanswered}"),
+         f"különböző név); fogalomként marad szerkezeti hely nélkül {no_place}, az "
+         f"ellenőrzés vétójával {vetoed}; megmaradt válasz nélkül {unanswered}"),
         (f"- fogalom (concept), oldal × tétel: {c_total} ({c_entities} entitás, {c_pages} "
          f"oldalon); title- vagy heading-helyen {prominent}, szerkezeti helyen {placed}, "
-         f"legalább 2 blokkban {repeated}, tudásbázis-egyezéssel {known}"), ""]
+         f"legalább 2 blokkban {repeated}, tudásbázis-egyezéssel {known}; service-jelöltből "
+         f"{converted}"), ""]
 
 
 def _regression_section(con: duckdb.DuckDBPyConnection,
