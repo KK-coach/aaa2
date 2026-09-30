@@ -20,18 +20,18 @@ from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
 from aaa2.entities.dom import build_blocks
-from aaa2.entities.extract import estimate_llm, run_llm
+from aaa2.entities.extract import Worker, estimate_llm, run_llm
 from aaa2.entities.gate import KnowledgeBase
 from aaa2.entities.knowledge import link_entities
 from aaa2.entities.overrides import load_site_config
 from aaa2.entities.report import run_report, write_entity_table
 from aaa2.entities.rules import run_rules
 from aaa2.entities.site import run_site
-from aaa2.entities.v3 import V3Step, load_pipeline
+from aaa2.entities.v3 import V3Step, load_pipeline, v3_fingerprint
 from aaa2.entities.validate import KG_DAILY_QUOTA, _Api, validate_entities
 from aaa2.llm import ledger
 from aaa2.llm.client import Retry, check_models, open_clients
-from aaa2.llm.config import PIPELINE_OFF, load_config
+from aaa2.llm.config import PIPELINE_OFF, load_config, load_site_credentials
 
 app = typer.Typer(no_args_is_help=True, help="AAA v2 — sitewide SEO/GEO elemzőmotor")
 
@@ -196,6 +196,12 @@ def entities(
     max_usd: Annotated[float | None, typer.Option(
         help="költséghatár (alapból a pipeline.toml max_usd): e fölötti becslésnél nem indul, "
              "a futás közben itt áll meg")] = None,
+    workers: Annotated[int | None, typer.Option(
+        min=1, help="ennyi oldal LLM-lépései futnak egyszerre (alapból a pipeline.toml "
+                    "workers)")] = None,
+    fresh: Annotated[bool, typer.Option(
+        help="minden oldal újra kinyerve; alapból a változatlan oldal (azonos bemenet és "
+             "modell) a korábbi kinyerését kapja, hívás nélkül")] = False,
 ) -> None:
     """Entitás-pipeline a megközelítés v3 szerint, az `entities/config/pipeline.toml`
     lépéseivel: a hiányzó blokkok, a determinisztikus szabálykör (JSON-LD, a site neve a
@@ -229,33 +235,66 @@ def entities(
             naming_choice = _step_model(naming_model or models["naming"])
             verify_choice = (_step_model(verify_model or models["verify"])
                              if steps.services else None)
+            refines = steps.services or steps.concepts
+            reuse_models = None if fresh else (
+                chosen, naming_choice, v3_fingerprint(steps, verify_choice) if refines else None)
             guess = estimate_llm(con, config, chosen, naming_choice, verify_choice,
-                                 _utcnow().date(), limit=limit, resume=resume)
+                                 _utcnow().date(), limit=limit, resume=resume,
+                                 reuse_models=reuse_models)
             typer.echo(
                 f"becslés: {guess.pages} oldal, {guess.chunks} kinyerő darab, ~{guess.tokens_in} "
                 f"token be; kinyerés {guess.extract_usd:.4f} USD, ellenőrzés "
                 f"{guess.verify_usd:.4f} USD ({guess.verify_pages} oldal a meglévő kinyerésből"
                 + (f", {guess.verify_pending} oldalon a kinyerés után dől el"
                    if guess.verify_pending else "")
-                + f"); összesen {guess.total_usd:.4f} USD, határ {cap:.2f} USD")
+                + f"); összesen {guess.total_usd:.4f} USD, határ {cap:.2f} USD"
+                + (f"; változatlan, a korábbi kinyerésével: {guess.reused} oldal"
+                   if guess.reused else ""))
             if estimate:
                 return
             if guess.total_usd > cap:
                 typer.echo("a becslés a határ fölött van, a futás nem indul", err=True)
                 raise typer.Exit(code=2)
-            client = _pipeline_client(con, chosen)
+            try:
+                credentials = load_site_credentials(_site_domain(con))
+            except ValueError as exc:
+                typer.echo(f"hiba: {exc}", err=True)
+                raise typer.Exit(code=1) from exc
+            for name, own in sorted(credentials.items()):
+                typer.echo(f"site-kulcs: {name}: {own.key_env or 'alapkulcs'}"
+                           + (f", projekt {own.project}" if own.project else ""))
+            client = _pipeline_client(con, chosen, credentials)
             naming = verifier = None
             if naming_choice:
                 naming = (client if naming_choice == client.model
-                          else _pipeline_client(con, naming_choice))
+                          else _pipeline_client(con, naming_choice, credentials))
             if verify_choice:
                 verifier = (client if verify_choice == client.model
-                            else _pipeline_client(con, verify_choice))
+                            else _pipeline_client(con, verify_choice, credentials))
             refine = (V3Step(con, steps, verifier, kb if steps.knowledge else None, site_lang)
                       if steps.services or steps.concepts else None)
+
+            def fork(cursor: duckdb.DuckDBPyConnection) -> Worker:
+                """Egy szál kliensei a saját kurzorán (a tudásbázis gyorsítótára is)."""
+                bound = client.bind(cursor)
+                own = {id(client): bound}
+                thread_kb = None
+                if kb is not None and steps.knowledge:
+                    thread_kb = KnowledgeBase(_Api(
+                        cursor, shared.cursor() if shared is not None else None,
+                        httpx.Client(timeout=20.0), Retry(), _utcnow, time.monotonic).get)
+                naming_bound = own.get(id(naming)) or (naming.bind(cursor) if naming else None)
+                verifier_bound = (own.get(id(verifier))
+                                  or (verifier.bind(cursor) if verifier else None))
+                return Worker(bound, naming_bound, V3Step(
+                    cursor, steps, verifier_bound, thread_kb, site_lang) if refine else None)
+
+            count = workers or pipeline.workers
+            typer.echo(f"párhuzamosság: {count} oldal egyszerre")
             runs.append(run_llm(con, client, naming_client=naming, refine=refine,
                                 save=steps.save, limit=limit, resume=resume,
-                                max_usd=cap).run_id)
+                                max_usd=cap, workers=count, fork=fork,
+                                reuse=not fresh).run_id)
         elif estimate:
             typer.echo("becslés: az LLM-lépések kikapcsolva, nincs hívás")
             return
@@ -331,12 +370,17 @@ def _utcnow() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-def _pipeline_client(con, model: str):
+def _site_domain(con) -> str | None:
+    row = con.execute("SELECT domain FROM site").fetchone()
+    return row[0] if row else None
+
+
+def _pipeline_client(con, model: str, credentials=None):
     provider = load_config().provider_of(model)
     if provider is None:
         typer.echo(f"a {model} nincs a konfigurált modellek között", err=True)
         raise typer.Exit(code=1)
-    clients, skipped = open_clients(con, models={provider: model})
+    clients, skipped = open_clients(con, models={provider: model}, credentials=credentials)
     if provider not in clients:
         typer.echo(f"nincs {model}-kliens: {skipped.get(provider, 'ismeretlen')}", err=True)
         raise typer.Exit(code=1)

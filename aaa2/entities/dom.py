@@ -458,12 +458,25 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
 def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None = None) -> int:
     """A `blocks` sorai azoknak a sikeres (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalaknak,
     amelyeknek még nincs blokkjuk; `page_ids`: csak ezek közül. Visszaad: a feldolgozott oldalak
-    száma. A meglévő blokkok nem változnak (az említések a `block_id`-jükre hivatkoznak)."""
+    száma. A meglévő blokkok nem változnak (az említések a `block_id`-jükre hivatkoznak), kivéve
+    ha az oldal M1-es stabil hash-e azóta más (`blocks_built`, a crawl újra lekérte és
+    megváltozott): akkor az oldal említései, bizonyítékai és blokkjai törlődnek, és a blokkok
+    újraépülnek. A `blocks_built` előtti blokkok a jelenlegi hash-sel kerülnek a táblába."""
     params: list = []
     only = ""
     if page_ids is not None:
         only = " AND list_contains(?, page_id)"
         params.append(list(page_ids))
+    con.execute(
+        "INSERT INTO blocks_built SELECT DISTINCT b.page_id, p.raw_html_hash, current_timestamp "
+        "FROM blocks b JOIN pages p USING (page_id) "
+        "WHERE b.page_id NOT IN (SELECT page_id FROM blocks_built)")
+    for (page_id,) in con.execute(
+            "SELECT b.page_id FROM blocks_built b JOIN pages p USING (page_id) "
+            "WHERE p.raw_html_hash IS NOT NULL AND b.raw_html_hash IS DISTINCT FROM "
+            "p.raw_html_hash" + only.replace("page_id", "b.page_id") + " ORDER BY b.page_id",
+            params).fetchall():
+        drop_page_blocks(con, page_id)
     pages = con.execute(
         "SELECT page_id, title, rendered_html FROM pages "
         "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL "
@@ -480,7 +493,20 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
             con.executemany(
                 "INSERT INTO blocks (page_id, ordinal, kind, region, level, heading_path, text, "
                 "cells) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", rows)
+        con.execute("INSERT OR REPLACE INTO blocks_built SELECT page_id, raw_html_hash, "
+                    "current_timestamp FROM pages WHERE page_id = ?", [page_id])
     return len(pages)
+
+
+def drop_page_blocks(con: duckdb.DuckDBPyConnection, page_id: int) -> None:
+    """Egy oldal blokkjai és a rájuk épülő sorok (említések a forrásaikkal, bizonyítékok)
+    törlődnek; a következő `build_blocks` újraépíti őket."""
+    con.execute("DELETE FROM mention_sources WHERE mention_id IN "
+                "(SELECT mention_id FROM page_entities WHERE page_id = ?)", [page_id])
+    con.execute("DELETE FROM page_entities WHERE page_id = ?", [page_id])
+    con.execute("DELETE FROM soft_checks WHERE page_id = ?", [page_id])
+    con.execute("DELETE FROM blocks WHERE page_id = ?", [page_id])
+    con.execute("DELETE FROM blocks_built WHERE page_id = ?", [page_id])
 
 
 def page_blocks(con: duckdb.DuckDBPyConnection, page_id: int, region: str | None = None

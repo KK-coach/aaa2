@@ -3,24 +3,29 @@ szöveg-szerinti-alak ellenőrzés, az említések, az összevonás, az elnevez�
 mérőszámok. A hívások a valódi LLM-kliensen mennek át (llm_calls, főkönyv), csak az adapter
 hamis."""
 import json
+import re
+import threading
+import time
 from datetime import UTC, datetime
 
 import pytest
+import zstandard
 from typer.testing import CliRunner
 
 import aaa2.db.connect as connect_module
 from aaa2.cli.main import app
 from aaa2.db.connect import connect, db_path
 from aaa2.entities.blocks import BLOCK_PROMPT, block_input
-from aaa2.entities.dom import page_blocks
-from aaa2.entities.extract import run_llm, surface_offsets
+from aaa2.entities.dom import build_blocks, page_blocks
+from aaa2.entities.extract import Worker, estimate_llm, run_llm, surface_offsets
 from aaa2.entities.llm import site_line
 from aaa2.entities.naming import NAMING_PROMPT
 from aaa2.entities.rules import run_rules
 from aaa2.llm import ledger
 from aaa2.llm.adapters import Reply, genai_errors
-from aaa2.llm.client import LLMClient, Retry, open_clients
+from aaa2.llm.client import BudgetExceeded, LLMClient, Retry, open_clients
 from aaa2.llm.config import Usage, load_config
+from aaa2.llm.schemas import BlockExtraction
 from tests.test_entities_rules import html, ld, site, stub
 
 NOON = datetime(2026, 9, 26, 12, 0, tzinfo=UTC).replace(tzinfo=None)
@@ -483,3 +488,148 @@ def test_a_failed_chunk_keeps_the_others(tmp_path):
     assert (run.llm_calls, run.rows, run.skipped) == (2, 1, {"chunk_schema_mismatch": 1})
 
 
+
+
+# ---------------------------------------------------------------------------
+# párhuzamosság
+# ---------------------------------------------------------------------------
+
+
+class PageAdapter(FakeAdapter):
+    """Az oldal szövegéből válaszol (a sorrendtől független); a hívások átfedését méri."""
+
+    def __init__(self, delay=0.05):
+        super().__init__([])
+        self.delay, self.active, self.peak = delay, 0, 0
+        self.lock = threading.Lock()
+
+    def call(self, model, schema, prompt, input):
+        with self.lock:
+            self.active += 1
+            self.peak = max(self.peak, self.active)
+        time.sleep(self.delay)
+        with self.lock:
+            self.active -= 1
+            self.calls.append((prompt, input))
+        number = re.search(r"Termék(\d+)", input).group(1)
+        return Reply(text=json.dumps(reply(mention("b1", f"Termék{number}", f"Termék{number}",
+                                                   "product"))),
+                     usage=Usage(input=1000, output=200))
+
+
+def product_site():
+    return site({f"/{i}/": html(f"P{i}", f"<p>A Termék{i} a legjobb választás.</p>")
+                 for i in range(6)})
+
+
+def parallel_run(tmp_path, workers):
+    con = product_site()
+    adapter = PageAdapter()
+    client = LLMClient(con, adapter, CONFIG, tmp_path / f"ledger{workers}.jsonl", lambda: NOON,
+                       Retry(sleep=lambda _: None))
+    run = run_llm(con, client, workers=workers, fork=lambda cursor: Worker(client.bind(cursor)))
+    rows = con.execute(
+        "SELECT e.entity_id, e.name, pe.page_id, pe.char_start FROM page_entities pe "
+        "JOIN entities e USING (entity_id) ORDER BY pe.page_id").fetchall()
+    return run, rows, adapter
+
+
+def test_parallel_extraction_matches_the_sequential_one(tmp_path):
+    """Több szálon ugyanaz az eredmény (a mentés oldalsorrendben a fő szálon), és a hívások
+    ténylegesen átfednek."""
+    _, serial_rows, serial_adapter = parallel_run(tmp_path, 1)
+    parallel, parallel_rows, parallel_adapter = parallel_run(tmp_path, 3)
+    assert serial_rows == parallel_rows and len(parallel_rows) == 6
+    assert (parallel.pages, parallel.llm_calls, parallel.rows) == (6, 6, 6)
+    assert serial_adapter.peak == 1 and parallel_adapter.peak >= 2
+
+
+def test_budget_guard_counts_the_calls_in_flight(tmp_path):
+    """Amíg egy hívás fut, a legnagyobb költsége foglalt: a második hívás, amely vele együtt
+    a küszöb fölé vinné, nem indul; a futó hívás után igen."""
+    con = one_page()
+    release, started = threading.Event(), threading.Event()
+
+    class Blocking(FakeAdapter):
+        def call(self, model, schema, prompt, input):
+            started.set()
+            release.wait(5)
+            return super().call(model, schema, prompt, input)
+
+    adapter = Blocking([reply(), reply()])
+    ledger_path = tmp_path / "ledger.jsonl"
+    client = LLMClient(con, adapter, CONFIG, ledger_path, lambda: NOON,
+                       Retry(sleep=lambda _: None))
+    worst = client.worst_case_usd("p", "x", NOON.date())
+    ledger.append({"model": "gemini-3.8-flash",
+                   "cost_usd": client.provider.stop_usd - 1.5 * worst}, ledger_path)
+    first = threading.Thread(target=client.bind(con.cursor()).extract,
+                             args=(BlockExtraction, "p", "x"), kwargs={"domain": "d"})
+    first.start()
+    assert started.wait(5)
+    with pytest.raises(BudgetExceeded):
+        client.extract(BlockExtraction, "p", "x", domain="d")
+    release.set()
+    first.join(5)
+    client.extract(BlockExtraction, "p", "x", domain="d")
+    assert len(adapter.calls) == 2
+
+
+# ---------------------------------------------------------------------------
+# inkrementális futás
+# ---------------------------------------------------------------------------
+
+
+def hashed_product_site():
+    con = product_site()
+    con.execute("UPDATE pages SET raw_html_hash = 'h-' || page_id")
+    return con
+
+
+def incremental_run(con, adapter, tmp_path, **options):
+    client = LLMClient(con, adapter, CONFIG, tmp_path / "ledger.jsonl", lambda: NOON,
+                       Retry(sleep=lambda _: None))
+    return run_llm(con, client, reuse=True, **options)
+
+
+def test_unchanged_pages_reuse_their_extraction_without_calls(tmp_path):
+    con = hashed_product_site()
+    adapter = PageAdapter(delay=0)
+    first = incremental_run(con, adapter, tmp_path)
+    before = mentions(con)
+    second = incremental_run(con, adapter, tmp_path)
+    assert (first.llm_calls, second.llm_calls, len(adapter.calls)) == (6, 0, 6)
+    assert second.skipped == {"reused_extraction": 6} and mentions(con) == before
+    assert con.execute("SELECT count(*) FROM entity_run_pages WHERE run_id = ? "
+                       "AND input_hash IS NOT NULL AND raw_html_hash IS NOT NULL",
+                       [second.run_id]).fetchone() == (6,)
+
+
+def test_a_changed_page_gets_new_blocks_and_only_it_is_extracted_again(tmp_path):
+    con = hashed_product_site()
+    adapter = PageAdapter(delay=0)
+    incremental_run(con, adapter, tmp_path)
+    (page_id,) = con.execute("SELECT page_id FROM pages WHERE url LIKE '%/2/'").fetchone()
+    changed = html("P2", "<p>A Termék9 az új választás.</p>")
+    con.execute("UPDATE pages SET rendered_html = ?, raw_html_hash = 'uj' WHERE page_id = ?",
+                [zstandard.ZstdCompressor().compress(changed.encode()), page_id])
+    assert build_blocks(con) == 1
+    assert con.execute("SELECT count(*) FROM page_entities WHERE page_id = ?",
+                       [page_id]).fetchone() == (0,)          # a régi blokkok említései
+    guess = estimate_llm(con, CONFIG, "gemini-3.8-flash", None, None, NOON.date(),
+                         reuse_models=("gemini-3.8-flash", None, None))
+    assert (guess.pages, guess.reused) == (1, 5)
+    run = incremental_run(con, adapter, tmp_path)
+    assert run.llm_calls == 1 and len(adapter.calls) == 7
+    assert ("Termék9", 1) in {(name, ordinal) for name, ordinal, *_ in mentions(con)}
+    assert "Termék2" not in {name for name, *_ in mentions(con)}
+
+
+def test_legacy_blocks_are_adopted_without_rebuilding():
+    con = hashed_product_site()
+    build_blocks(con)
+    con.execute("DELETE FROM blocks_built")                  # a 016 előtti adatbázis
+    before = con.execute("SELECT block_id FROM blocks ORDER BY block_id").fetchall()
+    assert build_blocks(con) == 0
+    assert con.execute("SELECT block_id FROM blocks ORDER BY block_id").fetchall() == before
+    assert con.execute("SELECT count(*) FROM blocks_built").fetchone() == (6,)

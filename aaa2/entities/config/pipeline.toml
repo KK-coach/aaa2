@@ -13,3 +13,4 @@ save = true           # mentés az említés- és entitástáblába; false: csak
 
 [limits]
 max_usd = 2.0         # a becsült költség felső határa; fölötte a futás nem indul, és a futás közben is itt áll meg
+workers = 6           # ennyi oldal LLM-lépései futnak egyszerre (a mentés sorrendben); 1: sorban

@@ -4,7 +4,14 @@ from datetime import date
 import pytest
 
 from aaa2.llm.client import LLMClient, open_clients
-from aaa2.llm.config import CONFIG_PATH, PriceError, Usage, load_config
+from aaa2.llm.config import (
+    CONFIG_PATH,
+    Credentials,
+    PriceError,
+    Usage,
+    load_config,
+    load_site_credentials,
+)
 
 CONFIG = load_config()
 TEXT = CONFIG_PATH.read_text(encoding="utf-8")
@@ -26,7 +33,7 @@ def test_defaults():
         "claude-opus-5-5", "claude-sonnet-5", "claude-haiku-4-5-20251001")
     assert providers["gemini"].thinking_level == "low"
     assert [(p.budget_usd, p.stop_usd) for p in providers.values()] == [
-        (10.0, 10.0), (5.0, 4.5), (5.0, 4.0)]
+        (10.0, 10.0), (10.0, 9.5), (5.0, 4.0)]
     assert "gpt-6-astra" not in {p.model for p in CONFIG.prices}
     assert [p.max_output_tokens for p in providers.values()] == [16000, 32000, 16000]
 
@@ -88,12 +95,12 @@ def test_pipeline_steps_choose_their_models_independently(tmp_path):
 
 
 def test_stop_threshold_is_read_from_config(tmp_path):
-    config = load_config(variant(tmp_path, "stop_usd = 4.5", "stop_usd = 2.0"))
+    config = load_config(variant(tmp_path, "stop_usd = 9.5", "stop_usd = 2.0"))
     assert config.providers["openai"].stop_usd == 2.0
 
 
 @pytest.mark.parametrize(("old", "new", "message"), [
-    ("stop_usd = 4.5", "stop_usd = 5.5", r"\[openai\]: a leállási küszöb"),
+    ("stop_usd = 9.5", "stop_usd = 10.5", r"\[openai\]: a leállási küszöb"),
     ("stop_usd = 10.0", "stop_usd = 0", r"\[anthropic\]: a leállási küszöb"),
     ('fallback = "gpt-5.6-terra"\nalternatives = ["gpt-6-sol"]\nuse_fallback = false',
      "use_fallback = true",
@@ -154,3 +161,31 @@ def test_open_clients_takes_a_model_per_provider(tmp_path, monkeypatch):
     assert (clients["anthropic"].model, clients["openai"].model) == (
         "claude-sonnet-5", "gpt-6-luna")
     assert "gemini" in skipped
+
+
+def test_site_credentials_select_the_key_and_the_openai_project(tmp_path, monkeypatch):
+    """Ügyfélmunka: a site-fájl `[llm.openai]` része a saját kulcsot és projektet adja; ha a
+    saját kulcs hiányzik, a szolgáltató kimarad, az alapkulcs nem lép a helyére."""
+    for name in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY_X"):
+        monkeypatch.delenv(name, raising=False)
+    (tmp_path / "ugyfel.hu.toml").write_text(
+        "[llm.openai]\nkey_env = 'OPENAI_API_KEY_X'\nproject = 'proj_x'\n", encoding="utf-8")
+    credentials = load_site_credentials("ugyfel.hu", tmp_path)
+    assert credentials == {"openai": Credentials("OPENAI_API_KEY_X", "proj_x")}
+    assert load_site_credentials("nincs.hu", tmp_path) == {}
+    env = tmp_path / ".env"
+    env.write_text("OPENAI_API_KEY=alap\nOPENAI_API_KEY_X=ugyfel\n", encoding="utf-8")
+    clients, _ = open_clients(None, env_file=env, credentials=credentials)
+    sdk = clients["openai"].adapter.client
+    assert (sdk.api_key, sdk.project) == ("ugyfel", "proj_x")
+    env.write_text("OPENAI_API_KEY=alap\n", encoding="utf-8")
+    clients, skipped = open_clients(None, env_file=env, credentials=credentials)
+    assert "openai" not in clients and skipped["openai"] == "nincs OPENAI_API_KEY_X"
+
+
+@pytest.mark.parametrize("body", ["[llm.anthropic]\nproject = 'p'\n",
+                                  "[llm.openai]\nkey = 'x'\n", "[llm.openai]\nkey_env = 1\n"])
+def test_site_credentials_are_validated(tmp_path, body):
+    (tmp_path / "x.hu.toml").write_text(body, encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_site_credentials("x.hu", tmp_path)

@@ -35,8 +35,8 @@ alternatives = ["gpt-6-sol"]
 use_fallback = false           # true: a fallback modell hív; a gpt-6-astra nem használható
 key_env = "OPENAI_API_KEY"
 max_output_tokens = 32000      # tartalék a hosszú oldalak blokkonkénti említéslistájához
-budget_usd = 5.0
-stop_usd = 4.5
+budget_usd = 10.0              # 2026-09-30: listaáron; a valós számla az ingyenes keret miatt 0
+stop_usd = 9.5
 
 [gemini]
 model = "gemini-3.8-flash"
