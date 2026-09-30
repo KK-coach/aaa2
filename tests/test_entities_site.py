@@ -455,6 +455,23 @@ def test_confident_wikidata_merges_language_pairs_and_excluded_entities_get_no_l
     assert status_of("tech", ["type of object"], "") == "probable"
 
 
+def test_confident_technology_classes_become_tech():
+    from aaa2.entities.knowledge import retype_tech_classes
+    con = business_site()
+    for name, qid, status in (("software", "Q7397", "confident"), ("szoftver", "Q7397",
+                                                                    "probable"),
+                              ("Mérés", "Q12453", "confident")):
+        con.execute("INSERT INTO entities (name, type, aliases, source, created_at, wikidata_id, "
+                    "wikidata_status) VALUES (?, 'concept', [], 'llm', ?, ?, ?)",
+                    [name, NOON, qid, status])
+    assert retype_tech_classes(con) == 1
+    assert con.execute("SELECT name, type, type_changed_from FROM entities WHERE source = 'llm' "
+                       "ORDER BY name").fetchall() == [
+        ("Mérés", "concept", None), ("software", "tech", "concept"),
+        ("szoftver", "concept", None)]                         # csak a biztos QID
+    assert retype_tech_classes(con) == 0
+
+
 def exec_site(root_lang="hu"):
     service = ld({"@type": "Service", "name": "Execution", "url": "https://pelda.hu/en/exec/"})
     hu_body = ("<main><h1>Megvalósítás</h1><h2>Két munkamód</h2><h3>Közvetlen implementálás</h3>"

@@ -219,6 +219,37 @@ def test_brands_without_products_become_aliases_or_orphans(shop_config):
                                                            ("Pelda Webshop", "orphan_brand_site")]
 
 
+def test_category_named_products_and_truncated_site_names_merge(shop_config):
+    con = shop_site()
+    run_rules(con)
+    product = f"{SHOP}/spd/a"
+    llm_entity(con, product, "klíma", "Klima", "product", "physical_good")   # a kategória neve
+    con.execute("UPDATE blocks SET text = 'Acme Nordic 2,6 kW oldalfali klíma - Pelda Web' "
+                "WHERE kind = 'title' AND page_id = (SELECT page_id FROM pages WHERE url = ?)",
+                [product])
+    cut = llm_entity(con, product, "Pelda Web", "Pelda Web", "org")          # csonkolt site-név
+    whole = llm_entity(con, product, "Leírás", "Pelda We", "org")            # nem title-ben
+    con.execute("UPDATE page_entities SET position = 'title' WHERE entity_id = ?", [cut])
+    run = run_site(con, clock=lambda: NOON)
+    assert run.shop["category_products"] == ["Klima"]
+    assert run.shop["site_name_cuts"] == ["Pelda Web"]
+    rows = {name: kind for name, kind in con.execute("SELECT name, type FROM entities")
+            .fetchall()}
+    assert "Klima" not in rows and rows["Klíma"] == "concept" and "Pelda Web" not in rows
+    assert con.execute("SELECT type FROM entities WHERE entity_id = ?", [whole]).fetchone() \
+        == ("org",)
+    site_org, aliases = con.execute("SELECT entity_id, aliases FROM entities WHERE name = "
+                                    "'Pelda Webshop'").fetchone()
+    assert "Pelda Web" not in (aliases or []) and con.execute(
+        "SELECT count(*) FROM entity_aliases WHERE entity_id = ? AND alias = 'Pelda Web'",
+        [site_org]).fetchone() == (0,)                              # a csonk nem alias
+    assert con.execute("SELECT count(*) FROM page_entities WHERE entity_id = ? AND position = "
+                       "'title'", [site_org]).fetchone()[0] >= 1
+    assert sorted(con.execute("SELECT removed_name, rule FROM merge_log WHERE rule IN "
+                              "('shop_category', 'site_name_cut')").fetchall()) == [
+        ("Klima", "shop_category"), ("Pelda Web", "site_name_cut")]
+
+
 def test_family_trimming_nesting_and_prefix_owner():
     assert trim_family(["LG", "ThermaV", "R290", "HYDRO", "EGYSÉGGEL"]) == ["LG", "ThermaV"]
     assert trim_family(["Cascade", "Nordic", "ECO"]) == ["Cascade", "Nordic", "ECO"]

@@ -318,7 +318,8 @@ def entities(
     if linked is not None:
         typer.echo(f"tudásbázis: {linked.entities} entitás; Wikidata biztos {linked.confident}, "
                    f"valószínű {linked.probable}, nincs {linked.none}; összevonás "
-                   f"{linked.merged}; hibás lekérdezés miatt ellenőrizetlen {linked.errors}")
+                   f"{linked.merged}; hibás lekérdezés miatt ellenőrizetlen {linked.errors}; "
+                   f"technológiai osztály → tech {linked.retyped}")
     for kind, count, rows in con.execute(
         "SELECT e.type, count(DISTINCT e.entity_id), count(*) FROM entities e "
         "JOIN page_entities pe USING (entity_id) "
