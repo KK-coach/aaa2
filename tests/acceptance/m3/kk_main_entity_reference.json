@@ -1,6 +1,6 @@
 {
  "rules": "Az oldal fő entitása (M3 spec, 3. pont): az az entitás, amelyről az oldal ténylegesen szól; a kanonikus nevén, ahogy az oldalon áll. `main_entity`: a név, vagy null, ha az oldal segédoldal (kapcsolat, jogi oldal, lista) vagy nem szól egy entitásról; `support`: true, ha segédoldal; `secondary`: legfeljebb két további entitás, ha az oldal összehasonlító vagy több témájú; `note`: rövid indoklás, ha a döntés nem magától értetődő.",
- "status": "sablon, kitöltendő",
+ "status": "draft (Claude, 2026-09-30), Krisztián jóváhagyására",
  "pages": [
   {
    "url": "https://kk.coach/",
@@ -8,10 +8,16 @@
    "h1": "Build Organic Growth Across Google and AI Search",
    "role": "home",
    "lang": "en",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "kk.coach",
+   "secondary": [
+    "organic growth"
+   ],
+   "support": false,
+   "note": "kezdőoldal: a site maga",
+   "aliases": [
+    "Kk.coach",
+    "KK"
+   ]
   },
   {
    "url": "https://kk.coach/1-01/",
@@ -21,8 +27,8 @@
    "lang": "en",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "bloglista"
   },
   {
    "url": "https://kk.coach/about/",
@@ -30,10 +36,16 @@
    "h1": "Growth that is measured, built, and accountable.",
    "role": "support",
    "lang": "en",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "Krisztian Kiss",
+   "secondary": [
+    "kk.coach"
+   ],
+   "support": false,
+   "note": "a rólam-oldal a személyről szól; nem segédoldal",
+   "aliases": [
+    "Kiss Krisztián",
+    "Kiss Krisztian"
+   ]
   },
   {
    "url": "https://kk.coach/ai-search-geo-aeo/",
@@ -43,8 +55,8 @@
    "lang": "en",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "kategória-archívum (lista)"
   },
   {
    "url": "https://kk.coach/ai-search-is-not-just-an-seo-problem-the-b2b-buyer-journey-is-moving-somewhere-else/",
@@ -52,10 +64,17 @@
    "h1": "AI search is not just an SEO problem. The B2B buyer journey is moving somewhere else",
    "role": "article",
    "lang": "en",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "AI search",
+   "secondary": [
+    "B2B buyer journey"
+   ],
+   "support": false,
+   "note": "cikk: a téma a fő entitás",
+   "aliases": [
+    "AI keresés",
+    "AI-keresés",
+    "AI search impact"
+   ]
   },
   {
    "url": "https://kk.coach/contact/",
@@ -65,8 +84,8 @@
    "lang": "en",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "kapcsolat"
   },
   {
    "url": "https://kk.coach/hu/",
@@ -74,10 +93,16 @@
    "h1": "Növeld a bevételeid adat & AI vezérelt ORganikus növekedési Tanácsadóval",
    "role": "home",
    "lang": "hu",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "kk.coach",
+   "secondary": [
+    "organic growth"
+   ],
+   "support": false,
+   "note": "kezdőoldal",
+   "aliases": [
+    "Kk.coach",
+    "KK"
+   ]
   },
   {
    "url": "https://kk.coach/hu/1-01-2/",
@@ -87,8 +112,8 @@
    "lang": "hu",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "bloglista"
   },
   {
    "url": "https://kk.coach/hu/14-kal-csokkent-az-organikus-kattintas-mikozben-a-poziciok-nem-romlottak-b2b-saas-case-study-az-ai-search-hatasarol/",
@@ -96,10 +121,17 @@
    "h1": "14%-kal csökkent az organikus kattintás, miközben a pozíciók nem romlottak: B2B SaaS case study az AI search hatásáról",
    "role": "article",
    "lang": "hu",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "AI search",
+   "secondary": [
+    "organic click-through rate"
+   ],
+   "support": false,
+   "note": "esettanulmány: az AI search hatása az organikus kattintásokra",
+   "aliases": [
+    "AI keresés",
+    "AI-keresés",
+    "AI search impact"
+   ]
   },
   {
    "url": "https://kk.coach/hu/az-ai-search-nem-csak-seo-problema-a-b2b-vasarloi-ut-mashova-koltozik/",
@@ -107,10 +139,17 @@
    "h1": "Az AI search nem csak SEO-probléma. A B2B vásárlói út máshova költözik",
    "role": "article",
    "lang": "hu",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "AI search",
+   "secondary": [
+    "B2B buyer journey"
+   ],
+   "support": false,
+   "note": null,
+   "aliases": [
+    "AI keresés",
+    "AI-keresés",
+    "AI search impact"
+   ]
   },
   {
    "url": "https://kk.coach/hu/geo-aeo-hu/14-kal-csokkent-az-organikus-kattintas-mikozben-a-poziciok-nem-romlottak-b2b-saas-case-study-az-ai-search-hatasarol/",
@@ -118,10 +157,17 @@
    "h1": "14%-kal csökkent az organikus kattintás, miközben a pozíciók nem romlottak: B2B SaaS case study az AI search hatásáról",
    "role": "article",
    "lang": "hu",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "AI search",
+   "secondary": [
+    "organic click-through rate"
+   ],
+   "support": false,
+   "note": "ugyanannak a cikknek egy második URL-je (kategória-útvonal alatt); a kannibalizáció-szabálynak ezt duplikátumként kell kezelnie, ha kanonikusított, egyébként valódi megállapítás",
+   "aliases": [
+    "AI keresés",
+    "AI-keresés",
+    "AI search impact"
+   ]
   },
   {
    "url": "https://kk.coach/hu/kapcsolat/",
@@ -131,8 +177,8 @@
    "lang": "hu",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "kapcsolat"
   },
   {
    "url": "https://kk.coach/hu/megoldas/",
@@ -142,8 +188,8 @@
    "lang": "hu",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "a megoldások gyűjtőoldala (lista); a /hu/megoldasok/ duplikátuma; elfogadható alternatíva: 'Organic Growth System'"
   },
   {
    "url": "https://kk.coach/hu/megoldasok/",
@@ -153,8 +199,8 @@
    "lang": "hu",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "a megoldások gyűjtőoldala (lista); elfogadható alternatíva: 'Organic Growth System'"
   },
   {
    "url": "https://kk.coach/hu/megoldasok/geo-ai-kereso-optimalizalas/",
@@ -162,10 +208,15 @@
    "h1": "Az AI megkérdőjelezi, hogy a céged egyáltalán létezik-e.",
    "role": "offer",
    "lang": "hu",
-   "main_entity": null,
+   "main_entity": "GEO — AI Visibility",
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": false,
+   "note": "ajánlatoldal; a H1 nem tartalmazza az entitást (várt H1-megállapítás)",
+   "aliases": [
+    "GEO – AI láthatóság",
+    "GEO",
+    "Generative Engine Optimization"
+   ]
   },
   {
    "url": "https://kk.coach/hu/megoldasok/megvalositas/",
@@ -173,10 +224,14 @@
    "h1": "Az ötletek nem hoznak növekedést. A megvalósítás igen.",
    "role": "offer",
    "lang": "hu",
-   "main_entity": null,
+   "main_entity": "Execution",
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": false,
+   "note": "ajánlatoldal; a H1 'megvalósítás' szót tartalmaz",
+   "aliases": [
+    "Kivitelezés",
+    "Megvalósítás"
+   ]
   },
   {
    "url": "https://kk.coach/hu/megoldasok/meres/",
@@ -184,10 +239,13 @@
    "h1": "Mérés nélküli marketing nem más, mint találgatás.",
    "role": "offer",
    "lang": "hu",
-   "main_entity": null,
+   "main_entity": "Measurement & Data Architecture",
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": false,
+   "note": "ajánlatoldal; a H1-ben csak a 'mérés' áll",
+   "aliases": [
+    "Mérés és adatarchitektúra"
+   ]
   },
   {
    "url": "https://kk.coach/hu/megoldasok/seo/",
@@ -195,10 +253,14 @@
    "h1": "Úgy érzed lehetne több is a keresőkből a forgalom? A SEO a megoldás",
    "role": "offer",
    "lang": "hu",
-   "main_entity": null,
+   "main_entity": "SEO",
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": false,
+   "note": null,
+   "aliases": [
+    "Keresőoptimalizálás (SEO)",
+    "Keresőoptimalizálás"
+   ]
   },
   {
    "url": "https://kk.coach/hu/megoldasok/ux-es-konverzio/",
@@ -206,10 +268,13 @@
    "h1": "Amikor nem a forgalom a probléma, hanem Az érdeklődők akadnak el útközben.",
    "role": "offer",
    "lang": "hu",
-   "main_entity": null,
+   "main_entity": "UX & Conversion Optimization",
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": false,
+   "note": "ajánlatoldal; a H1 nem tartalmazza az entitást (várt H1-megállapítás)",
+   "aliases": [
+    "UX & Konverzióoptimalizálás"
+   ]
   },
   {
    "url": "https://kk.coach/hu/miert-epitenek-sajat-serp-figyelot/",
@@ -217,10 +282,17 @@
    "h1": "Miért építenék saját SERP figyelőt?",
    "role": "article",
    "lang": "hu",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "SERP tracker",
+   "secondary": [
+    "SEO tools"
+   ],
+   "support": false,
+   "note": "cikk",
+   "aliases": [
+    "SERP figyelő",
+    "SERP-figyelő",
+    "rank tracker"
+   ]
   },
   {
    "url": "https://kk.coach/hu/perspektiva/az-ai-search-nem-csak-seo-problema-a-b2b-vasarloi-ut-mashova-koltozik/",
@@ -228,10 +300,17 @@
    "h1": "Az AI search nem csak SEO-probléma. A B2B vásárlói út máshova költözik",
    "role": "article",
    "lang": "hu",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "AI search",
+   "secondary": [
+    "B2B buyer journey"
+   ],
+   "support": false,
+   "note": "ugyanannak a cikknek egy második URL-je (kategória-útvonal alatt); a kannibalizáció-szabálynak ezt duplikátumként kell kezelnie, ha kanonikusított, egyébként valódi megállapítás",
+   "aliases": [
+    "AI keresés",
+    "AI-keresés",
+    "AI search impact"
+   ]
   },
   {
    "url": "https://kk.coach/hu/rolam/",
@@ -239,10 +318,16 @@
    "h1": "Növekedés, ami mérhető, felépített és számon kérhető.",
    "role": "support",
    "lang": "hu",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "Krisztian Kiss",
+   "secondary": [
+    "kk.coach"
+   ],
+   "support": false,
+   "note": "rólam-oldal",
+   "aliases": [
+    "Kiss Krisztián",
+    "Kiss Krisztian"
+   ]
   },
   {
    "url": "https://kk.coach/hu/seo-hu/",
@@ -252,8 +337,8 @@
    "lang": "hu",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "kategória-archívum"
   },
   {
    "url": "https://kk.coach/hu/seo-hu/seo-ux-esettanulmany-amikor-a-weboldal-sebesseg-mar-nem-technikai-reszlet-hanem-beveteli-kerdes/",
@@ -261,10 +346,17 @@
    "h1": "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
    "role": "article",
    "lang": "hu",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "site speed",
+   "secondary": [
+    "conversion rate"
+   ],
+   "support": false,
+   "note": "ugyanannak a cikknek egy második URL-je (kategória-útvonal alatt); a kannibalizáció-szabálynak ezt duplikátumként kell kezelnie, ha kanonikusított, egyébként valódi megállapítás",
+   "aliases": [
+    "weboldal sebesség",
+    "oldalsebesség",
+    "page speed"
+   ]
   },
   {
    "url": "https://kk.coach/hu/seo-ux-esettanulmany-amikor-a-weboldal-sebesseg-mar-nem-technikai-reszlet-hanem-beveteli-kerdes/",
@@ -272,10 +364,17 @@
    "h1": "SEO/UX Esettanulmány: amikor a weboldal sebesség már nem technikai részlet, hanem bevételi kérdés",
    "role": "article",
    "lang": "hu",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "site speed",
+   "secondary": [
+    "conversion rate"
+   ],
+   "support": false,
+   "note": "esettanulmány",
+   "aliases": [
+    "weboldal sebesség",
+    "oldalsebesség",
+    "page speed"
+   ]
   },
   {
    "url": "https://kk.coach/hu/szerzo-kiss-krisztian/",
@@ -283,10 +382,14 @@
    "h1": "Kiss Krisztián",
    "role": "support",
    "lang": "hu",
-   "main_entity": null,
+   "main_entity": "Krisztian Kiss",
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": false,
+   "note": "szerzői oldal; a rólam-oldallal azonos fő entitás: gyenge kannibalizáció, a riportban alacsony súlyossággal",
+   "aliases": [
+    "Kiss Krisztián",
+    "Kiss Krisztian"
+   ]
   },
   {
    "url": "https://kk.coach/hu/ux/",
@@ -296,8 +399,8 @@
    "lang": "hu",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "kategória-archívum"
   },
   {
    "url": "https://kk.coach/i-built-my-own-serp-tracker-because-most-seo-tools-are-too-much-tool-for-this-job/",
@@ -305,10 +408,17 @@
    "h1": "I built my own SERP tracker because most SEO tools are too much tool for this job",
    "role": "article",
    "lang": "en",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "SERP tracker",
+   "secondary": [
+    "SEO tools"
+   ],
+   "support": false,
+   "note": "cikk",
+   "aliases": [
+    "SERP figyelő",
+    "SERP-figyelő",
+    "rank tracker"
+   ]
   },
   {
    "url": "https://kk.coach/krisztian-kiss/",
@@ -316,10 +426,14 @@
    "h1": "Krisztian Kiss",
    "role": "support",
    "lang": "en",
-   "main_entity": null,
+   "main_entity": "Krisztian Kiss",
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": false,
+   "note": "szerzői oldal",
+   "aliases": [
+    "Kiss Krisztián",
+    "Kiss Krisztian"
+   ]
   },
   {
    "url": "https://kk.coach/organic-clicks-dropped-by-14-while-rankings-stayed-stable-a-b2b-saas-case-study-on-the-impact-of-ai-search/",
@@ -327,10 +441,17 @@
    "h1": "Organic clicks dropped by 14% while rankings stayed stable: a B2B SaaS case study on the impact of AI search",
    "role": "article",
    "lang": "en",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "AI search",
+   "secondary": [
+    "organic click-through rate"
+   ],
+   "support": false,
+   "note": "esettanulmány",
+   "aliases": [
+    "AI keresés",
+    "AI-keresés",
+    "AI search impact"
+   ]
   },
   {
    "url": "https://kk.coach/perspective/",
@@ -340,8 +461,8 @@
    "lang": "en",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "kategória-archívum"
   },
   {
    "url": "https://kk.coach/privacy-policy/",
@@ -351,8 +472,8 @@
    "lang": "en",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "jogi oldal"
   },
   {
    "url": "https://kk.coach/seo-ux-case-study-when-site-speed-stops-being-a-technical-detail-and-becomes-a-revenue-question/",
@@ -360,10 +481,17 @@
    "h1": "SEO/UX Case Study: When Site Speed Stops Being a Technical Detail and Becomes a Revenue Question",
    "role": "article",
    "lang": "en",
-   "main_entity": null,
-   "secondary": [],
-   "support": null,
-   "note": ""
+   "main_entity": "site speed",
+   "secondary": [
+    "conversion rate"
+   ],
+   "support": false,
+   "note": "esettanulmány",
+   "aliases": [
+    "weboldal sebesség",
+    "oldalsebesség",
+    "page speed"
+   ]
   },
   {
    "url": "https://kk.coach/seo/",
@@ -373,8 +501,8 @@
    "lang": "en",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "kategória-archívum"
   },
   {
    "url": "https://kk.coach/solutions/",
@@ -384,8 +512,8 @@
    "lang": "en",
    "main_entity": null,
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": true,
+   "note": "a megoldások gyűjtőoldala (lista); elfogadható alternatíva: 'Organic Growth System'"
   },
   {
    "url": "https://kk.coach/solutions/execution/",
@@ -393,10 +521,14 @@
    "h1": "Ideas don’t create growth. Execution does.",
    "role": "offer",
    "lang": "en",
-   "main_entity": null,
+   "main_entity": "Execution",
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": false,
+   "note": null,
+   "aliases": [
+    "Kivitelezés",
+    "Megvalósítás"
+   ]
   },
   {
    "url": "https://kk.coach/solutions/geo-ai-visibility/",
@@ -404,10 +536,15 @@
    "h1": "Your brand doesn’t appear when AI systems answer.",
    "role": "offer",
    "lang": "en",
-   "main_entity": null,
+   "main_entity": "GEO — AI Visibility",
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": false,
+   "note": "a H1 nem tartalmazza az entitást",
+   "aliases": [
+    "GEO – AI láthatóság",
+    "GEO",
+    "Generative Engine Optimization"
+   ]
   },
   {
    "url": "https://kk.coach/solutions/measurement-data-architecture/",
@@ -415,10 +552,13 @@
    "h1": "Marketing without measurement is structured guessing.",
    "role": "offer",
    "lang": "en",
-   "main_entity": null,
+   "main_entity": "Measurement & Data Architecture",
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": false,
+   "note": "a H1 nem tartalmazza az entitást",
+   "aliases": [
+    "Mérés és adatarchitektúra"
+   ]
   },
   {
    "url": "https://kk.coach/solutions/seo/",
@@ -426,10 +566,14 @@
    "h1": "B2B & E-commerce SEO Consulting That Moves the Revenue.",
    "role": "offer",
    "lang": "en",
-   "main_entity": null,
+   "main_entity": "SEO",
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": false,
+   "note": null,
+   "aliases": [
+    "Keresőoptimalizálás (SEO)",
+    "Keresőoptimalizálás"
+   ]
   },
   {
    "url": "https://kk.coach/solutions/ux-conversion-optimization/",
@@ -437,10 +581,14 @@
    "h1": "Traffic isn’t the problem. Friction is.",
    "role": "offer",
    "lang": "en",
-   "main_entity": null,
+   "main_entity": "UX & Conversion Optimization",
    "secondary": [],
-   "support": null,
-   "note": ""
+   "support": false,
+   "note": "a H1 nem tartalmazza az entitást",
+   "aliases": [
+    "UX & Konverzióoptimalizálás"
+   ]
   }
- ]
+ ],
+ "article_rule": "cikkoldalon a fő entitás a cikk témája (a cikk maga az oldal csomópontja, 'about' éllel a témához) — javaslat, Krisztián döntése"
 }

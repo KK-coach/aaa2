@@ -6,6 +6,7 @@
         --site marketinglens.com=data/m3/marketinglens.duckdb \\
         --site shop.duexhungary.hu=data/m3/duex.duckdb --out data/m3/out/main-entity-compare.csv
     python -m tests.acceptance.m3_main_entity template --db data/m3/kk-coach.duckdb
+    python -m tests.acceptance.m3_main_entity score --db data/m3/kk-coach.duckdb
 
 - `compare`: oldalanként a referencia `primary_entities`-e, a kimenet fő és másodlagos entitása
   (név, típus, megbízhatóság, bizonyítékok), és az egyezés: `fő` (a fő entitás neve vagy aliasa
@@ -14,12 +15,18 @@
   `nincs fő entitás`, `eltér`. A gráfot előbb az `aaa graph` építi fel. Csak olvas.
 - `template`: a site összes oldal-csomópontja (URL, title, H1, oldalszerep, nyelv) kitöltendő
   mezőkkel, a kimenet nélkül, `tests/acceptance/m3/kk_main_entity_reference.json`.
+- `score`: a kitöltött referencia (`main_entity`, `aliases`, `support`, a `note`-ban az
+  „elfogadható alternatíva: '…'”) a kimenettel szemben: `fő` (a fő entitás neve vagy aliasa a
+  referencia nevének vagy aliasának kulcsa), `alternatíva`, `segédoldal: egyezik`, `másodlagos`,
+  `segédoldal: van fő entitás`, `nincs fő entitás`, `eltér`; helyes a `fő`, az `alternatíva` és
+  a `segédoldal: egyezik`.
 """
 from __future__ import annotations
 
 import argparse
 import csv
 import json
+import re
 from collections import Counter
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -34,6 +41,8 @@ from tests.acceptance.annotation import LOCKED_DIR
 DEV_DIR = Path(__file__).parent / "dev_pages"
 DEV_PAGES = ("kk_coach_meres_hu", "ngx_accordion_en")
 TEMPLATE_FILE = Path(__file__).parent / "m3" / "kk_main_entity_reference.json"
+ALTERNATIVE = re.compile(r"elfogadható alternatíva: '([^']+)'")
+CORRECT = ("fő", "alternatíva", "segédoldal: egyezik")
 TEMPLATE_RULES = (
     "Az oldal fő entitása (M3 spec, 3. pont): az az entitás, amelyről az oldal ténylegesen szól; "
     "a kanonikus nevén, ahogy az oldalon áll. `main_entity`: a név, vagy null, ha az oldal "
@@ -79,6 +88,79 @@ def verdict(primary: list[str], main: tuple | None, secondary: list[tuple],
     return "eltér"
 
 
+def page_result(con: duckdb.DuckDBPyConnection, url: str) -> tuple:
+    """A gráf kimenete az oldalra: (page_nodes-sor, fő entitás, másodlagosak); a lekérdezés és
+    a záró perjel nélküli URL-lel is."""
+    row = con.execute("SELECT page_id, role, support_kind, main_status FROM page_nodes "
+                      "WHERE url = ?", [url]).fetchone()
+    if row is None:
+        row = next((r[:4] for r in con.execute(
+            "SELECT page_id, role, support_kind, main_status, url FROM page_nodes").fetchall()
+            if page_url(r[4]) == page_url(url)), None)
+    if row is None:
+        return None, None, []
+    chosen = con.execute(
+        "SELECT m.entity_id, m.role, m.confidence, m.evidence, e.name, e.type, e.subtype "
+        "FROM page_main_entity m JOIN entities e USING (entity_id) WHERE m.page_id = ? "
+        "ORDER BY m.rank", [row[0]]).fetchall()
+    return (row, next((c for c in chosen if c[1] == "main"), None),
+            [c for c in chosen if c[1] == "secondary"])
+
+
+def reference_verdict(page: dict, main: tuple | None, secondary: list[tuple],
+                      con: duckdb.DuckDBPyConnection) -> str:
+    """A kitöltött referencia egy oldala a kimenettel szemben (lásd a modul leírását)."""
+    alternatives = {alias_key(a) for a in ALTERNATIVE.findall(page.get("note") or "")}
+    if page.get("support") or page.get("main_entity") is None:
+        if main is None:
+            return "segédoldal: egyezik"
+        return "alternatíva" if alternatives & names_of(con, main[0]) \
+            else "segédoldal: van fő entitás"
+    keys = {alias_key(n) for n in [page["main_entity"], *(page.get("aliases") or [])] if n}
+    if main is None:
+        return "nincs fő entitás"
+    mine = names_of(con, main[0])
+    if keys & mine:
+        return "fő"
+    if alternatives & mine:
+        return "alternatíva"
+    if any(keys & names_of(con, s[0]) for s in secondary):
+        return "másodlagos"
+    return "eltér"
+
+
+def score(db: Path, reference: Path, out: Path) -> Counter:
+    data = json.loads(reference.read_text(encoding="utf-8"))
+    rows, counts = [], Counter()
+    con = duckdb.connect(str(db), read_only=True)
+    try:
+        for page in data["pages"]:
+            row, main, secondary = page_result(con, page["url"])
+            if row is None:
+                raise SystemExit(f"{page['url']}: az oldal nincs a gráfban ({db})")
+            result = reference_verdict(page, main, secondary, con)
+            counts[result] += 1
+            rows.append({
+                "url": page["url"], "referencia": page.get("main_entity") or "(segédoldal)",
+                "szerep": row[1], "segédoldal": row[2] or "", "állapot": row[3],
+                "fő entitás": main[4] if main else "",
+                "megbízhatóság": main[2] if main else "",
+                "bizonyítékok": evidence_text(json.loads(main[3])) if main else "",
+                "másodlagos": "; ".join(s[4] for s in secondary), "egyezés": result})
+    finally:
+        con.close()
+    _write(out, rows)
+    return counts
+
+
+def _write(out: Path, rows: list[dict]) -> None:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def compare(sites: dict[str, Path], out: Path) -> Counter:
     rows, counts = [], Counter()
     for page in reference_pages():
@@ -88,20 +170,9 @@ def compare(sites: dict[str, Path], out: Path) -> Counter:
             raise SystemExit(f"{page['page_id']}: nincs adatbázis a {host} site-hoz")
         con = duckdb.connect(str(db), read_only=True)
         try:
-            row = con.execute("SELECT page_id, role, support_kind, main_status FROM page_nodes "
-                              "WHERE url = ?", [page["url"]]).fetchone()
-            if row is None:
-                row = next((r for r in con.execute(
-                    "SELECT page_id, role, support_kind, main_status, url FROM page_nodes"
-                    ).fetchall() if page_url(r[4]) == page_url(page["url"])), None)
+            row, main, secondary = page_result(con, page["url"])
             if row is None:
                 raise SystemExit(f"{page['page_id']}: az oldal nincs a gráfban ({db})")
-            chosen = con.execute(
-                "SELECT m.entity_id, m.role, m.confidence, m.evidence, e.name, e.type, e.subtype "
-                "FROM page_main_entity m JOIN entities e USING (entity_id) WHERE m.page_id = ? "
-                "ORDER BY m.rank", [row[0]]).fetchall()
-            main = next((c for c in chosen if c[1] == "main"), None)
-            secondary = [c for c in chosen if c[1] == "secondary"]
             result = verdict(page["primary"], main, secondary, con)
         finally:
             con.close()
@@ -115,11 +186,7 @@ def compare(sites: dict[str, Path], out: Path) -> Counter:
             "megbízhatóság": main[2] if main else "",
             "bizonyítékok": evidence_text(json.loads(main[3])) if main else "",
             "másodlagos": "; ".join(s[4] for s in secondary), "egyezés": result})
-    out.parent.mkdir(parents=True, exist_ok=True)
-    with out.open("w", encoding="utf-8-sig", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
-        writer.writeheader()
-        writer.writerows(rows)
+    _write(out, rows)
     return counts
 
 
@@ -142,7 +209,9 @@ def template(db: Path, out: Path = TEMPLATE_FILE) -> int:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["compare", "template"])
+    parser.add_argument("command", choices=["compare", "template", "score"])
+    parser.add_argument("--reference", type=Path, default=TEMPLATE_FILE,
+                        help="score: a kitöltött referencia")
     parser.add_argument("--site", action="append", default=[], help="compare: domain=adatbázis")
     parser.add_argument("--db", type=Path, help="template: a site-adatbázis")
     parser.add_argument("--out", type=Path, default=None)
@@ -154,7 +223,15 @@ def main(argv: list[str] | None = None) -> None:
         print(f"{out}: " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())))
         return
     if args.db is None:
-        raise SystemExit("template: --db kell")
+        raise SystemExit(f"{args.command}: --db kell")
+    if args.command == "score":
+        out = args.out or Path(f"data/m3/out/{args.db.stem}-main-entity-score.csv")
+        counts = score(args.db, args.reference, out)
+        total = sum(counts.values())
+        good = sum(counts[k] for k in CORRECT)
+        print(f"{out}: helyes {good}/{total} ({100 * good / total:.1f}%); "
+              + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())))
+        return
     out = args.out or TEMPLATE_FILE
     print(f"{out}: {template(args.db, out)} oldal")
 

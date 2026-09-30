@@ -1,14 +1,15 @@
 -- 018: entitásgráf (M3 spec, „M3 — Entitásgráf”, 2–3. és 5–6. pont; M3/1).
 --
 -- page_nodes: az alkalmas HTML-oldalak csomópontja: URL, oldalszerep (offer, article,
---   component, product, category, listing, home, support), a segédoldal fajtája (legal, contact,
+--   component, product, category, listing, home, profile, support), a segédoldal fajtája (legal, contact,
 --   list, checkout, placeholder), title, H1, nyelv, az oldalcsoport és a hreflang-pár URL-jei;
 --   main_status: main (van fő entitása), support (segédoldal, nincs), none (nincs elég
 --   bizonyíték); decision: a döntés az összes jelölttel és bizonyítékkal (visszakövetéshez).
 -- edges: from → to él (page vagy entity végpontokkal): mentions (oldal → entitás, az említések
 --   súlyozva), main_entity (oldal → entitás), part_of, brand_of, offers (az M2/6 kapcsolatai),
---   is_a (termék → kategória a kategóriaoldalból; entitás → entitás a biztos Wikidata-osztályból);
---   a forrással, a bizonyítékkal és a súllyal.
+--   is_a (termék → kategória a kategóriaoldalból; entitás → entitás a biztos Wikidata-osztályból),
+--   about (a cikk entitása → a témája, a cikkoldal fő entitása); a forrással, a bizonyítékkal és
+--   a súllyal.
 -- page_main_entity: az oldal fő (main) és legfeljebb két másodlagos (secondary) entitása, a
 --   megbízhatósággal (strong / medium / weak) és a bizonyítékok listájával;
 --   external_confirmation: a külső megerősítés helye (M3b), üres.
@@ -38,7 +39,8 @@ CREATE TABLE IF NOT EXISTS edges (
     to_kind         VARCHAR NOT NULL CHECK (to_kind IN ('page', 'entity')),
     to_id           INTEGER NOT NULL,
     type            VARCHAR NOT NULL CHECK (type IN (
-                        'mentions', 'main_entity', 'part_of', 'brand_of', 'offers', 'is_a')),
+                        'mentions', 'main_entity', 'part_of', 'brand_of', 'offers', 'is_a',
+                        'about')),
     source          VARCHAR NOT NULL,
     evidence        JSON,
     weight          DOUBLE

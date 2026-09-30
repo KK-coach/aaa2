@@ -29,7 +29,7 @@ from aaa2.entities.rules import run_rules
 from aaa2.entities.site import run_site
 from aaa2.entities.v3 import V3Step, load_pipeline, v3_fingerprint
 from aaa2.entities.validate import KG_DAILY_QUOTA, _Api, validate_entities
-from aaa2.functions.graph import build_graph, export_csv
+from aaa2.functions.graph import build_graph, export_csv, export_rejected
 from aaa2.llm import ledger
 from aaa2.llm.client import Retry, check_models, open_clients
 from aaa2.llm.config import PIPELINE_OFF, load_config, load_site_credentials
@@ -382,6 +382,8 @@ def graph(
         patterns = load_site_config(site).page_types if site else {}
         run = build_graph(con, page_type_patterns=patterns, superclasses=superclasses)
         paths = export_csv(con, out, stem)
+        if superclasses is not None:
+            paths["is_a_rejected"] = export_rejected(con, run, out, stem)
     finally:
         if shared is not None:
             shared.close()

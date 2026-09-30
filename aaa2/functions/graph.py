@@ -4,19 +4,23 @@ kimenetéből. Minden futás újraépíti a `page_nodes`, `edges`, `page_main_en
 
 - Oldal-csomópont (`page_nodes`): az M2/6 oldalszerepe (`pages.page_roles`), a webshopon a
   kategória- és a márka × kategória oldal (`category`, `listing`), a kezdőoldal (`home`: maga a
-  kezdőoldal, vagy a saját hreflang-listájában álló nyelvi változata); a segédoldal fajtája:
-  `legal` (jogi, köszönő, hibaoldal: az útvonalban vagy a lekérdezésben szókezdettől álló
-  `pages.SUPPORT_URL_WORDS` szó, `url_has_word`), `contact` (`ContactPage`, vagy entitásoldal-
-  szerep nélkül a `CONTACT_URL_WORDS` szó), `list` (`CollectionPage`, `SearchResultsPage`,
-  márka × kategória lista, és a kategóriaoldal oldalhoz kötött entitás nélkül, pl. a
-  gyökérkategória), `checkout`, `placeholder` (kitöltőszöveg-oldal). Segédoldalnak
-  nincs fő entitása.
+  kezdőoldal, vagy a saját hreflang-listájában álló nyelvi változata), a rólam- és szerzői oldal
+  (`profile`: `PROFILE_TYPES`, vagy segédoldal-szerepnél a `PROFILE_URL_WORDS` szó; nem
+  segédoldal, a fő entitása a személy); a segédoldal fajtája: `legal` (jogi, köszönő,
+  hibaoldal: teljes útvonalszegmens vagy lekérdezés-érték, `pages.support_url`), `contact`
+  (`ContactPage`, vagy entitásoldal-szerep nélkül a `CONTACT_URL_WORDS` szó), `list`
+  (`CollectionPage`, `SearchResultsPage`, márka × kategória lista, a kategóriaoldal oldalhoz
+  kötött entitás nélkül, pl. a gyökérkategória, és a segéd- vagy cikkoldal, amelynek
+  content-blokkjai `LIST_MIN_SHARE`-nél nagyobb részben kivonatok, `teaser_share`),
+  `checkout`, `placeholder` (kitöltőszöveg-oldal). Segédoldalnak nincs fő entitása.
 - Fő entitás (`page_main_entity`), a bizonyítékok erőssége szerint (`EVIDENCE_RANK`):
   1. az oldalhoz kötött entitás (az oldalcsoport bármely tagjához, `anchored`); a kezdőoldalon a
      site entitása (`home`: a `role = brand` entitás, és a márkakapcsolat nélküli, szabályból
-     vagy schemából jött `brand`, mint a `site._site_name_keys`-ben);
-  2. a JSON-LD `about` / `mainEntity` (a név, vagy az `@id` a site csomópontjai vagy oldalai
-     szerint; a kérdés-válasz csomópontok nem számítanak; `schema_about`);
+     vagy schemából jött `brand`, mint a `site._site_name_keys`-ben); az oldalhoz kötött cikk
+     (work/article) nem jelölt: a cikkoldal fő entitása a téma;
+  2. a JSON-LD `about` / `mainEntity` az oldalcsoport bármely tagjáról (a név, vagy az `@id` a
+     site csomópontjai vagy oldalai szerint; a kérdés-válasz csomópontok nem számítanak;
+     `schema_about`); a profiloldalon a legtöbbet említett személy (`profile`);
   3. a kinyerés `primary_entities` listája (a sorszámmal; `primary`);
   4. a title, a H1 és a headingek nem sablon-említései (`title`, `h1`, `heading`); a már
      bizonyítékkal bíró jelöltnél a neve vagy aliasa a H1 és a title szövegében is (`occurs`);
@@ -36,10 +40,12 @@ kimenetéből. Minden futás újraépíti a `page_nodes`, `edges`, `page_main_en
   `page_nodes.decision`-ben.
 - Élek (`edges`): `mentions` (oldal → entitás, a nem sablon-említések pozíció szerinti
   súlyával, `config/graph.toml`), `main_entity` (oldal → entitás; fő 1, másodlagos 0,5), az M2/6
-  kapcsolatai (`part_of`, `brand_of`, `offers`), `is_a`: termék → kategória a kategóriaoldalból
-  (`category_page`, az M2/6 `in_category`-ja), és entitás → entitás a biztos Wikidata-osztályból
-  (`wikidata`: az entitás P31 vagy P279 osztálya egy másik, biztos QID-jű site-entitás; az
-  általános osztályok, `GENERIC_CLASSES`, kimaradnak).
+  kapcsolatai (`part_of`, `brand_of`, `offers`), `about` (cikk → a cikkoldal fő entitása),
+  `is_a`: termék → kategória a kategóriaoldalból (`category_page`, az M2/6 `in_category`-ja), és
+  entitás → entitás a biztos Wikidata-osztályból (`wikidata`: az entitás P31 vagy P279 osztálya
+  egy másik, biztos QID-jű site-entitás; `is_a_reason` szerint kimarad: az általános osztály,
+  `GENERIC_CLASSES`; a P31 nem példány-típusú entitáson, `INSTANCE_TYPES`; tech és concept csak
+  azonos típusú osztályhoz; az elvetettek `export_rejected`).
 - Súly (`entity_weights`): az oldalszám, az említésszám, a szerkezeti helyű oldalak (title, H1,
   heading, navigáció), a fő és a másodlagos oldalak száma, a bejövő belső anchorok (a más
   oldalcsoportokról az entitás fő oldalaira); a sablon-említés és a demó nem számít. A képlet:
@@ -62,12 +68,12 @@ import duckdb
 
 from aaa2.entities.gate import occurs
 from aaa2.entities.pages import (
-    SUPPORT_URL_WORDS,
     PageInfo,
     home_urls,
     page_roles,
     page_types,
     page_url,
+    support_url,
 )
 from aaa2.entities.pages import schema_nodes as page_schema_nodes
 from aaa2.entities.placeholder import placeholder_pages
@@ -75,13 +81,20 @@ from aaa2.entities.rules import alias_key
 from aaa2.entities.site import normal_key
 
 CONFIG_FILE = Path(__file__).parent / "config" / "graph.toml"
-EVIDENCE_RANK = {"anchored": 1, "home": 1, "schema_about": 2, "primary": 3, "h1": 4,
-                 "title": 4, "heading": 4, "top_mentions": 5, "inbound_anchor": 6, "url": 6}
-STRONG = frozenset({"anchored", "home", "schema_about"})
+EVIDENCE_RANK = {"anchored": 1, "home": 1, "schema_about": 2, "profile": 2, "primary": 3,
+                 "h1": 4, "title": 4, "heading": 4, "top_mentions": 5, "inbound_anchor": 6,
+                 "url": 6}
+STRONG = frozenset({"anchored", "home", "schema_about", "profile"})
 EXCLUDED_FLAGS = ("demo", "navigational")
 SUPPORT_SCHEMA = {"ContactPage": "contact", "CollectionPage": "list",
                   "SearchResultsPage": "list", "CheckoutPage": "checkout"}
 CONTACT_URL_WORDS = ("contact", "kapcsolat", "kontakt", "contatti")
+PROFILE_TYPES = frozenset({"AboutPage", "ProfilePage"})
+PROFILE_URL_WORDS = ("about", "rolam", "rolunk", "author", "szerzo")
+LIST_MIN_SHARE = 0.5                     # a teaser-blokkok aránya ennél nagyobb: lista
+EXCERPT_CHARS = 40                       # a kivonat-teaser legalább ennyi jelnyi eleje
+INSTANCE_TYPES = frozenset({"tech", "org", "product", "place", "person"})
+SAME_TYPE_CLASSES = frozenset({"tech", "concept"})
 _SEPARATORS = re.compile(r"[/\-_.?=&]+")
 QUESTION_TYPES = frozenset({"Question", "Answer", "FAQPage"})
 CONTENT_POSITIONS = ("title", "h1", "heading", "body")
@@ -89,9 +102,9 @@ STRUCTURAL_POSITIONS = ("title", "h1", "heading")
 TOP_MIN_MENTIONS = 2
 MAX_SECONDARY = 2
 MAIN_WEIGHT = {"main": 1.0, "secondary": 0.5}
-# entity, concept, thing, object, abstract object, physical object, class, idea
-GENERIC_CLASSES = frozenset({"Q35120", "Q151885", "Q1293220", "Q488383", "Q7184903",
-                             "Q223557", "Q16889133", "Q131841"})
+# entity, concept, method, process, activity, technology, field of study
+GENERIC_CLASSES = frozenset({"Q35120", "Q151885", "Q1799072", "Q3249551", "Q1914636",
+                             "Q11016", "Q2267705"})
 
 
 # ---------------------------------------------------------------------------
@@ -138,6 +151,7 @@ class GraphRun:
     weights: int = 0
     class_lookups: int = 0
     class_failures: int = 0
+    is_a_rejected: list = field(default_factory=list)    # (honnan, hová, tulajdonság, ok)
 
 
 @dataclass
@@ -252,12 +266,22 @@ class _Graph:
         self.id_names = self._schema_ids()
         self.primary = self._primary()
         self.inbound: dict[int, list[tuple[int, str]]] = defaultdict(list)
+        self.outbound: dict[int, list[tuple[int, str]]] = defaultdict(list)
         for from_id, to_id, anchor in con.execute(
                 "SELECT from_page_id, to_page_id, anchor FROM links WHERE to_page_id IS NOT NULL"
                 ).fetchall():
             if from_id in self.roles and to_id in self.roles \
                     and self.roles[from_id].group != self.roles[to_id].group:
                 self.inbound[to_id].append((from_id, anchor or ""))
+                self.outbound[from_id].append((to_id, alias_key(anchor or "")))
+        self.texts: dict[int, list[str]] = defaultdict(list)
+        for page_id, text in con.execute(
+                "SELECT page_id, text FROM blocks WHERE region = 'content' AND kind IN "
+                "('heading', 'paragraph') ORDER BY page_id, ordinal").fetchall():
+            if alias_key(text or ""):
+                self.texts[page_id].append(alias_key(text))
+        self.articles = {e for e, row in self.entities.items() if row[7] is not None
+                         and row[2] == "work" and row[3] == "article"}
 
     def _index(self, entity_id: int, form: str | None) -> None:
         if form and alias_key(form):
@@ -310,12 +334,15 @@ class _Graph:
             return "home", None
         if info.page_id in self.placeholder:
             return info.role, "placeholder"
-        if url_has_word(info.url, SUPPORT_URL_WORDS):
+        if support_url(info.url):
             return "support", "legal"
         if info.role == "support" and url_has_word(info.url, CONTACT_URL_WORDS):
             return info.role, "contact"
         types = {_short(t) for node in self.nodes.get(info.page_id, [])
                  for t in _as_list(node.get("@type"))}
+        if info.role == "support" and (types & PROFILE_TYPES
+                                       or url_has_word(info.url, PROFILE_URL_WORDS)):
+            return "profile", None
         for schema_type, support in SUPPORT_SCHEMA.items():
             if schema_type in types:
                 return info.role, support
@@ -325,16 +352,35 @@ class _Graph:
             anchored = any(row[7] in members for e, row in self.entities.items()
                            if row[7] is not None and e not in self.excluded)
             return ("category", None) if anchored else ("listing", "list")
+        if info.role in ("support", "article") and self.teaser_share(info) > LIST_MIN_SHARE:
+            return "listing", "list"
         return info.role, None
+
+    def teaser_share(self, info: PageInfo) -> float:
+        """A tartalmi heading- és bekezdésblokkok (a H1 nélkül) hányad része teaser: egy más
+        oldalcsoportra mutató link szövege (cím), vagy legalább `EXCERPT_CHARS` jelnyi eleje a
+        linkelt oldal egy blokkjának eleje (kivonat)."""
+        blocks = [b for b in self.texts.get(info.page_id, []) if b != alias_key(info.h1 or "")]
+        if not blocks:
+            return 0.0
+        links = self.outbound.get(info.page_id, [])
+        anchors = {anchor for _, anchor in links if anchor}
+        target = [text for page in {t for t, _ in links} for text in self.texts.get(page, [])]
+        teasers = sum(1 for b in blocks if b in anchors or (
+            len(b) >= EXCERPT_CHARS and any(t.startswith(b[:EXCERPT_CHARS]) for t in target)))
+        return teasers / len(blocks)
 
     # -- a fő entitás ----------------------------------------------------------
 
     def decide(self, info: PageInfo) -> dict:
         role, support = self.role_of(info)
-        candidates = self.candidates(info, home=role == "home")
+        group = set(self.groups[info.group])
+        articles = sorted(e for e in self.articles if self.entities[e][7] in group)
+        candidates = self.candidates(info, home=role == "home", profile=role == "profile",
+                                     articles=set(articles))
         ranked = sorted(candidates.values(), key=Candidate.key)
         decision = {"role": role, "support": support, "candidates": ranked, "main": None,
-                    "secondary": []}
+                    "secondary": [], "articles": articles}
         if support is not None:
             decision["status"] = "support"
             return decision
@@ -353,12 +399,16 @@ class _Graph:
                 names.add(name)
         return decision
 
-    def candidates(self, info: PageInfo, home: bool = False) -> dict[int, Candidate]:
+    def candidates(self, info: PageInfo, home: bool = False, profile: bool = False,
+                   articles: set[int] = frozenset()) -> dict[int, Candidate]:
+        """Az oldal jelöltjei a bizonyítékaikkal. `articles`: az oldalhoz kötött cikk-
+        entitások; nem jelöltek (a cikkoldal fő entitása a téma). `profile`: rólam- vagy
+        szerzői oldal; a legtöbbet említett személy `profile` bizonyítékot kap."""
         page_id = info.page_id
         found: dict[int, Candidate] = {}
 
         def add(entity_id: int | None, kind: str, detail: object) -> None:
-            if entity_id is None or entity_id in self.excluded:
+            if entity_id is None or entity_id in self.excluded or entity_id in articles:
                 return
             item = found.setdefault(entity_id, Candidate(entity_id))
             item.evidence.setdefault(kind, detail)
@@ -370,13 +420,15 @@ class _Graph:
         if home:
             for entity_id in sorted(self.site_entities):
                 add(entity_id, "home", self.urls.get(page_id))
-        for node in self.nodes.get(page_id, []):
-            for key in ("about", "mainEntity"):
-                for value in _as_list(node.get(key)):
-                    name, target = self._about(value)
-                    add(self.resolve(name, page_id) if name else target, "schema_about",
-                        {"property": key, "name": name, "page": self.urls.get(target)
-                         if target in self.urls else None} if name or target else None)
+        for member in sorted(group, key=lambda p: p != page_id):     # a hreflang-pár is
+            for node in self.nodes.get(member, []):
+                for key in ("about", "mainEntity"):
+                    for value in _as_list(node.get(key)):
+                        name, target = self._about(value)
+                        add(self.resolve(name, page_id) if name else target, "schema_about",
+                            {"property": key, "name": name, "source": self.urls.get(member),
+                             "page": self.urls.get(target) if target in self.urls else None}
+                            if name or target else None)
         for index, name in enumerate(self.primary.get(page_id, [])):
             entity_id = self.resolve(name, page_id)
             add(entity_id, "primary", {"index": index, "name": name})
@@ -390,10 +442,17 @@ class _Graph:
                 add(entity_id, position, True)
             if position in CONTENT_POSITIONS:
                 content[entity_id] += 1
-        ranked = [(e, n) for e, n in content.most_common() if e not in self.excluded]
+        ranked = [(e, n) for e, n in content.most_common()
+                  if e not in self.excluded and e not in articles]
         if ranked and ranked[0][1] >= TOP_MIN_MENTIONS \
                 and (len(ranked) == 1 or ranked[0][1] > ranked[1][1]):
             add(ranked[0][0], "top_mentions", ranked[0][1])
+        if profile:
+            people = [(e, n) for e, n in ranked if self.entities[e][2] == "person"]
+            people += [(e, 0) for e, item in found.items() if self.entities[e][2] == "person"
+                       and "schema_about" in item.evidence]
+            if people:
+                add(people[0][0], "profile", {"mentions": people[0][1]})
         anchors = Counter()
         for _, anchor in self.inbound.get(page_id, []):
             entity_id = self.resolve(anchor, page_id)
@@ -451,6 +510,7 @@ def _store_page(con: duckdb.DuckDBPyConnection, graph: _Graph, info: PageInfo,
                 decision: dict) -> None:
     members = [graph.urls[p] for p in sorted(graph.groups[info.group]) if p != info.page_id]
     record = {"status": decision["status"], "support": decision["support"],
+              "articles": decision["articles"],
               "candidates": [c.as_dict() for c in decision["candidates"]]}
     con.execute(
         "INSERT INTO page_nodes (page_id, url, role, support_kind, title, h1, lang, group_key, "
@@ -471,6 +531,7 @@ def _store_page(con: duckdb.DuckDBPyConnection, graph: _Graph, info: PageInfo,
 def _edges(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig,
            decisions: Mapping[int, dict], superclasses, run: GraphRun) -> None:
     rows = []
+    about: dict[tuple[int, int], dict] = {}
     weights = config.mention_weights
     for page_id in sorted(graph.roles):
         per: dict[int, Counter] = defaultdict(Counter)
@@ -490,6 +551,12 @@ def _edges(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig,
             rows.append(("page", page_id, "entity", item.entity_id, "main_entity",
                          "m3_main_entity", {"role": role, "confidence": item.confidence(),
                                             "evidence": item.evidence}, MAIN_WEIGHT[role]))
+        if decision["main"] is not None:
+            for article in decision["articles"]:
+                about.setdefault((article, decision["main"].entity_id),
+                                 {"page": graph.urls[page_id]})
+    rows += [("entity", article, "entity", topic, "about", "m3_article_topic", evidence, None)
+             for (article, topic), evidence in sorted(about.items())]
     for from_id, to_id, kind, source, evidence in con.execute(
             "SELECT from_id, to_id, type, source, evidence FROM entity_relations "
             "ORDER BY type, from_id, to_id").fetchall():
@@ -513,14 +580,15 @@ def _edges(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig,
 
 
 def _wikidata_is_a(graph: _Graph, superclasses, run: GraphRun) -> list[tuple]:
-    """Entitás → entitás `is_a`: az entitás biztos QID-jének P31 / P279 osztálya egy másik site-
-    entitás biztos QID-je; az általános osztályok nélkül."""
+    """Entitás → entitás `is_a`: az entitás biztos QID-jének osztálya egy lépésben egy másik
+    site-entitás biztos QID-je (`is_a_reason`); a kiesők okkal a `run.is_a_rejected`-be."""
     confident = {row[0]: row[8] for row in graph.entities.values()
                  if row[9] == "confident" and row[8] and row[0] not in graph.excluded}
     by_qid: dict[str, list[int]] = defaultdict(list)
     for entity_id, qid in confident.items():
         by_qid[qid].append(entity_id)
     rows: dict[tuple[int, int], tuple] = {}
+    rejected: dict[tuple[int, int], tuple] = {}
     for entity_id, qid in sorted(confident.items()):
         run.class_lookups += 1
         found = superclasses(qid)
@@ -528,14 +596,34 @@ def _wikidata_is_a(graph: _Graph, superclasses, run: GraphRun) -> list[tuple]:
             run.class_failures += 1
             continue
         for prop, target_qid in found:
-            if target_qid in GENERIC_CLASSES or target_qid == qid:
+            if target_qid == qid:
                 continue
             for target in by_qid.get(target_qid, []):
-                if target != entity_id:
+                if target == entity_id:
+                    continue
+                reason = is_a_reason(graph.entities[entity_id][2], graph.entities[target][2],
+                                     prop, target_qid)
+                if reason is None:
                     rows.setdefault((entity_id, target), (
                         "entity", entity_id, "entity", target, "is_a", "wikidata",
                         {"property": prop, "qid": qid, "class": target_qid}, None))
+                else:
+                    rejected.setdefault((entity_id, target), (entity_id, target, prop, reason))
+    run.is_a_rejected = [r for key, r in sorted(rejected.items()) if key not in rows]
     return list(rows.values())
+
+
+def is_a_reason(kind: str, target_kind: str, prop: str, target_qid: str) -> str | None:
+    """Miért nem `is_a` a Wikidata-osztály (None: az): általános osztály (`GENERIC_CLASSES`);
+    fogalomnál csak P279 (a P31 csak a példány-típusoknál, `INSTANCE_TYPES`); tech és fogalom
+    csak azonos típusú osztályhoz (`SAME_TYPE_CLASSES`)."""
+    if target_qid in GENERIC_CLASSES:
+        return "általános osztály"
+    if prop == "P31" and kind not in INSTANCE_TYPES:
+        return f"P31 {kind} típuson"
+    if kind in SAME_TYPE_CLASSES and target_kind != kind:
+        return f"{kind} → {target_kind}"
+    return None
 
 
 def _weights(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig) -> int:
@@ -646,6 +734,25 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
                         "bejövő anchorok": parts[5], "egy említés": parts[6], "súly": weight})
     paths["weights"] = _write(out / f"{name}-weights.csv", weights)
     return paths
+
+
+def export_rejected(con: duckdb.DuckDBPyConnection, run: GraphRun, out: Path,
+                    name: str) -> Path:
+    """A Wikidata-osztályból kiesett `is_a`-élek okkal: `<név>-is-a-rejected.csv`."""
+    names = {row[0]: (row[1], row[2], row[3]) for row in con.execute(
+        "SELECT entity_id, name, type, wikidata_id FROM entities").fetchall()}
+    rows = [{"honnan": names[a][0], "honnan típus": names[a][1], "QID": names[a][2],
+             "hová": names[b][0], "hová típus": names[b][1], "osztály": names[b][2],
+             "tulajdonság": prop, "ok": reason} for a, b, prop, reason in run.is_a_rejected]
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / f"{name}-is-a-rejected.csv"
+    with path.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["honnan", "honnan típus", "QID", "hová",
+                                                    "hová típus", "osztály", "tulajdonság",
+                                                    "ok"])
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
 
 
 def evidence_text(evidence: Mapping) -> str:

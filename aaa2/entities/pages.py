@@ -3,7 +3,7 @@
 - Oldalcsoport: a hreflang-párok egy csoport (az oldal `hreflang` URL-jei szerint); ahol nincs
   hreflang, a lekérdezés és a töredék nélküli URL (a fülek, pl. `?tab=api`, egy csoport).
 - Szerep oldalanként, sorrendben:
-  - `support`: kezdőoldal (`site.home_urls`), jogi, köszönő és hibaoldal (URL-kulcsszó), vagy
+  - `support`: kezdőoldal (`site.home_urls`), jogi, köszönő és hibaoldal (`support_url`), vagy
     `ContactPage` / `AboutPage` / `ProfilePage` / `CollectionPage` / `SearchResultsPage`
     csomópont;
   - `offer`: az oldalra mutató (`url` vagy `@id` a töredék nélkül) JSON-LD `Service`;
@@ -26,7 +26,7 @@ import re
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from urllib.parse import urldefrag, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urldefrag, urlsplit, urlunsplit
 
 import duckdb
 
@@ -36,9 +36,14 @@ ROLE_TYPE = {"offer": ("service", None), "product": ("product", None),
 ARTICLE_TYPES = frozenset({"Article", "BlogPosting", "NewsArticle", "TechArticle"})
 SUPPORT_TYPES = frozenset({"ContactPage", "AboutPage", "ProfilePage", "CollectionPage",
                            "SearchResultsPage", "CheckoutPage"})
-SUPPORT_URL_WORDS = ("privacy", "adatvedelem", "adatkezel", "cookie", "impressum", "impresszum",
-                     "terms", "aszf", "feltetelek", "thank-you", "thanks", "koszon", "grazie",
-                     "404", "et_code_snippet")
+# A jogi, köszönő és hibaoldal ismert slugjai (kisbetűvel, „_” helyett „-”); egy teljes
+# útvonalszegmens vagy lekérdezés-érték egyezik velük (`support_url`), szórészlet nem.
+SUPPORT_SLUGS = frozenset({
+    "privacy", "privacy-policy", "privacy-notice", "privacy-centre", "privacy-center",
+    "cookie-policy", "cookies", "terms", "terms-of-service", "terms-of-use",
+    "terms-and-conditions", "impressum", "impresszum", "adatvedelem", "adatvedelmi-tajekoztato",
+    "adatkezelesi-tajekoztato", "aszf", "felhasznalasi-feltetelek", "thank-you", "thanks",
+    "koszonjuk", "grazie", "404", "et-code-snippet", "et-code-snippet-type"})
 NAV_POSITIONS = ("nav", "aside", "footer")
 PAGE_TYPES = ("product", "category", "brand_category", "blog", "service", "other")
 BLOG_TYPES = frozenset({"BlogPosting", "NewsArticle"})
@@ -195,12 +200,21 @@ def representative(members: list[PageInfo], site_lang: str | None) -> PageInfo:
     return min(pool, key=lambda m: ("?" in m.url, m.page_id))
 
 
+def support_url(url: str) -> bool:
+    """Jogi, köszönő vagy hibaoldal az URL szerint: egy útvonalszegmens vagy lekérdezés-érték
+    (kisbetűvel, „_” helyett „-”) egy `SUPPORT_SLUGS` slug; a „/privacy-policy/” és a
+    „?tab=privacy_policy” igen, az „/eprivacy-and-gdpr-diagnostics/” nem."""
+    parts = urlsplit(url)
+    pieces = [p for p in parts.path.split("/") if p]
+    pieces += [value for _, value in parse_qsl(parts.query)]
+    return any(piece.lower().replace("_", "-") in SUPPORT_SLUGS for piece in pieces)
+
+
 def _own_role(page_id: int, url: str, h1: str | None, homes: set[str], nodes: list[dict],
               has_code: bool, linkers: int) -> tuple[str, str]:
     if page_url(url) in homes:
         return "support", "home"
-    path = urlsplit(url).path.lower()
-    if any(word in path for word in SUPPORT_URL_WORDS):
+    if support_url(url):
         return "support", "support_url"
     types = {_short(t) for node in nodes for t in _as_list(node.get("@type"))}
     for kind, role in (("Service", "offer"), ("Product", "product")):

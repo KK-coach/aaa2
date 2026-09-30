@@ -518,3 +518,36 @@ def test_merge_keeps_one_mention_per_span_whatever_its_position():
                        [first]).fetchone() == (1,)
     assert con.execute("SELECT count(*) FROM entities WHERE entity_id = ?",
                        [second]).fetchone() == (0,)
+
+
+def test_legal_pages_by_whole_path_segment_or_known_slug():
+    from aaa2.entities.pages import support_url
+
+    for url in ("https://x.hu/privacy-policy/", "https://x.hu/hu/adatvedelem/",
+                "https://x.hu/aszf", "https://x.hu/impresszum/", "https://x.hu/terms/",
+                "https://x.hu/cookie-policy/", "https://x.hu/shop_help.php?tab=privacy_policy",
+                "https://x.hu/et_code_snippet_type/x/"):
+        assert support_url(url), url
+    for url in ("https://x.com/eprivacy-and-gdpr-diagnostics/", "https://x.hu/termszetes/",
+                "https://x.hu/blog/cookie-consent-guide/"):
+        assert not support_url(url), url
+
+
+def test_organisation_names_merge_without_the_legal_form():
+    org = ld({"@type": "Organization", "name": "Pelda Kft.", "url": "https://pelda.hu/"})
+    con = site({"/": html("Pelda", "<main><h1>Pelda</h1><p>A Pelda Hungary csapata.</p></main>",
+                          head=org),
+                "/rolunk/": html("Rólunk", "<main><h1>Rólunk</h1><p>A Pelda Hungary csapata "
+                                 "vár.</p></main>")})
+    run_rules(con)
+    llm_entity(con, "https://pelda.hu/rolunk/", "Pelda Hungary", "Pelda Hungary", "org")
+    con.execute("UPDATE entities SET aliases = ['Pelda Hungary Kft.'] WHERE name = 'Pelda Kft.'")
+    run_site(con, clock=lambda: NOON)
+    orgs = con.execute("SELECT name FROM entities WHERE type = 'org'").fetchall()
+    assert len(orgs) == 1
+    assert con.execute("SELECT count(*) FROM merge_log WHERE rule = 'normalized_name' AND "
+                       "removed_name = 'Pelda Hungary'").fetchone() == (1,)
+    from aaa2.entities.site import without_legal_form
+    assert without_legal_form("DUEX HUNGARY Kft.") == "DUEX HUNGARY"
+    assert without_legal_form("Acme, Inc.") == "Acme"
+    assert without_legal_form("Kft.") == "Kft."

@@ -13,10 +13,11 @@ from aaa2.functions.graph import (
     Candidate,
     build_graph,
     export_csv,
+    is_a_reason,
     load_graph_config,
     url_has_word,
 )
-from tests.test_entities_rules import html, site
+from tests.test_entities_rules import html, ld, site
 from tests.test_entities_shop import shop_site
 from tests.test_entities_site import NOON, business_site, llm_entity
 
@@ -75,8 +76,7 @@ def test_pages_get_roles_support_kinds_and_a_main_entity_with_evidence():
     assert chosen(con) == [
         ("https://pelda.hu/", "Pelda", "main", "strong", ["h1", "home", "title",
                                                           "top_mentions"]),
-        ("https://pelda.hu/blog/cikk/", "Hogyan mérj jól", "main", "strong",
-         ["anchored", "h1", "inbound_anchor", "title", "top_mentions"]),
+        ("https://pelda.hu/blog/cikk/", "Mérés", "main", "weak", ["heading"]),   # a téma
         ("https://pelda.hu/en/measurement/", "Mérés", "main", "strong",
          ["anchored", "h1", "title", "top_mentions"]),            # a hreflang-pár kötött entitása
         ("https://pelda.hu/hu/meres/", "Mérés", "main", "strong",
@@ -84,6 +84,11 @@ def test_pages_get_roles_support_kinds_and_a_main_entity_with_evidence():
     decision = json.loads(con.execute("SELECT decision FROM page_nodes WHERE url = "
                                       "'https://pelda.hu/kapcsolat/'").fetchone()[0])
     assert decision["status"] == "support" and decision["support"] == "contact"
+    # a cikk az oldal csomópontja marad, `about` éllel a témához
+    assert con.execute("SELECT f.name, t.name, e.source FROM edges e JOIN entities f ON "
+                       "f.entity_id = e.from_id JOIN entities t ON t.entity_id = e.to_id "
+                       "WHERE e.type = 'about'").fetchall() == [
+        ("Hogyan mérj jól", "Mérés", "m3_article_topic")]
 
 
 def test_primary_entities_schema_about_and_the_secondary_entities():
@@ -97,10 +102,10 @@ def test_primary_entities_schema_about_and_the_secondary_entities():
     primary(con, "https://pelda.hu/blog/cikk/", ["Adatarchitektúra", "Pelda"])
     build_graph(con)
     rows = [r for r in chosen(con) if r[0] == "https://pelda.hu/blog/cikk/"]
-    assert rows[0][1:3] == ("Hogyan mérj jól", "main")
-    assert rows[1][1:3] == ("Adatarchitektúra", "secondary")          # H1 + primary
-    assert "Pelda" not in {r[1] for r in rows}                        # a site entitása nem
-    assert con.execute("SELECT entity_id FROM page_main_entity WHERE role = 'secondary'"
+    assert rows[0][1:4] == ("Adatarchitektúra", "main", "strong")     # a téma: primary + H1
+    assert {r[1] for r in rows} & {"Hogyan mérj jól", "Pelda"} == set()   # a cikk és a site nem
+    assert con.execute("SELECT entity_id FROM page_main_entity WHERE page_id = (SELECT page_id "
+                       "FROM pages WHERE url = 'https://pelda.hu/blog/cikk/') AND role = 'main'"
                        ).fetchall() == [(topic,)]
 
 
@@ -183,7 +188,7 @@ def test_weights_skip_templates_and_scale_single_mentions():
         assert single == (mentions == 1), name
         assert weight == round(expected * (config.single_mention if single else 1), 4), name
     assert con.execute("SELECT main_pages, inbound_anchors FROM entity_weights JOIN entities "
-                       "USING (entity_id) WHERE name = 'Mérés'").fetchone() == (2, 5)
+                       "USING (entity_id) WHERE name = 'Mérés'").fetchone() == (3, 9)
 
 
 def test_csv_exports(tmp_path):
@@ -197,7 +202,7 @@ def test_csv_exports(tmp_path):
                               "bizonyítékok", "másodlagos"}
     with paths["edges"].open(encoding="utf-8-sig", newline="") as handle:
         assert {r["él"] for r in csv.DictReader(handle)} == {"mentions", "main_entity",
-                                                              "part_of"}
+                                                              "part_of", "about"}
     with paths["weights"].open(encoding="utf-8-sig", newline="") as handle:
         assert next(csv.DictReader(handle))["rang"] == "1"
 
@@ -250,3 +255,63 @@ def test_reference_verdicts():
     assert verdict([], main, [], con) == "segédoldal: van fő entitás"
     assert verdict(["Mérés"], None, [], con) == "nincs fő entitás"
     assert verdict(["Valami"], main, [], con) == "eltér"
+
+
+def test_profile_pages_get_the_person_also_from_the_hreflang_pair():
+    about = ld({"@context": "https://schema.org", "@graph": [
+        {"@type": "Person", "@id": "https://pelda.hu/#kiss", "name": "Kiss Anna"},
+        {"@type": "AboutPage", "mainEntity": {"@id": "https://pelda.hu/#kiss"}}]})
+    con = site({"/": html("Pelda", "<main><h1>Pelda</h1><p>Üdv.</p></main>"),
+                "/about/": html("About · Pelda", "<main><h1>About</h1><p>I am Kiss Anna, "
+                                "founder of Pelda.</p></main>", head=about, lang="en"),
+                "/hu/rolam/": html("Rólam · Pelda", "<main><h1>Rólam</h1><p>A Pelda "
+                                   "alapítója vagyok.</p></main>")}, languages=("hu", "en"))
+    pair = ["en|https://pelda.hu/about/", "hu|https://pelda.hu/hu/rolam/"]
+    con.execute("UPDATE pages SET hreflang = ? WHERE url IN ('https://pelda.hu/about/', "
+                "'https://pelda.hu/hu/rolam/')", [pair])
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    llm_entity(con, "https://pelda.hu/about/", "Kiss Anna", "Kiss Anna", "person")
+    primary(con, "https://pelda.hu/hu/rolam/", ["Pelda"])
+    build_graph(con)
+    got = {r[0]: r for r in chosen(con) if r[2] == "main"}
+    roles = dict(con.execute("SELECT url, role FROM page_nodes").fetchall())
+    assert roles["https://pelda.hu/about/"] == roles["https://pelda.hu/hu/rolam/"] == "profile"
+    assert got["https://pelda.hu/about/"][1] == "Kiss Anna"
+    assert "profile" in got["https://pelda.hu/about/"][4]
+    assert got["https://pelda.hu/hu/rolam/"][1] == "Kiss Anna"      # a pár JSON-LD-jéből
+    assert "schema_about" in got["https://pelda.hu/hu/rolam/"][4]
+
+
+def test_a_page_of_teasers_is_a_list():
+    post = ld({"@type": "BlogPosting", "headline": "x"})
+    first = "A mérés a döntések alapja minden héten, a riportok mögött is ott áll."
+    second = "A kampányok eredménye a konverziókon múlik, nem a kattintások számán."
+    con = site({
+        "/": html("Pelda", "<main><h1>Pelda</h1><p>Üdv.</p></main>"),
+        "/blog/": html("Blog · Pelda", "<main><h1>Blog</h1>"
+                       "<h2><a href='/blog/meres/'>Hogyan mérj jól</a></h2>"
+                       f"<p>{first}</p>"
+                       "<h2><a href='/blog/kampany/'>Kampány és konverzió</a></h2>"
+                       f"<p>{second}</p></main>"),
+        "/blog/meres/": html("Hogyan mérj jól · Pelda", "<main><h1>Hogyan mérj jól</h1>"
+                             f"<p>{first} Utána a részletek.</p></main>", head=post),
+        "/blog/kampany/": html("Kampány és konverzió · Pelda", "<main><h1>Kampány és "
+                               f"konverzió</h1><p>{second} És még.</p></main>", head=post)})
+    graph_of(con)
+    rows = dict(con.execute("SELECT url, role || '/' || coalesce(support_kind, '') || '/' || "
+                            "main_status FROM page_nodes").fetchall())
+    assert rows["https://pelda.hu/blog/"] == "listing/list/support"
+    assert rows["https://pelda.hu/blog/meres/"].startswith("article/")
+
+
+def test_wikidata_is_a_rules():
+    assert is_a_reason("concept", "concept", "P279", "Q2") is None
+    assert is_a_reason("concept", "concept", "P31", "Q2") == "P31 concept típuson"
+    assert is_a_reason("tech", "tech", "P31", "Q2") is None
+    assert is_a_reason("tech", "concept", "P31", "Q2") == "tech → concept"
+    assert is_a_reason("concept", "tech", "P279", "Q2") == "concept → tech"
+    assert is_a_reason("org", "concept", "P31", "Q2") is None
+    for generic in ("Q35120", "Q151885", "Q1799072", "Q3249551", "Q1914636", "Q11016",
+                    "Q2267705"):
+        assert is_a_reason("tech", "tech", "P279", generic) == "általános osztály"
