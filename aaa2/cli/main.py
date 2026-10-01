@@ -29,6 +29,7 @@ from aaa2.entities.rules import run_rules
 from aaa2.entities.site import run_site
 from aaa2.entities.v3 import V3Step, load_pipeline, v3_fingerprint
 from aaa2.entities.validate import KG_DAILY_QUOTA, _Api, validate_entities
+from aaa2.functions.findings import TYPE_LABELS, build_findings, export_findings, export_views
 from aaa2.functions.graph import build_graph, export_csv, export_rejected
 from aaa2.llm import ledger
 from aaa2.llm.client import Retry, check_models, open_clients
@@ -398,6 +399,36 @@ def graph(
                + f"; Wikidata-osztály: {run.class_lookups} lekérdezés, "
                  f"{run.class_failures} hibás")
     typer.echo(f"súlyozott entitás: {run.weights}")
+    for path in paths.values():
+        typer.echo(str(path))
+
+
+@app.command()
+def findings(
+    domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
+    db: Annotated[Path | None, typer.Option(
+        help="a site-adatbázis útvonala (alapból data/<domain>.duckdb)")] = None,
+    out: Annotated[Path, typer.Option(help="a kimeneti mappa")] = Path("data/reports"),
+) -> None:
+    """SEO-megállapítások és ellenőrző nézetek a gráfból (az `aaa graph` után), LLM nélkül:
+    H1/title-eltérés, kannibalizáció és közös téma, hiányzó oldal és lefedetlen téma, nem
+    egyértelmű téma; kimenet:
+    `<out>/<név>-findings.csv`, `<név>-view-site.csv`, `<név>-view-entities.csv`,
+    `<név>-view-pages.csv`, `<név>-views.html`."""
+    con = _open(domain, db)
+    stem = db.stem if db is not None else _domain(domain)
+    if con.execute("SELECT count(*) FROM page_nodes").fetchone()[0] == 0:
+        raise typer.BadParameter("nincs gráf: előbb `aaa graph`")
+    run = build_findings(con)
+    paths = {"findings": export_findings(con, out, stem), **export_views(con, out, stem)}
+    counts = run.by_type()
+    typer.echo("megállapítások: " + (", ".join(
+        f"{label} {counts[kind]} (" + ", ".join(
+            f"{severity} {run.counts[(kind, severity)]}" for severity in ("high", "medium", "low")
+            if run.counts[(kind, severity)]) + ")"
+        for kind, label in TYPE_LABELS.items() if counts.get(kind)) or "0"))
+    typer.echo(f"lefedetlen téma, a szó szerinti jelöltek: {run.missing_literal}; kizárt "
+               f"kontextus-entitás: {', '.join(run.context) or '0'}")
     for path in paths.values():
         typer.echo(str(path))
 

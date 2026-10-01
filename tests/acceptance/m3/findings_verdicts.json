@@ -1,0 +1,143 @@
+{
+ "status": "Claude verdiktje, 2026-10-01 (hatodik kör); Krisztián jóváhagyására",
+ "sites": {
+  "kk-coach": {
+   "h1_title_mismatch | Kiss Krisztián | https://kk.coach/about/": {
+    "summary": "Kiss Krisztián: a H1 általános: nincs benne entitás; a fő entitás nincs a title-ben",
+    "verdict": "valid",
+    "note": "a rólam-oldal H1-e szlogen, a title-ben sincs a név"
+   },
+   "h1_title_mismatch | Kiss Krisztián | https://kk.coach/hu/rolam/": {
+    "summary": "Kiss Krisztián: a fő entitás nincs a H1-ben; a fő entitás nincs a title-ben",
+    "verdict": "valid",
+    "note": "a rólam-oldal H1-e szlogen, a title-ben sincs a név"
+   },
+   "h1_title_mismatch | a H1 általános: nincs benne entitás | offer": {
+    "summary": "a H1 általános: nincs benne entitás: 3 ajánlatoldal",
+    "verdict": "valid",
+    "note": "a H1 szlogen, az ajánlat neve nincs benne (GEO en, UX en és hu; a referencia várt megállapításai)"
+   },
+   "h1_title_mismatch | a fő entitás nincs a H1-ben | offer": {
+    "summary": "a fő entitás nincs a H1-ben: 2 ajánlatoldal",
+    "verdict": "valid",
+    "note": "a H1 szlogen (GEO hu, Measurement en; a referencia várt megállapításai)"
+   },
+   "h1_title_mismatch | a fő entitás nincs a H1-ben | support": {
+    "summary": "a fő entitás nincs a H1-ben: 2 egyéb oldal",
+    "verdict": "valid",
+    "note": "a két megoldás-hub H1-e szlogen, a rendszer neve csak a title-ben áll"
+   },
+   "shared_topic | AI Search | en": {
+    "summary": "AI Search: 2 oldal közös témája, átfedés nélkül (en)",
+    "verdict": "valid",
+    "note": "tájékoztató: két cikk ugyanarról az entitásról, más szögből; nem kannibalizáció"
+   },
+   "shared_topic | AI Search | hu": {
+    "summary": "AI Search: 2 oldal közös témája, átfedés nélkül (hu)",
+    "verdict": "valid",
+    "note": "tájékoztató: két cikk ugyanarról az entitásról, más szögből; nem kannibalizáció"
+   },
+   "shared_topic | Kiss Krisztián | en": {
+    "summary": "Kiss Krisztián: 2 oldal közös témája, átfedés nélkül (en)",
+    "verdict": "valid",
+    "note": "tájékoztató: a rólam- és a szerzői oldal ugyanarról a személyről szól"
+   },
+   "shared_topic | Kiss Krisztián | hu": {
+    "summary": "Kiss Krisztián: 2 oldal közös témája, átfedés nélkül (hu)",
+    "verdict": "valid",
+    "note": "tájékoztató: a rólam- és a szerzői oldal ugyanarról a személyről szól"
+   },
+   "uncovered_topic | E-E-A-T": {
+    "summary": "E-E-A-T (concept/method): 6 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "három oldalcsoport headingjében, saját cikk vagy szakasz nélkül"
+   },
+   "uncovered_topic | Google Analytics 4": {
+    "summary": "Google Analytics 4 (tech/software): 23 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "23 oldalon, 81 említés, két oldalcsoport headingjében; egy mérési tanácsadó site-ján nincs róla cikk vagy szakasz"
+   },
+   "uncovered_topic | Artificial intelligence": {
+    "summary": "Artificial intelligence (concept/discipline): 22 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "22 oldalon, 8 oldalcsoport headingjében, saját cikk vagy szakasz nélkül"
+   }
+  },
+  "marketinglens": {
+   "h1_title_mismatch | Online and Offline Sales Conversion Strategy | https://marketinglens.com/grow-online-and-offline-sales/": {
+    "summary": "Online and Offline Sales Conversion Strategy: a H1 általános: nincs benne entitás; a fő entitás nincs a title-ben",
+    "verdict": "valid",
+    "note": "a schema szerinti szolgáltatásnév nem egyezik a H1-gyel és a title-lel (névkövetkezetlenség)"
+   },
+   "h1_title_mismatch | nincs H1 | article": {
+    "summary": "nincs H1: 9 cikkoldal",
+    "verdict": "valid",
+    "note": "kilenc esettanulmány-oldalon nincs <h1> (a renderelt HTML-ben sem)"
+   },
+   "h1_title_mismatch | Law Firm Digital Marketing Services | https://marketinglens.com/law-firm-digital-marketing-services/": {
+    "summary": "Law Firm Digital Marketing Services: a H1 általános: nincs benne entitás",
+    "verdict": "valid",
+    "note": "a H1 szlogen („You Deserve the Best”)"
+   },
+   "h1_title_mismatch | Medior Performance Marketing Specialist | https://marketinglens.com/senior-performance-marketing-specialist-job-hungary-remote/": {
+    "summary": "Medior Performance Marketing Specialist: a fő entitás nincs a H1-ben",
+    "verdict": "valid",
+    "note": "a title Medior, a H1 Senior pozíciót ír"
+   },
+   "shared_topic | Google Ads | en": {
+    "summary": "Google Ads: 4 oldal közös témája, átfedés nélkül (en)",
+    "verdict": "valid",
+    "note": "tájékoztató: négy cikk és esettanulmány a Google Adsről, más-más szögből; nem kannibalizáció"
+   },
+   "unclear_topic | Applied Marketing Data Science | https://marketinglens.com/marketing-data-science/turning-customer-data-insights-into-action/": {
+    "summary": "gyenge fő entitás: Applied Marketing Data Science (primary#1)",
+    "verdict": "valid",
+    "note": "az oldal témáját csak a kinyerés második fő entitása jelzi"
+   },
+   "uncovered_topic | paid search": {
+    "summary": "paid search (concept/discipline): 8 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "nyolc oldalon, három headingben; nincs róla cikk vagy szakasz"
+   }
+  },
+  "duex": {
+   "missing_page | Fujitsu Waterstage High Power V2": {
+    "summary": "Fujitsu Waterstage High Power V2 (product/line): 10 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "termékcsalád több termékkel, saját családoldal nélkül"
+   },
+   "missing_page | LG ThermaV": {
+    "summary": "LG ThermaV (product/line): 15 oldalon szerepel, egyiknek sem fő entitása; alcsaládjai: LG ThermaV R32",
+    "verdict": "valid",
+    "note": "termékcsalád több termékkel, saját családoldal nélkül; az alcsaládja (LG ThermaV R32) ebben a megállapításban áll"
+   },
+   "missing_page | BlueSoft Eco": {
+    "summary": "BlueSoft Eco (product/line): 8 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "termékcsalád több termékkel, saját családoldal nélkül"
+   },
+   "missing_page | Fujitsu Waterstage Comfort": {
+    "summary": "Fujitsu Waterstage Comfort (product/line): 8 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "termékcsalád több termékkel, saját családoldal nélkül"
+   }
+  },
+  "ngx-bootstrap": {
+   "h1_title_mismatch | a fő entitás nincs a title-ben | component": {
+    "summary": "a fő entitás nincs a title-ben: 17 komponensoldal",
+    "verdict": "valid",
+    "note": "mind a 17 komponensoldal title-je „Angular Bootstrap”"
+   },
+   "uncovered_topic | Reactive Forms": {
+    "summary": "Reactive Forms (concept/method): 12 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "három komponens leírásában külön szakasz, közös útmutató nélkül"
+   },
+   "uncovered_topic | Adaptive position": {
+    "summary": "Adaptive position (concept/other): 8 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "invalid",
+    "note": "a komponensek egy közös beállítása (négy komponens headingje), nem önálló téma"
+   }
+  }
+ }
+}
