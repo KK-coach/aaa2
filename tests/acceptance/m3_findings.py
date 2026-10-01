@@ -16,7 +16,8 @@ megállapítások aránya (M3 spec, 8. pont: cél ≥ 90%).
   60%-án szerepel, vagy a neve a site nevének része; kiemelés legalább 3 oldalcsoportban), `kontextus` (az élő szabály: az
   említések többsége sablon- vagy chrome-helyen, vagy a név a site nevében), `küszöb` (a régi
   kontextus, de `SMALL_SITE_GROUPS`-nál kevesebb oldalcsoportú site-on 2 csoport elég a
-  kiemeléshez), `mindkettő`.
+  kiemeléshez), `mindkettő`, és `élő` (a mostani szabály: az új kontextus, a kis site
+  küszöbe, a H1-ben vagy title-ben megnevezett és az egyszavas köznévi fogalom kizárása).
 """
 from __future__ import annotations
 
@@ -28,14 +29,20 @@ from pathlib import Path
 
 import duckdb
 
-from aaa2.functions.findings import MIN_STRUCTURAL, _Site, is_context, uncovered_candidates
+from aaa2.functions.findings import (
+    MIN_STRUCTURAL,
+    SMALL_SITE_GROUPS,
+    SMALL_SITE_STRUCTURAL,
+    _Site,
+    exclusion,
+    is_context,
+    uncovered_candidates,
+)
 
 VERDICTS_FILE = Path(__file__).parent / "m3" / "findings_verdicts.json"
 TARGET = 0.9
 OLD_CONTEXT_SHARE = 0.6
-SMALL_SITE_GROUPS = 50
-SMALL_SITE_STRUCTURAL = 2
-VARIANTS = ("régi", "kontextus", "küszöb", "mindkettő")
+VARIANTS = ("régi", "kontextus", "küszöb", "mindkettő", "élő")
 
 
 def finding_keys(db: Path) -> dict[str, str]:
@@ -116,13 +123,16 @@ def variants(sites: dict[str, Path], out: Path) -> list[str]:
             site = _Site(con)
             groups = len({p["group"] for p in site.nodes()})
             low = SMALL_SITE_STRUCTURAL if groups < SMALL_SITE_GROUPS else MIN_STRUCTURAL
-            strict = {c["entity_id"]: c for c in uncovered_candidates(site)}
+            strict = {c["entity_id"]: c for c in uncovered_candidates(
+                site, min_structural=MIN_STRUCTURAL)}
             loose = {c["entity_id"]: c for c in uncovered_candidates(site, min_structural=low)}
             sets = {
                 "régi": {e for e, c in strict.items() if old_rule(c)},
                 "kontextus": {e for e, c in strict.items() if not is_context(c)},
                 "küszöb": {e for e, c in loose.items() if old_rule(c)},
-                "mindkettő": {e for e, c in loose.items() if not is_context(c)}}
+                "mindkettő": {e for e, c in loose.items() if not is_context(c)},
+                "élő": {c["entity_id"] for c in uncovered_candidates(site)
+                        if exclusion(c) is None}}
             lines.append(f"{name}: {groups} oldalcsoport, kiemelési küszöb a 2. ponttal {low}; "
                          + ", ".join(f"{k} {len(v)}" for k, v in sets.items()))
             for variant in VARIANTS[1:]:
@@ -140,7 +150,9 @@ def variants(sites: dict[str, Path], out: Path) -> list[str]:
                     "oldalcsoportok": c["page_groups"], "kiemelve (csoport)": c["structural"],
                     "oldalarány": round(c["page_share"], 2),
                     "sablon- és chrome-arány": round(c["template_share"], 2),
-                    "a site nevében": "igen" if c["in_site_name"] else "nem"})
+                    "a site nevében": "igen" if c["in_site_name"] else "nem",
+                    "kizárás (élő)": exclusion(c) or "",
+                    "megnevező oldal": c["headline"] or ""})
         finally:
             con.close()
     out.parent.mkdir(parents=True, exist_ok=True)

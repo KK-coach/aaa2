@@ -35,8 +35,9 @@ a canonical-duplikátum oldal egyikben sem szerepel:
 - `uncovered_topic` és `missing_page`: az entitás súlya a site felső tizedében van
   (`TOP_SHARE`), legalább `MIN_PAGES` oldalcsoport említi (a fülek, pl. `?tab=api`, és a
   hreflang-pár egy csoport), és egyik oldalnak sem fő entitása. További feltételek: a site
-  maga kiemeli (legalább `MIN_STRUCTURAL` oldalcsoportban áll title-ben, H1-ben vagy
-  headingben, és összesen legalább `MIN_MENTIONS` említése van), és nincs lefedve: nem
+  maga kiemeli (legalább `MIN_STRUCTURAL`, `SMALL_SITE_GROUPS`-nál kevesebb oldalcsoportú
+  site-on `SMALL_SITE_STRUCTURAL` oldalcsoportban áll title-ben, H1-ben vagy headingben, és
+  összesen legalább `MIN_MENTIONS` említése van), és nincs lefedve: nem
   másodlagos entitása egy oldalnak sem, nem egy saját oldalú ajánlat fogalma (`offers` él), a
   neve nem egy oldal H1-e vagy URL-szakasza, és a nevének szavai nem egy fő entitás nevének
   szavai közül valók („Organic Growth” az „Organic Growth System” mellett; a szülő, pl. a
@@ -47,7 +48,9 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   neve a site nevében szerepel (az Angular az „Angular Bootstrap” komponenstárban); a sok
   oldalon tárgyalt téma (pl. a GA4 egy mérési tanácsadó site-ján) nem kontextus. Ha egy
   hiányzó oldalú termékcsaládnak az alcsaládja is hiányzó oldal volna, az alcsalád a szülő
-  megállapításában áll (`subfamilies`), nem külön. A termékcsalád (product / line, vagy termék, amelynek
+  megállapításában áll (`subfamilies`), nem külön. Nem lefedetlen téma az sem (`exclusion`),
+  amit egy indexelhető oldal H1-e vagy title-je megnevez (a szülő, pl. a termékcsalád
+  kivételével), és az egyszavas, kisbetűs köznévi fogalom („stratégia”, „reporting”). A termékcsalád (product / line, vagy termék, amelynek
   részei vannak) hiányzó oldal (`missing_page`: családoldal kell; high, ha legalább
   `HIGH_PAGES` oldalon szerepel, különben medium). Minden más lefedetlen téma
   (`uncovered_topic`): a teendő cikk, how-to vagy szakasz egy meglévő oldalon, nem
@@ -104,6 +107,8 @@ NO_PAGE_SUBTYPES = frozenset({"api_symbol"})
 TOP_SHARE = 0.1
 MIN_PAGES = 3
 MIN_STRUCTURAL = 3
+SMALL_SITE_GROUPS = 50                  # ennél kevesebb oldalcsoportú site-on …
+SMALL_SITE_STRUCTURAL = 2               # … ennyi csoportban elég a kiemelés
 MIN_MENTIONS = 6
 HIGH_PAGES = 10
 HIGH_GROUPS = 3
@@ -412,15 +417,22 @@ def _words(text: str) -> set[str]:
 
 
 def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
-                         min_structural: int = MIN_STRUCTURAL) -> list[dict]:
-    """A lefedetlen téma jelöltjei a kontextus-szűrés előtt: a súly, az oldalszám, a típus, a
-    kiemelés (`min_structural` oldalcsoportban title, H1 vagy heading) és a lefedettség
-    feltételein átment entitások, a mérőszámaikkal (`template_share`: az említések hányad része
-    áll sablon- vagy chrome-helyen; `in_site_name`: a név szavai a site nevének szavai;
-    `page_share`: az indexelhető oldalak hányad részén szerepel)."""
+                         min_structural: int | None = None) -> list[dict]:
+    """A lefedetlen téma jelöltjei a kizárások (`exclusion`) előtt: a súly, az oldalszám, a
+    típus, a kiemelés (`min_structural` oldalcsoportban title, H1 vagy heading; alapból
+    `MIN_STRUCTURAL`, `SMALL_SITE_GROUPS`-nál kevesebb oldalcsoportú site-on
+    `SMALL_SITE_STRUCTURAL`) és a lefedettség feltételein átment entitások, a mérőszámaikkal
+    (`template_share`: az említések hányad része áll sablon- vagy chrome-helyen;
+    `in_site_name`: a név szavai a site nevének szavai; `headline`: az első indexelhető oldal,
+    amelynek a H1-e vagy a title-je megnevezi; `common_word`: egyszavas, kisbetűs köznévi
+    fogalom; `page_share`: az indexelhető oldalak hányad részén szerepel)."""
     if not site.weights:
         return []
+    if min_structural is None:
+        small = len({p["group"] for p in site.nodes()}) < SMALL_SITE_GROUPS
+        min_structural = SMALL_SITE_STRUCTURAL if small else MIN_STRUCTURAL
     indexable = {p["page_id"] for p in site.nodes() if not p["noindex"]}
+    headlines = [(p["url"], p["h1"], p["title"]) for p in site.nodes() if not p["noindex"]]
     on_pages: Counter = Counter()
     groups: dict[int, set[str]] = defaultdict(set)          # entitás → említő oldalcsoportok
     headed: dict[int, set[str]] = defaultdict(set)          # … ahol title, H1 vagy heading
@@ -474,8 +486,13 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
                     and any(_words(entity["name"]) <= words for words in main_words)):
             continue
         total, fixed = placed.get(entity_id, (0, 0))
+        name = entity["name"].strip()
         found.append({
-            "entity_id": entity_id, "weight": weight,
+            "entity_id": entity_id, "weight": weight, "parent": entity_id in parents,
+            "headline": next((url for url, h1, title in headlines
+                              if names_in(forms, h1) or names_in(forms, title, cut=True)), None),
+            "common_word": entity["type"] == "concept" and name.isalpha()
+            and name == name.lower(),
             "family": entity["type"] == "product" and (entity["subtype"] == "line"
                                                        or entity_id in parents),
             "page_share": on_pages[entity_id] / len(indexable) if indexable else 0.0,
@@ -491,12 +508,27 @@ def is_context(candidate: dict) -> bool:
     return candidate["template_share"] >= CONTEXT_SHARE or candidate["in_site_name"]
 
 
+def exclusion(candidate: dict) -> str | None:
+    """Miért nem lefedetlen téma a jelölt (None: az): `context` (`is_context`); `headline`: egy
+    indexelhető oldal H1-e vagy title-je megnevezi (van róla szóló oldal; a szülőre, pl. a
+    termékcsaládra nem vonatkozik, mert a termékei címében mindig ott áll); `common_word`:
+    egyszavas, kisbetűs köznévi fogalom (nem rövidítés, nem tulajdonnév)."""
+    if is_context(candidate):
+        return "context"
+    if candidate["headline"] is not None and not candidate["parent"]:
+        return "headline"
+    if candidate["common_word"]:
+        return "common_word"
+    return None
+
+
 def _uncovered(site: _Site, run: FindingsRun) -> list[tuple]:
     kept = []
     for candidate in uncovered_candidates(site, run):
-        if is_context(candidate):
+        reason = exclusion(candidate)
+        if reason == "context":
             run.context.append(site.name(candidate["entity_id"]))
-        else:
+        elif reason is None:
             kept.append(candidate)
     parent_of = {from_id: to_id for from_id, to_id in site.con.execute(
         "SELECT from_id, to_id FROM edges WHERE type = 'part_of' AND from_kind = 'entity' "

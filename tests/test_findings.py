@@ -9,6 +9,7 @@ from aaa2.functions import findings
 from aaa2.functions.findings import (
     PAGINATION,
     build_findings,
+    exclusion,
     export_findings,
     export_views,
     is_context,
@@ -167,6 +168,20 @@ def test_context_and_covered_entities_are_not_uncovered(monkeypatch):
     build_graph(con)
     run = build_findings(con)
     assert rows(con, "uncovered_topic") == [] and run.context == []       # van ilyen H1-ű oldal
+    # amit egy oldal title-je megnevez, arról van oldal: nem lefedetlen téma
+    con.execute("UPDATE pages SET h1 = 'Vegyes gondolatok', title = 'A konverzió növelése' "
+                "WHERE url = ?", [f"{BASE}/blog/vegyes/"])
+    build_graph(con)
+    build_findings(con)
+    assert rows(con, "uncovered_topic") == []
+    assert len(rows(con, "missing_page")) == 1          # a szülőcsaládra nem vonatkozik
+    base = {"template_share": 0.0, "in_site_name": False, "headline": None,
+            "common_word": False, "parent": False}
+    assert exclusion(base) is None
+    assert exclusion({**base, "headline": "https://x.hu/a/"}) == "headline"
+    assert exclusion({**base, "headline": "https://x.hu/a/", "parent": True}) is None
+    assert exclusion({**base, "common_word": True}) == "common_word"     # „stratégia”
+    assert exclusion({**base, "template_share": 0.9}) == "context"
     assert is_context({"template_share": 0.0, "in_site_name": True})      # a site nevében
     assert is_context({"template_share": 0.5, "in_site_name": False})
     assert not is_context({"template_share": 0.04, "in_site_name": False})   # sok oldalon tárgyalt

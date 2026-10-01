@@ -1,5 +1,5 @@
 {
- "status": "Claude verdiktje, 2026-10-01 (harmadik kör); Krisztián jóváhagyására",
+ "status": "Claude verdiktje, 2026-10-01 (negyedik kör); Krisztián jóváhagyására",
  "sites": {
   "kk-coach": {
    "h1_title_mismatch | Kiss Krisztián | https://kk.coach/about/": {
@@ -52,10 +52,10 @@
     "verdict": "valid",
     "note": "három oldalcsoport headingjében, saját cikk vagy szakasz nélkül"
    },
-   "uncovered_topic | Artificial intelligence": {
-    "summary": "Artificial intelligence (concept/discipline): 22 oldalon szerepel, egyiknek sem fő entitása",
+   "uncovered_topic | Google Analytics 4": {
+    "summary": "Google Analytics 4 (tech/software): 23 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
-    "note": "22 oldalon, 8 oldalcsoport headingjében, saját cikk vagy szakasz nélkül; lefedetlen témaként valós (nem feltétlenül kell külön oldal)"
+    "note": "23 oldalon, 81 említés, két oldalcsoport headingjében; egy mérési tanácsadó site-ján nincs róla cikk vagy szakasz"
    }
   },
   "marketinglens": {
@@ -83,11 +83,6 @@
     "summary": "Google Ads: 4 oldal közös témája, átfedés nélkül (en)",
     "verdict": "valid",
     "note": "tájékoztató: négy cikk és esettanulmány a Google Adsről, más-más szögből; nem kannibalizáció"
-   },
-   "uncovered_topic | paid search": {
-    "summary": "paid search (concept/discipline): 8 oldalon szerepel, egyiknek sem fő entitása",
-    "verdict": "valid",
-    "note": "nyolc oldalon, három headingben; nincs róla cikk vagy szakasz"
    },
    "unclear_topic | Applied Marketing Data Science | https://marketinglens.com/marketing-data-science/turning-customer-data-insights-into-action/": {
     "summary": "gyenge fő entitás: Applied Marketing Data Science (primary#1)",
