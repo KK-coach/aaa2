@@ -1,5 +1,5 @@
 {
- "status": "Claude verdiktje, 2026-10-01 (ötödik kör); Krisztián jóváhagyására",
+ "status": "Claude verdiktje, 2026-10-01 (hatodik kör); Krisztián jóváhagyására",
  "sites": {
   "kk-coach": {
    "h1_title_mismatch | Kiss Krisztián | https://kk.coach/about/": {
@@ -69,11 +69,6 @@
    }
   },
   "marketinglens": {
-   "h1_title_mismatch | Online and Offline Sales Conversion Strategy | https://marketinglens.com/grow-online-and-offline-sales/": {
-    "summary": "Online and Offline Sales Conversion Strategy: a H1 általános: nincs benne entitás; a fő entitás nincs a title-ben",
-    "verdict": "valid",
-    "note": "a schema szerinti szolgáltatásnév nem egyezik a H1-gyel és a title-lel (névkövetkezetlenség)"
-   },
    "h1_title_mismatch | nincs H1 | article": {
     "summary": "nincs H1: 9 cikkoldal",
     "verdict": "valid",
@@ -103,6 +98,11 @@
     "summary": "paid search (concept/discipline): 8 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
     "note": "nyolc oldalon, három headingben; nincs róla cikk vagy szakasz"
+   },
+   "shared_topic | Grow Online and Offline Sales | en": {
+    "summary": "Grow Online and Offline Sales: 2 oldal közös témája, átfedés nélkül (en)",
+    "verdict": "invalid",
+    "note": "az írországi oldal fő entitása a kinyerés „PPC Management” neve, amely az ajánlat aliasa; a két oldal nem ugyanarról szól (alias-feloldás)"
    }
   },
   "duex": {
