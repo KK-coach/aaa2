@@ -1,5 +1,5 @@
 {
- "status": "Claude verdiktje, 2026-10-01 (negyedik kör); Krisztián jóváhagyására",
+ "status": "Claude verdiktje, 2026-10-01 (ötödik kör); Krisztián jóváhagyására",
  "sites": {
   "kk-coach": {
    "h1_title_mismatch | Kiss Krisztián | https://kk.coach/about/": {
@@ -56,6 +56,16 @@
     "summary": "Google Analytics 4 (tech/software): 23 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
     "note": "23 oldalon, 81 említés, két oldalcsoport headingjében; egy mérési tanácsadó site-ján nincs róla cikk vagy szakasz"
+   },
+   "uncovered_topic | Artificial intelligence": {
+    "summary": "Artificial intelligence (concept/discipline): 22 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "22 oldalon, 8 oldalcsoport headingjében, saját cikk vagy szakasz nélkül"
+   },
+   "uncovered_topic | Sprint": {
+    "summary": "Sprint (concept/method): 8 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "invalid",
+    "note": "a megvalósítás-oldal title-je megnevezi („Sprint-alapú…”), az ajánlat része; a H1 és title együttes feltétele miatt jött vissza"
    }
   },
   "marketinglens": {
@@ -88,6 +98,11 @@
     "summary": "gyenge fő entitás: Applied Marketing Data Science (primary#1)",
     "verdict": "valid",
     "note": "az oldal témáját csak a kinyerés második fő entitása jelzi"
+   },
+   "uncovered_topic | paid search": {
+    "summary": "paid search (concept/discipline): 8 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "nyolc oldalon, három headingben; nincs róla cikk vagy szakasz"
    }
   },
   "duex": {

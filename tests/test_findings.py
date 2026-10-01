@@ -168,13 +168,28 @@ def test_context_and_covered_entities_are_not_uncovered(monkeypatch):
     build_graph(con)
     run = build_findings(con)
     assert rows(con, "uncovered_topic") == [] and run.context == []       # van ilyen H1-ű oldal
-    # amit egy oldal title-je megnevez, arról van oldal: nem lefedetlen téma
+    # csak a title említi: mellékes, a téma lefedetlen marad
     con.execute("UPDATE pages SET h1 = 'Vegyes gondolatok', title = 'A konverzió növelése' "
                 "WHERE url = ?", [f"{BASE}/blog/vegyes/"])
     build_graph(con)
     build_findings(con)
+    assert [e["entity"] for _, _, e in rows(con, "uncovered_topic")] == ["Konverzió"]
+    # a H1 és a title is megnevezi: van róla szóló oldal, nem lefedetlen téma
+    con.execute("UPDATE pages SET h1 = 'A konverzió növelése' WHERE url = ?",
+                [f"{BASE}/blog/vegyes/"])
+    build_graph(con)
+    build_findings(con)
     assert rows(con, "uncovered_topic") == []
     assert len(rows(con, "missing_page")) == 1          # a szülőcsaládra nem vonatkozik
+    # a rövid alias, amely egy másik entitás nevének szava, nem megnevezés
+    con.execute("UPDATE pages SET h1 = 'KV Search útmutató', title = 'KV Search útmutató' "
+                "WHERE url = ?", [f"{BASE}/blog/vegyes/"])
+    con.execute("UPDATE entities SET aliases = ['KV'] WHERE name = 'Konverzió'")
+    con.execute("INSERT INTO entities (name, type, aliases, source, created_at) VALUES "
+                "('KV Search', 'concept', [], 'llm', ?)", [NOON])
+    build_graph(con)
+    build_findings(con)
+    assert [e["entity"] for _, _, e in rows(con, "uncovered_topic")] == ["Konverzió"]
     base = {"template_share": 0.0, "in_site_name": False, "headline": None,
             "common_word": False, "parent": False}
     assert exclusion(base) is None

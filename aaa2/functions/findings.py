@@ -49,8 +49,9 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   oldalon tárgyalt téma (pl. a GA4 egy mérési tanácsadó site-ján) nem kontextus. Ha egy
   hiányzó oldalú termékcsaládnak az alcsaládja is hiányzó oldal volna, az alcsalád a szülő
   megállapításában áll (`subfamilies`), nem külön. Nem lefedetlen téma az sem (`exclusion`),
-  amit egy indexelhető oldal H1-e vagy title-je megnevez (a szülő, pl. a termékcsalád
-  kivételével), és az egyszavas, kisbetűs köznévi fogalom („stratégia”, „reporting”). A termékcsalád (product / line, vagy termék, amelynek
+  amit egy indexelhető oldal H1-e és title-je is megnevez (a szülő, pl. a termékcsalád
+  kivételével; a rövid, más entitás nevében álló alias, pl. „AI”, nem megnevezés), és az
+  egyszavas, kisbetűs köznévi fogalom („stratégia”, „reporting”). A termékcsalád (product / line, vagy termék, amelynek
   részei vannak) hiányzó oldal (`missing_page`: családoldal kell; high, ha legalább
   `HIGH_PAGES` oldalon szerepel, különben medium). Minden más lefedetlen téma
   (`uncovered_topic`): a teendő cikk, how-to vagy szakasz egy meglévő oldalon, nem
@@ -109,6 +110,7 @@ MIN_PAGES = 3
 MIN_STRUCTURAL = 3
 SMALL_SITE_GROUPS = 50                  # ennél kevesebb oldalcsoportú site-on …
 SMALL_SITE_STRUCTURAL = 2               # … ennyi csoportban elég a kiemelés
+SHORT_ALIAS_CHARS = 3                   # ennél nem hosszabb alias gyenge megnevezés
 MIN_MENTIONS = 6
 HIGH_PAGES = 10
 HIGH_GROUPS = 3
@@ -424,7 +426,7 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
     `SMALL_SITE_STRUCTURAL`) és a lefedettség feltételein átment entitások, a mérőszámaikkal
     (`template_share`: az említések hányad része áll sablon- vagy chrome-helyen;
     `in_site_name`: a név szavai a site nevének szavai; `headline`: az első indexelhető oldal,
-    amelynek a H1-e vagy a title-je megnevezi; `common_word`: egyszavas, kisbetűs köznévi
+    amelynek a H1-e és a title-je is megnevezi; `common_word`: egyszavas, kisbetűs köznévi
     fogalom; `page_share`: az indexelhető oldalak hányad részén szerepel)."""
     if not site.weights:
         return []
@@ -433,6 +435,9 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
         min_structural = SMALL_SITE_STRUCTURAL if small else MIN_STRUCTURAL
     indexable = {p["page_id"] for p in site.nodes() if not p["noindex"]}
     headlines = [(p["url"], p["h1"], p["title"]) for p in site.nodes() if not p["noindex"]]
+    name_words: Counter = Counter()                  # szó → hány entitás nevében áll
+    for other in site.entities.values():
+        name_words.update(_words(other["name"]))
     on_pages: Counter = Counter()
     groups: dict[int, set[str]] = defaultdict(set)          # entitás → említő oldalcsoportok
     headed: dict[int, set[str]] = defaultdict(set)          # … ahol title, H1 vagy heading
@@ -487,10 +492,15 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
             continue
         total, fixed = placed.get(entity_id, (0, 0))
         name = entity["name"].strip()
+        own_words = _words(name)
+        naming = [f for f in forms if alias_key(f) == alias_key(name) or not (
+            len(_squash(f)) <= SHORT_ALIAS_CHARS
+            and any(name_words[w] > (w in own_words) for w in _words(f)))]
         found.append({
             "entity_id": entity_id, "weight": weight, "parent": entity_id in parents,
             "headline": next((url for url, h1, title in headlines
-                              if names_in(forms, h1) or names_in(forms, title, cut=True)), None),
+                              if names_in(naming, h1) and names_in(naming, title, cut=True)),
+                             None),
             "common_word": entity["type"] == "concept" and name.isalpha()
             and name == name.lower(),
             "family": entity["type"] == "product" and (entity["subtype"] == "line"
@@ -510,7 +520,9 @@ def is_context(candidate: dict) -> bool:
 
 def exclusion(candidate: dict) -> str | None:
     """Miért nem lefedetlen téma a jelölt (None: az): `context` (`is_context`); `headline`: egy
-    indexelhető oldal H1-e vagy title-je megnevezi (van róla szóló oldal; a szülőre, pl. a
+    indexelhető oldal H1-e és title-je is megnevezi (van róla szóló oldal; a csak az egyikben
+    álló említés mellékes; a legfeljebb `SHORT_ALIAS_CHARS` jelű alias, amely egy másik entitás
+    nevének szava, pl. az „AI” az „AI Search” mellett, nem megnevezés; a szülőre, pl. a
     termékcsaládra nem vonatkozik, mert a termékei címében mindig ott áll); `common_word`:
     egyszavas, kisbetűs köznévi fogalom (nem rövidítés, nem tulajdonnév)."""
     if is_context(candidate):
