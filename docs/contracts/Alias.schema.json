@@ -1,0 +1,44 @@
+{
+  "additionalProperties": false,
+  "description": "Egy entitás egy aliasa, nyelvvel és forrással (`entity_aliases`).",
+  "properties": {
+    "alias": {
+      "title": "Alias",
+      "type": "string"
+    },
+    "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+    },
+    "lang": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Lang"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source": {
+      "title": "Source",
+      "type": "string"
+    }
+  },
+  "required": [
+    "entity_id",
+    "alias",
+    "source"
+  ],
+  "title": "Alias",
+  "type": "object",
+  "x-module": "resolve",
+  "x-schema-version": "1.0"
+}

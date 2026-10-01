@@ -1,0 +1,59 @@
+{
+  "additionalProperties": false,
+  "description": "Egy oldal fő vagy másodlagos entitása (`page_main_entity`).",
+  "properties": {
+    "confidence": {
+      "enum": [
+        "strong",
+        "medium",
+        "weak"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+    },
+    "evidence": {
+      "default": null,
+      "title": "Evidence"
+    },
+    "external_confirmation": {
+      "default": null,
+      "title": "External Confirmation"
+    },
+    "page_id": {
+      "title": "Page Id",
+      "type": "integer"
+    },
+    "rank": {
+      "title": "Rank",
+      "type": "integer"
+    },
+    "role": {
+      "enum": [
+        "main",
+        "secondary"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "page_id",
+    "entity_id",
+    "role",
+    "rank",
+    "confidence"
+  ],
+  "title": "MainEntity",
+  "type": "object",
+  "x-module": "graph",
+  "x-schema-version": "1.0"
+}

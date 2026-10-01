@@ -1,0 +1,165 @@
+{
+  "$defs": {
+    "MentionSource": {
+      "additionalProperties": false,
+      "description": "Egy említés egy forrása (`mention_sources`).",
+      "properties": {
+        "count": {
+          "title": "Count",
+          "type": "integer"
+        },
+        "llm_call_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Llm Call Id"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "integer"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "schema",
+            "rule",
+            "llm"
+          ],
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "run_id",
+        "count"
+      ],
+      "title": "MentionSource",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Egy entitás egy említése egy oldalon (`page_entities`), a forrásaival.",
+  "properties": {
+    "block_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Block Id"
+    },
+    "char_end": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Char End"
+    },
+    "char_start": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Char Start"
+    },
+    "context": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Context"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+    },
+    "flags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Flags",
+      "type": "array"
+    },
+    "mention_id": {
+      "title": "Mention Id",
+      "type": "integer"
+    },
+    "page_id": {
+      "title": "Page Id",
+      "type": "integer"
+    },
+    "position": {
+      "title": "Position",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/MentionSource"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "surface_form": {
+      "title": "Surface Form",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mention_id",
+    "page_id",
+    "entity_id",
+    "surface_form",
+    "position"
+  ],
+  "title": "Mention",
+  "type": "object",
+  "x-module": "extract",
+  "x-schema-version": "1.0"
+}

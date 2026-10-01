@@ -1,0 +1,74 @@
+{
+  "additionalProperties": false,
+  "description": "Egy entitás súlya a site-on (`entity_weights`).",
+  "properties": {
+    "content_anchors": {
+      "title": "Content Anchors",
+      "type": "integer"
+    },
+    "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+    },
+    "main_pages": {
+      "title": "Main Pages",
+      "type": "integer"
+    },
+    "mentions": {
+      "title": "Mentions",
+      "type": "integer"
+    },
+    "nav_anchors": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nav Anchors"
+    },
+    "pages": {
+      "title": "Pages",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "secondary_pages": {
+      "title": "Secondary Pages",
+      "type": "integer"
+    },
+    "single_mention": {
+      "title": "Single Mention",
+      "type": "boolean"
+    },
+    "structural": {
+      "title": "Structural",
+      "type": "integer"
+    },
+    "weight": {
+      "title": "Weight",
+      "type": "number"
+    }
+  },
+  "required": [
+    "entity_id",
+    "pages",
+    "mentions",
+    "structural",
+    "main_pages",
+    "secondary_pages",
+    "content_anchors",
+    "single_mention",
+    "weight"
+  ],
+  "title": "EntityWeight",
+  "type": "object",
+  "x-module": "graph",
+  "x-schema-version": "1.0"
+}

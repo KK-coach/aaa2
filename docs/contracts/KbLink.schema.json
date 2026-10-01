@@ -1,0 +1,156 @@
+{
+  "additionalProperties": false,
+  "description": "Egy entitás tudásbázis-kapcsolata: Wikidata, Wikipedia és a Google Knowledge Graph\n(`entities` tudásbázis-oszlopai).",
+  "properties": {
+    "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+    },
+    "kg_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Kg Id"
+    },
+    "kg_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Kg Reason"
+    },
+    "kg_status": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Kg Status"
+    },
+    "kg_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Kg Type"
+    },
+    "kg_type_mismatch": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Kg Type Mismatch"
+    },
+    "knowledge_checked_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Knowledge Checked At"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "validated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Validated At"
+    },
+    "wikidata_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Wikidata Id"
+    },
+    "wikidata_status": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Wikidata Status"
+    },
+    "wikipedia": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Wikipedia"
+    },
+    "wikipedia_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Wikipedia Url"
+    }
+  },
+  "required": [
+    "entity_id"
+  ],
+  "title": "KbLink",
+  "type": "object",
+  "x-module": "resolve",
+  "x-schema-version": "1.0"
+}

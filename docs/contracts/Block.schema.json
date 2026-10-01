@@ -1,0 +1,74 @@
+{
+  "additionalProperties": false,
+  "description": "A renderelt DOM egy látható szövegblokkja (`blocks`).",
+  "properties": {
+    "block_id": {
+      "title": "Block Id",
+      "type": "integer"
+    },
+    "cells": {
+      "default": null,
+      "title": "Cells"
+    },
+    "heading_path": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Heading Path",
+      "type": "array"
+    },
+    "kind": {
+      "title": "Kind",
+      "type": "string"
+    },
+    "level": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Level"
+    },
+    "ordinal": {
+      "title": "Ordinal",
+      "type": "integer"
+    },
+    "page_id": {
+      "title": "Page Id",
+      "type": "integer"
+    },
+    "region": {
+      "enum": [
+        "content",
+        "chrome"
+      ],
+      "title": "Region",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "block_id",
+    "page_id",
+    "ordinal",
+    "kind",
+    "region",
+    "text"
+  ],
+  "title": "Block",
+  "type": "object",
+  "x-module": "extract",
+  "x-schema-version": "1.0"
+}

@@ -1,0 +1,166 @@
+{
+  "additionalProperties": false,
+  "description": "Egy oldal egy puha típusú (concept, service) tétele a bizonyítékaival és a döntéssel\n(`soft_checks`).",
+  "properties": {
+    "blocks": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Blocks"
+    },
+    "canonical": {
+      "title": "Canonical",
+      "type": "string"
+    },
+    "entity_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Entity Id"
+    },
+    "kept": {
+      "title": "Kept",
+      "type": "boolean"
+    },
+    "knowledge": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Knowledge"
+    },
+    "mentions": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Mentions"
+    },
+    "page_id": {
+      "title": "Page Id",
+      "type": "integer"
+    },
+    "prominent": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Prominent"
+    },
+    "rank": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rank"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sol": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sol"
+    },
+    "structure": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Structure"
+    },
+    "type": {
+      "enum": [
+        "service",
+        "concept"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "type_change_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Type Change Reason"
+    },
+    "type_changed_from": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Type Changed From"
+    }
+  },
+  "required": [
+    "run_id",
+    "page_id",
+    "canonical",
+    "type",
+    "kept"
+  ],
+  "title": "Candidate",
+  "type": "object",
+  "x-module": "extract",
+  "x-schema-version": "1.0"
+}

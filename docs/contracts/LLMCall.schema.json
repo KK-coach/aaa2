@@ -1,0 +1,139 @@
+{
+  "additionalProperties": false,
+  "description": "Egy modellhívás a költségével (`llm_calls`).",
+  "properties": {
+    "attempts": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attempts"
+    },
+    "call_id": {
+      "title": "Call Id",
+      "type": "integer"
+    },
+    "called_at": {
+      "format": "date-time",
+      "title": "Called At",
+      "type": "string"
+    },
+    "cost_usd": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cost Usd"
+    },
+    "domain": {
+      "title": "Domain",
+      "type": "string"
+    },
+    "fabricated_count": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fabricated Count"
+    },
+    "last_error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Error"
+    },
+    "latency_ms": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Latency Ms"
+    },
+    "model": {
+      "title": "Model",
+      "type": "string"
+    },
+    "page_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Page Id"
+    },
+    "purpose": {
+      "title": "Purpose",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "tokens_in": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tokens In"
+    },
+    "tokens_out": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tokens Out"
+    }
+  },
+  "required": [
+    "call_id",
+    "domain",
+    "model",
+    "purpose",
+    "called_at"
+  ],
+  "title": "LLMCall",
+  "type": "object",
+  "x-module": "llm",
+  "x-schema-version": "1.0"
+}

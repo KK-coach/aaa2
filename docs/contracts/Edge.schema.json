@@ -1,0 +1,87 @@
+{
+  "additionalProperties": false,
+  "description": "Egy él a gráfban (`edges`).",
+  "properties": {
+    "edge_id": {
+      "title": "Edge Id",
+      "type": "integer"
+    },
+    "evidence": {
+      "default": null,
+      "title": "Evidence"
+    },
+    "from_id": {
+      "title": "From Id",
+      "type": "integer"
+    },
+    "from_kind": {
+      "enum": [
+        "page",
+        "entity"
+      ],
+      "title": "From Kind",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source": {
+      "title": "Source",
+      "type": "string"
+    },
+    "to_id": {
+      "title": "To Id",
+      "type": "integer"
+    },
+    "to_kind": {
+      "enum": [
+        "page",
+        "entity"
+      ],
+      "title": "To Kind",
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "mentions",
+        "main_entity",
+        "part_of",
+        "brand_of",
+        "offers",
+        "is_a",
+        "about",
+        "duplicate_of",
+        "supports"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "weight": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Weight"
+    }
+  },
+  "required": [
+    "edge_id",
+    "from_kind",
+    "from_id",
+    "to_kind",
+    "to_id",
+    "type",
+    "source"
+  ],
+  "title": "Edge",
+  "type": "object",
+  "x-module": "graph",
+  "x-schema-version": "1.0"
+}
