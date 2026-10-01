@@ -6,7 +6,11 @@
   - `support`: kezdőoldal (`site.home_urls`), jogi, köszönő és hibaoldal (`support_url`), vagy
     `ContactPage` / `AboutPage` / `ProfilePage` / `CollectionPage` / `SearchResultsPage`
     csomópont;
-  - `offer`: az oldalra mutató (`url` vagy `@id` a töredék nélkül) JSON-LD `Service`;
+  - `offer`: az oldalra mutató (`url` vagy `@id` a töredék nélkül) JSON-LD `Service`; kivéve a
+    gyűjtőoldalt (`offer_hub`, szerepe `support`): a saját `Service` csomópont `hasPart`-ja
+    legalább `HUB_MIN_PARTS` olyan szolgáltatást sorol, amelynek saját oldala van a site-on,
+    és maga nem része másik szolgáltatásnak (nincs `isPartOf`): ajánlatokat listáz, maga nem
+    ajánlat;
   - `product`: az oldalra mutató JSON-LD `Product`;
   - `offer` az általános `Article` csomópontú oldal is (a WordPress SEO-bővítménye a statikus
     oldalakra is ráteszi), ha nincs rajta bejegyzés-típus (`BlogPosting`, `NewsArticle`,
@@ -47,11 +51,13 @@ SUPPORT_SLUGS = frozenset({
     "privacy", "privacy-policy", "privacy-notice", "privacy-centre", "privacy-center",
     "cookie-policy", "cookies", "terms", "terms-of-service", "terms-of-use",
     "terms-and-conditions", "impressum", "impresszum", "adatvedelem", "adatvedelmi-tajekoztato",
-    "adatkezelesi-tajekoztato", "aszf", "felhasznalasi-feltetelek", "thank-you", "thanks",
+    "adatkezelesi-tajekoztato", "adatkezeles", "jogi-nyilatkozat", "sutik", "suti-tajekoztato",
+    "aszf", "felhasznalasi-feltetelek", "thank-you", "thanks",
     "koszonjuk", "grazie", "404", "et-code-snippet", "et-code-snippet-type"})
 NAV_POSITIONS = ("nav", "aside", "footer")
 PAGE_TYPES = ("product", "category", "brand_category", "blog", "service", "other")
 BLOG_TYPES = frozenset({"BlogPosting", "NewsArticle"})
+HUB_MIN_PARTS = 2
 COMPONENT_H1_WORDS = 4
 COMPONENT_MIN_LINKERS = 2
 
@@ -100,6 +106,7 @@ def page_roles(con: duckdb.DuckDBPyConnection) -> dict[int, PageInfo]:
         "SELECT DISTINCT page_id FROM blocks WHERE kind = 'code' AND region = 'content'"
     ).fetchall()}
     groups = {page_id: group_key(url, hreflang) for page_id, url, _, _, _, hreflang in rows}
+    site_pages = {page_url(url) for _, url, _, _, _, _ in rows}
     linkers: dict[str, set[str]] = defaultdict(set)
     for from_id, to_id in con.execute(
             "SELECT from_page_id, to_page_id FROM links WHERE to_page_id IS NOT NULL "
@@ -111,7 +118,7 @@ def page_roles(con: duckdb.DuckDBPyConnection) -> dict[int, PageInfo]:
     for page_id, url, _, _, h1, _ in rows:
         own[page_id] = _own_role(page_id, url, h1, homes, nodes.get(page_id, []),
                                  page_id in code_pages, len(linkers[groups[page_id]]),
-                                 page_id in services)
+                                 page_id in services, site_pages)
     members: dict[str, list[int]] = defaultdict(list)
     for page_id in own:
         members[groups[page_id]].append(page_id)
@@ -245,16 +252,20 @@ def service_pages(con: duckdb.DuckDBPyConnection) -> set[int]:
 
 
 def _own_role(page_id: int, url: str, h1: str | None, homes: set[str], nodes: list[dict],
-              has_code: bool, linkers: int, service_named: bool = False) -> tuple[str, str]:
+              has_code: bool, linkers: int, service_named: bool = False,
+              site_pages: frozenset[str] | set[str] = frozenset()) -> tuple[str, str]:
     if page_url(url) in homes:
         return "support", "home"
     if support_url(url):
         return "support", "support_url"
     types = {_short(t) for node in nodes for t in _as_list(node.get("@type"))}
     for kind, role in (("Service", "offer"), ("Product", "product")):
-        if any(kind in {_short(t) for t in _as_list(node.get("@type"))}
-               and (same_page(node.get("url"), url) or same_page(node.get("@id"), url))
-               for node in nodes):
+        own = [node for node in nodes
+               if kind in {_short(t) for t in _as_list(node.get("@type"))}
+               and (same_page(node.get("url"), url) or same_page(node.get("@id"), url))]
+        if own and kind == "Service" and any(offer_hub(node, url, site_pages) for node in own):
+            return "support", "offer_hub"
+        if own:
             return role, f"schema_{kind.lower()}"
     if types & ARTICLE_TYPES and not types & POST_TYPES and service_named:
         return "offer", "article_service"
@@ -266,6 +277,21 @@ def _own_role(page_id: int, url: str, h1: str | None, homes: set[str], nodes: li
             and linkers >= COMPONENT_MIN_LINKERS:
         return "component", "docs_component"
     return "support", "no_entity_evidence"
+
+
+def offer_hub(node: dict, url: str, site_pages: frozenset[str] | set[str]) -> bool:
+    """Gyűjtőoldal-e a saját `Service` csomópont: a `hasPart`-ja legalább `HUB_MIN_PARTS` más,
+    a site-on saját oldallal bíró szolgáltatást sorol (`@id` vagy `url`, a töredék nélkül), és
+    maga nem része másiknak (nincs `isPartOf`)."""
+    if node.get("isPartOf") is not None:
+        return False
+    own = page_url(url)
+    parts = set()
+    for part in _as_list(node.get("hasPart")):
+        ref = part.get("@id") or part.get("url") if isinstance(part, dict) else part
+        if isinstance(ref, str) and page_url(ref) in site_pages and page_url(ref) != own:
+            parts.add(page_url(ref))
+    return len(parts) >= HUB_MIN_PARTS
 
 
 def schema_nodes(con: duckdb.DuckDBPyConnection) -> dict[int, list[dict]]:

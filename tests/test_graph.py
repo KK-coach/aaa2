@@ -443,6 +443,38 @@ def test_attribute_labels_in_two_cell_rows_do_not_count():
     assert not row_label(None, 3)
 
 
+def test_an_article_about_an_own_offer_supports_it_and_keeps_its_topic():
+    offer = ld({"@type": "Service", "@id": "https://pelda.hu/meres/#service", "name": "Mérés",
+                "url": "https://pelda.hu/meres/"})
+    post = ld({"@type": "BlogPosting", "headline": "Adatarchitektúra kezdőknek",
+               "about": {"@id": "https://pelda.hu/meres/#service"}})
+    con = site({"/": html("Pelda", "<main><h1>Pelda</h1><p>Üdv.</p></main>"),
+                "/meres/": html("Mérés · Pelda", "<main><h1>Mérés</h1><p>Leírás.</p></main>",
+                                head=offer),
+                "/blog/cikk/": html("Adatarchitektúra kezdőknek · Pelda", "<main><h1>"
+                                    "Adatarchitektúra kezdőknek</h1><p>Az adatarchitektúra "
+                                    "alapjai.</p></main>", head=post)})
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    topic = llm_entity(con, "https://pelda.hu/blog/cikk/", "Adatarchitektúra", "Adatarchitektúra",
+                       "concept")
+    primary(con, "https://pelda.hu/blog/cikk/", ["Adatarchitektúra"])
+    run = build_graph(con)
+    got = {r[0]: r for r in chosen(con) if r[2] == "main"}
+    assert got["https://pelda.hu/blog/cikk/"][1] == "Adatarchitektúra"     # a téma, nem az ajánlat
+    assert con.execute("SELECT count(*) FROM page_main_entity m JOIN entities e ON "
+                       "e.entity_id = m.entity_id JOIN pages p ON p.page_id = m.page_id "
+                       "WHERE e.name = 'Mérés' AND p.url LIKE '%/blog/cikk/'"
+                       ).fetchone() == (0,)
+    assert run.edges["supports"] == 1
+    assert con.execute(
+        "SELECT f.type, f.subtype, t.name, e.source, e.from_kind FROM edges e JOIN entities f "
+        "ON f.entity_id = e.from_id JOIN entities t ON t.entity_id = e.to_id "
+        "WHERE e.type = 'supports'").fetchall() == [
+        ("work", "article", "Mérés", "schema_about", "entity")]
+    assert topic is not None
+
+
 def test_wikidata_is_a_rules():
     assert is_a_reason("concept", "concept", "P279", "Q2") is None
     assert is_a_reason("concept", "concept", "P31", "Q2") == "P31 concept típuson"

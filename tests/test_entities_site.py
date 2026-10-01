@@ -54,7 +54,7 @@ def business_site():
     contact = ld({"@type": "ContactPage", "name": "Kapcsolat"})
     con = site({
         "/": html("Pelda · Kezdőlap", NAV + "<main><h1>Pelda</h1><p>Üdv.</p></main>"),
-        "/hu/meres/": html("Mérés és Adatarchitektúra, Döntésekhez · Pelda", HU_OFFER),
+        "/hu/meres/": html("Mérés · Pelda", HU_OFFER),
         "/en/measurement/": html("Measurement & Data Architecture — Growth · Pelda", EN_OFFER,
                                  head=EN_SERVICE, lang="en"),
         "/kapcsolat/": html("Kapcsolat · Pelda", NAV + "<main><h1>Írj nekem</h1></main>",
@@ -167,8 +167,8 @@ def test_offer_page_entity_with_aliases_packages_and_steps():
     assert anchor == con.execute("SELECT page_id FROM pages WHERE url = ?", [hu]).fetchone()[0]
     aliases = {row for row in con.execute(
         "SELECT alias, source FROM entity_aliases WHERE entity_id = ?", [entity_id]).fetchall()}
-    assert {("Mérés nélkül csak találgatás.", "h1"), ("Mérés és Adatarchitektúra, Döntésekhez",
-            "title"), ("Measurement & Data Architecture", "schema"), ("Mérés", "nav"),
+    assert {("Mérés nélkül csak találgatás.", "h1"), ("Mérés", "title"),
+            ("Measurement & Data Architecture", "schema"), ("Mérés", "nav"),
             ("Mérés és adatarchitektúra", "anchor"), ("Growth", "hreflang")} <= aliases
     # A szövegben használt „Mérés” fogalom külön entitás marad (spec 9. pont).
     assert (concept, "concept") in {(r[0], r[2]) for r in by_name(con, "Mérés")}
@@ -524,6 +524,89 @@ def test_a_generic_article_page_naming_a_service_is_an_offer():
         "SELECT e.type, e.subtype, e.tier FROM entities e JOIN pages p ON p.page_id = "
         "e.anchor_page_id WHERE p.url = 'https://pelda.hu/meres/'").fetchall()
     assert anchored == [("service", None, "core")]             # a korábbi cikk kötése megszűnt
+
+
+def test_hungarian_legal_slugs():
+    from aaa2.entities.pages import support_url
+    for path in ("/hu/sutik/", "/suti-tajekoztato/", "/adatkezeles/", "/adatkezelesi-tajekoztato/",
+                 "/jogi-nyilatkozat/", "/felhasznalasi-feltetelek/"):
+        assert support_url(f"https://x.hu{path}"), path
+    assert not support_url("https://x.hu/sutik-receptje/")
+
+
+def hub_site():
+    part = "https://pelda.hu/{}/#service"
+    hub = ld({"@type": "Service", "@id": "https://pelda.hu/#rendszer",
+              "name": "Növekedési rendszer", "url": "https://pelda.hu/rendszer/",
+              "hasPart": [{"@id": part.format("seo")}, {"@id": part.format("meres")}]})
+    seo = ld({"@type": "Service", "@id": part.format("seo"), "name": "SEO tanácsadás",
+              "url": "https://pelda.hu/seo/", "isPartOf": {"@id": "https://pelda.hu/#rendszer"},
+              "hasPart": [{"@id": part.format("seo/technikai")}, {"@id": part.format("meres")}]})
+
+    def offer(name, path):
+        return html(f"{name} · Pelda", f"<main><h1>{name}</h1><p>Leírás.</p></main>",
+                    head=ld({"@type": "Service", "name": name, "url": f"https://pelda.hu{path}"}))
+
+    return site({
+        "/": html("Pelda", "<main><h1>Pelda</h1></main>"),
+        "/rendszer/": html("Növekedési rendszer · Pelda", "<main><h1>Növekedési rendszer</h1>"
+                           "<p>Öt terület.</p></main>", head=hub),
+        "/seo/": html("SEO tanácsadás · Pelda", "<main><h1>SEO tanácsadás</h1><p>Leírás.</p>"
+                      "</main>", head=seo),
+        "/meres/": offer("Mérés", "/meres/"),
+        "/seo/technikai/": offer("Technikai SEO", "/seo/technikai/")})
+
+
+def test_an_offer_hub_lists_offers_and_is_not_an_offer():
+    con = hub_site()
+    got = {i.url: (i.role, i.reason) for i in page_roles(con).values()}
+    assert got["https://pelda.hu/rendszer/"] == ("support", "offer_hub")
+    assert got["https://pelda.hu/seo/"] == ("offer", "schema_service")   # része a rendszernek
+    assert got["https://pelda.hu/meres/"] == ("offer", "schema_service")
+    run_rules(con)
+    # egy korábbi futásban az oldalhoz kötött, menücímke nevű ajánlat
+    (stale,) = con.execute(
+        "INSERT INTO entities (name, type, aliases, source, created_at, anchor_page_id, tier) "
+        "SELECT 'Szolgáltatások', 'service', [], 'rule', ?, page_id, 'core' FROM pages "
+        "WHERE url = 'https://pelda.hu/rendszer/' RETURNING entity_id", [NOON]).fetchone()
+    con.execute("INSERT INTO entity_aliases (entity_id, alias, lang, source) VALUES "
+                "(?, 'Növekedési rendszer', 'hu', 'schema'), (?, 'Szolgáltatások', 'hu', 'nav')",
+                [stale, stale])
+    run_site(con, clock=lambda: NOON)
+    assert con.execute("SELECT count(*) FROM entities e JOIN pages p ON p.page_id = "
+                       "e.anchor_page_id WHERE p.url = 'https://pelda.hu/rendszer/'"
+                       ).fetchone() == (0,)
+    row = con.execute("SELECT name, tier, aliases FROM entities WHERE entity_id = ?",
+                      [stale]).fetchone()
+    if row is not None:                                   # a névazonos entitásba is olvadhat
+        assert row[:2] == ("Növekedési rendszer", None) and "Szolgáltatások" in row[2]
+
+
+def test_the_canonical_offer_name_is_the_naming_h1_then_schema_then_title():
+    from aaa2.entities.pages import PageInfo
+    from aaa2.entities.site import Name, _canonical, h1_names_offer
+
+    names = [Name("Web analytics consulting", "schema", "en"), Name("Measurement", "nav", "en"),
+             Name("Web analytics consulting and GA4 audit services", "title", "en")]
+
+    def page(h1):
+        return PageInfo(1, "https://x.hu/a/", "en", "t", h1, "g", "offer", "schema_service")
+
+    assert h1_names_offer("Web analytics consulting", names)
+    assert h1_names_offer("SEO consulting for B2B and ecommerce",
+                          [Name("SEO consulting", "schema", "en")])
+    assert not h1_names_offer("Ideas don’t create growth. Execution does.",
+                              [Name("Execution", "nav", "en")])            # szlogen
+    assert not h1_names_offer("Let’s talk", names)
+    assert _canonical("offer", page("Web analytics consulting for ecommerce"), names) == \
+        "Web analytics consulting for ecommerce"                           # a megnevező H1
+    assert _canonical("offer", page("Marketing without measurement is guessing."), names) == \
+        "Web analytics consulting"                                          # JSON-LD-név
+    assert _canonical("offer", page("Guessing."), [n for n in names if n.source != "schema"]) \
+        == "Web analytics consulting and GA4 audit services"               # title
+    assert _canonical("offer", page("Guessing."), [Name("Measurement", "nav", "en")]) == \
+        "Measurement"                                                       # végső tartalék
+    assert _canonical("product", page("Akármi"), names) == "Measurement"   # terméknél a menü
 
 
 def test_confident_technology_classes_become_tech():
