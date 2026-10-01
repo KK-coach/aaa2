@@ -57,7 +57,7 @@ class SiteConfig:
 
 
 def site_domain(con: duckdb.DuckDBPyConnection) -> str | None:
-    row = con.execute("SELECT domain FROM site").fetchone()
+    row = con.execute("SELECT domain FROM site ORDER BY ALL").fetchone()
     return row[0] if row else None
 
 
@@ -102,7 +102,7 @@ def canonical_language(con: duckdb.DuckDBPyConnection, config: SiteConfig | None
     első nyelve."""
     if config is not None and config.canonical_lang:
         return config.canonical_lang
-    row = con.execute("SELECT seed_url, home_urls, languages FROM site").fetchone()
+    row = con.execute("SELECT seed_url, home_urls, languages FROM site ORDER BY ALL").fetchone()
     if row is None:
         return None
     seed, homes, languages = row
@@ -110,7 +110,7 @@ def canonical_language(con: duckdb.DuckDBPyConnection, config: SiteConfig | None
         if not url:
             continue
         found = con.execute(
-            "SELECT lang FROM pages WHERE lang IS NOT NULL AND (url = ? OR url = ?)",
+            "SELECT lang FROM pages WHERE lang IS NOT NULL AND (url = ? OR url = ?) ORDER BY ALL",
             [url, page_url(url)]).fetchone()
         if found:
             return primary_lang(found[0])

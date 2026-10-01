@@ -119,13 +119,13 @@ def status(
         _llm_spend(None)
         return
     con = _open(domain)
-    (pages,) = con.execute("SELECT count(*) FROM pages").fetchone()
-    (errors,) = con.execute("SELECT count(*) FROM pages WHERE error IS NOT NULL").fetchone()
+    (pages,) = con.execute("SELECT count(*) FROM pages ORDER BY ALL").fetchone()
+    (errors,) = con.execute("SELECT count(*) FROM pages WHERE error IS NOT NULL ORDER BY ALL").fetchone()
     by_class = con.execute(
         "SELECT coalesce(CAST(status // 100 AS VARCHAR) || 'xx', 'nincs válasz') AS class, "
         "count(*) FROM pages GROUP BY class ORDER BY class"
     ).fetchall()
-    queue = dict(con.execute("SELECT status, count(*) FROM crawl_queue GROUP BY status").fetchall())
+    queue = dict(con.execute("SELECT status, count(*) FROM crawl_queue GROUP BY status ORDER BY ALL").fetchall())
     typer.echo(f"{_domain(domain)}: {pages} oldal, {errors} hibával")
     typer.echo("  státusz: " + ", ".join(f"{name} {count}" for name, count in by_class))
     typer.echo(
@@ -134,7 +134,7 @@ def status(
     )
     profile = con.execute(
         "SELECT target_country, target_country_confidence, target_country_candidates, "
-        "market_scope, market_scope_city, languages, page_count, tech_signals FROM site"
+        "market_scope, market_scope_city, languages, page_count, tech_signals FROM site ORDER BY ALL"
     ).fetchone()
     if profile:
         country, confidence, candidates, scope, city, languages, page_count, signals = profile
@@ -219,7 +219,7 @@ def entities(
     if steps.blocks:
         build_blocks(con)
     runs = [] if estimate or not steps.rules else [run_rules(con).run_id]
-    site_lang = ((con.execute("SELECT languages FROM site").fetchone() or [None])[0]
+    site_lang = ((con.execute("SELECT languages FROM site ORDER BY ALL").fetchone() or [None])[0]
                  or [None])[0]
     kb = shared = linked = site_run = None
     if use_knowledge and not estimate:
@@ -304,7 +304,7 @@ def entities(
         ).fetchone()
         typer.echo(_entity_run_line(*entity_run))
         for reason, value in json.loads(con.execute(
-                "SELECT skipped FROM entity_runs WHERE run_id = ?", [run_id]).fetchone()[0]
+                "SELECT skipped FROM entity_runs WHERE run_id = ? ORDER BY ALL", [run_id]).fetchone()[0]
                 ).items():
             shown = (", ".join(f"{k} {v}" for k, v in list(value.items())[:8])
                      if isinstance(value, dict) else ", ".join(value)
@@ -417,7 +417,7 @@ def findings(
     `<név>-view-pages.csv`, `<név>-views.html`."""
     con = _open(domain, db)
     stem = db.stem if db is not None else _domain(domain)
-    if con.execute("SELECT count(*) FROM page_nodes").fetchone()[0] == 0:
+    if con.execute("SELECT count(*) FROM page_nodes ORDER BY ALL").fetchone()[0] == 0:
         raise typer.BadParameter("nincs gráf: előbb `aaa graph`")
     run = build_findings(con)
     paths = {"findings": export_findings(con, out, stem), **export_views(con, out, stem)}
@@ -442,7 +442,7 @@ def _utcnow() -> datetime:
 
 
 def _site_domain(con) -> str | None:
-    row = con.execute("SELECT domain FROM site").fetchone()
+    row = con.execute("SELECT domain FROM site ORDER BY ALL").fetchone()
     return row[0] if row else None
 
 
@@ -483,7 +483,7 @@ def validate(
         typer.echo(f"    {name}: {before} → {after}")
     (kg_today,) = con.execute(
         "SELECT count(*) FROM validation_calls WHERE service = 'kg' AND "
-        "CAST(called_at AS DATE) = current_date").fetchone()
+        "CAST(called_at AS DATE) = current_date ORDER BY ALL").fetchone()
     typer.echo(
         f"  API-hívás: KG {run.calls.get('kg', 0)}, Wikipedia {run.calls.get('wikipedia', 0)}; "
         f"cache: site {run.cache_site}, shared {run.cache_shared}; hiba: "
@@ -531,7 +531,7 @@ def export(
         ).fetchall()
         if kind != "BLOB"
     ]
-    rows = con.execute(f"SELECT {', '.join(columns)} FROM {table}").fetchall()
+    rows = con.execute(f"SELECT {', '.join(columns)} FROM {table} ORDER BY ALL").fetchall()
     handle = out.open("w", encoding="utf-8", newline="") if out else sys.stdout
     try:
         writer = csv.writer(handle)

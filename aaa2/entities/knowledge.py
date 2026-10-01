@@ -109,7 +109,7 @@ def link_entities(con: duckdb.DuckDBPyConnection, knowledge: KnowledgeBase,
     nyelvei, végül angol."""
     clear_person_links(con, clock)
     site_langs = [base_language(code) for code in (
-        con.execute("SELECT languages FROM site").fetchone() or [None])[0] or []]
+        con.execute("SELECT languages FROM site ORDER BY ALL").fetchone() or [None])[0] or []]
     short: list[tuple[int, str, list[str]]] = []
     rows = con.execute(
         "SELECT entity_id, name, type, subtype, lang, flags FROM entities "
@@ -186,7 +186,7 @@ def _corroborated(con: duckdb.DuckDBPyConnection, knowledge: KnowledgeBase,
         "'confident' ORDER BY entity_id").fetchall()}
     pairs = []
     for entity_id, name, codes in short:
-        (kind,) = con.execute("SELECT type FROM entities WHERE entity_id = ?",
+        (kind,) = con.execute("SELECT type FROM entities WHERE entity_id = ? ORDER BY ALL",
                               [entity_id]).fetchone()
         hit = next((found for code in codes if (found := knowledge.wikidata(name, code))), None)
         if hit is not None and (kind, hit["id"]) in confident                 and not _ambiguous(knowledge, kind, hit):
@@ -206,7 +206,7 @@ def _merge_confident(con: duckdb.DuckDBPyConnection, clock: Callable[[], datetim
     """Az azonos típusú, azonos biztos QID-jű entitások összevonása, és a megerősített rövid
     nevek (`short`) beolvasztása, a legutóbbi site-körhöz kötött `merge_log`-gal; ha nincs
     site-kör, nincs összevonás."""
-    run = con.execute("SELECT max(run_id) FROM entity_runs WHERE method = 'site'").fetchone()[0]
+    run = con.execute("SELECT max(run_id) FROM entity_runs WHERE method = 'site' ORDER BY ALL").fetchone()[0]
     if run is None:
         return 0
     merger = Merger(con, run, clock)

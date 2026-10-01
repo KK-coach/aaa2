@@ -134,7 +134,7 @@ def navigational_concepts(con: duckdb.DuckDBPyConnection) -> set[int]:
     return {entity_id for (entity_id,) in con.execute(
         "SELECT pe.entity_id FROM page_entities pe JOIN entities e USING (entity_id) "
         "WHERE e.type = 'concept' GROUP BY pe.entity_id "
-        "HAVING bool_and(list_contains(?, pe.position))", [list(NAVIGATIONAL_POSITIONS)],
+        "HAVING bool_and(list_contains(?, pe.position)) ORDER BY ALL", [list(NAVIGATIONAL_POSITIONS)],
     ).fetchall()}
 
 
@@ -260,7 +260,7 @@ class _Api:
     @staticmethod
     def _cached(con, service: str, key: str) -> dict | None:
         row = con.execute("SELECT response FROM validation_cache WHERE service = ? AND "
-                          "request_key = ?", [service, key]).fetchone()
+                          "request_key = ? ORDER BY ALL", [service, key]).fetchone()
         return json.loads(row[0]) if row else None
 
     def _store(self, con, service: str, key: str, body: dict) -> None:

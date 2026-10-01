@@ -83,6 +83,7 @@ from urllib.parse import urljoin, urlsplit
 
 import duckdb
 
+from aaa2.db.stable_json import dumps
 from aaa2.entities.gate import occurs
 from aaa2.entities.pages import (
     PageInfo,
@@ -241,7 +242,7 @@ def build_graph(con: duckdb.DuckDBPyConnection, config: GraphConfig | None = Non
         _store_page(con, graph, info, decision)
     _edges(con, graph, config, decisions, superclasses, run)
     run.weights = _weights(con, graph, config)
-    run.edges = Counter(dict(con.execute("SELECT type, count(*) FROM edges GROUP BY 1")
+    run.edges = Counter(dict(con.execute("SELECT type, count(*) FROM edges GROUP BY 1 ORDER BY ALL")
                              .fetchall()))
     return run
 
@@ -263,30 +264,30 @@ class _Graph:
         self.urls = {info.page_id: info.url for info in self.roles.values()}
         self.alternates = {page_id: {page_url(entry.split("|", 1)[-1]) for entry in hreflang or []}
                            for page_id, hreflang in con.execute(
-                               "SELECT page_id, hreflang FROM pages").fetchall()}
+                               "SELECT page_id, hreflang FROM pages ORDER BY ALL").fetchall()}
         self.page_of_url = {page_url(info.url): info.page_id for info in self.roles.values()}
         rows = con.execute("SELECT entity_id, name, type, subtype, aliases, flags, role, "
-                           "anchor_page_id, wikidata_id, wikidata_status FROM entities"
+                           "anchor_page_id, wikidata_id, wikidata_status FROM entities ORDER BY ALL"
                            ).fetchall()
         self.entities = {row[0]: row for row in rows}
         self.excluded = {row[0] for row in rows if set(row[5] or []) & set(EXCLUDED_FLAGS)}
         self.site_entities = {entity_id for (entity_id,) in con.execute(
             "SELECT entity_id FROM entities e WHERE role = 'brand' OR (type = 'brand' AND "
             "source IN ('rule', 'schema') AND NOT EXISTS (SELECT 1 FROM entity_relations r "
-            "WHERE r.from_id = e.entity_id AND r.type = 'brand_of'))").fetchall()}
+            "WHERE r.from_id = e.entity_id AND r.type = 'brand_of')) ORDER BY ALL").fetchall()}
         self.index: dict[str, set[int]] = defaultdict(set)
         self.normal: dict[str, set[int]] = defaultdict(set)
         for entity_id, name, *_, aliases in [(r[0], r[1], r[4]) for r in rows]:
             for form in [name, *(aliases or [])]:
                 self._index(entity_id, form)
-        for entity_id, alias in con.execute("SELECT entity_id, alias FROM entity_aliases"
+        for entity_id, alias in con.execute("SELECT entity_id, alias FROM entity_aliases ORDER BY ALL"
                                             ).fetchall():
             if entity_id in self.entities:
                 self._index(entity_id, alias)
         self.mentions: dict[int, list[tuple]] = defaultdict(list)
         for page_id, entity_id, position, flags, region, kind, cells, end in con.execute(
                 "SELECT pe.page_id, pe.entity_id, pe.position, pe.flags, b.region, b.kind, "
-                "b.cells, pe.char_end FROM page_entities pe LEFT JOIN blocks b USING (block_id)"
+                "b.cells, pe.char_end FROM page_entities pe LEFT JOIN blocks b USING (block_id) ORDER BY ALL"
                 ).fetchall():
             skip = "template" if "template" in (flags or []) \
                 else "label" if kind == "table_row" and row_label(cells, end) else None
@@ -299,7 +300,7 @@ class _Graph:
         self.outbound: dict[int, list[tuple[int, str]]] = defaultdict(list)
         for from_id, to_id, anchor, position in con.execute(
                 "SELECT from_page_id, to_page_id, anchor, position FROM links "
-                "WHERE to_page_id IS NOT NULL").fetchall():
+                "WHERE to_page_id IS NOT NULL ORDER BY ALL").fetchall():
             if from_id in self.roles and to_id in self.roles \
                     and self.roles[from_id].group != self.roles[to_id].group:
                 self.inbound[to_id].append((from_id, anchor or "", position == "body"))
@@ -322,10 +323,10 @@ class _Graph:
         nélküli döntés okai (`CANONICAL_ISSUES`)."""
         node = {canonical_key(info.url): page_id for page_id, info in self.roles.items()}
         status = {canonical_key(url): code for url, code in self.con.execute(
-            "SELECT url, status FROM pages").fetchall()}
+            "SELECT url, status FROM pages ORDER BY ALL").fetchall()}
         declared: dict[int, int] = {}
         for page_id, canonical in self.con.execute(
-                "SELECT page_id, canonical FROM pages WHERE canonical IS NOT NULL").fetchall():
+                "SELECT page_id, canonical FROM pages WHERE canonical IS NOT NULL ORDER BY ALL").fetchall():
             if page_id not in self.roles:
                 continue
             target = canonical_key(urljoin(self.roles[page_id].url, canonical))
@@ -620,7 +621,7 @@ def _store_page(con: duckdb.DuckDBPyConnection, graph: _Graph, info: PageInfo,
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [info.page_id, info.url, decision["role"], decision["support"], info.title, info.h1,
          info.lang, decision["group"], members, decision["status"], decision["canonical"],
-         issue["issue"] if issue else None, json.dumps(record, ensure_ascii=False)])
+         issue["issue"] if issue else None, dumps(record, ensure_ascii=False)])
     chosen = ([("main", decision["main"])] if decision["main"] else []) \
         + [("secondary", c) for c in decision["secondary"]]
     for rank, (role, item) in enumerate(chosen, start=1):
@@ -628,7 +629,7 @@ def _store_page(con: duckdb.DuckDBPyConnection, graph: _Graph, info: PageInfo,
             "INSERT INTO page_main_entity (page_id, entity_id, role, rank, confidence, evidence) "
             "VALUES (?, ?, ?, ?, ?, ?)",
             [info.page_id, item.entity_id, role, rank, item.confidence(),
-             json.dumps(item.evidence, ensure_ascii=False)])
+             dumps(item.evidence, ensure_ascii=False)])
 
 
 def _edges(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig,
@@ -690,7 +691,7 @@ def _edges(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig,
         con.executemany(
             "INSERT INTO edges (from_kind, from_id, to_kind, to_id, type, source, evidence, "
             "weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [(fk, fi, tk, ti, t, s, json.dumps(e, ensure_ascii=False) if e is not None
+            [(fk, fi, tk, ti, t, s, dumps(e, ensure_ascii=False) if e is not None
               else None, w) for fk, fi, tk, ti, t, s, e, w in rows])
 
 
@@ -762,7 +763,7 @@ def _weights(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig)
     roles: dict[int, Counter] = defaultdict(Counter)
     main_pages: dict[int, set[int]] = defaultdict(set)
     for page_id, entity_id, role in con.execute(
-            "SELECT page_id, entity_id, role FROM page_main_entity").fetchall():
+            "SELECT page_id, entity_id, role FROM page_main_entity ORDER BY ALL").fetchall():
         if page_id in graph.canonical:
             continue
         roles[entity_id][role] += 1
@@ -810,10 +811,10 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
     """A három táblázat: oldalanként a fő entitás (`<név>-main-entity.csv`), az éltábla
     (`<név>-edges.csv`) és az entitások súlya (`<név>-weights.csv`)."""
     out.mkdir(parents=True, exist_ok=True)
-    names = dict(con.execute("SELECT entity_id, name FROM entities").fetchall())
+    names = dict(con.execute("SELECT entity_id, name FROM entities ORDER BY ALL").fetchall())
     kinds = {row[0]: (row[1], row[2]) for row in con.execute(
-        "SELECT entity_id, type, subtype FROM entities").fetchall()}
-    urls = dict(con.execute("SELECT page_id, url FROM page_nodes").fetchall())
+        "SELECT entity_id, type, subtype FROM entities ORDER BY ALL").fetchall()}
+    urls = dict(con.execute("SELECT page_id, url FROM page_nodes ORDER BY ALL").fetchall())
     chosen: dict[int, list[tuple]] = defaultdict(list)
     for page_id, entity_id, role, confidence, evidence in con.execute(
             "SELECT page_id, entity_id, role, confidence, evidence FROM page_main_entity "
@@ -879,7 +880,7 @@ def export_rejected(con: duckdb.DuckDBPyConnection, run: GraphRun, out: Path,
                     name: str) -> Path:
     """A Wikidata-osztályból kiesett `is_a`-élek okkal: `<név>-is-a-rejected.csv`."""
     names = {row[0]: (row[1], row[2], row[3]) for row in con.execute(
-        "SELECT entity_id, name, type, wikidata_id FROM entities").fetchall()}
+        "SELECT entity_id, name, type, wikidata_id FROM entities ORDER BY ALL").fetchall()}
     rows = [{"honnan": names[a][0], "honnan típus": names[a][1], "QID": names[a][2],
              "hová": names[b][0], "hová típus": names[b][1], "osztály": names[b][2],
              "tulajdonság": prop, "ok": reason} for a, b, prop, reason in run.is_a_rejected]

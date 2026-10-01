@@ -83,6 +83,7 @@ from urllib.parse import urlsplit
 
 import duckdb
 
+from aaa2.db.stable_json import dumps
 from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
 from aaa2.entities.site import normal_key
@@ -157,7 +158,7 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
                     "summary, evidence) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     [number, kind, severity, page_id, entity_id, summary,
-                     json.dumps(evidence, ensure_ascii=False)])
+                     dumps(evidence, ensure_ascii=False)])
         run.counts[(kind, severity)] += 1
     return run
 
@@ -178,10 +179,10 @@ class _Site:
             ("entity_id", "name", "type", "subtype", "aliases", "anchor", "role", "source"),
             row, strict=True)) for row in con.execute(
             "SELECT entity_id, name, type, subtype, aliases, anchor_page_id, role, source "
-            "FROM entities").fetchall()}
+            "FROM entities ORDER BY ALL").fetchall()}
         self.alias_sources: dict[int, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
         for entity_id, alias, source in con.execute(
-                "SELECT entity_id, alias, source FROM entity_aliases").fetchall():
+                "SELECT entity_id, alias, source FROM entity_aliases ORDER BY ALL").fetchall():
             self.alias_sources[entity_id][alias].add(source)
         self.chosen: dict[int, list[tuple]] = defaultdict(list)     # oldal → (entitás, szerep, …)
         for page_id, entity_id, role, confidence, evidence in con.execute(
@@ -193,13 +194,13 @@ class _Site:
              "content_anchors", "nav_anchors", "weight"), row, strict=True))
             for row in con.execute(
                 "SELECT entity_id, pages, mentions, structural, main_pages, secondary_pages, "
-                "content_anchors, nav_anchors, weight FROM entity_weights").fetchall()}
+                "content_anchors, nav_anchors, weight FROM entity_weights ORDER BY ALL").fetchall()}
         ranked = sorted(self.weights.values(), key=lambda w: (-w["weight"], w["entity_id"]))
         self.rank = {w["entity_id"]: i for i, w in enumerate(ranked, start=1)}
         self.site_entities = {entity_id for (entity_id,) in con.execute(
             "SELECT entity_id FROM entities e WHERE role = 'brand' OR (type = 'brand' AND "
             "source IN ('rule', 'schema') AND NOT EXISTS (SELECT 1 FROM entity_relations r "
-            "WHERE r.from_id = e.entity_id AND r.type = 'brand_of'))").fetchall()}
+            "WHERE r.from_id = e.entity_id AND r.type = 'brand_of')) ORDER BY ALL").fetchall()}
         self.mention_edges: dict[int, list[tuple[int, float, dict]]] = defaultdict(list)
         for page_id, entity_id, weight, evidence in con.execute(
                 "SELECT from_id, to_id, weight, evidence FROM edges WHERE type = 'mentions' "
@@ -460,7 +461,7 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
         "SELECT pe.entity_id, count(*), count(*) FILTER (WHERE b.region = 'chrome' "
         "OR list_contains(coalesce(pe.flags, []), 'template')) FROM page_entities pe "
         "LEFT JOIN blocks b USING (block_id) JOIN page_nodes n ON n.page_id = pe.page_id "
-        "WHERE n.canonical_page IS NULL GROUP BY 1").fetchall()}
+        "WHERE n.canonical_page IS NULL GROUP BY 1 ORDER BY ALL").fetchall()}
     site_words = [_words(form) for e in site.site_entities if e in site.entities
                   for form in [site.name(e), *(site.entities[e]["aliases"] or [])]]
     top = max(1, math.ceil(len(site.weights) * TOP_SHARE))
@@ -472,11 +473,11 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
                   and main[0] not in site.site_entities]
     offered = {to_id for (to_id,) in site.con.execute(
         "SELECT e.to_id FROM edges e JOIN entities s ON s.entity_id = e.from_id "
-        "WHERE e.type = 'offers' AND s.anchor_page_id IS NOT NULL").fetchall()}
+        "WHERE e.type = 'offers' AND s.anchor_page_id IS NOT NULL ORDER BY ALL").fetchall()}
     secondary_of = {c[0] for chosen in site.chosen.values() for c in chosen
                     if c[1] == "secondary"}
     parents = {to_id for (to_id,) in site.con.execute(
-        "SELECT to_id FROM edges WHERE type = 'part_of'").fetchall()}
+        "SELECT to_id FROM edges WHERE type = 'part_of' ORDER BY ALL").fetchall()}
     found = []
     for entity_id, weight in site.weights.items():
         entity = site.entities[entity_id]
@@ -550,7 +551,7 @@ def _uncovered(site: _Site, run: FindingsRun) -> list[tuple]:
             kept.append(candidate)
     parent_of = {from_id: to_id for from_id, to_id in site.con.execute(
         "SELECT from_id, to_id FROM edges WHERE type = 'part_of' AND from_kind = 'entity' "
-        "AND to_kind = 'entity'").fetchall()}
+        "AND to_kind = 'entity' ORDER BY ALL").fetchall()}
     families = {c["entity_id"] for c in kept if c["family"]}
     under: dict[int, list[int]] = defaultdict(list)          # hiányzó szülő → alcsaládjai
     for entity_id in sorted(families):
@@ -642,7 +643,7 @@ def export_findings(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> Pat
     rows = [{"azonosító": f["id"], "típus": TYPE_LABELS[f["type"]], "súlyosság": f["severity"],
              "entitás": site.name(f["entity_id"]) if f["entity_id"] is not None else "",
              "oldalak": " | ".join(_affected(f)), "összefoglaló": f["summary"],
-             "bizonyíték": json.dumps(f["evidence"], ensure_ascii=False)}
+             "bizonyíték": dumps(f["evidence"], ensure_ascii=False)}
             for f in _findings(con)]
     return _write(out / f"{name}-findings.csv", rows,
                   ["azonosító", "típus", "súlyosság", "entitás", "oldalak", "összefoglaló",

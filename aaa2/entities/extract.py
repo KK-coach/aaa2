@@ -60,6 +60,7 @@ from datetime import UTC, date, datetime
 
 import duckdb
 
+from aaa2.db.stable_json import dumps
 from aaa2.entities.blocks import BLOCK_PROMPT, block_input, chunk_blocks
 from aaa2.entities.dom import build_blocks, page_blocks
 from aaa2.entities.llm import site_line
@@ -168,7 +169,7 @@ def select_pages(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
 
 def resumable_run(con: duckdb.DuckDBPyConnection, model: str) -> int | None:
     """A modell legutóbbi LLM-futása (a folytatás ezt viszi tovább)."""
-    return con.execute("SELECT max(run_id) FROM entity_runs WHERE method = 'llm' AND model = ?",
+    return con.execute("SELECT max(run_id) FROM entity_runs WHERE method = 'llm' AND model = ? ORDER BY ALL",
                        [model]).fetchone()[0]
 
 
@@ -178,7 +179,7 @@ def run_pages(con: duckdb.DuckDBPyConnection, run_id: int | None) -> dict[int, d
         return {}
     rows = con.execute(
         "SELECT page_id, status, reasons, call_ids, extraction, refined FROM entity_run_pages "
-        "WHERE run_id = ?", [run_id]).fetchall()
+        "WHERE run_id = ? ORDER BY ALL", [run_id]).fetchall()
     return {page_id: {"status": status, "reasons": json.loads(reasons or "{}"),
                       "call_ids": list(call_ids or []),
                       "extraction": json.loads(extraction) if extraction else None,
@@ -244,7 +245,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
     models = input_models(client.model,
                           getattr(refine, "fingerprint", None) if refine else None)
     reusable = reusable_pages(con, client.model) if reuse else {}
-    raw_hashes = dict(con.execute("SELECT page_id, raw_html_hash FROM pages").fetchall())
+    raw_hashes = dict(con.execute("SELECT page_id, raw_html_hash FROM pages ORDER BY ALL").fetchall())
     hashes: dict[int, str] = {}
     parallel = workers > 1 and fork is not None
     pool = queue.Queue()
@@ -488,7 +489,7 @@ def _log(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int, log: _PageLo
         "INSERT OR REPLACE INTO entity_run_pages (run_id, page_id, status, reasons, call_ids, "
         "chunks, fabricated, seconds, error, extraction, refined, finished_at, raw_html_hash, "
         "input_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [run_id, page_id, log.status, json.dumps(dict(log.reasons)), log.call_ids, log.chunks,
+        [run_id, page_id, log.status, dumps(dict(log.reasons)), log.call_ids, log.chunks,
          log.fabricated, seconds, log.error,
          json.dumps(log.extraction, ensure_ascii=False) if log.extraction else None,
          json.dumps(log.refined, ensure_ascii=False) if log.refined else None, clock(),
@@ -511,7 +512,7 @@ def _stop(con: duckdb.DuckDBPyConnection, run_id: int, pages: Sequence[tuple[int
 def _run_cost(con: duckdb.DuckDBPyConnection, run_id: int) -> float:
     return con.execute(
         "SELECT coalesce(sum(cost_usd), 0) FROM llm_calls WHERE call_id IN "
-        "(SELECT DISTINCT unnest(call_ids) FROM entity_run_pages WHERE run_id = ?)",
+        "(SELECT DISTINCT unnest(call_ids) FROM entity_run_pages WHERE run_id = ?) ORDER BY ALL",
         [run_id]).fetchone()[0]
 
 
@@ -520,7 +521,7 @@ def _finish(con: duckdb.DuckDBPyConnection, run_id: int, model: str, seconds: fl
     """A futás mérőszámai az oldalnaplóból és az említésekből (folytatásnál az egész
     futásra), az `entity_runs` sorába írva."""
     logs = con.execute("SELECT status, reasons, call_ids, fabricated FROM entity_run_pages "
-                       "WHERE run_id = ?", [run_id]).fetchall()
+                       "WHERE run_id = ? ORDER BY ALL", [run_id]).fetchall()
     skipped: Counter[str] = Counter()
     call_ids: set[int] = set()
     for _, reasons, ids, _ in logs:
@@ -534,10 +535,10 @@ def _finish(con: duckdb.DuckDBPyConnection, run_id: int, model: str, seconds: fl
         "ORDER BY pe.position", [run_id]).fetchall())
     entities, pages_with = con.execute(
         "SELECT count(DISTINCT pe.entity_id), count(DISTINCT pe.page_id) FROM mention_sources ms "
-        "JOIN page_entities pe USING (mention_id) WHERE ms.run_id = ? AND ms.source = 'llm'",
+        "JOIN page_entities pe USING (mention_id) WHERE ms.run_id = ? AND ms.source = 'llm' ORDER BY ALL",
         [run_id]).fetchone()
     (cost,) = con.execute("SELECT coalesce(sum(cost_usd), 0) FROM llm_calls "
-                          "WHERE list_contains(?, call_id)", [sorted(call_ids)]).fetchone()
+                          "WHERE list_contains(?, call_id) ORDER BY ALL", [sorted(call_ids)]).fetchone()
     rows = sum(positions.values())
     reasons = {k: v for k, v in sorted(skipped.items()) if v}
     con.execute(
@@ -545,7 +546,7 @@ def _finish(con: duckdb.DuckDBPyConnection, run_id: int, model: str, seconds: fl
         "entities = ?, row_count = ?, llm_calls = ?, cost_usd = ?, fabricated = ?, "
         "by_position = ?, skipped = ?, seconds = coalesce(seconds, 0) + ? WHERE run_id = ?",
         [clock(), done, pages_with, entities, rows, len(call_ids), cost, fabricated,
-         json.dumps(positions), json.dumps(reasons), seconds, run_id])
+         dumps(positions), dumps(reasons), seconds, run_id])
     return LLMRun(run_id, model, done, pages_with, entities, rows, len(call_ids),
                   cost, fabricated, positions, reasons)
 
@@ -643,7 +644,7 @@ def _store_mention(con: duckdb.DuckDBPyConnection, page_id: int, entity_id: int,
     kiegészítve, ha még nincs; vagy egy új sor."""
     found = con.execute(
         "SELECT mention_id FROM page_entities WHERE page_id = ? AND block_id = ? "
-        "AND char_start = ? AND char_end = ? AND entity_id = ?",
+        "AND char_start = ? AND char_end = ? AND entity_id = ? ORDER BY ALL",
         [page_id, block["block_id"], start, end, entity_id]).fetchone()
     if found:
         con.execute("UPDATE page_entities SET description = coalesce(description, ?) "

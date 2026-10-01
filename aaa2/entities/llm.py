@@ -31,12 +31,12 @@ TYPE_DEFINITIONS = {
 def site_line(con: duckdb.DuckDBPyConnection) -> str | None:
     """Egy mondat a site-ról: a domain és a kezdőoldal title-je (`site.home_urls` első eleme; ha
     az oszlop NULL, a seed URL), ha van."""
-    row = con.execute("SELECT domain, home_urls, seed_url FROM site").fetchone()
+    row = con.execute("SELECT domain, home_urls, seed_url FROM site ORDER BY ALL").fetchone()
     if row is None:
         return None
     domain, homes, seed = row
     home = seed if homes is None else (homes[0] if homes else None)
-    title = con.execute("SELECT title FROM pages WHERE url = ?", [home]).fetchone() if home \
+    title = con.execute("SELECT title FROM pages WHERE url = ? ORDER BY ALL", [home]).fetchone() if home \
         else None
     title = " ".join((title[0] or "").split()) if title else ""
     return (f"This page belongs to the website {domain}, whose home page is titled "
