@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "description": "Két entitás kapcsolata (`entity_relations`).",
+  "properties": {
+    "evidence": {
+      "default": null,
+      "title": "Evidence"
+    },
+    "from_id": {
+      "title": "From Id",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source": {
+      "title": "Source",
+      "type": "string"
+    },
+    "to_id": {
+      "title": "To Id",
+      "type": "integer"
+    },
+    "type": {
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "from_id",
+    "to_id",
+    "type",
+    "source"
+  ],
+  "title": "Relation",
+  "type": "object",
+  "x-module": "resolve",
+  "x-schema-version": "1.0"
+}

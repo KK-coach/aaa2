@@ -1,0 +1,80 @@
+{
+  "additionalProperties": false,
+  "description": "Egy belső link (`links`).",
+  "properties": {
+    "anchor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Anchor"
+    },
+    "from_page_id": {
+      "title": "From Page Id",
+      "type": "integer"
+    },
+    "nofollow": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nofollow"
+    },
+    "ordinal": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ordinal"
+    },
+    "position": {
+      "title": "Position",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "to_page_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "To Page Id"
+    },
+    "to_url": {
+      "title": "To Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "from_page_id",
+    "to_url",
+    "position"
+  ],
+  "title": "Link",
+  "type": "object",
+  "x-module": "crawl",
+  "x-schema-version": "1.0"
+}

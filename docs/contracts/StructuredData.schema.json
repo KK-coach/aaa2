@@ -1,0 +1,61 @@
+{
+  "additionalProperties": false,
+  "description": "Egy oldal egy strukturált adat-eleme, a jelölés fajtájától függetlenül.",
+  "properties": {
+    "data": {
+      "default": null,
+      "title": "Data"
+    },
+    "ordinal": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ordinal"
+    },
+    "page_id": {
+      "title": "Page Id",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "syntax": {
+      "default": "json-ld",
+      "enum": [
+        "json-ld",
+        "microdata",
+        "rdfa",
+        "opengraph"
+      ],
+      "title": "Syntax",
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Type"
+    }
+  },
+  "required": [
+    "page_id"
+  ],
+  "title": "StructuredData",
+  "type": "object",
+  "x-module": "crawl",
+  "x-schema-version": "1.0"
+}

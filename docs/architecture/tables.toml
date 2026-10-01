@@ -1,0 +1,162 @@
+# Táblatulajdonlás: melyik tábla melyik modulé, a mai állapot szerint (2026-10-01).
+#
+# - `owner`: a tábla gazdája az architektúra-spec moduljai közül (core, llm, crawl, extract,
+#   resolve, graph, findings). A gazda az a modul, amelynek a kimenete a tábla; ahol ma több
+#   modul ír egy táblát, a `also_written_by` sorolja a többit (ezek az architektúra-teszt
+#   „idegen írás” tételei).
+# - `contracts`: a tábla soraiból épülő szerződések (`aaa2/contracts`); üres, ha a táblának ma
+#   nincs szerződése.
+# - `note`: amit a tulajdonlásról tudni kell.
+#
+# A fájlt az architektúra-teszt olvassa (`tests/architecture.py`); a teszt azt is ellenőrzi, hogy
+# a migrációk minden táblája szerepel itt.
+
+[tables._migrations]
+owner = "core"
+contracts = []
+note = "az alkalmazott migrációk (`db/connect.py`)"
+
+# --- crawl -----------------------------------------------------------------------------------
+
+[tables.site]
+owner = "crawl"
+contracts = []
+note = "a site-profil; a frontier, a crawl és a site-profil írja"
+
+[tables.crawl_runs]
+owner = "crawl"
+contracts = []
+
+[tables.crawl_queue]
+owner = "crawl"
+contracts = []
+
+[tables.pages]
+owner = "crawl"
+contracts = ["Page", "PageMeta"]
+
+[tables.links]
+owner = "crawl"
+contracts = ["Link"]
+
+[tables.headings]
+owner = "crawl"
+contracts = []
+note = "a headingek a `Block` szerződésben is megjelennek (a renderelt DOM-ból, az extract modulban)"
+
+[tables.schema_blocks]
+owner = "crawl"
+contracts = ["StructuredData", "PageMeta"]
+note = "ma csak JSON-LD"
+
+# --- llm -------------------------------------------------------------------------------------
+
+[tables.llm_calls]
+owner = "llm"
+contracts = []
+also_written_by = ["extract"]
+note = "a spec szerinti `LLMCall` szerződés még nincs meg; az `entities/extract.py` is ír bele"
+
+# --- extract ---------------------------------------------------------------------------------
+
+[tables.blocks]
+owner = "extract"
+contracts = ["Block"]
+
+[tables.blocks_built]
+owner = "extract"
+contracts = []
+
+[tables.page_entities]
+owner = "extract"
+contracts = ["Mention"]
+also_written_by = ["resolve"]
+note = "a site-kör (`entities/site.py`) is módosítja: összevonás, sablon- és demójelölés"
+
+[tables.mention_sources]
+owner = "extract"
+contracts = ["MentionSource"]
+also_written_by = ["resolve"]
+
+[tables.page_entities_v1]
+owner = "extract"
+contracts = []
+note = "a v1 említéstábla mentése a 012-es migrációból; a kód nem használja"
+
+[tables.entity_runs]
+owner = "extract"
+contracts = []
+also_written_by = ["resolve"]
+note = "a szabálykör, az LLM-kör és a site-kör futásai egy táblában"
+
+[tables.entity_run_pages]
+owner = "extract"
+contracts = []
+
+[tables.soft_checks]
+owner = "extract"
+contracts = ["Candidate"]
+also_written_by = ["resolve"]
+
+# --- resolve ---------------------------------------------------------------------------------
+
+[tables.entities]
+owner = "resolve"
+contracts = ["Entity", "KbLink"]
+also_written_by = ["extract"]
+note = "a szabálykör és az LLM-kör hozza létre a sorokat, a site-kör, a webshop-szintek és a tudásbázis-kapcsolás alakítja"
+
+[tables.entity_aliases]
+owner = "resolve"
+contracts = ["Alias"]
+
+[tables.entity_relations]
+owner = "resolve"
+contracts = ["Relation"]
+
+[tables.merge_log]
+owner = "resolve"
+contracts = ["MergeRecord"]
+
+[tables.validation_cache]
+owner = "resolve"
+contracts = []
+note = "a tudásbázis-válaszok gyorsítótára; a `data/shared.duckdb`-ben is létezik"
+
+[tables.validation_calls]
+owner = "resolve"
+contracts = []
+
+[tables.rules]
+owner = "resolve"
+contracts = []
+note = "az M4 resolver szabálytáblája a 001-es migrációból; a kód ma nem használja"
+
+[tables.rule_events]
+owner = "resolve"
+contracts = []
+note = "az M4 resolver eseménytáblája; a kód ma nem használja"
+
+# --- graph -----------------------------------------------------------------------------------
+
+[tables.page_nodes]
+owner = "graph"
+contracts = ["PageNode"]
+
+[tables.edges]
+owner = "graph"
+contracts = ["Edge"]
+
+[tables.page_main_entity]
+owner = "graph"
+contracts = ["MainEntity"]
+
+[tables.entity_weights]
+owner = "graph"
+contracts = ["EntityWeight"]
+
+# --- findings --------------------------------------------------------------------------------
+
+[tables.findings]
+owner = "findings"
+contracts = ["Finding"]

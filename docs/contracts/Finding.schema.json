@@ -1,0 +1,82 @@
+{
+  "additionalProperties": false,
+  "description": "Egy SEO-megállapítás (`findings`). A `recommendation` (javaslat) ma nem keletkezik.",
+  "properties": {
+    "entity_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Entity Id"
+    },
+    "evidence": {
+      "default": null,
+      "title": "Evidence"
+    },
+    "finding_id": {
+      "title": "Finding Id",
+      "type": "integer"
+    },
+    "page_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Page Id"
+    },
+    "recommendation": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Recommendation"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "severity": {
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "summary": {
+      "title": "Summary",
+      "type": "string"
+    },
+    "type": {
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "finding_id",
+    "type",
+    "severity",
+    "summary"
+  ],
+  "title": "Finding",
+  "type": "object",
+  "x-module": "findings",
+  "x-schema-version": "1.0"
+}
