@@ -411,7 +411,8 @@ def findings(
     out: Annotated[Path, typer.Option(help="a kimeneti mappa")] = Path("data/reports"),
 ) -> None:
     """SEO-megállapítások és ellenőrző nézetek a gráfból (az `aaa graph` után), LLM nélkül:
-    H1/title-eltérés, kannibalizáció, hiányzó oldal, nem egyértelmű téma; kimenet:
+    H1/title-eltérés, kannibalizáció és közös téma, hiányzó oldal és lefedetlen téma, nem
+    egyértelmű téma; kimenet:
     `<out>/<név>-findings.csv`, `<név>-view-site.csv`, `<név>-view-entities.csv`,
     `<név>-view-pages.csv`, `<név>-views.html`."""
     con = _open(domain, db)
@@ -426,7 +427,8 @@ def findings(
             f"{severity} {run.counts[(kind, severity)]}" for severity in ("high", "medium", "low")
             if run.counts[(kind, severity)]) + ")"
         for kind, label in TYPE_LABELS.items() if counts.get(kind)) or "0"))
-    typer.echo(f"hiányzó oldal, a szó szerinti jelöltek: {run.missing_literal}")
+    typer.echo(f"lefedetlen téma, a szó szerinti jelöltek: {run.missing_literal}; kizárt "
+               f"kontextus-entitás: {', '.join(run.context) or '0'}")
     for path in paths.values():
         typer.echo(str(path))
 

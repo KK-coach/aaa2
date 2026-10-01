@@ -9,37 +9,48 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   aliasa nincs a H1-ben, illetve a title-ben (`names_in`: szókezdettől, a kötőszótól, az
   írásjelektől és az egybe- vagy különírástól függetlenül is, pl. „&” = „and”, „E-Privacy” =
   „Eprivacy”; a név rövid alakja is egyezés, ha a H1 vagy a title egy szelete legalább két
-  szó, és minden szava a név szava; a title-ben a hosszkorlát miatt levágott név eleje is egyezés).
-  Névnek nem számít az az alias, amely az oldal saját szövege: maga az oldal (vagy a
+  szó, és minden szava a név szava; a title-ben a hosszkorlát miatt levágott név eleje is
+  egyezés). Névnek nem számít az az alias, amely az oldal saját szövege: maga az oldal (vagy a
   hreflang-párja) H1-e, vagy csak H1- és title-forrása van (`entity_aliases.source`); így az
   összevetés nem körkörös (az M2 az oldalhoz kötött entitás aliasai közé az oldal H1-ét és
-  title-szeleteit is felveszi). Személynél a kéttagú név mindkét sorrendje név. Az oldalhoz nem kötött fő entitásnál a gráf
-  H1- és title-bizonyítéka (az M2 említése) is egyezés. Ha a H1-ben a fő entitás nincs meg,
-  és más entitás említése sincs benne, a H1 általános (`h1_generic`). A kezdőoldalon, és ahol
-  a fő entitás a site saját entitása (rólunk, karrier), csak a title számít (a H1-be nem kell
-  a márkanév). Ha a H1 megnevezi a fő entitást, és a title a H1 szövegét tartalmazza, a title
-  is megnevezi. Oldalcsoportonként és H1–title páronként egy
-  megállapítás (a fülek, pl. `?tab=api`, nem ismétlik). Súlyosság: high, ha a title-ből
-  hiányzik, vagy nincs H1; medium, ha csak a H1-ből.
-- `cannibalization`: ugyanaz a fő entitás legalább két oldalcsoportban, egy nyelven belül. Egy
-  csoport a hreflang-pár és a fül nélküli URL (`page_nodes.group_key`). Nem számít: a
-  canonical-duplikátum, a lapozó oldal (`PAGINATION`), a nem indexelhető oldal (`noindex`), a
-  szülő–gyermek viszony (az egyik oldal útvonala a másiké alatt áll), és a site saját entitása
-  (a cégről több oldal is szólhat). Csak az erős megbízhatóságú fő entitás számít (a közepes
-  és a gyenge a téma bizonytalanságát jelzi, nem ütközést). Súlyosság: high, ha legalább
-  `HIGH_GROUPS` oldalcsoport érintett; különben medium.
-- `missing_page`: az entitás súlya a site felső tizedében van (`TOP_SHARE`), legalább
-  `MIN_PAGES` oldal említi, és egyik oldalnak sem fő entitása. Hogy a megállapítás valós hiányt
-  jelezzen, további feltételek: a site maga kiemeli (legalább `MIN_STRUCTURAL` oldalon áll
-  title-ben, H1-ben vagy headingben, és összesen legalább `MIN_MENTIONS` említése van), és nincs
-  lefedve: nem másodlagos entitása egy oldalnak
-  sem, nem egy saját oldalú ajánlat fogalma (`offers` él), a neve nem egy oldal H1-e vagy
-  URL-szakasza, és a nevének szavai nem egy fő entitás nevének szavai közül valók („Organic
-  Growth” az „Organic Growth System” mellett; a szülő, pl. a termékcsalád a termékei mellett,
-  ettől még nincs lefedve). Kimarad: a szervezet, a személy és a hely
-  (`NO_PAGE_TYPES`), az API-szimbólum, a site saját entitása, az oldalhoz kötött entitás.
-  Súlyosság: high, ha legalább `HIGH_PAGES` oldalon szerepel; különben medium. A további
-  feltételek nélküli (szó szerinti) jelöltek száma: `FindingsRun.missing_literal`.
+  title-szeleteit is felveszi). Személynél a kéttagú név mindkét sorrendje név. Az oldalhoz
+  nem kötött fő entitásnál a gráf H1- és title-bizonyítéka (az M2 említése) is egyezés. Ha a
+  H1-ben a fő entitás nincs meg, és más entitás említése sincs benne, a H1 általános. A
+  kezdőoldalon, és ahol a fő entitás a site saját entitása (rólunk, karrier), csak a title
+  számít (a H1-be nem kell a márkanév). Ha a H1 megnevezi a fő entitást, és a title a H1
+  szövegét tartalmazza, a title is megnevezi. A fülek (pl. `?tab=api`) nem ismétlik. Az
+  azonos okú (ugyanazok a hibák) és azonos szerepű oldalak egy megállapítást adnak, az
+  érintett oldalak listájával (pl. a H1 nélküli esettanulmányok). Súlyosság: high, ha a
+  title-ből hiányzik, vagy nincs H1; medium, ha csak a H1-ből.
+- `cannibalization` és `shared_topic`: ugyanaz az erős megbízhatóságú fő entitás legalább két
+  oldalcsoportban, egy nyelven belül. Egy csoport a hreflang-pár és a fül nélküli URL
+  (`page_nodes.group_key`). Nem számít: a canonical-duplikátum, a lapozó oldal (`PAGINATION`),
+  a nem indexelhető oldal (`noindex`), a szülő–gyermek viszony (az egyik oldal útvonala a
+  másiké alatt áll), és a site saját entitása (a cégről több oldal is szólhat). Kannibalizáció
+  csak akkor, ha a fő entitáson túl két oldal másodlagos entitásai is átfednek, vagy a
+  title-jük nagyon hasonló (`title_similarity` ≥ `TITLE_SIMILAR`: a title szavainak
+  Jaccard-hasonlósága a site-nevet hordozó utolsó szelet nélkül); súlyosság: high, ha
+  legalább `HIGH_GROUPS` oldal érintett, különben medium. Egyébként közös téma
+  (`shared_topic`, low): az oldalak ugyanarról az entitásról szólnak, más-más szögből.
+- `uncovered_topic` és `missing_page`: az entitás súlya a site felső tizedében van
+  (`TOP_SHARE`), legalább `MIN_PAGES` oldalcsoport említi (a fülek, pl. `?tab=api`, és a
+  hreflang-pár egy csoport), és egyik oldalnak sem fő entitása. További feltételek: a site
+  maga kiemeli (legalább `MIN_STRUCTURAL` oldalcsoportban áll title-ben, H1-ben vagy
+  headingben, és összesen legalább `MIN_MENTIONS` említése van), és nincs lefedve: nem
+  másodlagos entitása egy oldalnak sem, nem egy saját oldalú ajánlat fogalma (`offers` él), a
+  neve nem egy oldal H1-e vagy URL-szakasza, és a nevének szavai nem egy fő entitás nevének
+  szavai közül valók („Organic Growth” az „Organic Growth System” mellett; a szülő, pl. a
+  termékcsalád a termékei mellett, ettől még nincs lefedve). Kimarad: a szervezet, a személy
+  és a hely (`NO_PAGE_TYPES`), az API-szimbólum, a site saját entitása, az oldalhoz kötött
+  entitás, és a kontextus-entitás, amely az indexelhető oldalak legalább `CONTEXT_SHARE`
+  részén szerepel (a site egészének közege, pl. az Angular egy
+  Angular-komponenstár leírásában). A termékcsalád (product / line, vagy termék, amelynek
+  részei vannak) hiányzó oldal (`missing_page`: családoldal kell; high, ha legalább
+  `HIGH_PAGES` oldalon szerepel, különben medium). Minden más lefedetlen téma
+  (`uncovered_topic`): a teendő cikk, how-to vagy szakasz egy meglévő oldalon, nem
+  feltétlenül új oldal; medium, ha legalább `HIGH_PAGES` oldalon szerepel, különben low. A
+  további feltételek nélküli (szó szerinti) jelöltek száma: `FindingsRun.missing_literal`, a
+  kontextus-entitások: `FindingsRun.context`.
 - `unclear_topic`: az oldal fő entitása gyenge megbízhatóságú (medium), kivéve, ha a H1 és a
   title is megnevezi (ott a téma egyértelmű, csak más bizonyíték nincs); vagy az oldalnak
   egyetlen jelöltje sincs (high).
@@ -59,6 +70,7 @@ import math
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from itertools import combinations
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -69,9 +81,17 @@ from aaa2.entities.rules import alias_key
 from aaa2.entities.site import normal_key
 from aaa2.functions.graph import evidence_text
 
-TYPES = ("h1_title_mismatch", "cannibalization", "missing_page", "unclear_topic")
+TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
+         "uncovered_topic", "unclear_topic")
 TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés", "cannibalization": "Kannibalizáció",
-               "missing_page": "Hiányzó oldal", "unclear_topic": "Nem egyértelmű téma"}
+               "shared_topic": "Közös téma", "missing_page": "Hiányzó oldal",
+               "uncovered_topic": "Lefedetlen téma", "unclear_topic": "Nem egyértelmű téma"}
+ROLE_LABELS = {"offer": "ajánlatoldal", "article": "cikkoldal", "product": "termékoldal",
+               "component": "komponensoldal", "category": "kategóriaoldal",
+               "profile": "profiloldal", "home": "kezdőoldal", "support": "egyéb oldal"}
+ACTIONS = {"missing_page": "családoldal a termékcsaládnak",
+           "uncovered_topic": "cikk, how-to vagy szakasz egy meglévő oldalon (topical "
+                              "authority); nem feltétlenül új oldal"}
 SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
 OWN_TEXT_SOURCES = frozenset({"h1", "title"})
 PAGINATION = re.compile(r"(?:[?&](?:page|paged|p|infinite_page|oldal)=\d+)|(?:/page/\d+/?$)",
@@ -84,6 +104,8 @@ MIN_STRUCTURAL = 3
 MIN_MENTIONS = 6
 HIGH_PAGES = 10
 HIGH_GROUPS = 3
+CONTEXT_SHARE = 0.6                     # az oldalak ekkora részén szereplő: kontextus
+TITLE_SIMILAR = 0.6
 TITLE_SPLIT = re.compile(r"\s+[-–—|·:]\s+")
 CONJUNCTIONS = frozenset({"and", "es"})
 CUT_MIN_CHARS = 20                      # a levágott title-ben a névnek legalább ennyi jele áll
@@ -96,7 +118,8 @@ EVIDENCE_PAGES = 5
 @dataclass
 class FindingsRun:
     counts: Counter = field(default_factory=Counter)          # (típus, súlyosság) → darab
-    missing_literal: int = 0             # hiányzóoldal-jelöltek a kiemelés és lefedés nélkül
+    missing_literal: int = 0             # lefedetlen-jelöltek a kiemelés és lefedés nélkül
+    context: list[str] = field(default_factory=list)          # kizárt kontextus-entitások
 
     def by_type(self) -> dict[str, int]:
         found: Counter = Counter()
@@ -115,7 +138,7 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
     con.execute("DELETE FROM findings")
     site = _Site(con)
     run = FindingsRun()
-    rows = [*_mismatches(site), *_cannibalization(site), *_missing_pages(site, run),
+    rows = [*_mismatches(site), *_shared_topics(site), *_uncovered(site, run),
             *_unclear_topics(site)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
@@ -265,7 +288,7 @@ def _squash(text: str) -> str:
 
 
 def _mismatches(site: _Site) -> list[tuple]:
-    found = []
+    records = []
     seen: set[tuple] = set()
     for page in site.nodes():
         main = site.main(page["page_id"])
@@ -290,13 +313,27 @@ def _mismatches(site: _Site) -> list[tuple]:
             (bool(page["h1"]) and h1_missing and bool(others), "a fő entitás nincs a H1-ben"),
             (not in_title, "a fő entitás nincs a title-ben")) if flag]
         severity = "high" if not in_title or (not page["h1"] and not home) else "medium"
-        found.append(("h1_title_mismatch", severity, page["page_id"], entity_id,
-                      f"{site.name(entity_id)}: {'; '.join(problems)}",
-                      {"url": page["url"], "main_entity": site.name(entity_id),
-                       "confidence": main[2], "h1": page["h1"], "title": page["title"],
-                       "in_h1": in_h1, "in_title": in_title,
-                       "h1_generic": bool(page["h1"]) and h1_missing and not others,
-                       "h1_entities": others, "names": forms[:8], "problems": problems}))
+        records.append((severity, page, entity_id,
+                        {"url": page["url"], "main_entity": site.name(entity_id),
+                         "confidence": main[2], "h1": page["h1"], "title": page["title"],
+                         "in_h1": in_h1, "in_title": in_title, "h1_entities": others,
+                         "names": forms[:8], "problems": problems}))
+    groups: dict[tuple, list[tuple]] = defaultdict(list)
+    for record in records:
+        groups[(tuple(record[3]["problems"]), record[1]["role"])].append(record)
+    found = []
+    for (problems, role), members in sorted(groups.items()):
+        severity, page, entity_id, evidence = members[0]
+        if len(members) == 1:
+            found.append(("h1_title_mismatch", severity, page["page_id"], entity_id,
+                          f"{site.name(entity_id)}: {'; '.join(problems)}", evidence))
+            continue
+        label = f"{'; '.join(problems)} | {role}"
+        found.append(("h1_title_mismatch", severity, None, None,
+                      (f"{'; '.join(problems)}: {len(members)} "
+                      f"{ROLE_LABELS.get(role, role)}"),
+                      {"group": label, "role": role, "problems": list(problems),
+                       "pages": [m[3] for m in sorted(members, key=lambda m: m[1]["url"])]}))
     return found
 
 
@@ -306,7 +343,18 @@ def _parent_child(a: str, b: str) -> bool:
     return first != second and (first.startswith(second) or second.startswith(first))
 
 
-def _cannibalization(site: _Site) -> list[tuple]:
+def title_similarity(first: str | None, second: str | None) -> float:
+    """A két title szavainak Jaccard-hasonlósága, az utolsó (a site nevét hordozó) szelet
+    nélkül, ha a title több szeletből áll (`TITLE_SPLIT`)."""
+    sets = []
+    for title in (first, second):
+        pieces = TITLE_SPLIT.split(title or "")
+        sets.append(set(_tokens(" ".join(pieces[:-1] if len(pieces) > 1 else pieces))))
+    union = sets[0] | sets[1]
+    return len(sets[0] & sets[1]) / len(union) if union else 0.0
+
+
+def _shared_topics(site: _Site) -> list[tuple]:
     by_entity: dict[tuple[int, str | None], dict[str, list[dict]]] = defaultdict(
         lambda: defaultdict(list))
     for page in site.nodes():
@@ -325,14 +373,34 @@ def _cannibalization(site: _Site) -> list[tuple]:
             < len(urlsplit(p["url"]).path) for other in reps)]
         if len(kept) < 2:
             continue
-        found.append(("cannibalization", "high" if len(kept) >= HIGH_GROUPS else "medium",
-                      None, entity_id,
-                      f"{site.name(entity_id)}: {len(kept)} oldal fő entitása"
-                      + (f" ({lang})" if lang else ""),
-                      {"main_entity": site.name(entity_id), "lang": lang,
-                       "pages": [{"url": p["url"], "role": p["role"], "h1": p["h1"],
-                                  "title": p["title"], "confidence": p["confidence"]}
-                                 for p in sorted(kept, key=lambda p: p["url"])]}))
+        kept.sort(key=lambda p: p["url"])
+        secondary = {p["page_id"]: {c[0] for c in site.chosen.get(p["page_id"], [])
+                                    if c[1] == "secondary"} for p in kept}
+        overlaps = []
+        for first, second in combinations(kept, 2):
+            common = sorted(site.name(e) for e in
+                            secondary[first["page_id"]] & secondary[second["page_id"]])
+            similarity = round(title_similarity(first["title"], second["title"]), 2)
+            if common or similarity >= TITLE_SIMILAR:
+                overlaps.append({"pages": [first["url"], second["url"]], "secondary": common,
+                                 "title_similarity": similarity})
+        involved = {url for overlap in overlaps for url in overlap["pages"]}
+        tail = f" ({lang})" if lang else ""
+        evidence = {"main_entity": site.name(entity_id), "lang": lang, "overlaps": overlaps,
+                    "pages": [{"url": p["url"], "role": p["role"], "h1": p["h1"],
+                               "title": p["title"], "confidence": p["confidence"],
+                               "secondary": sorted(site.name(e)
+                                                   for e in secondary[p["page_id"]])}
+                              for p in kept]}
+        if overlaps:
+            found.append(("cannibalization",
+                          "high" if len(involved) >= HIGH_GROUPS else "medium", None, entity_id,
+                          (f"{site.name(entity_id)}: {len(involved)} oldal fő entitása, átfedő "
+                          f"másodlagos entitással vagy hasonló title-lel{tail}"), evidence))
+        else:
+            found.append(("shared_topic", "low", None, entity_id,
+                          (f"{site.name(entity_id)}: {len(kept)} oldal közös témája, átfedés "
+                          f"nélkül{tail}"), evidence))
     return found
 
 
@@ -340,9 +408,24 @@ def _words(text: str) -> set[str]:
     return {w for w in re.split(r"[^\w]+", alias_key(text)) if w}
 
 
-def _missing_pages(site: _Site, run: FindingsRun) -> list[tuple]:
+def _uncovered(site: _Site, run: FindingsRun) -> list[tuple]:
     if not site.weights:
         return []
+    indexable = {p["page_id"] for p in site.nodes() if not p["noindex"]}
+    on_pages: Counter = Counter()
+    groups: dict[int, set[str]] = defaultdict(set)          # entitás → említő oldalcsoportok
+    headed: dict[int, set[str]] = defaultdict(set)          # … ahol title, H1 vagy heading
+    for page_id, edges in site.mention_edges.items():
+        page = site.pages.get(page_id)
+        if page is None or page["canonical"] is not None:
+            continue
+        for mentioned, edge_weight, counts in edges:
+            if edge_weight <= 0:
+                continue
+            on_pages[mentioned] += page_id in indexable
+            groups[mentioned].add(page["group"])
+            if any(counts.get(position) for position in ("title", "h1", "heading")):
+                headed[mentioned].add(page["group"])
     top = max(1, math.ceil(len(site.weights) * TOP_SHARE))
     page_keys = {normal_key(p["h1"]) for p in site.pages.values() if p["h1"]}
     page_keys |= {normal_key(segment) for p in site.pages.values()
@@ -359,18 +442,26 @@ def _missing_pages(site: _Site, run: FindingsRun) -> list[tuple]:
     found = []
     for entity_id, weight in site.weights.items():
         entity = site.entities[entity_id]
-        if site.rank[entity_id] > top or weight["pages"] < MIN_PAGES or weight["main_pages"] \
+        if site.rank[entity_id] > top or len(groups[entity_id]) < MIN_PAGES \
+                or weight["main_pages"] \
                 or entity["type"] in NO_PAGE_TYPES or entity["subtype"] in NO_PAGE_SUBTYPES \
                 or entity_id in site.site_entities or entity["anchor"] is not None:
             continue
         run.missing_literal += 1
         forms = [entity["name"], *(entity["aliases"] or [])]
-        if weight["structural"] < MIN_STRUCTURAL or weight["mentions"] < MIN_MENTIONS \
+        if len(headed[entity_id]) < MIN_STRUCTURAL or weight["mentions"] < MIN_MENTIONS \
                 or entity_id in secondary_of \
                 or entity_id in offered or {normal_key(f) for f in forms} & page_keys \
                 or (entity_id not in parents
                     and any(_words(entity["name"]) <= words for words in main_words)):
             continue
+        share = on_pages[entity_id] / len(indexable) if indexable else 0.0
+        if share >= CONTEXT_SHARE:
+            run.context.append(entity["name"])
+            continue
+        family = entity["type"] == "product" and (entity["subtype"] == "line"
+                                                  or entity_id in parents)
+        kind = "missing_page" if family else "uncovered_topic"
         pages = [(site.pages[p]["url"], w, counts) for p, edges in site.mention_edges.items()
                  if p in site.pages and site.pages[p]["canonical"] is None
                  for e, w, counts in edges if e == entity_id and w > 0]
@@ -378,14 +469,17 @@ def _missing_pages(site: _Site, run: FindingsRun) -> list[tuple]:
         secondary = sorted(site.pages[p]["url"] for p, chosen in site.chosen.items()
                            if p in site.pages and any(c[0] == entity_id and c[1] == "secondary"
                                                       for c in chosen))
-        severity = "high" if weight["pages"] >= HIGH_PAGES else "medium"
-        found.append(("missing_page", severity, None, entity_id,
+        many = weight["pages"] >= HIGH_PAGES
+        severity = ("high" if many else "medium") if family else ("medium" if many else "low")
+        found.append((kind, severity, None, entity_id,
                       (f"{entity['name']} ({site.kind(entity_id)}): {weight['pages']} oldalon "
                        f"szerepel, egyiknek sem fő entitása"),
                       {"entity": entity["name"], "type": site.kind(entity_id),
+                       "action": ACTIONS[kind], "page_share": round(share, 2),
                        "weight": weight["weight"], "rank": site.rank[entity_id],
                        "ranked": len(site.weights), "page_count": weight["pages"],
-                       "mentions": weight["mentions"], "structural": weight["structural"],
+                       "mentions": weight["mentions"], "structural": len(headed[entity_id]),
+                       "page_groups": len(groups[entity_id]),
                        "secondary_pages": secondary,
                        "top_pages": [{"url": url, "mention_weight": w, "positions": counts}
                                      for url, w, counts in pages[:EVIDENCE_PAGES]]}))
@@ -423,6 +517,7 @@ def _findings(con: duckdb.DuckDBPyConnection) -> list[dict]:
 
 
 def _affected(finding: dict) -> list[str]:
+    """A megállapítás érintett oldalai (a lefedetlen témánál a legtöbbet említők)."""
     evidence = finding["evidence"]
     if "url" in evidence:
         return [evidence["url"]]
@@ -475,14 +570,11 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
                 if weight > 0:
                     mention_pages[entity_id].append(site.pages[page_id]["url"])
     findings = _findings(site.con)
-    by_page: dict[int, list[str]] = defaultdict(list)
     by_url: dict[str, list[str]] = defaultdict(list)
     for finding in findings:
         label = f"{TYPE_LABELS[finding['type']]} ({finding['severity']}): {finding['summary']}"
-        if finding["page_id"] is not None:
-            by_page[finding["page_id"]].append(label)
-        else:
-            for url in _affected(finding) if finding["type"] == "cannibalization" else []:
+        if finding["type"] not in ("missing_page", "uncovered_topic"):
+            for url in _affected(finding):
                 by_url[url].append(label)
 
     def related(entity_id: int, kind: str, direction: str) -> str:
@@ -532,8 +624,7 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
             "H1": page["h1"] or "", "a H1-ben": _yes(main, in_h1),
             "title": page["title"] or "", "a title-ben": _yes(main, in_title),
             "további említett entitások": "; ".join(others),
-            "megállapítások": "" if duplicate else " || ".join(
-                by_page[page["page_id"]] + by_url[page["url"]])})
+            "megállapítások": "" if duplicate else " || ".join(by_url[page["url"]])})
     return overview, neighbourhood, pages
 
 
@@ -611,17 +702,25 @@ def _table(pairs: list[tuple[str, str]]) -> str:
 def _finding_html(finding: dict) -> str:
     evidence = finding["evidence"]
     pairs: list[tuple[str, str]] = []
-    if finding["type"] == "h1_title_mismatch":
+    if finding["type"] == "h1_title_mismatch" and "pages" in evidence:
+        pairs = [(p["main_entity"], (f"{_link(p['url'])}<br>H1: {_e(p['h1']) or '(nincs)'}<br>"
+                                    f"title: {_e(p['title'])}")) for p in evidence["pages"]]
+    elif finding["type"] == "h1_title_mismatch":
         pairs = [("oldal", _link(evidence["url"])), ("fő entitás", _e(evidence["main_entity"])),
                  ("H1", _e(evidence["h1"]) or "(nincs)"), ("title", _e(evidence["title"])),
                  ("a H1 más entitásai", _e("; ".join(evidence["h1_entities"]))),
                  ("elfogadott megnevezések", _e("; ".join(evidence["names"])))]
-    elif finding["type"] == "cannibalization":
+    elif finding["type"] in ("cannibalization", "shared_topic"):
         pairs = [("oldalak", "<br>".join(
-            f"{_link(p['url'])} — {_e(p['role'])}, {_e(p['confidence'])}; H1: {_e(p['h1'])}"
-            for p in evidence["pages"]))]
-    elif finding["type"] == "missing_page":
-        pairs = [("súly és rang", _e(f"{evidence['weight']} ({evidence['rank']}. a "
+            f"{_link(p['url'])} — {_e(p['role'])}; title: {_e(p['title'])}; másodlagos: "
+            f"{_e('; '.join(p['secondary']) or '—')}" for p in evidence["pages"])),
+            ("átfedés", "<br>".join(
+                f"{_e(' ↔ '.join(o['pages']))}: közös másodlagos: "
+                f"{_e('; '.join(o['secondary']) or '—')}, title-hasonlóság "
+                f"{o['title_similarity']}" for o in evidence["overlaps"]))]
+    elif finding["type"] in ("missing_page", "uncovered_topic"):
+        pairs = [("teendő", _e(evidence["action"])),
+                 ("súly és rang", _e(f"{evidence['weight']} ({evidence['rank']}. a "
                                      f"{evidence['ranked']}-ból)")),
                  ("említés", _e(f"{evidence['page_count']} oldal, {evidence['mentions']} említés, "
                                 f"{evidence['structural']} oldalon szerkezeti helyen")),

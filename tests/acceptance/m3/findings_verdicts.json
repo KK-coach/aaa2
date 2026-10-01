@@ -1,5 +1,5 @@
 {
- "status": "Claude verdiktje, 2026-10-01; Krisztián jóváhagyására",
+ "status": "Claude verdiktje, 2026-10-01 (második kör); Krisztián jóváhagyására",
  "sites": {
   "kk-coach": {
    "h1_title_mismatch | Kiss Krisztián | https://kk.coach/about/": {
@@ -12,127 +12,57 @@
     "verdict": "valid",
     "note": "a rólam-oldal H1-e szlogen, a title-ben sincs a név"
    },
-   "h1_title_mismatch | GEO — AI Visibility | https://kk.coach/solutions/geo-ai-visibility/": {
-    "summary": "GEO — AI Visibility: a H1 általános: nincs benne entitás",
+   "h1_title_mismatch | a H1 általános: nincs benne entitás | offer": {
+    "summary": "a H1 általános: nincs benne entitás: 3 ajánlatoldal",
     "verdict": "valid",
-    "note": "a H1 szlogen, az ajánlat neve nincs benne (a referencia várt megállapítása)"
+    "note": "a H1 szlogen, az ajánlat neve nincs benne (GEO en, UX en és hu; a referencia várt megállapításai)"
    },
-   "h1_title_mismatch | GEO — AI Visibility | https://kk.coach/hu/megoldasok/geo-ai-kereso-optimalizalas/": {
-    "summary": "GEO — AI Visibility: a fő entitás nincs a H1-ben",
+   "h1_title_mismatch | a fő entitás nincs a H1-ben | offer": {
+    "summary": "a fő entitás nincs a H1-ben: 2 ajánlatoldal",
     "verdict": "valid",
-    "note": "a H1 szlogen, az ajánlat neve nincs benne (a referencia várt megállapítása)"
+    "note": "a H1 szlogen (GEO hu, Measurement en; a referencia várt megállapításai)"
    },
-   "h1_title_mismatch | Measurement & Data Architecture | https://kk.coach/solutions/measurement-data-architecture/": {
-    "summary": "Measurement & Data Architecture: a fő entitás nincs a H1-ben",
+   "h1_title_mismatch | a fő entitás nincs a H1-ben | support": {
+    "summary": "a fő entitás nincs a H1-ben: 2 egyéb oldal",
     "verdict": "valid",
-    "note": "a H1 szlogen (a referencia várt megállapítása)"
+    "note": "a két megoldás-hub H1-e szlogen, a rendszer neve csak a title-ben áll"
    },
-   "h1_title_mismatch | Organic Growth System | https://kk.coach/hu/megoldasok/": {
-    "summary": "Organic Growth System: a fő entitás nincs a H1-ben",
+   "shared_topic | AI Search | en": {
+    "summary": "AI Search: 2 oldal közös témája, átfedés nélkül (en)",
     "verdict": "valid",
-    "note": "a hub H1-e szlogen, a rendszer neve csak a title-ben áll"
+    "note": "tájékoztató: két cikk ugyanarról az entitásról, más szögből; nem kannibalizáció"
    },
-   "h1_title_mismatch | Organic Growth System | https://kk.coach/solutions/": {
-    "summary": "Organic Growth System: a fő entitás nincs a H1-ben",
+   "shared_topic | AI Search | hu": {
+    "summary": "AI Search: 2 oldal közös témája, átfedés nélkül (hu)",
     "verdict": "valid",
-    "note": "a hub H1-e szlogen, a rendszer neve csak a title-ben áll"
+    "note": "tájékoztató: két cikk ugyanarról az entitásról, más szögből; nem kannibalizáció"
    },
-   "h1_title_mismatch | UX & Conversion Optimization | https://kk.coach/hu/megoldasok/ux-es-konverzio/": {
-    "summary": "UX & Conversion Optimization: a H1 általános: nincs benne entitás",
+   "shared_topic | Kiss Krisztián | en": {
+    "summary": "Kiss Krisztián: 2 oldal közös témája, átfedés nélkül (en)",
     "verdict": "valid",
-    "note": "a H1 szlogen (a referencia várt megállapítása)"
+    "note": "tájékoztató: a rólam- és a szerzői oldal ugyanarról a személyről szól"
    },
-   "h1_title_mismatch | UX & Conversion Optimization | https://kk.coach/solutions/ux-conversion-optimization/": {
-    "summary": "UX & Conversion Optimization: a H1 általános: nincs benne entitás",
+   "shared_topic | Kiss Krisztián | hu": {
+    "summary": "Kiss Krisztián: 2 oldal közös témája, átfedés nélkül (hu)",
     "verdict": "valid",
-    "note": "a H1 szlogen (a referencia várt megállapítása)"
+    "note": "tájékoztató: a rólam- és a szerzői oldal ugyanarról a személyről szól"
    },
-   "cannibalization | AI Search | en": {
-    "summary": "AI Search: 2 oldal fő entitása (en)",
-    "verdict": "valid",
-    "note": "két cikk ugyanarról a témáról (AI search hatása a B2B-re), pillér nélkül"
-   },
-   "cannibalization | AI Search | hu": {
-    "summary": "AI Search: 2 oldal fő entitása (hu)",
-    "verdict": "valid",
-    "note": "két cikk ugyanarról a témáról (AI search hatása a B2B-re), pillér nélkül"
-   },
-   "cannibalization | Kiss Krisztián | en": {
-    "summary": "Kiss Krisztián: 2 oldal fő entitása (en)",
-    "verdict": "valid",
-    "note": "a rólam- és a szerzői oldal ugyanarról a személyről szól; az egyik legyen az elsődleges"
-   },
-   "cannibalization | Kiss Krisztián | hu": {
-    "summary": "Kiss Krisztián: 2 oldal fő entitása (hu)",
-    "verdict": "valid",
-    "note": "a rólam- és a szerzői oldal ugyanarról a személyről szól; az egyik legyen az elsődleges"
-   },
-   "missing_page | Artificial intelligence": {
-    "summary": "Artificial intelligence (concept/discipline): 22 oldalon szerepel, egyiknek sem fő entitása",
-    "verdict": "invalid",
-    "note": "túl tág téma önálló oldalhoz; a site az AI-t az AI Search cikkekben és a GEO-ajánlatban tárgyalja"
-   },
-   "missing_page | Google Analytics 4": {
-    "summary": "Google Analytics 4 (tech/software): 23 oldalon szerepel, egyiknek sem fő entitása",
-    "verdict": "valid",
-    "note": "23 oldalon, 4 oldalon headingben; nincs GA4-oldal vagy -cikk"
-   },
-   "missing_page | E-E-A-T": {
+   "uncovered_topic | E-E-A-T": {
     "summary": "E-E-A-T (concept/method): 6 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
-    "note": "6 oldalon, 5 oldalon headingben; nincs saját oldala"
+    "note": "három oldalcsoport headingjében, saját cikk vagy szakasz nélkül"
    }
   },
   "marketinglens": {
-   "h1_title_mismatch | DroneDeploy | https://marketinglens.com/drones/google-campaign-management-case-study-dronedeploy/": {
-    "summary": "DroneDeploy: nincs H1",
-    "verdict": "valid",
-    "note": "az esettanulmány-oldalon nincs <h1> (a renderelt HTML-ben sem)"
-   },
-   "h1_title_mismatch | Extreme Digital | https://marketinglens.com/e-commerce/e-commerce-marketing-for-extreme-digital/": {
-    "summary": "Extreme Digital: nincs H1",
-    "verdict": "valid",
-    "note": "az esettanulmány-oldalon nincs <h1> (a renderelt HTML-ben sem)"
-   },
-   "h1_title_mismatch | Google Ads | https://marketinglens.com/app-marketing/global-expansion-strategy-leveraging-google-ads-for-mobile-app-market-penetration/": {
-    "summary": "Google Ads: nincs H1",
-    "verdict": "valid",
-    "note": "az esettanulmány-oldalon nincs <h1> (a renderelt HTML-ben sem)"
-   },
-   "h1_title_mismatch | Google Ads | https://marketinglens.com/business-to-business/google-ads-optimization-for-enhanced-performance-tradewind-finance/": {
-    "summary": "Google Ads: nincs H1",
-    "verdict": "valid",
-    "note": "az esettanulmány-oldalon nincs <h1> (a renderelt HTML-ben sem)"
-   },
-   "h1_title_mismatch | Marketing Analytics | https://marketinglens.com/banking-and-insurance/revolutionizing-digital-marketing-analytics-at-leading-central-european-bank/": {
-    "summary": "Marketing Analytics: nincs H1",
-    "verdict": "valid",
-    "note": "az esettanulmány-oldalon nincs <h1> (a renderelt HTML-ben sem)"
-   },
-   "h1_title_mismatch | Marketing Decisioning Platform | https://marketinglens.com/banking-and-insurance/transforming-customer-experience-in-a-western-european-bank/": {
-    "summary": "Marketing Decisioning Platform: nincs H1",
-    "verdict": "valid",
-    "note": "az esettanulmány-oldalon nincs <h1> (a renderelt HTML-ben sem)"
-   },
-   "h1_title_mismatch | OTP Bank Group | https://marketinglens.com/banking-and-insurance/digital-transformation-at-otp-bank-group/": {
-    "summary": "OTP Bank Group: nincs H1",
-    "verdict": "valid",
-    "note": "az esettanulmány-oldalon nincs <h1> (a renderelt HTML-ben sem)"
-   },
    "h1_title_mismatch | Online and Offline Sales Conversion Strategy | https://marketinglens.com/grow-online-and-offline-sales/": {
     "summary": "Online and Offline Sales Conversion Strategy: a H1 általános: nincs benne entitás; a fő entitás nincs a title-ben",
     "verdict": "valid",
     "note": "a schema szerinti szolgáltatásnév nem egyezik a H1-gyel és a title-lel (névkövetkezetlenség)"
    },
-   "h1_title_mismatch | Raketech | https://marketinglens.com/gaming/competitive-analysis-and-benchmarking-for-raketech/": {
-    "summary": "Raketech: nincs H1",
+   "h1_title_mismatch | nincs H1 | article": {
+    "summary": "nincs H1: 9 cikkoldal",
     "verdict": "valid",
-    "note": "az esettanulmány-oldalon nincs <h1> (a renderelt HTML-ben sem)"
-   },
-   "h1_title_mismatch | e-commerce | https://marketinglens.com/e-commerce/optimizing-e-commerce-strategy-balancing-organic-and-paid-search/": {
-    "summary": "e-commerce: nincs H1",
-    "verdict": "valid",
-    "note": "az esettanulmány-oldalon nincs <h1> (a renderelt HTML-ben sem)"
+    "note": "kilenc esettanulmány-oldalon nincs <h1> (a renderelt HTML-ben sem)"
    },
    "h1_title_mismatch | Law Firm Digital Marketing Services | https://marketinglens.com/law-firm-digital-marketing-services/": {
     "summary": "Law Firm Digital Marketing Services: a H1 általános: nincs benne entitás",
@@ -144,15 +74,15 @@
     "verdict": "valid",
     "note": "a title Medior, a H1 Senior pozíciót ír"
    },
-   "cannibalization | Google Ads | en": {
-    "summary": "Google Ads: 4 oldal fő entitása (en)",
-    "verdict": "invalid",
-    "note": "részben: két esettanulmány és két blogcikk a Google Ads más-más szögéből; az entitás azonos, de a keresési szándék nem ütközik egyértelműen"
+   "shared_topic | Google Ads | en": {
+    "summary": "Google Ads: 4 oldal közös témája, átfedés nélkül (en)",
+    "verdict": "valid",
+    "note": "tájékoztató: négy cikk és esettanulmány a Google Adsről, más-más szögből; nem kannibalizáció"
    },
-   "missing_page | paid search": {
+   "uncovered_topic | paid search": {
     "summary": "paid search (concept/discipline): 8 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
-    "note": "8 oldalon, 3 oldalon headingben; nincs paid search / PPC oldal"
+    "note": "nyolc oldalon, három headingben; nincs róla cikk vagy szakasz"
    },
    "unclear_topic | Applied Marketing Data Science | https://marketinglens.com/marketing-data-science/turning-customer-data-insights-into-action/": {
     "summary": "gyenge fő entitás: Applied Marketing Data Science (primary#1)",
@@ -185,6 +115,23 @@
     "summary": "LG ThermaV R32 (product/line): 7 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
     "note": "termékcsalád több termékkel, saját családoldal nélkül"
+   }
+  },
+  "ngx-bootstrap": {
+   "h1_title_mismatch | a fő entitás nincs a title-ben | component": {
+    "summary": "a fő entitás nincs a title-ben: 17 komponensoldal",
+    "verdict": "valid",
+    "note": "mind a 17 komponensoldal title-je „Angular Bootstrap”"
+   },
+   "uncovered_topic | Reactive Forms": {
+    "summary": "Reactive Forms (concept/method): 12 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "három komponens leírásában külön szakasz, közös útmutató nélkül"
+   },
+   "uncovered_topic | Adaptive position": {
+    "summary": "Adaptive position (concept/other): 8 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "invalid",
+    "note": "a komponensek egy közös beállítása (négy komponens headingje), nem önálló téma"
    }
   }
  }

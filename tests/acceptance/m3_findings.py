@@ -4,7 +4,7 @@ megállapítások aránya (M3 spec, 8. pont: cél ≥ 90%).
     python -m tests.acceptance.m3_findings template --site kk-coach=data/m3/kk-coach.duckdb ...
     python -m tests.acceptance.m3_findings report --site kk-coach=data/m3/kk-coach.duckdb ...
 
-- `template`: a site-ok megállapításai kulccsal (típus | entitás | oldal vagy nyelv) a
+- `template`: a site-ok megállapításai kulccsal (típus | entitás | oldal, csoport vagy nyelv) a
   verdiktfájlba (`tests/acceptance/m3/findings_verdicts.json`); a meglévő verdikt megmarad, az
   új tétel verdiktje üres.
 - `report`: site-onként és típusonként a valós (`valid`) megállapítások aránya; a verdikt
@@ -33,7 +33,7 @@ def finding_keys(db: Path) -> dict[str, str]:
                 "SELECT f.type, f.summary, f.evidence, e.name FROM findings f "
                 "LEFT JOIN entities e USING (entity_id) ORDER BY f.finding_id").fetchall():
             data = json.loads(evidence)
-            where = data.get("url") or data.get("lang") or ""
+            where = data.get("url") or data.get("group") or data.get("lang") or ""
             found[" | ".join(filter(None, (kind, name or "", where)))] = summary
         return found
     finally:
