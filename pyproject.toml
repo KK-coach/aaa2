@@ -35,6 +35,7 @@ include = ["aaa2*"]
 "aaa2.db" = ["*.sql"]
 "aaa2.engine.config" = ["*.txt"]
 "aaa2.entities.config" = ["*.toml", "sites/*.toml"]
+"aaa2.functions.config" = ["*.toml"]
 "aaa2.llm" = ["*.toml"]
 
 [tool.pytest.ini_options]

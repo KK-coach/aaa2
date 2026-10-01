@@ -222,6 +222,24 @@ class KnowledgeBase:
                  for e in (labels.get("entities") or {}).values()]
         return [n for n in names if n], description
 
+    def superclasses(self, qid: str) -> list[tuple[str, str]] | None:
+        """A Wikidata-elem osztályai egy lépésben: (tulajdonság, QID) párok az „instance of”
+        (P31) és a „subclass of” (P279) állításokból; ugyanaz a kérés, mint a `classes`-é, így a
+        gyorsítótárból jön. None, ha a kérés hibás."""
+        body = self._get("wikidata", WIKIDATA_API, [
+            ("action", "wbgetentities"), ("format", "json"), ("ids", qid),
+            ("props", "claims|descriptions"), ("languages", "en")])
+        if body is None:
+            return None
+        claims = ((body.get("entities") or {}).get(qid) or {}).get("claims") or {}
+        found = []
+        for prop in ("P31", "P279"):
+            for claim in claims.get(prop) or []:
+                value = ((claim.get("mainsnak") or {}).get("datavalue") or {}).get("value") or {}
+                if isinstance(value, dict) and value.get("id"):
+                    found.append((prop, value["id"]))
+        return found
+
     def wikipedia(self, name: str, code: str) -> dict | None:
         body = self._get("wikipedia", WIKI_API.format(lang=code), [
             ("action", "query"), ("format", "json"), ("formatversion", "2"),

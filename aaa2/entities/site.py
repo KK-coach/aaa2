@@ -41,7 +41,8 @@
   concept: `hreflang_place`), és az írásmód-normalizált név (kis-nagybetű, ékezet, szóköz,
   aláhúzás, kötőjel, perjel, gondolatjel, zárójel nélkül, „&” = „és” = „and”; a zárójeles
   rövidítésből csak a hosszú kifejtés; „/” vagy „@” tartalmú névnél elválasztó-normalizálás
-  nincs; azonos típus: `normalized_name`). Két különböző oldalhoz kötött entitás, két eltérő
+  nincs; szervezetnél a név végi jogi forma nélkül is, `LEGAL_FORMS`; azonos típus:
+  `normalized_name`). Két különböző oldalhoz kötött entitás, két eltérő
   szint (core, package) és két nem kompatibilis altípus (package kontra component) nem olvad
   össze; a hreflang-párban a kanonikus nyelvű oldal entitása marad.
 - Fogalom és ajánlat (9. pont): a service típusú entitás LLM-említései, amelyeket az LLM
@@ -126,6 +127,7 @@ RATE = re.compile(r"óradíj|hourly rate|\brate\s*:|\bdíj\s*:|munkadíj|billed 
 LOREM = re.compile(r"lorem ipsum", re.IGNORECASE)
 PARENTHETICAL = re.compile(r"(.+?)\s*\(([^()]+)\)")
 NORMAL_DROP = re.compile(r"[\s_\-/–—‐()]+")
+LEGAL_FORMS = frozenset({"kft", "zrt", "bt", "ltd", "llc", "gmbh", "inc"})
 # az `alias_key` után: az „és” ékezet nélkül „es”
 CONJUNCTION = re.compile(r"\s*(?:\bes\b|\band\b|&)\s*")
 SUBTYPE_CLASS = {"package": "distribution", "library": "distribution",
@@ -791,6 +793,15 @@ def normal_key(text: str) -> str:
     return NORMAL_DROP.sub("", CONJUNCTION.sub("&", key))
 
 
+def without_legal_form(name: str) -> str:
+    """A szervezetnév a végén álló jogi forma (`LEGAL_FORMS`: Kft., Zrt., Bt., Ltd, LLC, GmbH,
+    Inc.) nélkül; ha más nem marad, a név."""
+    tokens = name.split()
+    while len(tokens) > 1 and alias_key(tokens[-1]).strip(".,") in LEGAL_FORMS:
+        tokens.pop()
+    return " ".join(tokens).rstrip(",")
+
+
 def long_form(text: str) -> str | None:
     """A zárójeles rövidítés-kifejtés hosszú része („GEO (Generative Engine Optimization)” →
     Generative Engine Optimization), vagy None. A rövidítés önmagában nem von össze."""
@@ -842,6 +853,8 @@ def _normalized_merges(con: duckdb.DuckDBPyConnection, merger: Merger) -> None:
             "page_entities)) ORDER BY entity_id").fetchall():
         forms = {name, *(aliases or [])}
         forms |= {long for form in list(forms) if (long := long_form(form))}
+        if kind == "org":
+            forms |= {without_legal_form(form) for form in list(forms)}
         for key in {normal_key(f) for f in forms} - {""}:
             groups[(kind, key)].append(entity_id)
     done: set[int] = set()
