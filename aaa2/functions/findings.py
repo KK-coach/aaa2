@@ -42,9 +42,12 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   szavai közül valók („Organic Growth” az „Organic Growth System” mellett; a szülő, pl. a
   termékcsalád a termékei mellett, ettől még nincs lefedve). Kimarad: a szervezet, a személy
   és a hely (`NO_PAGE_TYPES`), az API-szimbólum, a site saját entitása, az oldalhoz kötött
-  entitás, és a kontextus-entitás, amely az indexelhető oldalak legalább `CONTEXT_SHARE`
-  részén szerepel (a site egészének közege, pl. az Angular egy
-  Angular-komponenstár leírásában). A termékcsalád (product / line, vagy termék, amelynek
+  entitás, és a kontextus-entitás (`is_context`): az említései legalább `CONTEXT_SHARE`
+  részben sablon- vagy chrome-helyen állnak (title-sablon, menü, lábléc, oldalsáv), vagy a
+  neve a site nevében szerepel (az Angular az „Angular Bootstrap” komponenstárban); a sok
+  oldalon tárgyalt téma (pl. a GA4 egy mérési tanácsadó site-ján) nem kontextus. Ha egy
+  hiányzó oldalú termékcsaládnak az alcsaládja is hiányzó oldal volna, az alcsalád a szülő
+  megállapításában áll (`subfamilies`), nem külön. A termékcsalád (product / line, vagy termék, amelynek
   részei vannak) hiányzó oldal (`missing_page`: családoldal kell; high, ha legalább
   `HIGH_PAGES` oldalon szerepel, különben medium). Minden más lefedetlen téma
   (`uncovered_topic`): a teendő cikk, how-to vagy szakasz egy meglévő oldalon, nem
@@ -104,7 +107,7 @@ MIN_STRUCTURAL = 3
 MIN_MENTIONS = 6
 HIGH_PAGES = 10
 HIGH_GROUPS = 3
-CONTEXT_SHARE = 0.6                     # az oldalak ekkora részén szereplő: kontextus
+CONTEXT_SHARE = 0.5                     # az említések ekkora része sablon vagy chrome
 TITLE_SIMILAR = 0.6
 TITLE_SPLIT = re.compile(r"\s+[-–—|·:]\s+")
 CONJUNCTIONS = frozenset({"and", "es"})
@@ -408,7 +411,13 @@ def _words(text: str) -> set[str]:
     return {w for w in re.split(r"[^\w]+", alias_key(text)) if w}
 
 
-def _uncovered(site: _Site, run: FindingsRun) -> list[tuple]:
+def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
+                         min_structural: int = MIN_STRUCTURAL) -> list[dict]:
+    """A lefedetlen téma jelöltjei a kontextus-szűrés előtt: a súly, az oldalszám, a típus, a
+    kiemelés (`min_structural` oldalcsoportban title, H1 vagy heading) és a lefedettség
+    feltételein átment entitások, a mérőszámaikkal (`template_share`: az említések hányad része
+    áll sablon- vagy chrome-helyen; `in_site_name`: a név szavai a site nevének szavai;
+    `page_share`: az indexelhető oldalak hányad részén szerepel)."""
     if not site.weights:
         return []
     indexable = {p["page_id"] for p in site.nodes() if not p["noindex"]}
@@ -426,12 +435,20 @@ def _uncovered(site: _Site, run: FindingsRun) -> list[tuple]:
             groups[mentioned].add(page["group"])
             if any(counts.get(position) for position in ("title", "h1", "heading")):
                 headed[mentioned].add(page["group"])
+    placed = {entity_id: (total, fixed) for entity_id, total, fixed in site.con.execute(
+        "SELECT pe.entity_id, count(*), count(*) FILTER (WHERE b.region = 'chrome' "
+        "OR list_contains(coalesce(pe.flags, []), 'template')) FROM page_entities pe "
+        "LEFT JOIN blocks b USING (block_id) JOIN page_nodes n ON n.page_id = pe.page_id "
+        "WHERE n.canonical_page IS NULL GROUP BY 1").fetchall()}
+    site_words = [_words(form) for e in site.site_entities if e in site.entities
+                  for form in [site.name(e), *(site.entities[e]["aliases"] or [])]]
     top = max(1, math.ceil(len(site.weights) * TOP_SHARE))
     page_keys = {normal_key(p["h1"]) for p in site.pages.values() if p["h1"]}
     page_keys |= {normal_key(segment) for p in site.pages.values()
                   for segment in urlsplit(p["url"]).path.split("/") if segment}
     main_words = [_words(site.name(main[0])) for page in site.nodes()
-                  if (main := site.main(page["page_id"])) is not None]
+                  if (main := site.main(page["page_id"])) is not None
+                  and main[0] not in site.site_entities]
     offered = {to_id for (to_id,) in site.con.execute(
         "SELECT e.to_id FROM edges e JOIN entities s ON s.entity_id = e.from_id "
         "WHERE e.type = 'offers' AND s.anchor_page_id IS NOT NULL").fetchall()}
@@ -447,40 +464,84 @@ def _uncovered(site: _Site, run: FindingsRun) -> list[tuple]:
                 or entity["type"] in NO_PAGE_TYPES or entity["subtype"] in NO_PAGE_SUBTYPES \
                 or entity_id in site.site_entities or entity["anchor"] is not None:
             continue
-        run.missing_literal += 1
+        if run is not None:
+            run.missing_literal += 1
         forms = [entity["name"], *(entity["aliases"] or [])]
-        if len(headed[entity_id]) < MIN_STRUCTURAL or weight["mentions"] < MIN_MENTIONS \
+        if len(headed[entity_id]) < min_structural or weight["mentions"] < MIN_MENTIONS \
                 or entity_id in secondary_of \
                 or entity_id in offered or {normal_key(f) for f in forms} & page_keys \
                 or (entity_id not in parents
                     and any(_words(entity["name"]) <= words for words in main_words)):
             continue
-        share = on_pages[entity_id] / len(indexable) if indexable else 0.0
-        if share >= CONTEXT_SHARE:
-            run.context.append(entity["name"])
+        total, fixed = placed.get(entity_id, (0, 0))
+        found.append({
+            "entity_id": entity_id, "weight": weight,
+            "family": entity["type"] == "product" and (entity["subtype"] == "line"
+                                                       or entity_id in parents),
+            "page_share": on_pages[entity_id] / len(indexable) if indexable else 0.0,
+            "template_share": fixed / total if total else 0.0,
+            "in_site_name": any(_words(entity["name"]) <= words for words in site_words),
+            "page_groups": len(groups[entity_id]), "structural": len(headed[entity_id])})
+    return found
+
+
+def is_context(candidate: dict) -> bool:
+    """Kontextus-entitás: az említései legalább `CONTEXT_SHARE` részben sablon- vagy
+    chrome-helyen állnak, vagy a neve a site nevében szerepel."""
+    return candidate["template_share"] >= CONTEXT_SHARE or candidate["in_site_name"]
+
+
+def _uncovered(site: _Site, run: FindingsRun) -> list[tuple]:
+    kept = []
+    for candidate in uncovered_candidates(site, run):
+        if is_context(candidate):
+            run.context.append(site.name(candidate["entity_id"]))
+        else:
+            kept.append(candidate)
+    parent_of = {from_id: to_id for from_id, to_id in site.con.execute(
+        "SELECT from_id, to_id FROM edges WHERE type = 'part_of' AND from_kind = 'entity' "
+        "AND to_kind = 'entity'").fetchall()}
+    families = {c["entity_id"] for c in kept if c["family"]}
+    under: dict[int, list[int]] = defaultdict(list)          # hiányzó szülő → alcsaládjai
+    for entity_id in sorted(families):
+        seen, parent = {entity_id}, parent_of.get(entity_id)
+        top = None
+        while parent is not None and parent not in seen:
+            if parent in families:
+                top = parent
+            seen.add(parent)
+            parent = parent_of.get(parent)
+        if top is not None:
+            under[top].append(entity_id)
+    nested = {child for children in under.values() for child in children}
+    found = []
+    for candidate in kept:
+        entity_id, weight = candidate["entity_id"], candidate["weight"]
+        if entity_id in nested:
             continue
-        family = entity["type"] == "product" and (entity["subtype"] == "line"
-                                                  or entity_id in parents)
+        entity = site.entities[entity_id]
+        family = candidate["family"]
         kind = "missing_page" if family else "uncovered_topic"
         pages = [(site.pages[p]["url"], w, counts) for p, edges in site.mention_edges.items()
                  if p in site.pages and site.pages[p]["canonical"] is None
                  for e, w, counts in edges if e == entity_id and w > 0]
         pages.sort(key=lambda item: (-item[1], item[0]))
-        secondary = sorted(site.pages[p]["url"] for p, chosen in site.chosen.items()
-                           if p in site.pages and any(c[0] == entity_id and c[1] == "secondary"
-                                                      for c in chosen))
+        subfamilies = [{"entity": site.name(child), "page_count": site.weights[child]["pages"]}
+                       for child in sorted(under.get(entity_id, []), key=site.name)]
         many = weight["pages"] >= HIGH_PAGES
         severity = ("high" if many else "medium") if family else ("medium" if many else "low")
+        tail = f"; alcsaládjai: {', '.join(c['entity'] for c in subfamilies)}" \
+            if subfamilies else ""
         found.append((kind, severity, None, entity_id,
                       (f"{entity['name']} ({site.kind(entity_id)}): {weight['pages']} oldalon "
-                       f"szerepel, egyiknek sem fő entitása"),
+                       f"szerepel, egyiknek sem fő entitása{tail}"),
                       {"entity": entity["name"], "type": site.kind(entity_id),
-                       "action": ACTIONS[kind], "page_share": round(share, 2),
+                       "action": ACTIONS[kind], "page_share": round(candidate["page_share"], 2),
+                       "template_share": round(candidate["template_share"], 2),
                        "weight": weight["weight"], "rank": site.rank[entity_id],
                        "ranked": len(site.weights), "page_count": weight["pages"],
-                       "mentions": weight["mentions"], "structural": len(headed[entity_id]),
-                       "page_groups": len(groups[entity_id]),
-                       "secondary_pages": secondary,
+                       "mentions": weight["mentions"], "structural": candidate["structural"],
+                       "page_groups": candidate["page_groups"], "subfamilies": subfamilies,
                        "top_pages": [{"url": url, "mention_weight": w, "positions": counts}
                                      for url, w, counts in pages[:EVIDENCE_PAGES]]}))
     return found
@@ -720,11 +781,12 @@ def _finding_html(finding: dict) -> str:
                 f"{o['title_similarity']}" for o in evidence["overlaps"]))]
     elif finding["type"] in ("missing_page", "uncovered_topic"):
         pairs = [("teendő", _e(evidence["action"])),
+                 ("alcsaládjai", _e("; ".join(f"{c['entity']} ({c['page_count']} oldal)"
+                                              for c in evidence["subfamilies"]))),
                  ("súly és rang", _e(f"{evidence['weight']} ({evidence['rank']}. a "
                                      f"{evidence['ranked']}-ból)")),
                  ("említés", _e(f"{evidence['page_count']} oldal, {evidence['mentions']} említés, "
                                 f"{evidence['structural']} oldalon szerkezeti helyen")),
-                 ("másodlagos entitás itt", _links(" | ".join(evidence["secondary_pages"]))),
                  ("a legtöbbet említő oldalak", "<br>".join(
                      f"{_link(p['url'])} ({p['mention_weight']:g})"
                      for p in evidence["top_pages"]))]

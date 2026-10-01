@@ -11,6 +11,7 @@ from aaa2.functions.findings import (
     build_findings,
     export_findings,
     export_views,
+    is_context,
     names_in,
     title_similarity,
 )
@@ -35,7 +36,8 @@ def post(title, text):
 
 def findings_site():
     topic = ("<h2>Konverzió</h2><p>A konverzió számít.</p>"
-             "<h2>Nordic széria</h2><p>A Nordic széria tagjai.</p>")
+             "<h2>Nordic széria</h2><p>A Nordic széria tagjai.</p>"
+             "<h2>Nordic Plus alcsalád</h2><p>A Nordic Plus alcsalád tagjai.</p>")
     return site({
         "/": html("Pelda", "<main><h1>Üdvözlünk</h1><p>Üdv.</p></main>"),
         "/meres/": html("Mérés · Pelda", f"<main><h1>Mérés nélkül csak találgatás</h1>{topic}"
@@ -65,8 +67,17 @@ def headings(con):
         llm_entity(con, f"{BASE}{path}", "Nordic széria", "Nordic széria", "product", "line")
         llm_entity(con, f"{BASE}{path}", "Nordic széria tagjai", "Nordic széria", "product",
                    "line")
+        llm_entity(con, f"{BASE}{path}", "Nordic Plus alcsalád", "Nordic Plus", "product",
+                   "line")
+        llm_entity(con, f"{BASE}{path}", "Nordic Plus alcsalád tagjai", "Nordic Plus", "product",
+                   "line")
     con.execute("UPDATE page_entities SET position = 'heading' WHERE surface_form IN "
-                "('Konverzió', 'Nordic széria')")
+                "('Konverzió', 'Nordic széria', 'Nordic Plus alcsalád')")
+    ids = dict(con.execute("SELECT name, entity_id FROM entities WHERE type = 'product'"
+                           ).fetchall())
+    con.execute("INSERT INTO entity_relations (from_id, to_id, type, source) VALUES "
+                "(?, ?, 'part_of', 'shop') ON CONFLICT DO NOTHING",
+                [ids["Nordic Plus"], ids["Nordic széria"]])
 
 
 def built(monkeypatch):
@@ -126,31 +137,39 @@ def test_uncovered_topic_missing_family_page_and_unclear_topic(monkeypatch):
     ((severity, _, evidence),) = rows(con, "uncovered_topic")
     assert (severity, evidence["entity"], evidence["page_groups"]) == ("low", "Konverzió", 3)
     assert "cikk" in evidence["action"]                   # fogalom: nem feltétlenül új oldal
-    ((severity, _, evidence),) = rows(con, "missing_page")
+    ((severity, summary, evidence),) = rows(con, "missing_page")
     assert (severity, evidence["entity"]) == ("medium", "Nordic széria")     # termékcsalád
     assert "családoldal" in evidence["action"]
-    assert run.missing_literal >= 2 and run.context == []
+    # az alcsalád a szülő megállapításában áll, nem külön
+    assert evidence["subfamilies"] == [{"entity": "Nordic Plus", "page_count": 3}]
+    assert summary.endswith("alcsaládjai: Nordic Plus")
+    assert run.missing_literal >= 3 and run.context == []
     ((severity, summary, evidence),) = rows(con, "unclear_topic")
     assert severity == "medium" and evidence["url"] == f"{BASE}/blog/vegyes/"
     assert "Riportolás" in summary
 
 
-def test_covered_and_context_entities_are_not_uncovered(monkeypatch):
+def test_context_and_covered_entities_are_not_uncovered(monkeypatch):
     monkeypatch.setattr(findings, "TOP_SHARE", 1.0)
     con = findings_site()
     run_rules(con)
     run_site(con, clock=lambda: NOON)
     headings(con)
+    # a „Konverzió” említései chrome-helyen (pl. oldalsáv-doboz): kontextus, nem lefedetlen téma
+    con.execute("UPDATE blocks SET region = 'chrome' WHERE block_id IN (SELECT block_id FROM "
+                "page_entities WHERE surface_form IN ('Konverzió', 'konverzió számít'))")
     build_graph(con)
-    monkeypatch.setattr(findings, "CONTEXT_SHARE", 0.2)     # a tizenegy oldalból hármon
     run = build_findings(con)
-    assert rows(con, "uncovered_topic") == [] and rows(con, "missing_page") == []
-    assert sorted(run.context) == ["Konverzió", "Nordic széria"]
-    monkeypatch.setattr(findings, "CONTEXT_SHARE", 0.6)
+    assert rows(con, "uncovered_topic") == [] and run.context == ["Konverzió"]
+    assert len(rows(con, "missing_page")) == 1              # a tartalomban álló család marad
+    con.execute("UPDATE blocks SET region = 'content'")
     con.execute("UPDATE pages SET h1 = 'Konverzió' WHERE url = ?", [f"{BASE}/blog/vegyes/"])
     build_graph(con)
     run = build_findings(con)
-    assert rows(con, "uncovered_topic") == [] and run.missing_literal >= 1   # van ilyen H1
+    assert rows(con, "uncovered_topic") == [] and run.context == []       # van ilyen H1-ű oldal
+    assert is_context({"template_share": 0.0, "in_site_name": True})      # a site nevében
+    assert is_context({"template_share": 0.5, "in_site_name": False})
+    assert not is_context({"template_share": 0.04, "in_site_name": False})   # sok oldalon tárgyalt
 
 
 def test_names_in_text():

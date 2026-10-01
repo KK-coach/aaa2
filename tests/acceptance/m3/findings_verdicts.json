@@ -1,5 +1,5 @@
 {
- "status": "Claude verdiktje, 2026-10-01 (második kör); Krisztián jóváhagyására",
+ "status": "Claude verdiktje, 2026-10-01 (harmadik kör); Krisztián jóváhagyására",
  "sites": {
   "kk-coach": {
    "h1_title_mismatch | Kiss Krisztián | https://kk.coach/about/": {
@@ -51,6 +51,11 @@
     "summary": "E-E-A-T (concept/method): 6 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
     "note": "három oldalcsoport headingjében, saját cikk vagy szakasz nélkül"
+   },
+   "uncovered_topic | Artificial intelligence": {
+    "summary": "Artificial intelligence (concept/discipline): 22 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "22 oldalon, 8 oldalcsoport headingjében, saját cikk vagy szakasz nélkül; lefedetlen témaként valós (nem feltétlenül kell külön oldal)"
    }
   },
   "marketinglens": {
@@ -97,9 +102,9 @@
     "note": "termékcsalád több termékkel, saját családoldal nélkül"
    },
    "missing_page | LG ThermaV": {
-    "summary": "LG ThermaV (product/line): 15 oldalon szerepel, egyiknek sem fő entitása",
+    "summary": "LG ThermaV (product/line): 15 oldalon szerepel, egyiknek sem fő entitása; alcsaládjai: LG ThermaV R32",
     "verdict": "valid",
-    "note": "termékcsalád több termékkel, saját családoldal nélkül"
+    "note": "termékcsalád több termékkel, saját családoldal nélkül; az alcsaládja (LG ThermaV R32) ebben a megállapításban áll"
    },
    "missing_page | BlueSoft Eco": {
     "summary": "BlueSoft Eco (product/line): 8 oldalon szerepel, egyiknek sem fő entitása",
@@ -108,11 +113,6 @@
    },
    "missing_page | Fujitsu Waterstage Comfort": {
     "summary": "Fujitsu Waterstage Comfort (product/line): 8 oldalon szerepel, egyiknek sem fő entitása",
-    "verdict": "valid",
-    "note": "termékcsalád több termékkel, saját családoldal nélkül"
-   },
-   "missing_page | LG ThermaV R32": {
-    "summary": "LG ThermaV R32 (product/line): 7 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
     "note": "termékcsalád több termékkel, saját családoldal nélkül"
    }
