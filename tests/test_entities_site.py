@@ -455,6 +455,77 @@ def test_confident_wikidata_merges_language_pairs_and_excluded_entities_get_no_l
     assert status_of("tech", ["type of object"], "") == "probable"
 
 
+def test_an_expanded_abbreviation_merges_into_the_long_form():
+    body = ("<main><h1>Blog</h1><p>A GEO (Generative Engine Optimization) fontos. A GEO más, "
+            "mint a SEO.</p><p>A CTA (Call to Action) és a CTA (Click Through Action) két "
+            "kifejtés. A CTA rövid.</p></main>")
+    con = site({"/": html("Pelda", "<main><h1>Pelda</h1></main>"),
+                "/blog/": html("Blog · Pelda", body)})
+    run_rules(con)
+    url = "https://pelda.hu/blog/"
+    long_geo = llm_entity(con, url, "GEO (Generative Engine Optimization)",
+                          "GEO (Generative Engine Optimization)", "concept")
+    llm_entity(con, url, "GEO", "GEO", "concept")
+    other = llm_entity(con, url, "GEO más", "GEO", "tech")                # más típus
+    llm_entity(con, url, "CTA (Call to Action)", "CTA (Call to Action)", "concept")
+    llm_entity(con, url, "CTA (Click Through Action)", "CTA (Click Through Action)", "concept")
+    short_cta = llm_entity(con, url, "CTA rövid", "CTA", "concept")      # két kifejtés
+    run_site(con, clock=lambda: NOON)
+    assert con.execute("SELECT kept_id, removed_name FROM merge_log WHERE rule = 'abbreviation'"
+                       ).fetchall() == [(long_geo, "GEO")]
+    names = dict(con.execute("SELECT entity_id, type FROM entities").fetchall())
+    assert names[other] == "tech" and names[short_cta] == "concept"
+
+
+def article_record(con, url, name, kind):
+    """Egy kész LLM-rekord az oldalra: az első fő entitás `name`, `kind` típussal."""
+    run_id = con.execute("INSERT INTO entity_runs (started_at, method, model) VALUES "
+                         "(?, 'llm', 'm') RETURNING run_id", [NOON]).fetchone()[0]
+    (page_id,) = con.execute("SELECT page_id FROM pages WHERE url = ?", [url]).fetchone()
+    record = json.dumps({"primary_entities": [name],
+                         "entities": [{"canonical_name": name, "type": kind}]})
+    con.execute("INSERT INTO entity_run_pages (run_id, page_id, status, extraction, refined, "
+                "finished_at) VALUES (?, ?, 'done', ?, ?, ?)",
+                [run_id, page_id, record, record, NOON])
+
+
+def test_a_generic_article_page_naming_a_service_is_an_offer():
+    generic = ld({"@type": "Article", "headline": "Mérés és követés"})
+    post = ld({"@type": "BlogPosting", "headline": "Mérési tanácsadás"})
+    con = site({"/": html("Pelda", "<main><h1>Pelda</h1></main>"),
+                "/meres/": html("Mérés és követés", "<main><h1>Mérés és követés</h1>"
+                                "<p>Beállítjuk.</p></main>", head=generic),
+                "/rolunk/": html("Rólunk · Pelda", "<main><h1>Rólunk</h1><p>A csapat.</p>"
+                                 "</main>", head=ld({"@type": "Article",
+                                                     "headline": "Rólunk"})),
+                "/blog/tanacs/": html("Mérési tanácsadás · Pelda", "<main><h1>Mérési "
+                                      "tanácsadás</h1><p>Cikk.</p></main>", head=post)})
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    def reasons():
+        return {i.url: (i.role, i.reason) for i in page_roles(con).values()}
+
+    assert reasons()["https://pelda.hu/meres/"] == ("article", "schema_article")   # LLM nélkül
+    article_record(con, "https://pelda.hu/meres/", "Mérés és követés", "service")
+    article_record(con, "https://pelda.hu/rolunk/", "Pelda", "org")
+    article_record(con, "https://pelda.hu/blog/tanacs/", "Mérési tanácsadás", "service")
+    got = reasons()
+    assert got["https://pelda.hu/meres/"] == ("offer", "article_service")
+    assert got["https://pelda.hu/rolunk/"] == ("article", "schema_article")       # nem szolgáltatás
+    assert got["https://pelda.hu/blog/tanacs/"] == ("article", "schema_article")  # bejegyzés
+    (stale,) = con.execute(
+        "INSERT INTO entities (name, type, subtype, aliases, source, created_at, "
+        "anchor_page_id) SELECT 'Régi cikkcím', 'work', 'article', [], 'schema', ?, page_id "
+        "FROM pages WHERE url = 'https://pelda.hu/meres/' RETURNING entity_id", [NOON]).fetchone()
+    run_site(con, clock=lambda: NOON)
+    assert con.execute("SELECT anchor_page_id FROM entities WHERE entity_id = ?",
+                       [stale]).fetchone() == (None,)
+    anchored = con.execute(
+        "SELECT e.type, e.subtype, e.tier FROM entities e JOIN pages p ON p.page_id = "
+        "e.anchor_page_id WHERE p.url = 'https://pelda.hu/meres/'").fetchall()
+    assert anchored == [("service", None, "core")]             # a korábbi cikk kötése megszűnt
+
+
 def test_confident_technology_classes_become_tech():
     from aaa2.entities.knowledge import retype_tech_classes
     con = business_site()

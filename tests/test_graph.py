@@ -15,6 +15,7 @@ from aaa2.functions.graph import (
     export_csv,
     is_a_reason,
     load_graph_config,
+    row_label,
     url_has_word,
 )
 from tests.test_entities_rules import html, ld, site
@@ -178,17 +179,19 @@ def test_weights_skip_templates_and_scale_single_mentions():
     con = business_site()
     graph_of(con)
     config = load_graph_config()
-    for name, pages, mentions, structural, main, inbound, single, weight in con.execute(
+    for name, pages, mentions, structural, main, content, nav, single, weight in con.execute(
             "SELECT e.name, w.pages, w.mentions, w.structural, w.main_pages, "
-            "w.inbound_anchors, w.single_mention, w.weight FROM entity_weights w "
+            "w.content_anchors, w.nav_anchors, w.single_mention, w.weight FROM entity_weights w "
             "JOIN entities e USING (entity_id)").fetchall():
         parts = {"pages": pages, "mentions": mentions, "structural": structural,
-                 "main_pages": main, "inbound_anchors": inbound}
+                 "main_pages": main, "content_anchors": content, "nav_anchors": nav}
         expected = sum(config.weights[k] * math.log2(1 + v) for k, v in parts.items())
         assert single == (mentions == 1), name
         assert weight == round(expected * (config.single_mention if single else 1), 4), name
-    assert con.execute("SELECT main_pages, inbound_anchors FROM entity_weights JOIN entities "
-                       "USING (entity_id) WHERE name = 'Mérés'").fetchone() == (3, 9)
+    # a cikk egy tartalmi linkje; a menüből öt oldalcsoport mutat a fő oldalaira, egyszer számítva
+    assert con.execute("SELECT main_pages, content_anchors, nav_anchors FROM entity_weights "
+                       "JOIN entities USING (entity_id) WHERE name = 'Mérés'"
+                       ).fetchone() == (3, 1, 5)
     assert con.execute("SELECT count(*) FROM entity_weights WHERE pages = 0 AND main_pages = 0 "
                        "AND secondary_pages = 0").fetchone() == (0,)
 
@@ -396,6 +399,33 @@ def test_on_a_profile_page_the_person_wins():
     assert con.execute("SELECT role FROM page_nodes WHERE url = 'https://pelda.hu/author/anna/'"
                        ).fetchone() == ("profile",)
     assert got["https://pelda.hu/author/anna/"][1:3] == ("Kiss Anna", "main")
+
+
+def test_attribute_labels_in_two_cell_rows_do_not_count():
+    table = ("<table><tr><td>SCOP</td><td>4,2</td></tr>"
+             "<tr><td>Hűtőközeg</td><td>R32</td></tr></table>"
+             "<table><tr><td>Mérési csomag</td><td>8 h</td><td>100 000 Ft</td></tr></table>")
+    con = site({"/": html("Pelda", "<main><h1>Pelda</h1><p>Üdv.</p></main>"),
+                "/a/": html("A · Pelda", f"<main><h1>A</h1><p>Leírás.</p>{table}</main>"),
+                "/b/": html("B · Pelda", f"<main><h1>B</h1><p>Leírás.</p>{table}</main>")})
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    ids = {}
+    for url in ("https://pelda.hu/a/", "https://pelda.hu/b/"):
+        ids["SCOP"] = llm_entity(con, url, "SCOP", "SCOP", "concept")            # címke
+        ids["R32"] = llm_entity(con, url, "R32", "R32", "product")               # érték
+        ids["csomag"] = llm_entity(con, url, "Mérési csomag", "Mérési csomag", "service")
+    build_graph(con)
+    weighted = dict(con.execute("SELECT entity_id, pages FROM entity_weights").fetchall())
+    assert ids["SCOP"] not in weighted                    # csak címkeként áll
+    assert weighted[ids["R32"]] == 2 and weighted[ids["csomag"]] == 2   # a háromcellás sor nem
+    edge = con.execute("SELECT evidence, weight FROM edges WHERE type = 'mentions' "
+                       "AND to_id = ? LIMIT 1", [ids["SCOP"]]).fetchone()
+    assert json.loads(edge[0]) == {"label": 1} and edge[1] == 0
+    assert row_label('[{"value": "SCOP"}, {"value": "4,2"}]', 4)
+    assert not row_label('[{"value": "Hűtőközeg"}, {"value": "R32"}]', 15)
+    assert not row_label('[{"value": "a"}, {"value": "b"}, {"value": "c"}]', 1)
+    assert not row_label(None, 3)
 
 
 def test_wikidata_is_a_rules():
