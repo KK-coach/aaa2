@@ -1,7 +1,7 @@
 """A modulok kimeneti szerződései: típusos, verziózott adatmodellek (architektúra-spec, 2. és
 4. pont).
 
-- Modulonként: `crawl` → `Page`, `Link`, `PageMeta`, `StructuredData`; `extract` → `Block`,
+- Modulonként: `llm` → `LLMCall`; `crawl` → `Page`, `Link`, `PageMeta`, `StructuredData`; `extract` → `Block`,
   `Mention`, `Candidate`; `resolve` → `Entity`, `Alias`, `Relation`, `MergeRecord`, `KbLink`;
   `graph` → `PageNode`, `Edge`, `MainEntity`, `EntityWeight`; `findings` → `Finding`.
 - Minden modell `schema_version` mezőt hordoz (`SCHEMA_VERSION`); a szerződés változása
@@ -61,6 +61,27 @@ class Contract(BaseModel):
 
 def _json(default: Any = None, **kwargs: Any) -> Any:
     return Field(default, json_schema_extra={"json_column": True}, **kwargs)
+
+
+# --- llm -----------------------------------------------------------------------------------
+
+class LLMCall(Contract):
+    """Egy modellhívás a költségével (`llm_calls`)."""
+
+    module: ClassVar[str] = "llm"
+    call_id: int
+    domain: str
+    page_id: int | None = None
+    model: str
+    purpose: str
+    tokens_in: int | None = None
+    tokens_out: int | None = None
+    cost_usd: float | None = None
+    latency_ms: int | None = None
+    attempts: int | None = None
+    last_error: str | None = None
+    fabricated_count: int | None = None
+    called_at: datetime
 
 
 # --- crawl ---------------------------------------------------------------------------------
@@ -375,5 +396,5 @@ class Finding(Contract):
 
 
 CONTRACTS: tuple[type[Contract], ...] = (
-    Page, Link, PageMeta, StructuredData, Block, Mention, MentionSource, Candidate, Entity, Alias,
+    LLMCall, Page, Link, PageMeta, StructuredData, Block, Mention, MentionSource, Candidate, Entity, Alias,
     Relation, MergeRecord, KbLink, PageNode, Edge, MainEntity, EntityWeight, Finding)

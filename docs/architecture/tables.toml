@@ -53,9 +53,9 @@ note = "ma csak JSON-LD"
 
 [tables.llm_calls]
 owner = "llm"
-contracts = []
+contracts = ["LLMCall"]
 also_written_by = ["extract"]
-note = "a spec szerinti `LLMCall` szerződés még nincs meg; az `entities/extract.py` is ír bele"
+note = "az `entities/extract.py` is ír bele"
 
 # --- extract ---------------------------------------------------------------------------------
 

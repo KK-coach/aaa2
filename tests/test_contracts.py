@@ -14,7 +14,7 @@ from tests.test_entities_site import NOON
 from tests.test_findings import BASE, built
 
 SCHEMA_DIR = Path(__file__).resolve().parents[1] / "docs" / "contracts"
-NAMED = ("Page", "Link", "PageMeta", "Block", "Mention", "Candidate", "Entity", "Alias",
+NAMED = ("LLMCall", "Page", "Link", "PageMeta", "Block", "Mention", "Candidate", "Entity", "Alias",
          "Relation", "MergeRecord", "KbLink", "PageNode", "Edge", "MainEntity", "EntityWeight",
          "Finding", "StructuredData")
 
@@ -24,7 +24,7 @@ def test_every_named_contract_exists_with_a_version_and_a_module():
     assert set(NAMED) <= names
     for model in CONTRACTS:
         assert model.model_fields["schema_version"].default == SCHEMA_VERSION
-        assert model.module in ("crawl", "extract", "resolve", "graph", "findings")
+        assert model.module in ("llm", "crawl", "extract", "resolve", "graph", "findings")
 
 
 def test_contracts_build_from_the_current_data(monkeypatch):
@@ -42,6 +42,9 @@ def test_contracts_build_from_the_current_data(monkeypatch):
                 "blocks, mentions, prominent, rank, knowledge, sol, kept) VALUES "
                 "(?, ?, ?, ?, 'concept', 'heading', 2, 3, true, 1, NULL, NULL, true)",
                 [run_id, page_id, entity_id, name])
+    con.execute("INSERT INTO llm_calls (domain, page_id, model, tokens_in, tokens_out, cost_usd, "
+                "purpose, called_at) VALUES ('pelda.hu', ?, 'gpt-6-luna', 10, 5, 0.001, "
+                "'extract', ?)", [page_id, NOON])
     con.execute("INSERT INTO merge_log (run_id, kept_id, removed_id, kept_name, removed_name, "
                 "rule, evidence, merged_at) VALUES (?, ?, NULL, ?, 'x', 'alias', ?, ?)",
                 [run_id, entity_id, name, json.dumps({"alias": "x"}), NOON])

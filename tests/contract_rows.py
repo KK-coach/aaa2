@@ -11,6 +11,7 @@ from aaa2.contracts import Contract
 
 # szerződés → (tábla, lekérdezés); a `rendered_html` (a renderelt DOM tömörítve) nem szerződés
 SOURCES: dict[type[Contract], tuple[str, str]] = {
+    contracts.LLMCall: ("llm_calls", "SELECT * FROM llm_calls ORDER BY call_id"),
     contracts.Page: ("pages", "SELECT * EXCLUDE (rendered_html) FROM pages ORDER BY page_id"),
     contracts.Link: ("links", "SELECT * FROM links ORDER BY from_page_id, ordinal, to_url"),
     contracts.StructuredData: ("schema_blocks",
