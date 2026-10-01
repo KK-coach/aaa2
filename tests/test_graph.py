@@ -110,6 +110,21 @@ def test_primary_entities_schema_about_and_the_secondary_entities():
                        ).fetchall() == [(topic,)]
 
 
+def test_a_name_resolves_to_the_entity_named_so_before_an_alias():
+    con = business_site()
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    topic = llm_entity(con, "https://pelda.hu/blog/cikk/", "Mérés és adatarchitektúra",
+                       "Adatarchitektúra", "concept")
+    con.execute("UPDATE entities SET aliases = list_append(aliases, 'Adatarchitektúra') "
+                "WHERE name = 'Mérés'")                       # az ajánlat aliasa is ez
+    primary(con, "https://pelda.hu/blog/cikk/", ["Adatarchitektúra"])
+    build_graph(con)
+    assert con.execute("SELECT entity_id FROM page_main_entity WHERE role = 'main' AND page_id "
+                       "= (SELECT page_id FROM pages WHERE url = 'https://pelda.hu/blog/cikk/')"
+                       ).fetchall() == [(topic,)]
+
+
 def test_the_site_entity_and_json_ld_about(tmp_path):
     about = ('<script type="application/ld+json">{"@context": "https://schema.org", '
              '"@graph": [{"@type": "Person", "@id": "https://pelda.hu/#kiss", "name": '

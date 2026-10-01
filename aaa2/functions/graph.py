@@ -377,15 +377,18 @@ class _Graph:
         return found
 
     def resolve(self, name: str, page_id: int | None = None, normal: bool = False) -> int | None:
-        """A név entitása (kulcs szerint); több közül a nem kizárt, az oldalon említett, a
-        több említésű."""
-        pool = (self.normal if normal else self.index).get(
-            (normal_key if normal else alias_key)(name or ""), set())
-        pool = {e for e in pool if e not in self.excluded}
+        """A név entitása (kulcs szerint); több közül a nem kizárt, az, amelyiknek ez a neve
+        (nem csak aliasa: a „Google Ads” nevű entitás megelőzi azt, amelynek „Google Ads” az
+        aliasa), az oldalon említett, a több említésű."""
+        key_of = normal_key if normal else alias_key
+        key = key_of(name or "")
+        pool = {e for e in (self.normal if normal else self.index).get(key, set())
+                if e not in self.excluded}
         if not pool:
             return None
         on_page = {m[0] for m in self.mentions.get(page_id, [])}
-        return min(pool, key=lambda e: (e not in on_page, -self.counts[e], e))
+        return min(pool, key=lambda e: (key_of(self.entities[e][1] or "") != key,
+                                        e not in on_page, -self.counts[e], e))
 
     # -- oldalszerep és segédoldal ---------------------------------------------
 
