@@ -83,6 +83,7 @@ from aaa2.entities.overrides import (
     site_domain,
 )
 from aaa2.entities.pages import (
+    ENTITY_ROLES,
     NAV_POSITIONS,
     ROLE_TYPE,
     PageInfo,
@@ -329,10 +330,26 @@ def _page_entities(ctx: _Context, merger: Merger, run: SiteRun) -> dict[str, int
     """Csoportonként az oldalhoz kötött entitás azonosítója. A kitöltőszöveg-oldalhoz egy korábbi
     futásban kötött entitás oldalkötése megszűnik (újrafuttatáskor is ugyanaz, mint frissen); ha
     a csoport szerepe megváltozott, a korábbi szerep típusával (pl. cikk) hozzá kötött entitásé
-    is."""
+    is; ha az oldal már nem entitásoldal (pl. gyűjtőoldal lett), a korábban hozzá kötött
+    entitás kötése megszűnik, és a neve a JSON-LD-név lesz, ha van (a menücímke alias marad)."""
     if ctx.placeholder:
         ctx.con.execute("UPDATE entities SET anchor_page_id = NULL, tier = NULL "
                         "WHERE list_contains(?, anchor_page_id)", [sorted(ctx.placeholder)])
+    loose = sorted(p for p, info in ctx.roles.items() if info.role not in ENTITY_ROLES)
+    for kind, subtype in ROLE_TYPE.values():
+        for entity_id, name in ctx.con.execute(
+                "UPDATE entities SET anchor_page_id = NULL, tier = NULL "
+                "WHERE list_contains(?, anchor_page_id) AND type = ? "
+                "AND (? IS NULL OR subtype = ?) RETURNING entity_id, name",
+                [loose, kind, subtype, subtype]).fetchall():
+            named = ctx.con.execute(
+                "SELECT alias FROM entity_aliases WHERE entity_id = ? AND source = 'schema' "
+                "ORDER BY length(alias), alias LIMIT 1", [entity_id]).fetchone()
+            if named and named[0] != name:
+                ctx.con.execute(
+                    "UPDATE entities SET name = ?, aliases = list_distinct(list_filter("
+                    "list_concat(coalesce(aliases, []), [?]), x -> x <> ?)) WHERE entity_id = ?",
+                    [named[0], name, named[0], entity_id])
     anchors = _qualified_anchors(ctx)
     cards = _card_headings(ctx)
     anchored: dict[str, int] = {}
@@ -463,15 +480,49 @@ def expansions(text: str) -> list[str]:
     return []
 
 
+SENTENCE = re.compile(r"[.!?:;](?:\s|$)|,\s")
+
+
+def h1_names_offer(h1: str | None, names: list[Name]) -> bool:
+    """A H1 megnevezi-e a szolgáltatást: nem mondat (nincs benne mondatvégi írásjel vagy
+    vessző), és áll benne egy más forrású megnevezés (JSON-LD-név, title-szelet, menücímke),
+    vagy maga áll egy ilyenben; a szlogen („Ideas don’t create growth. Execution does.”) nem."""
+    from aaa2.entities.gate import occurs
+
+    text = (h1 or "").strip()
+    if not text or SENTENCE.search(text):
+        return False
+    others = [n.text for n in names if n.source in ("schema", "title", "nav") and n.text]
+    return any(occurs(form, text) or occurs(text, form) for form in others)
+
+
 def _canonical(role: str, rep: PageInfo, names: list[Name]) -> str:
-    if role in ("offer", "product"):
-        chrome = [n for n in names if n.source == "nav" and n.lang == rep.lang]
-        if chrome:
-            return max(chrome, key=lambda n: (n.count, len(n.text.split()), len(n.text))).text
-        for source in ("schema", "title"):
-            found = [n.text for n in names if n.source == source and n.lang == rep.lang]
-            if found:
-                return min(found, key=len) if source == "title" else found[0]
+    """A csoport kanonikus neve. Ajánlatnál: a H1, ha megnevezi a szolgáltatást
+    (`h1_names_offer`); különben a JSON-LD-név; különben a title legrövidebb szelete; a
+    menücímke csak alias (és végső tartalék). Terméknél: a menücímke, a JSON-LD-név, a title.
+    Egyébként a H1, a title vagy az URL."""
+    local = [n for n in names if n.lang == rep.lang]
+    schema = [n.text for n in local if n.source == "schema"]
+    titles = [n.text for n in local if n.source == "title"]
+    chrome = [n for n in local if n.source == "nav"]
+    longest = max(chrome, key=lambda n: (n.count, len(n.text.split()), len(n.text))).text \
+        if chrome else None
+    if role == "offer":
+        if h1_names_offer(rep.h1, local):
+            return rep.h1.strip()
+        if schema:
+            return schema[0]
+        if titles:
+            return min(titles, key=len)
+        if longest:
+            return longest
+    if role == "product":
+        if longest:
+            return longest
+        if schema:
+            return schema[0]
+        if titles:
+            return min(titles, key=len)
     return (rep.h1 or rep.title or rep.url).strip()
 
 

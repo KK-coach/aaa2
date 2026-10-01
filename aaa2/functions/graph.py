@@ -27,7 +27,8 @@ kimenetéből. Minden futás újraépíti a `page_nodes`, `edges`, `page_main_en
      kötött cikk (work/article) nem jelölt: a cikkoldal fő entitása a téma;
   2. a JSON-LD `about` / `mainEntity` az oldalcsoport bármely tagjáról (a név, vagy az `@id` a
      site csomópontjai vagy oldalai szerint; a kérdés-válasz csomópontok nem számítanak;
-     `schema_about`); a profiloldalon a legtöbbet említett személy (`profile`; a profiloldal
+     `schema_about`); cikkoldalon a site másik oldalához kötött saját ajánlatra mutató `about`
+     / `mainEntity` nem bizonyíték (a cikk fő entitása a témája marad), helyette `supports` él; a profiloldalon a legtöbbet említett személy (`profile`; a profiloldal
      fő entitása ő, ha van);
   3. a kinyerés `primary_entities` listája (a sorszámmal; `primary`);
   4. a title, a H1 és a headingek nem sablon-említései (`title`, `h1`, `heading`); a már
@@ -49,7 +50,8 @@ kimenetéből. Minden futás újraépíti a `page_nodes`, `edges`, `page_main_en
 - Élek (`edges`): `mentions` (oldal → entitás, a nem sablon-említések pozíció szerinti
   súlyával, `config/graph.toml`), `main_entity` (oldal → entitás; fő 1, másodlagos 0,5), az M2/6
   kapcsolatai (`part_of`, `brand_of`, `offers`), `about` (cikk → a cikkoldal fő entitása),
-  `duplicate_of` (oldal → a canonical szerinti eredeti),
+  `duplicate_of` (oldal → a canonical szerinti eredeti), `supports` (a cikk entitása, vagy ha
+  nincs, a cikkoldal → a saját ajánlat, amelyre a cikk JSON-LD `about`-ja mutat),
   `is_a`: termék → kategória a kategóriaoldalból (`category_page`, az M2/6 `in_category`-ja), és
   entitás → entitás a biztos Wikidata-osztályból (`wikidata`: az entitás P31 vagy P279 osztálya
   egy másik, biztos QID-jű site-entitás; `is_a_reason` szerint kimarad: az általános osztály,
@@ -310,6 +312,7 @@ class _Graph:
                 self.texts[page_id].append(alias_key(text))
         self.articles = {e for e, row in self.entities.items() if row[7] is not None
                          and row[2] == "work" and row[3] == "article"}
+        self.supports: dict[int, list[tuple[int, str]]] = {}   # cikkoldal → (ajánlat, tulajd.)
         self.canonical: dict[int, int] = {}          # duplikátum → az eredeti oldal
         self.canonical_issue: dict[int, dict] = {}
         self._canonicals()
@@ -453,6 +456,7 @@ class _Graph:
             ranked.sort(key=lambda item: "profile" not in item.evidence)
         decision = {"role": role, "support": support, "candidates": ranked, "main": None,
                     "secondary": [], "articles": articles, "canonical": None,
+                    "supports": self.supports.get(info.page_id, []),
                     "canonical_issue": self.canonical_issue.get(info.page_id),
                     "group": info.group}
         if support is not None:
@@ -476,7 +480,8 @@ class _Graph:
     def duplicate(self, original: dict, original_id: int) -> dict:
         """A canonical-duplikátum döntése: az eredetié (szerep, fő és másodlagos entitások,
         csoport); a cikk `about`-éle az eredetiről jön."""
-        return {**original, "articles": [], "canonical": original_id, "canonical_issue": None}
+        return {**original, "articles": [], "supports": [], "canonical": original_id,
+                "canonical_issue": None}
 
     def candidates(self, info: PageInfo, home: bool = False,
                    profile: bool = False) -> dict[int, Candidate]:
@@ -500,15 +505,22 @@ class _Graph:
         if home:
             for entity_id in sorted(self.site_entities):
                 add(entity_id, "home", self.urls.get(page_id))
+        supports: list[tuple[int, str]] = []
         for member in sorted(group, key=lambda p: p != page_id):     # a hreflang-pár is
             for node in self.nodes.get(member, []):
                 for key in ("about", "mainEntity"):
                     for value in _as_list(node.get(key)):
                         name, target = self._about(value)
-                        add(self.resolve(name, page_id) if name else target, "schema_about",
+                        about = self.resolve(name, page_id) if name else target
+                        if info.role == "article" and self._own_offer(about, group):
+                            if (about, key) not in supports:
+                                supports.append((about, key))
+                            continue
+                        add(about, "schema_about",
                             {"property": key, "name": name, "source": self.urls.get(member),
                              "page": self.urls.get(target) if target in self.urls else None}
                             if name or target else None)
+        self.supports[page_id] = supports
         for index, name in enumerate(self.primary.get(page_id, [])):
             entity_id = self.resolve(name, page_id)
             add(entity_id, "primary", {"index": index, "name": name})
@@ -558,6 +570,12 @@ class _Graph:
                 del found[entity_id]
         return found
 
+    def _own_offer(self, entity_id: int | None, group: set[int]) -> bool:
+        """A site egy másik oldalához kötött saját ajánlat-e az entitás."""
+        row = self.entities.get(entity_id) if entity_id is not None else None
+        return row is not None and row[2] == "service" and row[7] is not None \
+            and row[7] not in group
+
     def _about(self, value: object) -> tuple[str | None, int | None]:
         """Az `about` / `mainEntity` értéke: (név, vagy None; a célzott oldalhoz kötött
         entitás, vagy None). A kérdés-válasz csomópont nem számít."""
@@ -591,6 +609,7 @@ def _store_page(con: duckdb.DuckDBPyConnection, graph: _Graph, info: PageInfo,
     members = [graph.urls[p] for p in sorted(graph.groups[info.group]) if p != info.page_id]
     record = {"status": decision["status"], "support": decision["support"],
               "articles": decision["articles"],
+              "supports": [offer for offer, _ in decision["supports"]],
               "canonical": graph.urls[decision["canonical"]] if decision["canonical"] else None,
               "canonical_issue": decision["canonical_issue"],
               "candidates": [c.as_dict() for c in decision["candidates"]]}
@@ -616,6 +635,7 @@ def _edges(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig,
            decisions: Mapping[int, dict], superclasses, run: GraphRun) -> None:
     rows = []
     about: dict[tuple[int, int], dict] = {}
+    supports: dict[tuple[str, int, int], dict] = {}
     weights = config.mention_weights
     for page_id in sorted(graph.roles):
         per: dict[int, Counter] = defaultdict(Counter)
@@ -643,8 +663,15 @@ def _edges(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig,
             for article in decision["articles"]:
                 about.setdefault((article, decision["main"].entity_id),
                                  {"page": graph.urls[page_id]})
+        for offer, key in decision["supports"]:
+            source = ("entity", decision["articles"][0]) if decision["articles"] \
+                else ("page", page_id)
+            supports.setdefault((*source, offer), {"page": graph.urls[page_id],
+                                                   "property": key})
     rows += [("entity", article, "entity", topic, "about", "m3_article_topic", evidence, None)
              for (article, topic), evidence in sorted(about.items())]
+    rows += [(kind, source, "entity", offer, "supports", "schema_about", evidence, None)
+             for (kind, source, offer), evidence in sorted(supports.items())]
     for from_id, to_id, kind, source, evidence in con.execute(
             "SELECT from_id, to_id, type, source, evidence FROM entity_relations "
             "ORDER BY type, from_id, to_id").fetchall():
