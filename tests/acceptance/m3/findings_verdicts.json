@@ -1,5 +1,5 @@
 {
- "status": "Claude verdiktje, 2026-10-01 (ötödik kör); Krisztián jóváhagyására",
+ "status": "Claude verdiktje, 2026-10-01 (hatodik kör); Krisztián jóváhagyására",
  "sites": {
   "kk-coach": {
    "h1_title_mismatch | Kiss Krisztián | https://kk.coach/about/": {
@@ -61,11 +61,6 @@
     "summary": "Artificial intelligence (concept/discipline): 22 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
     "note": "22 oldalon, 8 oldalcsoport headingjében, saját cikk vagy szakasz nélkül"
-   },
-   "uncovered_topic | Sprint": {
-    "summary": "Sprint (concept/method): 8 oldalon szerepel, egyiknek sem fő entitása",
-    "verdict": "invalid",
-    "note": "a megvalósítás-oldal title-je megnevezi („Sprint-alapú…”), az ajánlat része; a H1 és title együttes feltétele miatt jött vissza"
    }
   },
   "marketinglens": {
