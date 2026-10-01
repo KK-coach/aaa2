@@ -13,6 +13,9 @@
   (`INCOMPATIBLE`, típusonként `TYPE_INCOMPATIBLE`) → none; ha kompatibilist (`COMPATIBLE`) →
   confident; különben probable.
 - A Wikipedia-link (a korábbi címegyezés) csak confident és probable státusznál marad.
+- Technológiai osztály: a biztos QID-jű fogalom, amelynek QID-je egy technológiai osztály
+  (`TECH_CLASSES`: software, software framework, …), tech típust kap (`type_changed_from`), az
+  összevonás előtt.
 - Összevonás (7. pont, 4. lépés): az azonos típusú, azonos biztos (confident) QID-jű entitások
   egy entitás (`wikidata_confident`, a `merge_log`-ban, a legutóbbi site-kör futásához kötve).
 - Ha egy kérés hibára fut, az entitás ellenőrizetlen marad (a következő futás újra kérdezi).
@@ -56,6 +59,11 @@ COMPATIBLE = {
             "foundation", "university", "institution", "nonprofit", "corporation",
             "subsidiary", "online service"),
 }
+# software, software framework, application software, computer program, software library,
+# service on Internet, web application, programming language, database management system,
+# mobile app, web browser
+TECH_CLASSES = frozenset({"Q7397", "Q271680", "Q166142", "Q40056", "Q188860", "Q1668024",
+                          "Q189210", "Q9143", "Q176165", "Q620615", "Q6368"})
 
 
 @dataclass(frozen=True)
@@ -66,6 +74,7 @@ class KnowledgeRun:
     none: int
     errors: int
     merged: int
+    retyped: int = 0
 
 
 def clear_person_links(con: duckdb.DuckDBPyConnection,
@@ -136,9 +145,19 @@ def link_entities(con: duckdb.DuckDBPyConnection, knowledge: KnowledgeBase,
             continue
         _store(con, entity_id, qid, wiki, status, clock)
         counts[status] += 1
+    retyped = retype_tech_classes(con)
     merged = _merge_confident(con, clock, _corroborated(con, knowledge, short))
     return KnowledgeRun(len(rows), counts["confident"], counts["probable"], counts["none"],
-                        counts["errors"], merged)
+                        counts["errors"], merged, retyped)
+
+
+def retype_tech_classes(con: duckdb.DuckDBPyConnection) -> int:
+    """A biztos QID-jű fogalom, amely technológiai osztály (`TECH_CLASSES`), tech típust kap;
+    a korábbi típus a `type_changed_from`-ban. Visszaad: hány entitás változott."""
+    return len(con.execute(
+        "UPDATE entities SET type = 'tech', type_changed_from = type WHERE type = 'concept' "
+        "AND wikidata_status = 'confident' AND list_contains(?, wikidata_id) "
+        "RETURNING entity_id", [sorted(TECH_CLASSES)]).fetchall())
 
 
 def _ambiguous(knowledge: KnowledgeBase, kind: str, hit: dict) -> bool:

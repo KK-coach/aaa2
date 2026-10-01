@@ -5,7 +5,9 @@
 - Kategória (concept / category, a kategóriaoldalhoz kötve): kategóriaoldal-csoportonként egy
   entitás, a neve a H1 (ha nincs, a morzsamenü utolsó eleme), aliasai a rá
   mutató morzsamenü-nevek. A gyökérkategória (minden más kategóriaoldal morzsamenüjében ős)
-  kimarad. Az azonos kulcsú concept beolvad (`page_identity`). Említés: title- és H1-blokk.
+  kimarad. Az azonos kulcsú concept beolvad (`page_identity`); az oldalhoz nem kötött, nem
+  variáns termék-entitás is, ha az írásmód-normalizált neve a kategória neve vagy aliasa
+  (`shop_category`). Említés: title- és H1-blokk.
 - Márka (brand): a termék saját JSON-LD `Product.brand`-je, ennek híján a morzsamenü utolsó
   eleme, ha márka × kategória oldalra mutat (az oldal H1-e); ha egyik sincs, az így ismert
   márkák közül az, amelyikkel a terméknév kezdődik (önálló előfordulás). Kanonikus alak: ha a márka
@@ -37,6 +39,9 @@
   egy a többi szülőcsaládja, annak aliasa (`orphan_brand`; a pontos egyezés megelőzi a
   részlegest); egyébként marad, `orphan` jelöléssel (több cél esetén azok is a futás
   kimenetében).
+- A title végén csonkolt site-név („… - DUEX Hung”): az oldalhoz nem kötött, csak title-
+  említésű szervezet, amelynek a neve a site egyik nevének legalább `site.SITE_PREFIX_MIN` jeles
+  eleje, de nem maga a név, a site-szervezetbe olvad (`site_name_cut`); a csonk nem lesz alias.
 - A kapcsolatok forrása `shop`; a beolvasztások a `merge_log`-ban.
 """
 from __future__ import annotations
@@ -83,9 +88,13 @@ class ShopRun:
     unbranded: list[str] = field(default_factory=list)
     orphan_aliases: dict[str, str] = field(default_factory=dict)     # márka → cél
     orphans: dict[str, list[str]] = field(default_factory=dict)      # márka → jelölt célok
+    category_products: list[str] = field(default_factory=list)       # kategóriába olvadt
+    site_name_cuts: list[str] = field(default_factory=list)          # csonkolt site-nevek
 
     def as_dict(self) -> dict:
         return {"categories": self.categories, "brands": self.brands,
+                "category_products": self.category_products,
+                "site_name_cuts": self.site_name_cuts,
                 "families": self.families, "products": self.products,
                 "in_family": self.in_family, "parents": self.parents, "nested": self.nested,
                 "with_attributes": self.with_attributes,
@@ -248,6 +257,7 @@ def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
             _page_mentions(ctx, entity_id, info, names)
         category_ids[key] = entity_id
         run.categories += 1
+    _category_products(ctx, merger, run, sorted(set(category_ids.values())))
 
     # termékek, márkájukkal és kategóriájukkal
     brand_pages = {page_url(info.url): info for info in pages_of["brand_category"]}
@@ -365,8 +375,60 @@ def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
             else:
                 _relate(ctx, product.entity_id, owner, "part_of", {"name_prefix": full})
                 run.in_family += 1
+    _site_name_cuts(ctx, merger, run)
     _orphan_brands(ctx, merger, run, sorted(set(brand_ids.values())), family_ids)
     return run
+
+
+def _category_products(ctx: _Context, merger: Merger, run: ShopRun,
+                       category_ids: list[int]) -> None:
+    """Az oldalhoz nem kötött, nem variáns és nem család termék-entitás, amelynek írásmód-
+    normalizált neve egy kategória neve vagy aliasa, a kategóriába olvad (`shop_category`)."""
+    from aaa2.entities.site import normal_key
+
+    con = ctx.con
+    keys: dict[str, int] = {}
+    for entity_id, name, aliases in con.execute(
+            "SELECT entity_id, name, aliases FROM entities WHERE list_contains(?, entity_id) "
+            "ORDER BY entity_id", [category_ids]).fetchall():
+        for form in [name, *(aliases or [])]:
+            if normal_key(form or ""):
+                keys.setdefault(normal_key(form), entity_id)
+    for entity_id, name in con.execute(
+            "SELECT entity_id, name FROM entities WHERE type = 'product' "
+            "AND anchor_page_id IS NULL AND coalesce(subtype, '') NOT IN ('variant', 'line') "
+            "ORDER BY entity_id").fetchall():
+        target = keys.get(normal_key(name or ""))
+        if target is not None:
+            merger.merge(target, entity_id, "shop_category", {"product": name})
+            run.category_products.append(name)
+
+
+def _site_name_cuts(ctx: _Context, merger: Merger, run: ShopRun) -> None:
+    """A title végén csonkolt site-név (lásd a modul leírását): a site-szervezetbe olvad, a
+    csonk nem marad alias."""
+    from aaa2.entities.site import _site_name_keys, site_name_form
+
+    con = ctx.con
+    site_org = con.execute("SELECT min(entity_id) FROM entities WHERE type = 'org' "
+                           "AND role = 'brand'").fetchone()[0]
+    if site_org is None:
+        return
+    keys = _site_name_keys(con)
+    for entity_id, name in con.execute(
+            "SELECT e.entity_id, e.name FROM entities e WHERE e.type = 'org' "
+            "AND e.anchor_page_id IS NULL AND e.entity_id <> ? "
+            "AND EXISTS (SELECT 1 FROM page_entities pe WHERE pe.entity_id = e.entity_id) "
+            "AND NOT EXISTS (SELECT 1 FROM page_entities pe WHERE pe.entity_id = e.entity_id "
+            "AND pe.position <> 'title') ORDER BY e.entity_id", [site_org]).fetchall():
+        if alias_key(name) in keys or not site_name_form(name, keys):
+            continue
+        merger.merge(site_org, entity_id, "site_name_cut", {"name": name})
+        con.execute("UPDATE entities SET aliases = list_filter(aliases, x -> x <> ?) "
+                    "WHERE entity_id = ?", [name, site_org])
+        con.execute("DELETE FROM entity_aliases WHERE entity_id = ? AND alias = ? "
+                    "AND source = 'merge'", [site_org, name])
+        run.site_name_cuts.append(name)
 
 
 @dataclass
