@@ -8,6 +8,10 @@
     csomópont;
   - `offer`: az oldalra mutató (`url` vagy `@id` a töredék nélkül) JSON-LD `Service`;
   - `product`: az oldalra mutató JSON-LD `Product`;
+  - `offer` az általános `Article` csomópontú oldal is (a WordPress SEO-bővítménye a statikus
+    oldalakra is ráteszi), ha nincs rajta bejegyzés-típus (`BlogPosting`, `NewsArticle`,
+    `TechArticle`), és a kinyerés első fő entitása (`primary_entities`) szolgáltatás, amelyet
+    a H1 vagy a title megnevez (`service_pages`; LLM-kinyerés nélkül az oldal cikk marad);
   - `article`: `Article` / `BlogPosting` / `NewsArticle` / `TechArticle` csomópont;
   - `component`: dokumentációs oldal: van kódblokkja (a `blocks` táblából, tehát a blokkok
     felépítése után), a H1 legfeljebb `COMPONENT_H1_WORDS`
@@ -34,6 +38,7 @@ ENTITY_ROLES = ("offer", "product", "component", "article")
 ROLE_TYPE = {"offer": ("service", None), "product": ("product", None),
              "component": ("tech", "component"), "article": ("work", "article")}
 ARTICLE_TYPES = frozenset({"Article", "BlogPosting", "NewsArticle", "TechArticle"})
+POST_TYPES = ARTICLE_TYPES - {"Article"}
 SUPPORT_TYPES = frozenset({"ContactPage", "AboutPage", "ProfilePage", "CollectionPage",
                            "SearchResultsPage", "CheckoutPage"})
 # A jogi, köszönő és hibaoldal ismert slugjai (kisbetűvel, „_” helyett „-”); egy teljes
@@ -101,10 +106,12 @@ def page_roles(con: duckdb.DuckDBPyConnection) -> dict[int, PageInfo]:
             "AND list_contains(?, position)", [list(NAV_POSITIONS)]).fetchall():
         if from_id in groups and to_id in groups and groups[from_id] != groups[to_id]:
             linkers[groups[to_id]].add(groups[from_id])
+    services = service_pages(con)
     own: dict[int, tuple[str, str]] = {}
     for page_id, url, _, _, h1, _ in rows:
         own[page_id] = _own_role(page_id, url, h1, homes, nodes.get(page_id, []),
-                                 page_id in code_pages, len(linkers[groups[page_id]]))
+                                 page_id in code_pages, len(linkers[groups[page_id]]),
+                                 page_id in services)
     members: dict[str, list[int]] = defaultdict(list)
     for page_id in own:
         members[groups[page_id]].append(page_id)
@@ -210,8 +217,35 @@ def support_url(url: str) -> bool:
     return any(piece.lower().replace("_", "-") in SUPPORT_SLUGS for piece in pieces)
 
 
+def service_pages(con: duckdb.DuckDBPyConnection) -> set[int]:
+    """Azok az oldalak, ahol a kinyerő modell legutóbbi kész rekordjában az első fő entitás
+    (`primary_entities`) szolgáltatás típusú, és a H1 vagy a title megnevezi."""
+    from aaa2.entities.gate import occurs
+
+    found: set[int] = set()
+    seen: set[int] = set()
+    for page_id, record, h1, title in con.execute(
+            "SELECT p.page_id, coalesce(p.refined, p.extraction), g.h1, g.title "
+            "FROM entity_run_pages p JOIN entity_runs r USING (run_id) "
+            "JOIN pages g ON g.page_id = p.page_id WHERE r.method = 'llm' AND p.status = 'done' "
+            "ORDER BY p.run_id DESC, p.finished_at DESC").fetchall():
+        if page_id in seen or record is None:
+            continue
+        seen.add(page_id)
+        data = json.loads(record)
+        names = [n for n in data.get("primary_entities") or [] if isinstance(n, str)]
+        if not names:
+            continue
+        kinds = {e.get("type") for e in data.get("entities") or []
+                 if isinstance(e, dict) and e.get("canonical_name") == names[0]}
+        if kinds == {"service"} and any(text and occurs(names[0], text)
+                                        for text in (h1, title)):
+            found.add(page_id)
+    return found
+
+
 def _own_role(page_id: int, url: str, h1: str | None, homes: set[str], nodes: list[dict],
-              has_code: bool, linkers: int) -> tuple[str, str]:
+              has_code: bool, linkers: int, service_named: bool = False) -> tuple[str, str]:
     if page_url(url) in homes:
         return "support", "home"
     if support_url(url):
@@ -222,6 +256,8 @@ def _own_role(page_id: int, url: str, h1: str | None, homes: set[str], nodes: li
                and (same_page(node.get("url"), url) or same_page(node.get("@id"), url))
                for node in nodes):
             return role, f"schema_{kind.lower()}"
+    if types & ARTICLE_TYPES and not types & POST_TYPES and service_named:
+        return "offer", "article_service"
     if types & ARTICLE_TYPES:
         return "article", "schema_article"
     if types & SUPPORT_TYPES:

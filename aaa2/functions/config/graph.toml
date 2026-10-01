@@ -14,5 +14,6 @@ pages = 1.0              # hány oldalon szerepel
 mentions = 0.5           # hány említésben
 structural = 1.0         # hány oldalon áll title-, H1-, heading- vagy navigációs helyen
 main_pages = 2.0         # hány oldal fő entitása
-inbound_anchors = 0.5    # hány belső anchor mutat az oldalaira, ahol fő entitás
+content_anchors = 0.5    # hány tartalmi belső anchor mutat az oldalaira, ahol fő entitás
+nav_anchors = 0.1        # hány oldalcsoport navigációjából (menü, lábléc, oldalsáv) mutat rájuk link
 single_mention = 0.25

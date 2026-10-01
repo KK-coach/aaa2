@@ -267,9 +267,11 @@ def run_site(con: duckdb.DuckDBPyConnection,
         run.shop = run_shop(context, merger, config).as_dict()
         _hreflang_place(context, merger)
         _normalized_merges(con, merger)
+        _abbreviation_merges(con, merger)
         split = _type_split(con, merger)
         _steps(con, run)
         _normalized_merges(con, merger)
+        _abbreviation_merges(con, merger)
         run.overrides = apply_overrides(context, merger, config)
         run.offers = _offers(con, split)
         run.placeholder_pages = sorted(roles[p].url for p in context.placeholder if p in roles)
@@ -325,7 +327,9 @@ class _Context:
 
 def _page_entities(ctx: _Context, merger: Merger, run: SiteRun) -> dict[str, int]:
     """Csoportonként az oldalhoz kötött entitás azonosítója. A kitöltőszöveg-oldalhoz egy korábbi
-    futásban kötött entitás oldalkötése megszűnik (újrafuttatáskor is ugyanaz, mint frissen)."""
+    futásban kötött entitás oldalkötése megszűnik (újrafuttatáskor is ugyanaz, mint frissen); ha
+    a csoport szerepe megváltozott, a korábbi szerep típusával (pl. cikk) hozzá kötött entitásé
+    is."""
     if ctx.placeholder:
         ctx.con.execute("UPDATE entities SET anchor_page_id = NULL, tier = NULL "
                         "WHERE list_contains(?, anchor_page_id)", [sorted(ctx.placeholder)])
@@ -355,6 +359,14 @@ def _page_entities(ctx: _Context, merger: Merger, run: SiteRun) -> dict[str, int
             "WHERE entity_id = ?",
             [canonical, kind, subtype, "core" if role == "offer" else None, rep.page_id,
              rep.lang or ctx.site_lang, forms, canonical, entity_id])
+        for other, (stale_kind, stale_subtype) in ROLE_TYPE.items():
+            if other != role and stale_kind != kind:
+                ctx.con.execute(
+                    "UPDATE entities SET anchor_page_id = NULL, tier = NULL WHERE entity_id <> ? "
+                    "AND list_contains(?, anchor_page_id) AND type = ? "
+                    "AND (? IS NULL OR subtype = ?)",
+                    [entity_id, [m.page_id for m in members], stale_kind, stale_subtype,
+                     stale_subtype])
         _write_aliases(ctx.con, entity_id, names)
         for info in members:
             _page_mentions(ctx, entity_id, info, names)
@@ -868,6 +880,36 @@ def _normalized_merges(con: duckdb.DuckDBPyConnection, merger: Merger) -> None:
             if _mergeable(keep, other) and _exists(con, other[0]):
                 merger.merge(keep[0], other[0], "normalized_name", {"key": key, "type": kind})
                 done.add(other[0])
+
+
+def _abbreviation_merges(con: duckdb.DuckDBPyConnection, merger: Merger) -> None:
+    """A site-on kifejtett rövidítés: ha egy entitás neve vagy aliasa zárójeles kifejtés
+    („GEO (Generative Engine Optimization)”), az azonos típusú, oldalhoz nem kötött entitás,
+    amelynek a neve maga a rövidítés, a hosszú alak entitásába olvad (`abbreviation`); csak ha
+    a rövidítésnek a típuson belül egyetlen entitás adja a kifejtését."""
+    rows = _entity_rows(con)
+    expanded: dict[tuple[str, str], set[int]] = defaultdict(set)
+    named: dict[tuple[str, str], list[int]] = defaultdict(list)
+    for entity_id, name, kind, aliases in con.execute(
+            "SELECT entity_id, name, type, aliases FROM entities WHERE type <> 'person' "
+            "AND (anchor_page_id IS NOT NULL OR entity_id IN (SELECT entity_id FROM "
+            "page_entities)) ORDER BY entity_id").fetchall():
+        for form in [name, *(aliases or [])]:
+            parts = expansions(form)
+            if parts:
+                short = parts[0] if ACRONYM.fullmatch(parts[0]) else parts[1]
+                expanded[(kind, alias_key(short))].add(entity_id)
+        if ACRONYM.fullmatch(name.strip()):
+            named[(kind, alias_key(name))].append(entity_id)
+    for (kind, key), targets in sorted(expanded.items()):
+        if len(targets) != 1:
+            continue
+        (target,) = targets
+        for other in named.get((kind, key), []):
+            if other != target and other in rows and target in rows and rows[other][1] is None \
+                    and _mergeable(rows[target], rows[other]) and _exists(con, other) \
+                    and _exists(con, target):
+                merger.merge(target, other, "abbreviation", {"short": key, "type": kind})
 
 
 def _sections(con: duckdb.DuckDBPyConnection, page_id: int) -> list[tuple[int, list[int]]]:

@@ -56,9 +56,13 @@ kimenetéből. Minden futás újraépíti a `page_nodes`, `edges`, `page_main_en
   `GENERIC_CLASSES`; a P31 nem példány-típusú entitáson, `INSTANCE_TYPES`; tech és concept csak
   azonos típusú osztályhoz; az elvetettek `export_rejected`).
 - Súly (`entity_weights`): az oldalszám, az említésszám, a szerkezeti helyű oldalak (title, H1,
-  heading, navigáció), a fő és a másodlagos oldalak száma, a bejövő belső anchorok (a más
-  oldalcsoportokról az entitás fő oldalaira); a sablon-említés, a demó és a canonical-duplikátum
-  nem számít, és kimarad az az entitás, amelynek nincs tartalmi említése, fő vagy másodlagos
+  heading, navigáció), a fő és a másodlagos oldalak száma, a más oldalcsoportokról az entitás
+  fő oldalaira mutató belső anchorok: a tartalmiak (`content_anchors`, a `links.position` =
+  body) darabra, a navigációsak (`nav_anchors`: menü, lábléc, oldalsáv) forrás-oldalcsoportonként
+  egyszer és külön, kisebb súllyal; a sablon-említés, az attribútumcímke (a pontosan kétcellás,
+  tulajdonság–érték `table_row` első cellájában álló említés, pl. a műszaki táblázat „SCOP”
+  sora; a több oszlopos, pl. árazási sor első cellája nem az; a fő entitás említésszámába sem
+  számít), a demó és a canonical-duplikátum nem számít, és kimarad az az entitás, amelynek nincs tartalmi említése, fő vagy másodlagos
   oldala. A képlet: Σ súly × log2(1 + összetevő), egyetlen említésnél × `single_mention`
   (`config/graph.toml`).
 """
@@ -139,7 +143,8 @@ def load_graph_config(path: Path = CONFIG_FILE) -> GraphConfig:
     mention = raw.get("mention_weights") or {}
     weight = dict(raw.get("weight") or {})
     single = weight.pop("single_mention", None)
-    needed = {"pages", "mentions", "structural", "main_pages", "inbound_anchors"}
+    needed = {"pages", "mentions", "structural", "main_pages", "content_anchors",
+              "nav_anchors"}
     if set(mention) != {"title", "h1", "heading", "other"} or set(weight) != needed \
             or not isinstance(single, int | float) \
             or not all(isinstance(v, int | float) and v >= 0
@@ -277,23 +282,25 @@ class _Graph:
             if entity_id in self.entities:
                 self._index(entity_id, alias)
         self.mentions: dict[int, list[tuple]] = defaultdict(list)
-        for page_id, entity_id, position, flags, region in con.execute(
-                "SELECT pe.page_id, pe.entity_id, pe.position, pe.flags, b.region "
-                "FROM page_entities pe LEFT JOIN blocks b USING (block_id)").fetchall():
-            self.mentions[page_id].append((entity_id, position, "template" in (flags or []),
-                                           region))
+        for page_id, entity_id, position, flags, region, kind, cells, end in con.execute(
+                "SELECT pe.page_id, pe.entity_id, pe.position, pe.flags, b.region, b.kind, "
+                "b.cells, pe.char_end FROM page_entities pe LEFT JOIN blocks b USING (block_id)"
+                ).fetchall():
+            skip = "template" if "template" in (flags or []) \
+                else "label" if kind == "table_row" and row_label(cells, end) else None
+            self.mentions[page_id].append((entity_id, position, skip, region))
         self.counts = Counter(m[0] for rows in self.mentions.values() for m in rows)
         self.nodes = page_schema_nodes(con)
         self.id_names = self._schema_ids()
         self.primary = self._primary()
-        self.inbound: dict[int, list[tuple[int, str]]] = defaultdict(list)
+        self.inbound: dict[int, list[tuple[int, str, bool]]] = defaultdict(list)
         self.outbound: dict[int, list[tuple[int, str]]] = defaultdict(list)
-        for from_id, to_id, anchor in con.execute(
-                "SELECT from_page_id, to_page_id, anchor FROM links WHERE to_page_id IS NOT NULL"
-                ).fetchall():
+        for from_id, to_id, anchor, position in con.execute(
+                "SELECT from_page_id, to_page_id, anchor, position FROM links "
+                "WHERE to_page_id IS NOT NULL").fetchall():
             if from_id in self.roles and to_id in self.roles \
                     and self.roles[from_id].group != self.roles[to_id].group:
-                self.inbound[to_id].append((from_id, anchor or ""))
+                self.inbound[to_id].append((from_id, anchor or "", position == "body"))
                 self.outbound[from_id].append((to_id, alias_key(anchor or "")))
         self.texts: dict[int, list[str]] = defaultdict(list)
         for page_id, text in con.execute(
@@ -505,8 +512,8 @@ class _Graph:
             if entity_id in found and found[entity_id].primary_index is None:
                 found[entity_id].primary_index = index
         content = Counter()
-        for entity_id, position, template, _ in self.mentions.get(page_id, []):
-            if template:
+        for entity_id, position, skip, _ in self.mentions.get(page_id, []):
+            if skip:
                 continue
             if position in STRUCTURAL_POSITIONS:
                 add(entity_id, position, True)
@@ -524,7 +531,7 @@ class _Graph:
             if people:
                 add(people[0][0], "profile", {"mentions": people[0][1]})
         anchors = Counter()
-        for _, anchor in self.inbound.get(page_id, []):
+        for _, anchor, _ in self.inbound.get(page_id, []):
             entity_id = self.resolve(anchor, page_id)
             if entity_id is not None:
                 anchors[entity_id] += 1
@@ -609,13 +616,13 @@ def _edges(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig,
     weights = config.mention_weights
     for page_id in sorted(graph.roles):
         per: dict[int, Counter] = defaultdict(Counter)
-        for entity_id, position, template, _ in graph.mentions.get(page_id, []):
+        for entity_id, position, skip, _ in graph.mentions.get(page_id, []):
             if entity_id in graph.excluded or entity_id not in graph.entities:
                 continue
-            per[entity_id]["template" if template else position] += 1
+            per[entity_id][skip or position] += 1
         for entity_id, counts in sorted(per.items()):
             weight = sum(n * weights.get(pos, weights["other"]) for pos, n in counts.items()
-                         if pos != "template")
+                         if pos not in ("template", "label"))
             rows.append(("page", page_id, "entity", entity_id, "mentions", "m2_mentions",
                          dict(counts), weight))
         decision = decisions[page_id]
@@ -712,11 +719,11 @@ def _weights(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig)
     for page_id, rows in graph.mentions.items():
         if page_id in graph.canonical:
             continue
-        for entity_id, position, template, region in rows:
+        for entity_id, position, skip, region in rows:
             if entity_id in graph.excluded or entity_id not in graph.entities:
                 continue
             present.add(entity_id)
-            if template or position not in CONTENT_POSITIONS:
+            if skip or position not in CONTENT_POSITIONS:
                 continue
             pages[entity_id].add(page_id)
             mentions[entity_id] += 1
@@ -731,16 +738,21 @@ def _weights(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig)
         roles[entity_id][role] += 1
         if role == "main":
             main_pages[entity_id].add(page_id)
-    inbound: Counter = Counter()
+    content: Counter = Counter()
+    navigation: Counter = Counter()
     for entity_id, targets in main_pages.items():
-        inbound[entity_id] = sum(len(graph.inbound.get(page_id, [])) for page_id in targets)
+        links = [link for page_id in targets for link in graph.inbound.get(page_id, [])]
+        content[entity_id] = sum(1 for _, _, body in links if body)
+        navigation[entity_id] = len({graph.roles[source].group for source, _, body in links
+                                     if not body})
     w = config.weights
     rows = []
     for entity_id in sorted(present):
         parts = {"pages": len(pages[entity_id]), "mentions": mentions[entity_id],
                  "structural": len(structural[entity_id]),
                  "main_pages": roles[entity_id]["main"],
-                 "inbound_anchors": inbound[entity_id]}
+                 "content_anchors": content[entity_id],
+                 "nav_anchors": navigation[entity_id]}
         if not (parts["pages"] or parts["main_pages"] or roles[entity_id]["secondary"]):
             continue
         single = parts["mentions"] == 1
@@ -749,12 +761,13 @@ def _weights(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig)
             weight *= config.single_mention
         rows.append((entity_id, parts["pages"], parts["mentions"], parts["structural"],
                      parts["main_pages"], roles[entity_id]["secondary"],
-                     parts["inbound_anchors"], single, round(weight, 4)))
+                     parts["content_anchors"], parts["nav_anchors"], single,
+                     round(weight, 4)))
     if rows:
         con.executemany(
             "INSERT INTO entity_weights (entity_id, pages, mentions, structural, main_pages, "
-            "secondary_pages, inbound_anchors, single_mention, weight) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", rows)
+            "secondary_pages, content_anchors, nav_anchors, single_mention, weight) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", rows)
     return len(rows)
 
 
@@ -817,7 +830,8 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
     weights = []
     for rank, row in enumerate(con.execute(
             "SELECT w.entity_id, w.pages, w.mentions, w.structural, w.main_pages, "
-            "w.secondary_pages, w.inbound_anchors, w.single_mention, w.weight FROM "
+            "w.secondary_pages, w.content_anchors, w.nav_anchors, w.single_mention, "
+            "w.weight FROM "
             "entity_weights w JOIN entities e USING (entity_id) "
             "ORDER BY w.weight DESC, e.name").fetchall(), start=1):
         entity_id, *parts, weight = row
@@ -825,7 +839,8 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
                         "típus": "/".join(filter(None, kinds.get(entity_id, ("", "")))),
                         "oldalak": parts[0], "említések": parts[1], "szerkezeti": parts[2],
                         "fő oldalak": parts[3], "másodlagos oldalak": parts[4],
-                        "bejövő anchorok": parts[5], "egy említés": parts[6], "súly": weight})
+                        "tartalmi anchorok": parts[5], "navigációs anchorok": parts[6],
+                        "egy említés": parts[7], "súly": weight})
     paths["weights"] = _write(out / f"{name}-weights.csv", weights)
     return paths
 
@@ -875,6 +890,15 @@ def _write(path: Path, rows: list[dict]) -> Path:
 # ---------------------------------------------------------------------------
 # segédek
 # ---------------------------------------------------------------------------
+
+
+def row_label(cells: str | None, end: int | None) -> bool:
+    """A táblázatsor említése attribútumcímke-e: a pontosan kétcellás (tulajdonság–érték) sor
+    első cellájában áll (a blokk szövege a cellák „ | ”-vel összefűzve, az első cella a 0.
+    jeltől)."""
+    values = json.loads(cells) if cells else []
+    return len(values) == 2 and end is not None \
+        and end <= len(str(values[0].get("value") or ""))
 
 
 def canonical_key(url: str) -> str:
