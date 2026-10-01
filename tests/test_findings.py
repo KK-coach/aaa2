@@ -174,6 +174,12 @@ def test_context_and_covered_entities_are_not_uncovered(monkeypatch):
     build_graph(con)
     build_findings(con)
     assert [e["entity"] for _, _, e in rows(con, "uncovered_topic")] == ["Konverzió"]
+    # ajánlatoldalon a title önmagában is megnevezés
+    con.execute("UPDATE page_nodes SET role = 'offer' WHERE url = ?", [f"{BASE}/blog/vegyes/"])
+    site = findings._Site(con)
+    covered = {site.name(c["entity_id"]): exclusion(c)
+               for c in findings.uncovered_candidates(site)}
+    assert covered["Konverzió"] == "headline"
     # a H1 és a title is megnevezi: van róla szóló oldal, nem lefedetlen téma
     con.execute("UPDATE pages SET h1 = 'A konverzió növelése' WHERE url = ?",
                 [f"{BASE}/blog/vegyes/"])
