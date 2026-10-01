@@ -290,6 +290,20 @@ def test_reference_site_profile(name, reference_crawl):
     assert home == expected["home"]
 
 
+def test_the_renewed_kk_coach_set_replays(reference_crawl):
+    """A megújult kk.coach külön készlete (`kk-coach-2026-10`): 40 sikeres oldal, mindegyiknek
+    saját canonicalja és hreflang-párja; a régi `kk-coach-crawl` készlettől független."""
+    con = reference_crawl("kk-coach-2026-10")
+    if con is None:
+        pytest.skip("nincs felvétel: kk-coach-2026-10")
+    assert con.execute("SELECT count(*), count(*) FILTER (WHERE status = 200) FROM pages"
+                       ).fetchone() == (40, 40)
+    assert con.execute("SELECT count(*) FROM pages WHERE rtrim(canonical, '/') <> "
+                       "rtrim(url, '/') OR hreflang IS NULL OR len(hreflang) = 0"
+                       ).fetchone() == (0,)
+    assert site_profile_row(con)[8] == ["https://kk.coach/", "https://kk.coach/hu/"]
+
+
 @pytest.mark.live
 @pytest.mark.parametrize("name", ["kk-coach-crawl", "ngx-bootstrap-crawl"])
 async def test_live_record_site_profile_sets(name):

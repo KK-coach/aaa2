@@ -189,6 +189,9 @@ def _reference_sets() -> dict:
 
     return {
         "kk-coach-crawl": ("https://kk.coach/", CrawlOptions(concurrency=4)),
+        # A megújult kk.coach (2026-10-01): külön készlet, a régi és a rá épülő referenciák
+        # változatlanok; az új site-ra a régi referenciák nem érvényesek.
+        "kk-coach-2026-10": ("https://kk.coach/", CrawlOptions(concurrency=4)),
         "materia-crawl": ("https://materia-tm.com/", CrawlOptions(concurrency=3)),
         "ngx-bootstrap-crawl": ("https://valor-software.com/ngx-bootstrap/components",
                                 CrawlOptions(concurrency=4, include="/ngx-bootstrap/")),
