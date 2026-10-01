@@ -110,6 +110,8 @@ MIN_PAGES = 3
 MIN_STRUCTURAL = 3
 SMALL_SITE_GROUPS = 50                  # ennél kevesebb oldalcsoportú site-on …
 SMALL_SITE_STRUCTURAL = 2               # … ennyi csoportban elég a kiemelés
+# ilyen szerepű oldalon a H1 vagy a title önmagában is megnevezés (az oldal egy entitásé)
+NAMING_ALONE_ROLES = ("offer", "product", "component", "category")
 SHORT_ALIAS_CHARS = 3                   # ennél nem hosszabb alias gyenge megnevezés
 MIN_MENTIONS = 6
 HIGH_PAGES = 10
@@ -426,7 +428,8 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
     `SMALL_SITE_STRUCTURAL`) és a lefedettség feltételein átment entitások, a mérőszámaikkal
     (`template_share`: az említések hányad része áll sablon- vagy chrome-helyen;
     `in_site_name`: a név szavai a site nevének szavai; `headline`: az első indexelhető oldal,
-    amelynek a H1-e és a title-je is megnevezi; `common_word`: egyszavas, kisbetűs köznévi
+    amelynek a H1-e és a title-je is megnevezi, `NAMING_ALONE_ROLES` szerepű oldalon elég az
+    egyik; `common_word`: egyszavas, kisbetűs köznévi
     fogalom; `page_share`: az indexelhető oldalak hányad részén szerepel)."""
     if not site.weights:
         return []
@@ -434,7 +437,8 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
         small = len({p["group"] for p in site.nodes()}) < SMALL_SITE_GROUPS
         min_structural = SMALL_SITE_STRUCTURAL if small else MIN_STRUCTURAL
     indexable = {p["page_id"] for p in site.nodes() if not p["noindex"]}
-    headlines = [(p["url"], p["h1"], p["title"]) for p in site.nodes() if not p["noindex"]]
+    headlines = [(p["url"], p["h1"], p["title"], p["role"] in NAMING_ALONE_ROLES)
+                 for p in site.nodes() if not p["noindex"]]
     name_words: Counter = Counter()                  # szó → hány entitás nevében áll
     for other in site.entities.values():
         name_words.update(_words(other["name"]))
@@ -498,8 +502,9 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
             and any(name_words[w] > (w in own_words) for w in _words(f)))]
         found.append({
             "entity_id": entity_id, "weight": weight, "parent": entity_id in parents,
-            "headline": next((url for url, h1, title in headlines
-                              if names_in(naming, h1) and names_in(naming, title, cut=True)),
+            "headline": next((url for url, h1, title, alone in headlines
+                              if (any if alone else all)((
+                                  names_in(naming, h1), names_in(naming, title, cut=True)))),
                              None),
             "common_word": entity["type"] == "concept" and name.isalpha()
             and name == name.lower(),
@@ -521,7 +526,8 @@ def is_context(candidate: dict) -> bool:
 def exclusion(candidate: dict) -> str | None:
     """Miért nem lefedetlen téma a jelölt (None: az): `context` (`is_context`); `headline`: egy
     indexelhető oldal H1-e és title-je is megnevezi (van róla szóló oldal; a csak az egyikben
-    álló említés mellékes; a legfeljebb `SHORT_ALIAS_CHARS` jelű alias, amely egy másik entitás
+    álló említés mellékes, kivéve a `NAMING_ALONE_ROLES` szerepű oldalt, pl. az ajánlatoldalt,
+    ahol a title vagy a H1 önmagában is megnevezés; a legfeljebb `SHORT_ALIAS_CHARS` jelű alias, amely egy másik entitás
     nevének szava, pl. az „AI” az „AI Search” mellett, nem megnevezés; a szülőre, pl. a
     termékcsaládra nem vonatkozik, mert a termékei címében mindig ott áll); `common_word`:
     egyszavas, kisbetűs köznévi fogalom (nem rövidítés, nem tulajdonnév)."""
