@@ -54,6 +54,7 @@ from selectolax.parser import HTMLParser, Node
 
 from aaa2.engine import queries as crawl
 from aaa2.engine.parse import anchor_text
+from aaa2.entities import store
 
 # Ugyanazok, mint az `engine.parse` zajszűrőjéé; tests/test_boundaries.py őrzi.
 NOISE_SELECTOR = "script, style, noscript, iframe, template"
@@ -563,10 +564,9 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
 def drop_page_blocks(con: duckdb.DuckDBPyConnection, page_id: int) -> None:
     """Egy oldal blokkjai és a rájuk épülő sorok (említések a forrásaikkal, bizonyítékok)
     törlődnek; a következő `build_blocks` újraépíti őket."""
-    con.execute("DELETE FROM mention_sources WHERE mention_id IN "
-                "(SELECT mention_id FROM page_entities WHERE page_id = ?)", [page_id])
-    con.execute("DELETE FROM page_entities WHERE page_id = ?", [page_id])
-    con.execute("DELETE FROM soft_checks WHERE page_id = ?", [page_id])
+    store.delete_mention_sources_in_drop_page_blocks(con, page_id)
+    store.delete_page_entities_in_drop_page_blocks(con, page_id)
+    store.delete_soft_checks_in_drop_page_blocks(con, page_id)
     con.execute("DELETE FROM blocks WHERE page_id = ?", [page_id])
     con.execute("DELETE FROM blocks_built WHERE page_id = ?", [page_id])
 

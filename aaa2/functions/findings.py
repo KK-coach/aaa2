@@ -85,6 +85,7 @@ import duckdb
 
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
+from aaa2.entities import store
 from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
 from aaa2.functions import graph_queries
@@ -181,9 +182,7 @@ class _Site:
             if row[0] in noindex}
         self.entities = {row[0]: dict(zip(
             ("entity_id", "name", "type", "subtype", "aliases", "anchor", "role", "source"),
-            row, strict=True)) for row in con.execute(
-            "SELECT entity_id, name, type, subtype, aliases, anchor_page_id, role, source "
-            "FROM entities ORDER BY ALL").fetchall()}
+            row, strict=True)) for row in store.entities_for_site___init__(con)}
         self.alias_sources: dict[int, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
         for entity_id, alias, source in [(a.entity_id, a.alias, a.source)
                                          for a in resolver_queries.aliases(con)]:
@@ -200,10 +199,8 @@ class _Site:
                         for w in graph_queries.entity_weights(con)]}
         ranked = sorted(self.weights.values(), key=lambda w: (-w["weight"], w["entity_id"]))
         self.rank = {w["entity_id"]: i for i, w in enumerate(ranked, start=1)}
-        self.site_entities = {entity_id for (entity_id,) in con.execute(
-            "SELECT entity_id FROM entities e WHERE role = 'brand' OR (type = 'brand' AND "
-            "source IN ('rule', 'schema') AND NOT EXISTS (SELECT 1 FROM entity_relations r "
-            "WHERE r.from_id = e.entity_id AND r.type = 'brand_of')) ORDER BY ALL").fetchall()}
+        self.site_entities = {entity_id for (entity_id,) in store.site_entity_ids(
+            con, resolver_queries.relation_from_ids(con, "brand_of"))}
         self.mention_edges: dict[int, list[tuple[int, float, dict]]] = defaultdict(list)
         for edge in sorted(graph_queries.edges(con, "mentions"),
                            key=lambda e: (e.from_id, e.weight is None, -(e.weight or 0.0),
@@ -461,11 +458,10 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
             groups[mentioned].add(page["group"])
             if any(counts.get(position) for position in ("title", "h1", "heading")):
                 headed[mentioned].add(page["group"])
-    placed = {entity_id: (total, fixed) for entity_id, total, fixed in site.con.execute(
-        "SELECT pe.entity_id, count(*), count(*) FILTER (WHERE b.region = 'chrome' "
-        "OR list_contains(coalesce(pe.flags, []), 'template')) FROM page_entities pe "
-        "LEFT JOIN blocks b USING (block_id) JOIN page_nodes n ON n.page_id = pe.page_id "
-        "WHERE n.canonical_page IS NULL GROUP BY 1 ORDER BY ALL").fetchall()}
+    originals = sorted(node.page_id for node in graph_queries.page_nodes(site.con)
+                       if node.canonical_page is None)
+    placed = {entity_id: (total, fixed) for entity_id, total, fixed
+              in store.mention_placement(site.con, originals)}
     site_words = [_words(form) for e in site.site_entities if e in site.entities
                   for form in [site.name(e), *(site.entities[e]["aliases"] or [])]]
     top = max(1, math.ceil(len(site.weights) * TOP_SHARE))
@@ -475,9 +471,9 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
     main_words = [_words(site.name(main[0])) for page in site.nodes()
                   if (main := site.main(page["page_id"])) is not None
                   and main[0] not in site.site_entities]
-    offered = {to_id for (to_id,) in site.con.execute(
-        "SELECT e.to_id FROM edges e JOIN entities s ON s.entity_id = e.from_id "
-        "WHERE e.type = 'offers' AND s.anchor_page_id IS NOT NULL ORDER BY ALL").fetchall()}
+    anchored = store.anchored_entity_ids(site.con)
+    offered = {edge.to_id for edge in graph_queries.edges(site.con, "offers")
+               if edge.from_id in anchored}
     secondary_of = {c[0] for chosen in site.chosen.values() for c in chosen
                     if c[1] == "secondary"}
     parents = {edge.to_id for edge in graph_queries.edges(site.con, "part_of")}

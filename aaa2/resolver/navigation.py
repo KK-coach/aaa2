@@ -6,6 +6,7 @@ from collections.abc import Iterable
 
 from aaa2.engine import queries as crawl
 from aaa2.entities import queries as extract_queries
+from aaa2.entities import store
 from aaa2.entities.rules import (
     alias_key,
     find_name,
@@ -138,19 +139,10 @@ def _add_mention(ctx: _Context, entity_id: int, page_id: int, ordinal: int, name
     if span is None:
         return 0
     start, end = span
-    found = ctx.con.execute(
-        "SELECT mention_id FROM page_entities WHERE page_id = ? AND block_id = ? "
-        "AND char_start = ? AND char_end = ? AND entity_id = ? ORDER BY ALL",
-        [page_id, block[0], start, end, entity_id]).fetchone()
+    found = store.page_entities_for_store_mention(ctx.con, page_id, block[0], start, end, entity_id)
     if found is None:
-        (mention_id,) = ctx.con.execute(
-            "INSERT INTO page_entities (page_id, entity_id, block_id, char_start, char_end, "
-            "surface_form, position) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING mention_id",
-            [page_id, entity_id, block[0], start, end, block[1][start:end], position]
-        ).fetchone()
+        (mention_id,) = store.insert_page_entities_in_add_mention(ctx.con, page_id, entity_id, block[0], start, end, block[1][start:end], position)
     else:
         mention_id = found[0]
-    inserted = ctx.con.execute(
-        "INSERT INTO mention_sources (mention_id, source, run_id) VALUES (?, 'rule', ?) "
-        "ON CONFLICT DO NOTHING RETURNING mention_id", [mention_id, ctx.run_id]).fetchall()
+    inserted = store.insert_mention_sources_in_add_mention(ctx.con, mention_id, ctx.run_id)
     return len(inserted)

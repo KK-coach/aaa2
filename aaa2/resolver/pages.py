@@ -41,6 +41,7 @@ import duckdb
 from aaa2.engine import queries as crawl
 from aaa2.engine.normalize import page_url
 from aaa2.entities import queries as extract_queries
+from aaa2.entities import store
 
 ENTITY_ROLES = ("offer", "product", "component", "article")
 ROLE_TYPE = {"offer": ("service", None), "product": ("product", None),
@@ -233,11 +234,7 @@ def service_pages(con: duckdb.DuckDBPyConnection) -> set[int]:
     found: set[int] = set()
     seen: set[int] = set()
     texts = {page.page_id: (page.h1, page.title) for page in crawl.pages(con)}
-    for page_id, record in con.execute(
-            "SELECT p.page_id, coalesce(p.refined, p.extraction) "
-            "FROM entity_run_pages p JOIN entity_runs r USING (run_id) "
-            "WHERE r.method = 'llm' AND p.status = 'done' "
-            "ORDER BY p.run_id DESC, p.finished_at DESC").fetchall():
+    for page_id, record in store.entity_runs_for_service_pages(con):
         if page_id not in texts:
             continue
         h1, title = texts[page_id]

@@ -10,11 +10,13 @@ import duckdb
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
 from aaa2.entities import queries as extract_queries
+from aaa2.entities import store
 from aaa2.entities.extract import surface_offsets
 from aaa2.entities.rules import (
     SOURCE_STRENGTH,
     alias_key,
 )
+from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.context import SiteRun, _Context
 from aaa2.resolver.merge import Merger, _entity_rows, _rank, resolve
 from aaa2.resolver.names import (
@@ -86,23 +88,15 @@ def _page_entities(ctx: _Context, merger: Merger, run: SiteRun) -> dict[str, int
     is; ha az oldal már nem entitásoldal (pl. gyűjtőoldal lett), a korábban hozzá kötött
     entitás kötése megszűnik, és a neve a JSON-LD-név lesz, ha van (a menücímke alias marad)."""
     if ctx.placeholder:
-        ctx.con.execute("UPDATE entities SET anchor_page_id = NULL, tier = NULL "
-                        "WHERE list_contains(?, anchor_page_id)", [sorted(ctx.placeholder)])
+        store.update_entities_in_page_entities(ctx.con, sorted(ctx.placeholder))
     loose = sorted(p for p, info in ctx.roles.items() if info.role not in ENTITY_ROLES)
     for kind, subtype in ROLE_TYPE.values():
-        for entity_id, name in ctx.con.execute(
-                "UPDATE entities SET anchor_page_id = NULL, tier = NULL "
-                "WHERE list_contains(?, anchor_page_id) AND type = ? "
-                "AND (? IS NULL OR subtype = ?) RETURNING entity_id, name",
-                [loose, kind, subtype, subtype]).fetchall():
+        for entity_id, name in store.update_entities_in_page_entities_3(ctx.con, loose, kind, subtype, subtype):
             named = ctx.con.execute(
                 "SELECT alias FROM entity_aliases WHERE entity_id = ? AND source = 'schema' "
                 "ORDER BY length(alias), alias LIMIT 1", [entity_id]).fetchone()
             if named and named[0] != name:
-                ctx.con.execute(
-                    "UPDATE entities SET name = ?, aliases = list_sort(list_distinct(list_filter("
-                    "list_concat(coalesce(aliases, []), [?]), x -> x <> ?))) WHERE entity_id = ?",
-                    [named[0], name, named[0], entity_id])
+                store.update_entities_in_page_entities_4(ctx.con, named[0], name, named[0], entity_id)
     anchors = _qualified_anchors(ctx)
     cards = _card_headings(ctx)
     anchored: dict[str, int] = {}
@@ -116,27 +110,12 @@ def _page_entities(ctx: _Context, merger: Merger, run: SiteRun) -> dict[str, int
         keys = {alias_key(n.text) for n in names} - {""}
         entity_id = _find_page_entity(ctx.con, members, role, keys, merger, canonical)
         if entity_id is None:
-            (entity_id,) = ctx.con.execute(
-                "INSERT INTO entities (name, lang, type, subtype, aliases, source, created_at) "
-                "VALUES (?, ?, ?, ?, [], 'rule', ?) RETURNING entity_id",
-                [canonical, rep.lang or ctx.site_lang, kind, subtype, merger.clock()]
-            ).fetchone()
+            (entity_id,) = store.insert_entities_in_page_entities(ctx.con, canonical, rep.lang or ctx.site_lang, kind, subtype, merger.clock())
         forms = sorted({n.text for n in names} - {canonical})
-        ctx.con.execute(
-            "UPDATE entities SET name = ?, type = ?, subtype = coalesce(?, subtype), "
-            "tier = ?, anchor_page_id = ?, lang = coalesce(lang, ?), aliases = "
-            "list_sort(list_distinct(list_filter(list_concat(coalesce(aliases, []), ?), x -> x <> ?))) "
-            "WHERE entity_id = ?",
-            [canonical, kind, subtype, "core" if role == "offer" else None, rep.page_id,
-             rep.lang or ctx.site_lang, forms, canonical, entity_id])
+        store.update_entities_in_page_entities_2(ctx.con, canonical, kind, subtype, "core" if role == "offer" else None, rep.page_id, rep.lang or ctx.site_lang, forms, canonical, entity_id)
         for other, (stale_kind, stale_subtype) in ROLE_TYPE.items():
             if other != role and stale_kind != kind:
-                ctx.con.execute(
-                    "UPDATE entities SET anchor_page_id = NULL, tier = NULL WHERE entity_id <> ? "
-                    "AND list_contains(?, anchor_page_id) AND type = ? "
-                    "AND (? IS NULL OR subtype = ?)",
-                    [entity_id, [m.page_id for m in members], stale_kind, stale_subtype,
-                     stale_subtype])
+                store.update_entities_in_page_entities_5(ctx.con, entity_id, [m.page_id for m in members], stale_kind, stale_subtype, stale_subtype)
         _write_aliases(ctx.con, entity_id, names)
         for info in members:
             _page_mentions(ctx, entity_id, info, names)
@@ -157,11 +136,7 @@ def _find_page_entity(con: duckdb.DuckDBPyConnection, members: list[PageInfo], r
     kulcsú név vagy alias); egybe olvasztva, a megtartott azonosítója."""
     page_ids = [m.page_id for m in members]
     found: list[tuple] = []
-    for entity_id, name, kind, aliases, source, anchor, mentions in con.execute(
-            "SELECT e.entity_id, e.name, e.type, e.aliases, e.source, e.anchor_page_id, "
-            "(SELECT count(*) FROM page_entities pe WHERE pe.entity_id = e.entity_id) "
-            "FROM entities e WHERE list_contains(?, e.type) ORDER BY e.entity_id",
-            [list(COMPATIBLE[role])]).fetchall():
+    for entity_id, name, kind, aliases, source, anchor, mentions in store.page_entities_for_find_page_entity(con, list(COMPATIBLE[role])):
         own = anchor is not None and anchor in page_ids
         if own or {alias_key(f) for f in [name, *(aliases or [])]} & keys:
             found.append((not own, SOURCE_STRENGTH.get(source, 9), -mentions, entity_id, name))
@@ -180,17 +155,10 @@ def _position_identity(ctx: _Context, merger: Merger, entity_id: int, keys: set[
     említése az oldalhoz kötött entitás azonosító blokkjaiban áll (title, H1, anchor,
     kártyacím), beolvad (`page_identity_position`); a szöveg közben is használt azonos nevű
     fogalom külön marad."""
-    evidence = {row[0] for row in ctx.con.execute(
-        "SELECT DISTINCT block_id FROM page_entities WHERE entity_id = ? "
-        "AND block_id IS NOT NULL ORDER BY ALL", [entity_id]).fetchall()}
+    evidence = {row[0] for row in store.page_entities_for_position_identity(ctx.con, entity_id)}
     if not evidence:
         return
-    for other, name, aliases, blocks in ctx.con.execute(
-            "SELECT e.entity_id, e.name, e.aliases, list_sort(list(DISTINCT pe.block_id)) FROM entities e "
-            "JOIN page_entities pe USING (entity_id) WHERE e.entity_id <> ? "
-            "AND pe.block_id IS NOT NULL AND NOT list_contains(?, e.type) "
-            "GROUP BY e.entity_id, e.name, e.aliases ORDER BY ALL",
-            [entity_id, list(IDENTITY_EXCLUDED_TYPES)]).fetchall():
+    for other, name, aliases, blocks in store.entities_for_position_identity(ctx.con, entity_id, list(IDENTITY_EXCLUDED_TYPES)):
         if set(blocks) <= evidence and alias_key(name) in keys:
             merger.merge(entity_id, other, "page_identity_position",
                          {"name": name, "blocks": sorted(blocks)})
@@ -347,8 +315,7 @@ def _packages(ctx: _Context, merger: Merger, run: SiteRun, anchored: dict[str, i
                 for name in _catalog_names(node):
                     _package_entity(ctx, core, name, info, "schema_catalog")
         _pair_rows(ctx, merger, members, by_page)
-    (run.packages,) = ctx.con.execute("SELECT count(*) FROM entities WHERE tier = 'package' ORDER BY ALL"
-                                      ).fetchone()
+    (run.packages,) = store.entities_for_packages(ctx.con)
 
 
 def _package_entity(ctx: _Context, core: int, name: str, info: PageInfo,
@@ -356,23 +323,14 @@ def _package_entity(ctx: _Context, core: int, name: str, info: PageInfo,
     """A csomag entitása (azonos kulcsú nem fő ajánlat, vagy új); az elsődleges nyelvű oldal
     árazási sora adja a nevét."""
     key = alias_key(name)
-    (core_name, core_aliases) = ctx.con.execute(
-        "SELECT name, aliases FROM entities WHERE entity_id = ? ORDER BY ALL", [core]).fetchone()
+    (core_name, core_aliases) = store.entities_for_package_entity(ctx.con, core)
     if key in {alias_key(f) for f in [core_name, *(core_aliases or [])]}:
         return None
-    entity_id = next((entity_id for entity_id, name_, aliases in ctx.con.execute(
-        "SELECT entity_id, name, aliases FROM entities WHERE type = 'service' "
-        "AND coalesce(tier, '') <> 'core' ORDER BY entity_id").fetchall()
+    entity_id = next((entity_id for entity_id, name_, aliases in store.entities_for_package_entity_2(ctx.con)
         if key in {alias_key(f) for f in [name_, *(aliases or [])]}), None)
     if entity_id is None:
-        (entity_id,) = ctx.con.execute(
-            "INSERT INTO entities (name, lang, type, aliases, source, created_at) "
-            "VALUES (?, ?, 'service', [], 'rule', ?) RETURNING entity_id",
-            [name, info.lang or ctx.site_lang, _now()]).fetchone()
-    ctx.con.execute("UPDATE entities SET tier = 'package', name = CASE WHEN ? THEN ? ELSE name "
-                    "END, aliases = list_sort(list_distinct(list_filter(list_append(coalesce(aliases, []), "
-                    "name), x -> x <> CASE WHEN ? THEN ? ELSE name END))) WHERE entity_id = ?",
-                    [primary, name, primary, name, entity_id])
+        (entity_id,) = store.insert_entities_in_package_entity(ctx.con, name, info.lang or ctx.site_lang, _now())
+    store.update_entities_in_package_entity(ctx.con, primary, name, primary, name, entity_id)
     ctx.con.execute(
         "INSERT INTO entity_relations (from_id, to_id, type, source, evidence) "
         "VALUES (?, ?, 'part_of', ?, ?) ON CONFLICT DO NOTHING",
@@ -399,18 +357,14 @@ def _pair_rows(ctx: _Context, merger: Merger, members: list[PageInfo],
 
 
 def _steps(con: duckdb.DuckDBPyConnection, run: SiteRun) -> None:
-    rows = con.execute(
-        "UPDATE entities SET type = 'concept', subtype = 'method', tier = 'step', "
-        "type_changed_from = 'service' WHERE type = 'service' AND source = 'llm' "
-        "AND tier IS NULL RETURNING entity_id").fetchall()
+    rows = store.update_entities_in_steps(con)
     run.steps = len(rows)
 
 
 def llm_types(con: duckdb.DuckDBPyConnection) -> dict[tuple[int, int, int, int], tuple[str, str]]:
     """A legutóbbi LLM-futás tárolt rekordjaiból említésenként (oldal, blokk, kezdet, vég) az
     LLM típusa és kanonikus neve."""
-    (run_id,) = con.execute("SELECT max(run_id) FROM entity_runs WHERE method = 'llm' ORDER BY ALL"
-                            ).fetchone()
+    (run_id,) = store.entity_runs_for_llm_types(con)
     found: dict[tuple[int, int, int, int], tuple[str, str]] = {}
     if run_id is None:
         return found
@@ -436,12 +390,7 @@ def _type_split(con: duckdb.DuckDBPyConnection, merger: Merger) -> dict[int, set
     names = _service_names(con)
     moved: dict[int, set[int]] = defaultdict(set)
     counts: Counter[tuple[int, int]] = Counter()
-    for mention_id, entity_id, page_id, block_id, start, end, kind_, text in con.execute(
-            "SELECT pe.mention_id, pe.entity_id, pe.page_id, pe.block_id, pe.char_start, "
-            "pe.char_end, b.kind, b.text FROM page_entities pe JOIN entities e USING (entity_id) "
-            "JOIN blocks b USING (block_id) WHERE e.type = 'service' AND pe.mention_id IN "
-            "(SELECT mention_id FROM mention_sources WHERE source = 'llm') "
-            "ORDER BY pe.mention_id").fetchall():
+    for mention_id, entity_id, page_id, block_id, start, end, kind_, text in store.page_entities_for_type_split(con):
         kind, name = raw.get((page_id, block_id, start, end), (None, None))
         if kind != "concept":
             continue
@@ -453,19 +402,14 @@ def _type_split(con: duckdb.DuckDBPyConnection, merger: Merger) -> dict[int, set
         key = normal_key(name)
         concept = concepts.get(key)
         if concept is None:
-            (concept,) = con.execute(
-                "INSERT INTO entities (name, type, aliases, source, created_at) "
-                "VALUES (?, 'concept', [], 'llm', ?) RETURNING entity_id",
-                [name.strip(), merger.clock()]).fetchone()
+            (concept,) = store.insert_entities_in_type_split(con, name.strip(), merger.clock())
             concepts[key] = concept
         _move_mention(con, mention_id, concept)
         moved[entity_id].add(concept)
         counts[(entity_id, concept)] += 1
     for (entity_id, concept), count in counts.items():
-        (source_name,) = con.execute("SELECT name FROM entities WHERE entity_id = ? ORDER BY ALL",
-                                     [entity_id]).fetchone()
-        (concept_name,) = con.execute("SELECT name FROM entities WHERE entity_id = ? ORDER BY ALL",
-                                      [concept]).fetchone()
+        (source_name,) = store.entities_for_type_split(con, entity_id)
+        (concept_name,) = store.entities_for_type_split(con, concept)
         con.execute(
             "INSERT INTO merge_log (run_id, kept_id, removed_id, kept_name, removed_name, rule, "
             "evidence, merged_at) VALUES (?, ?, NULL, ?, ?, 'type_split', ?, ?)",
@@ -478,21 +422,18 @@ def _type_split(con: duckdb.DuckDBPyConnection, merger: Merger) -> dict[int, set
 def _service_names(con: duckdb.DuckDBPyConnection) -> dict[int, set[str]]:
     """Service → a neve, az aliasai és az `entity_aliases` sorai normalizált kulccsal."""
     found: dict[int, set[str]] = defaultdict(set)
-    for entity_id, name, aliases in con.execute(
-            "SELECT entity_id, name, aliases FROM entities WHERE type = 'service' ORDER BY ALL").fetchall():
+    for entity_id, name, aliases in store.entities_for_service_names(con):
         found[entity_id] |= {normal_key(f) for f in [name, *(aliases or [])]}
-    for entity_id, alias in con.execute(
-            "SELECT a.entity_id, a.alias FROM entity_aliases a JOIN entities e "
-            "USING (entity_id) WHERE e.type = 'service' ORDER BY ALL").fetchall():
+    types = store.entity_types(con)
+    for entity_id, alias in [(a.entity_id, a.alias) for a in resolver_queries.aliases(con)
+                             if types.get(a.entity_id) == "service"]:
         found[entity_id].add(normal_key(alias))
     return found
 
 
 def _concept_index(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     found: dict[str, int] = {}
-    for entity_id, name, aliases in con.execute(
-            "SELECT entity_id, name, aliases FROM entities WHERE type = 'concept' "
-            "ORDER BY entity_id").fetchall():
+    for entity_id, name, aliases in store.entities_for_concept_index(con):
         for form in [name, *(aliases or [])]:
             found.setdefault(normal_key(form), entity_id)
     found.pop("", None)
@@ -502,21 +443,14 @@ def _concept_index(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
 def _move_mention(con: duckdb.DuckDBPyConnection, mention_id: int, entity_id: int) -> None:
     """Az említés átkerül az entitáshoz; ha ott már van azonos helyű említés, a forrásai
     oda kerülnek."""
-    row = con.execute("SELECT page_id, block_id, char_start, char_end FROM page_entities "
-                      "WHERE mention_id = ? ORDER BY ALL", [mention_id]).fetchone()
-    same = con.execute(
-        "SELECT mention_id FROM page_entities WHERE page_id = ? AND block_id IS NOT DISTINCT "
-        "FROM ? AND char_start IS NOT DISTINCT FROM ? AND char_end IS NOT DISTINCT FROM ? "
-        "AND entity_id = ? ORDER BY ALL", [*row, entity_id]).fetchone()
+    row = store.page_entities_for_move_mention(con, mention_id)
+    same = store.page_entities_for_move_mention_2(con, row, entity_id)
     if same is None:
-        con.execute("UPDATE page_entities SET entity_id = ? WHERE mention_id = ?",
-                    [entity_id, mention_id])
+        store.update_page_entities_in_move_mention(con, entity_id, mention_id)
         return
-    con.execute("INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id, count) "
-                "SELECT ?, source, run_id, llm_call_id, count FROM mention_sources "
-                "WHERE mention_id = ? ON CONFLICT DO NOTHING", [same[0], mention_id])
-    con.execute("DELETE FROM mention_sources WHERE mention_id = ?", [mention_id])
-    con.execute("DELETE FROM page_entities WHERE mention_id = ?", [mention_id])
+    store.insert_mention_sources_in_merger_merge(con, same[0], mention_id)
+    store.delete_mention_sources_in_merger_merge(con, mention_id)
+    store.delete_page_entities_in_merger_merge(con, mention_id)
 
 
 def _offers(con: duckdb.DuckDBPyConnection, split: dict[int, set[int]]) -> int:
@@ -526,9 +460,7 @@ def _offers(con: duckdb.DuckDBPyConnection, split: dict[int, set[int]]) -> int:
     concepts = _concept_index(con)
     con.execute("DELETE FROM entity_relations WHERE type = 'offers'")
     rows = set()
-    for entity_id, name, aliases in con.execute(
-            "SELECT entity_id, name, aliases FROM entities WHERE type = 'service' "
-            "AND tier IN ('core', 'package', 'work_mode') ORDER BY ALL").fetchall():
+    for entity_id, name, aliases in store.entities_for_offers(con):
         forms = {name} | {alias for (alias,) in con.execute(
             "SELECT alias FROM entity_aliases WHERE entity_id = ? AND list_contains(?, source) ORDER BY ALL",
             [entity_id, list(OFFER_LABEL_SOURCES)]).fetchall()}
@@ -567,12 +499,8 @@ def apply_overrides(ctx: _Context, merger: Merger, config: SiteConfig) -> int:
         for other in sorted(ids - {keep}):
             merger.merge(keep, other, "override", {"names": list(override.names),
                                                    "url": override.url})
-        name, kind, tier = con.execute("SELECT name, type, tier FROM entities WHERE entity_id = ? ORDER BY ALL",
-                                       [keep]).fetchone()
-        con.execute(
-            "UPDATE entities SET type = 'service', subtype = CASE WHEN type = 'service' THEN "
-            "subtype END, tier = ?, type_changed_from = CASE WHEN type <> 'service' THEN type "
-            "ELSE type_changed_from END WHERE entity_id = ?", [override.tier, keep])
+        name, kind, tier = store.entities_for_apply_overrides(con, keep)
+        store.update_entities_in_apply_overrides(con, override.tier, keep)
         core = None
         if override.part_of:
             targets = _override_entities(ctx, (override.part_of,), override.part_of
@@ -606,20 +534,15 @@ def _override_entities(ctx: _Context, names: tuple[str, ...], url: str | None) -
                  if page_url(info.url) == page_url(url)]
         groups = {ctx.roles[p].group for p in pages}
         members = [info.page_id for info in ctx.roles.values() if info.group in groups]
-        found |= {e for (e,) in con.execute(
-            "SELECT entity_id FROM entities WHERE list_contains(?, anchor_page_id) ORDER BY ALL",
-            [members]).fetchall()}
+        found |= {e for (e,) in store.entities_for_override_entities_2(con, members)}
     keys = {normal_key(n) for n in names} - {""}
     if keys:
-        for entity_id, name, aliases in con.execute(
-                "SELECT entity_id, name, aliases FROM entities WHERE type <> 'person' AND "
-                "(anchor_page_id IS NOT NULL OR entity_id IN (SELECT entity_id FROM "
-                "page_entities)) ORDER BY ALL").fetchall():
+        for entity_id, name, aliases in store.entities_for_override_entities(con):
             if {normal_key(f) for f in [name, *(aliases or [])]} & keys:
                 found.add(entity_id)
-        for entity_id, alias in con.execute(
-                "SELECT a.entity_id, a.alias FROM entity_aliases a JOIN entities e "
-                "USING (entity_id) WHERE e.type <> 'person' ORDER BY ALL").fetchall():
+        types = store.entity_types(con)
+        for entity_id, alias in [(a.entity_id, a.alias) for a in resolver_queries.aliases(con)
+                                 if a.entity_id in types and types[a.entity_id] != "person"]:
             if normal_key(alias) in keys:
                 found.add(entity_id)
     return found

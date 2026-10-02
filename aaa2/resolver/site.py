@@ -70,6 +70,7 @@ from datetime import datetime
 import duckdb
 
 from aaa2.db.stable_json import dumps
+from aaa2.entities import store
 from aaa2.resolver.context import SiteRun, _Context
 from aaa2.resolver.flags import _demo, _template
 from aaa2.resolver.merge import Merger, _abbreviation_merges, _hreflang_place, _normalized_merges
@@ -98,14 +99,13 @@ def run_site(con: duckdb.DuckDBPyConnection,
     site_lang = canonical_language(con, config)
     con.begin()
     try:
-        (run_id,) = con.execute(
-            "INSERT INTO entity_runs (started_at, method, llm_calls) VALUES (?, 'site', 0) "
-            "RETURNING run_id", [started]).fetchone()
+        (run_id,) = store.insert_entity_runs_in_run_site(con, started)
         run = SiteRun(run_id, dict(Counter(info.role for info in roles.values())))
         # a korábbi körök óta törölt entitásokra mutató kapcsolatok (újrafuttatáskor a
         # szabálykör az említés nélküli szabály-entitásokat törli)
-        con.execute("DELETE FROM entity_relations WHERE from_id NOT IN (SELECT entity_id FROM "
-                    "entities) OR to_id NOT IN (SELECT entity_id FROM entities)")
+        known = store.entity_ids(con)
+        con.execute("DELETE FROM entity_relations WHERE NOT list_contains(CAST(? AS INTEGER[]), "
+                    "from_id) OR NOT list_contains(CAST(? AS INTEGER[]), to_id)", [known, known])
         merger = Merger(con, run_id, clock)
         context = _Context(con, roles, site_lang, run_id)
         anchored = _page_entities(context, merger, run)
@@ -124,17 +124,13 @@ def run_site(con: duckdb.DuckDBPyConnection,
         _demo(con, run, context.placeholder)
         _template(context, run)
         run.merges = merger.counts
-        con.execute(
-            "UPDATE entity_runs SET finished_at = ?, pages = ?, entities = ?, row_count = ?, "
-            "skipped = ? WHERE run_id = ?",
-            [clock(), len(roles), run.page_entities + run.packages, run.anchor_mentions,
-             dumps({"roles": run.roles, "merges": dict(run.merges),
+        store.update_entity_runs_in_run_site(con, clock(), len(roles), run.page_entities + run.packages, run.anchor_mentions, dumps({"roles": run.roles, "merges": dict(run.merges),
                          "packages": run.packages, "steps": run.steps, "offers": run.offers,
                          "overrides": run.overrides, "shop": run.shop,
                          "demo": run.demo, "placeholder_pages": run.placeholder_pages,
                          "template_mentions": run.template_mentions,
                          "template_entities": run.template_entities,
-                         "thresholds": run.thresholds}, ensure_ascii=False), run_id])
+                         "thresholds": run.thresholds}, ensure_ascii=False), run_id)
         con.commit()
     except Exception:
         con.rollback()

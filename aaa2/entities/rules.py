@@ -68,6 +68,7 @@ from selectolax.parser import HTMLParser
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
 from aaa2.engine.normalize import page_url
+from aaa2.entities import store
 from aaa2.entities.dom import build_blocks, parse_blocks
 from aaa2.llm.schemas import ENTITY_TYPES
 
@@ -350,12 +351,9 @@ def run_rules(con: duckdb.DuckDBPyConnection,
         unique.setdefault(id(candidate), candidate)
     con.begin()
     try:
-        (run_id,) = con.execute(
-            "INSERT INTO entity_runs (started_at, method, llm_calls) VALUES (?, 'rules', 0) "
-            "RETURNING run_id", [started]).fetchone()
-        con.execute("DELETE FROM mention_sources WHERE source IN ('schema', 'rule')")
-        con.execute("DELETE FROM page_entities WHERE mention_id NOT IN "
-                    "(SELECT mention_id FROM mention_sources)")
+        (run_id,) = store.insert_entity_runs_in_run_rules(con, started)
+        store.delete_mention_sources_in_run_rules(con)
+        store.delete_page_entities_in_run_rules(con)
         existing = _existing_entities(con)
         rows = 0
         by_position: Counter[str] = Counter()
@@ -370,22 +368,10 @@ def run_rules(con: duckdb.DuckDBPyConnection,
             entity_id = next((existing[pair] for pair in keys_of[ident] if pair in existing),
                              None)
             if entity_id is None:
-                (entity_id,) = con.execute(
-                    "INSERT INTO entities (name, lang, type, aliases, source, role, created_at) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING entity_id",
-                    [name, lang, candidate.type, aliases, candidate.source, candidate.role,
-                     started],
-                ).fetchone()
+                (entity_id,) = store.insert_entities_in_run_rules(con, name, lang, candidate.type, aliases, candidate.source, candidate.role, started)
             else:
-                (current,) = con.execute("SELECT source FROM entities WHERE entity_id = ? ORDER BY ALL",
-                                         [entity_id]).fetchone()
-                con.execute(
-                    "UPDATE entities SET aliases = list_sort(list_distinct(list_concat(coalesce(aliases, "
-                    "[]), ?))), lang = coalesce(lang, ?), source = ?, role = coalesce(?, role) "
-                    "WHERE entity_id = ?",
-                    [aliases, lang, stronger_source(current, candidate.source), candidate.role,
-                     entity_id],
-                )
+                (current,) = store.entities_for_run_rules(con, entity_id)
+                store.update_entities_in_run_rules(con, aliases, lang, stronger_source(current, candidate.source), candidate.role, entity_id)
             entity_ids.add(entity_id)
             written: set[int] = set()
             for mention in candidate.mentions:
@@ -393,23 +379,12 @@ def run_rules(con: duckdb.DuckDBPyConnection,
                 if mention_id in written:
                     continue
                 written.add(mention_id)
-                con.execute(
-                    "INSERT INTO mention_sources (mention_id, source, run_id, count) "
-                    "VALUES (?, ?, ?, ?)", [mention_id, mention.source, run_id, mention.count])
+                store.insert_mention_sources_in_run_rules(con, mention_id, mention.source, run_id, mention.count)
                 rows += 1
                 by_position[mention.position] += 1
                 pages_with.add(mention.page_id)
-        con.execute(
-            "DELETE FROM entities WHERE source IN ('schema', 'rule') AND entity_id NOT IN "
-            "(SELECT entity_id FROM page_entities)"
-        )
-        con.execute(
-            "UPDATE entity_runs SET finished_at = ?, pages = ?, pages_with_entities = ?, "
-            "entities = ?, row_count = ?, by_position = ?, skipped = ? WHERE run_id = ?",
-            [clock(), len(pages), len(pages_with), len(entity_ids), rows,
-             json.dumps(dict(sorted(by_position.items()))),
-             dumps(skipped, ensure_ascii=False), run_id],
-        )
+        store.delete_entities_in_run_rules(con)
+        store.update_entity_runs_in_run_rules(con, clock(), len(pages), len(pages_with), len(entity_ids), rows, json.dumps(dict(sorted(by_position.items()))), dumps(skipped, ensure_ascii=False), run_id)
         con.commit()
     except Exception:
         con.rollback()
@@ -423,24 +398,15 @@ def _store_mention(con: duckdb.DuckDBPyConnection, mention: Mention, entity_id: 
     """Az említés azonosítója: a meglévő (azonos oldal, blokk, pozíció és entitás; schemánál
     oldal és entitás), vagy egy új sor."""
     if mention.ordinal is None:
-        found = con.execute(
-            "SELECT mention_id FROM page_entities WHERE page_id = ? AND entity_id = ? "
-            "AND position = 'schema' ORDER BY ALL", [mention.page_id, entity_id]).fetchone()
+        found = store.page_entities_for_store_mention_2(con, mention.page_id, entity_id)
         block_id, start, end = None, None, None
     else:
         block_id = block_ids[(mention.page_id, mention.ordinal)]
         start, end = mention.span
-        found = con.execute(
-            "SELECT mention_id FROM page_entities WHERE page_id = ? AND block_id = ? "
-            "AND char_start = ? AND char_end = ? AND entity_id = ? ORDER BY ALL",
-            [mention.page_id, block_id, start, end, entity_id]).fetchone()
+        found = store.page_entities_for_store_mention(con, mention.page_id, block_id, start, end, entity_id)
     if found:
         return found[0]
-    (mention_id,) = con.execute(
-        "INSERT INTO page_entities (page_id, entity_id, block_id, char_start, char_end, "
-        "surface_form, position, context) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING mention_id",
-        [mention.page_id, entity_id, block_id, start, end, mention.surface, mention.position,
-         mention.context]).fetchone()
+    (mention_id,) = store.insert_page_entities_in_store_mention_2(con, mention.page_id, entity_id, block_id, start, end, mention.surface, mention.position, mention.context)
     return mention_id
 
 
@@ -735,10 +701,7 @@ def _name(value: object) -> str | None:
 def _existing_entities(con: duckdb.DuckDBPyConnection) -> dict[tuple[str, str], int]:
     """(kulcs, típus) → entitás; a KG által átállított entitás a régi típusával is."""
     found: dict[tuple[str, str], int] = {}
-    for entity_id, name, kind, aliases, previous in con.execute(
-        "SELECT entity_id, name, type, aliases, type_changed_from FROM entities "
-        "ORDER BY entity_id"
-    ).fetchall():
+    for entity_id, name, kind, aliases, previous in store.entities_for_existing_entities(con):
         for form in [name, *(aliases or [])]:
             for each in (kind, previous) if previous else (kind,):
                 found.setdefault((alias_key(form), each), entity_id)

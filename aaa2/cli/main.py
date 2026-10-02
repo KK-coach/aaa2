@@ -21,6 +21,7 @@ from aaa2.engine.crawl import CrawlOptions, run_crawl
 from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
+from aaa2.entities import store
 from aaa2.entities.dom import build_blocks
 from aaa2.entities.extract import Worker, estimate_llm, input_models, run_llm
 from aaa2.entities.gate import KnowledgeBase
@@ -46,10 +47,6 @@ app = typer.Typer(no_args_is_help=True, help="AAA v2 — sitewide SEO/GEO elemz�
 EXPORT_TABLES = (
     "pages", "links", "headings", "schema_blocks", "crawl_queue", "crawl_runs", "site",
     "entities", "page_entities", "mention_sources", "blocks", "llm_calls", "entity_runs",
-)
-ENTITY_RUN_COLUMNS = (
-    "run_id, method, model, finished_at, pages, pages_with_entities, entities, row_count, "
-    "llm_calls, cost_usd, fabricated, by_position"
 )
 
 
@@ -168,10 +165,7 @@ def status(
             f"  utolsó crawl #{run_id} ({notes}): indult {started:%Y-%m-%d %H:%M}, {state}; "
             f"{done} rendben, {failed} hibás, {skipped} kihagyva, {rate or 0:.2f} oldal/mp"
         )
-    for entity_run in con.execute(
-        f"SELECT {ENTITY_RUN_COLUMNS} FROM entity_runs "
-        "WHERE run_id IN (SELECT max(run_id) FROM entity_runs GROUP BY method) ORDER BY run_id"
-    ).fetchall():
+    for entity_run in store.latest_runs_by_method(con):
         typer.echo("  " + _entity_run_line(*entity_run))
     _llm_spend(con)
 
@@ -305,12 +299,9 @@ def entities(
         if shared is not None:
             shared.close()
     for run_id in runs:
-        entity_run = con.execute(
-            f"SELECT {ENTITY_RUN_COLUMNS} FROM entity_runs WHERE run_id = ?", [run_id]
-        ).fetchone()
+        entity_run = store.entity_run(con, run_id)
         typer.echo(_entity_run_line(*entity_run))
-        for reason, value in json.loads(con.execute(
-                "SELECT skipped FROM entity_runs WHERE run_id = ? ORDER BY ALL", [run_id]).fetchone()[0]
+        for reason, value in json.loads(store.entity_runs_for_entities(con, run_id)[0]
                 ).items():
             shown = (", ".join(f"{k} {v}" for k, v in list(value.items())[:8])
                      if isinstance(value, dict) else ", ".join(value)
@@ -327,11 +318,7 @@ def entities(
                    f"valószínű {linked.probable}, nincs {linked.none}; összevonás "
                    f"{linked.merged}; hibás lekérdezés miatt ellenőrizetlen {linked.errors}; "
                    f"technológiai osztály → tech {linked.retyped}")
-    for kind, count, rows in con.execute(
-        "SELECT e.type, count(DISTINCT e.entity_id), count(*) FROM entities e "
-        "JOIN page_entities pe USING (entity_id) "
-        "GROUP BY e.type ORDER BY count(DISTINCT e.entity_id) DESC, e.type"
-    ).fetchall():
+    for kind, count, rows in store.entities_for_entities(con):
         typer.echo(f"  {kind}: {count} entitás, {rows} sor")
 
 

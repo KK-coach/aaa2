@@ -1,6 +1,7 @@
-"""Az architektúra-teszt jelentő módban (tests/architecture.py): a tiltott importok és az idegen
-táblahozzáférések számát jelenti, de nem bukik rajtuk. Amit ellenőriz: az elemzés teljes (minden
-fájlnak van modulja, minden táblának gazdája), és valóban talál hozzáférést."""
+"""Az architektúra-teszt (tests/architecture.py). A tiltott importok közül a CLI közvetlen
+importjait még csak jelenti (az `api` homlokzatig); bukik, ha felfelé mutató import vagy idegen
+táblahozzáférés jelenik meg, vagy ha az entitástár tábláihoz a táron kívül áll SQL. Azt is
+ellenőrzi, hogy az elemzés teljes (minden fájlnak van modulja, minden táblának gazdája)."""
 import tomllib
 
 from aaa2.contracts import CONTRACTS
@@ -26,24 +27,25 @@ def test_every_table_has_an_owner_and_known_contracts():
     covered = set()
     for entry in entries.values():
         assert set(entry["contracts"]) <= names
-        assert set(entry.get("also_written_by", [])) <= set(ORDER)
         covered |= set(entry["contracts"])
     assert covered == names                         # minden szerződésnek van forrástáblája
 
 
 def test_the_report_counts_imports_and_table_accesses(capsys):
     info = summary()
-    # az elemzés lát importot és táblahozzáférést (nem üres zöld); a számokon nem bukik
+    # az elemzés lát importot és táblahozzáférést (nem üres zöld)
     assert info["table_accesses"] > 100
-    assert info["forbidden_imports"] >= 0 and info["foreign_table_accesses"] >= 0
-    # a tulajdonlás fájlja szerinti társírók azok, akik a táblát idegenként írják
+    assert info["forbidden_imports"] >= 0
+    # egy modul sem ír vagy olvas közvetlen SQL-lel más modul tábláját
+    assert [(a.file, a.line, a.table, a.mode) for a in architecture.table_accesses()
+            if a.foreign] == []
+    # az entitástár tábláihoz SQL csak a tár fájljában áll
     entries = tomllib.loads(TABLES_FILE.read_text(encoding="utf-8"))["tables"]
-    writers: dict[str, set[str]] = {}
-    for access in architecture.table_accesses():
-        if access.mode == "write" and access.foreign:
-            writers.setdefault(access.table, set()).add(access.module)
-    assert writers == {table: set(entry["also_written_by"]) for table, entry in entries.items()
-                       if entry.get("also_written_by")}
+    store_tables = {table for table, entry in entries.items() if entry.get("store")}
+    assert store_tables == {"entities", "page_entities", "mention_sources", "soft_checks",
+                            "entity_runs"}
+    assert sorted({a.file for a in architecture.table_accesses() if a.table in store_tables}) \
+        == ["aaa2/entities/store.py"]
     print(architecture.report())
     assert "tiltott import" in capsys.readouterr().out
 

@@ -53,3 +53,10 @@ def kg_calls_today(con: duckdb.DuckDBPyConnection) -> int:
     return con.execute(
         "SELECT count(*) FROM validation_calls WHERE service = 'kg' AND "
         "CAST(called_at AS DATE) = current_date").fetchone()[0]
+
+
+def relation_from_ids(con: duckdb.DuckDBPyConnection, kind: str) -> list[int]:
+    """Az adott típusú kapcsolatok kiinduló entitásai (pl. `brand_of`: a termékmárkák)."""
+    return [entity_id for (entity_id,) in con.execute(
+        "SELECT DISTINCT from_id FROM entity_relations WHERE type = ? ORDER BY from_id",
+        [kind]).fetchall()]

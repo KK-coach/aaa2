@@ -34,6 +34,7 @@ import duckdb
 import zstandard
 
 from aaa2.engine import queries as crawl
+from aaa2.entities import store
 from aaa2.entities.dom import parse_blocks
 from aaa2.entities.gate import (
     PROMINENT_KINDS,
@@ -261,7 +262,7 @@ def store_soft_checks(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int,
                       v3: Mapping, entity_of: Mapping[str, int]) -> int:
     """Az oldal `soft_checks` sorai a `v3` mezőből (a korábbiak helyett); `entity_of`: kulcs →
     a mentett entitás. Visszaad: a sorok száma."""
-    con.execute("DELETE FROM soft_checks WHERE page_id = ?", [page_id])
+    store.delete_soft_checks_in_drop_page_blocks(con, page_id)
     rows = [[run_id, page_id, entity_of.get(alias_key(s["canonical"]))
              if s["kept"] or s.get("as_concept") else None,
              s["canonical"], "service", s["structure"], None, s.get("mentions"), None, None,
@@ -271,8 +272,5 @@ def store_soft_checks(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int,
               c["knowledge"], None, True, "service" if c.get("from_service") else None,
               c.get("from_service")] for c in v3.get("concepts") or []]
     if rows:
-        con.executemany(
-            "INSERT INTO soft_checks (run_id, page_id, entity_id, canonical, type, structure, "
-            "blocks, mentions, prominent, rank, knowledge, sol, kept, type_changed_from, "
-            "type_change_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", rows)
+        store.insert_soft_checks_in_store_soft_checks(con, rows)
     return len(rows)

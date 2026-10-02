@@ -62,6 +62,7 @@ import duckdb
 
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
+from aaa2.entities import store
 from aaa2.entities.blocks import BLOCK_PROMPT, block_input, chunk_blocks
 from aaa2.entities.dom import build_blocks, page_blocks
 from aaa2.entities.llm import site_line
@@ -163,8 +164,7 @@ def select_pages(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
 
 def resumable_run(con: duckdb.DuckDBPyConnection, model: str) -> int | None:
     """A modell legutóbbi LLM-futása (a folytatás ezt viszi tovább)."""
-    return con.execute("SELECT max(run_id) FROM entity_runs WHERE method = 'llm' AND model = ? ORDER BY ALL",
-                       [model]).fetchone()[0]
+    return store.entity_runs_for_resumable_run(con, model)[0]
 
 
 def run_pages(con: duckdb.DuckDBPyConnection, run_id: int | None) -> dict[int, dict]:
@@ -228,12 +228,9 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
     build_blocks(con, [page_id for page_id, _ in pages])
     run_id = resumable_run(con, client.model) if resume else None
     if run_id is None:
-        (run_id,) = con.execute(
-            "INSERT INTO entity_runs (started_at, method, model, llm_calls) "
-            "VALUES (?, 'llm', ?, 0) RETURNING run_id", [started, client.model]).fetchone()
+        (run_id,) = store.insert_entity_runs_in_run_llm(con, started, client.model)
     previous = run_pages(con, run_id)
-    con.execute("DELETE FROM entities WHERE source = 'llm' AND entity_id NOT IN "
-                "(SELECT entity_id FROM page_entities)")
+    store.delete_entities_in_run_llm(con)
     index = _EntityIndex(con)
     site = site_line(con) or ""
     models = input_models(client.model,
@@ -320,8 +317,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
             executor.shutdown(wait=True, cancel_futures=True)
     if stop_reason is not None:
         _stop(con, run_id, waiting, previous, stop_reason, clock)
-    con.execute("DELETE FROM entities WHERE source = 'llm' AND entity_id NOT IN "
-                "(SELECT entity_id FROM page_entities)")
+    store.delete_entities_in_run_llm(con)
     return _finish(con, run_id, client.model, monotonic() - began, clock)
 
 
@@ -348,12 +344,7 @@ def reusable_pages(con: duckdb.DuckDBPyConnection,
     """Oldalanként a modell legutóbbi sikeres (done, extracted) kinyerése bemenet-hash-sel:
     (input_hash, kinyerés, ellenőrzés utáni rekord)."""
     found: dict[int, tuple[str, dict, dict | None]] = {}
-    for page_id, input_hash, extraction, refined in con.execute(
-            "SELECT p.page_id, p.input_hash, p.extraction, p.refined FROM entity_run_pages p "
-            "JOIN entity_runs r USING (run_id) WHERE r.method = 'llm' AND r.model = ? "
-            "AND p.status IN ('done', 'extracted') AND p.input_hash IS NOT NULL "
-            "AND p.extraction IS NOT NULL ORDER BY p.run_id DESC, p.finished_at DESC",
-            [model]).fetchall():
+    for page_id, input_hash, extraction, refined in store.entity_runs_for_reusable_pages(con, model):
         if page_id not in found:
             found[page_id] = (input_hash, json.loads(extraction),
                               json.loads(refined) if refined else None)
@@ -436,13 +427,8 @@ def _store(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int, lang: str 
     by_id = {block["id"]: block for block in blocks}
     extract_call = record.get("call_id")
     if save:
-        con.execute(
-            "DELETE FROM mention_sources WHERE source = 'llm' AND mention_id IN "
-            "(SELECT mention_id FROM page_entities WHERE page_id = ?) AND "
-            "list_contains(?, llm_call_id)", [page_id, llm_calls.model_call_ids(con, model)])
-        con.execute(
-            "DELETE FROM page_entities WHERE page_id = ? AND mention_id NOT IN "
-            "(SELECT mention_id FROM mention_sources)", [page_id])
+        store.delete_mention_sources_in_store(con, page_id, llm_calls.model_call_ids(con, model))
+        store.delete_page_entities_in_store(con, page_id)
     fabricated = 0
     written: set[int] = set()
     entity_of: dict[str, int] = {}
@@ -464,9 +450,7 @@ def _store(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int, lang: str 
         if mention_id in written:
             continue
         written.add(mention_id)
-        con.execute(
-            "INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id) "
-            "VALUES (?, 'llm', ?, ?)", [mention_id, run_id, extract_call])
+        store.insert_mention_sources_in_store(con, mention_id, run_id, extract_call)
     if extract_call is not None:
         llm_calls.set_fabricated_count(con, extract_call, fabricated)
     if save:
@@ -526,23 +510,12 @@ def _finish(con: duckdb.DuckDBPyConnection, run_id: int, model: str, seconds: fl
         call_ids.update(ids or [])
     done = sum(status in ATTEMPTED for status, _, _, _ in logs)
     fabricated = sum(count or 0 for _, _, _, count in logs)
-    positions = dict(con.execute(
-        "SELECT pe.position, count(*) FROM mention_sources ms JOIN page_entities pe "
-        "USING (mention_id) WHERE ms.run_id = ? AND ms.source = 'llm' GROUP BY pe.position "
-        "ORDER BY pe.position", [run_id]).fetchall())
-    entities, pages_with = con.execute(
-        "SELECT count(DISTINCT pe.entity_id), count(DISTINCT pe.page_id) FROM mention_sources ms "
-        "JOIN page_entities pe USING (mention_id) WHERE ms.run_id = ? AND ms.source = 'llm' ORDER BY ALL",
-        [run_id]).fetchone()
+    positions = dict(store.mention_sources_for_finish_2(con, run_id))
+    entities, pages_with = store.mention_sources_for_finish(con, run_id)
     cost = llm_calls.total_cost(con, call_ids)
     rows = sum(positions.values())
     reasons = {k: v for k, v in sorted(skipped.items()) if v}
-    con.execute(
-        "UPDATE entity_runs SET finished_at = ?, pages = ?, pages_with_entities = ?, "
-        "entities = ?, row_count = ?, llm_calls = ?, cost_usd = ?, fabricated = ?, "
-        "by_position = ?, skipped = ?, seconds = coalesce(seconds, 0) + ? WHERE run_id = ?",
-        [clock(), done, pages_with, entities, rows, len(call_ids), cost, fabricated,
-         dumps(positions), dumps(reasons), seconds, run_id])
+    store.update_entity_runs_in_finish(con, clock(), done, pages_with, entities, rows, len(call_ids), cost, fabricated, dumps(positions), dumps(reasons), seconds, run_id)
     return LLMRun(run_id, model, done, pages_with, entities, rows, len(call_ids),
                   cost, fabricated, positions, reasons)
 
@@ -638,20 +611,11 @@ def _store_mention(con: duckdb.DuckDBPyConnection, page_id: int, entity_id: int,
                    start: int, end: int, position: str, description: str | None) -> int:
     """A meglévő említés (azonos oldal, blokk, pozíció, entitás) azonosítója, a leírással
     kiegészítve, ha még nincs; vagy egy új sor."""
-    found = con.execute(
-        "SELECT mention_id FROM page_entities WHERE page_id = ? AND block_id = ? "
-        "AND char_start = ? AND char_end = ? AND entity_id = ? ORDER BY ALL",
-        [page_id, block["block_id"], start, end, entity_id]).fetchone()
+    found = store.page_entities_for_store_mention(con, page_id, block["block_id"], start, end, entity_id)
     if found:
-        con.execute("UPDATE page_entities SET description = coalesce(description, ?) "
-                    "WHERE mention_id = ?", [description, found[0]])
+        store.update_page_entities_in_store_mention(con, description, found[0])
         return found[0]
-    (mention_id,) = con.execute(
-        "INSERT INTO page_entities (page_id, entity_id, block_id, char_start, char_end, "
-        "surface_form, position, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
-        "RETURNING mention_id",
-        [page_id, entity_id, block["block_id"], start, end, block["text"][start:end], position,
-         description]).fetchone()
+    (mention_id,) = store.insert_page_entities_in_store_mention(con, page_id, entity_id, block["block_id"], start, end, block["text"][start:end], position, description)
     return mention_id
 
 
@@ -665,10 +629,7 @@ class _EntityIndex:
         self.types: dict[int, str] = {}
         self.votes: dict[int, Counter[str]] = defaultdict(Counter)
         self.voted: set[int] = set()
-        for entity_id, name, kind, source, aliases, votes in con.execute(
-            "SELECT entity_id, name, type, source, aliases, type_votes FROM entities "
-            "ORDER BY entity_id"
-        ).fetchall():
+        for entity_id, name, kind, source, aliases, votes in store.entities_for_entityindex___init__(con):
             self._add(entity_id, kind, source, [name, *(aliases or [])])
             self.votes[entity_id].update(json.loads(votes) if votes else {})
 
@@ -683,9 +644,7 @@ class _EntityIndex:
             current = self.types[entity_id]
             suggested = max(votes, key=lambda t: (votes[t], t == current,
                                                   -ENTITY_TYPES.index(t)))
-            con.execute("UPDATE entities SET type_votes = ?, type_suggested = ? "
-                        "WHERE entity_id = ?",
-                        [json.dumps(dict(sorted(votes.items()))), suggested, entity_id])
+            store.update_entities_in_entityindex_write_votes(con, json.dumps(dict(sorted(votes.items()))), suggested, entity_id)
         self.voted.clear()
 
     def resolve(self, con: duckdb.DuckDBPyConnection, name: str, kind: str,
@@ -693,18 +652,11 @@ class _EntityIndex:
         form = name.strip()
         match = self._find(form, kind)
         if match is None:
-            (entity_id,) = con.execute(
-                "INSERT INTO entities (name, lang, type, subtype, aliases, source, created_at) "
-                "VALUES (?, ?, ?, ?, [], 'llm', ?) RETURNING entity_id",
-                [form, lang, kind, subtype, created_at],
-            ).fetchone()
+            (entity_id,) = store.insert_entities_in_entityindex_resolve(con, form, lang, kind, subtype, created_at)
             self._add(entity_id, kind, "llm", [form])
             return entity_id
         entity_id, found_kind, source = match
-        con.execute(
-            "UPDATE entities SET aliases = list_append(coalesce(aliases, []), ?) "
-            "WHERE entity_id = ? AND name <> ? AND NOT list_contains(coalesce(aliases, []), ?)",
-            [form, entity_id, form, form])
+        store.update_entities_in_entityindex_resolve(con, form, entity_id, form, form)
         self._add(entity_id, found_kind, source, [form])
         return entity_id
 

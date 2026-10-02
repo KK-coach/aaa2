@@ -1,4 +1,10 @@
-# Táblatulajdonlás: javaslat a közös táblákra (döntésre vár)
+# Táblatulajdonlás: javaslat a közös táblákra
+
+**Döntés (Krisztián, 2026-10-02; Jira AAAV2-66): az A) változat.** Az öt közösen írt tábla egy
+entitástár része az extract modulban (`aaa2/entities/store.py`); az extract és a resolve is ezen
+keresztül ír és olvas. Az `Entity` szerződés a resolve-é marad. Az összesítőket a gazda
+célfüggvénye adja az eredeti SQL-lel, egyszerű sorokként. Megvalósítva a 3. lépés második
+részében; az idegen táblahozzáférés 0. Az alábbi szöveg a döntés előtti javaslat, változatlanul.
 
 Készült 2026-10-02-án, az architektúra 3. lépésében. Ahol a gazda egyértelmű (a crawl, a gráf és
 az llm táblái, és az extract, illetve a resolve azon táblái, amelyeket csak ők írnak), ott a csere

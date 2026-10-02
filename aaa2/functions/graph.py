@@ -86,6 +86,7 @@ import duckdb
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
 from aaa2.entities import queries as extract_queries
+from aaa2.entities import store
 from aaa2.entities.gate import occurs
 from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import alias_key
@@ -262,15 +263,11 @@ class _Graph:
                                           for entry in meta.hreflang}
                            for meta in crawl.page_metas(con)}
         self.page_of_url = {page_url(info.url): info.page_id for info in self.roles.values()}
-        rows = con.execute("SELECT entity_id, name, type, subtype, aliases, flags, role, "
-                           "anchor_page_id, wikidata_id, wikidata_status FROM entities ORDER BY ALL"
-                           ).fetchall()
+        rows = store.entities_for_graph___init__(con)
         self.entities = {row[0]: row for row in rows}
         self.excluded = {row[0] for row in rows if set(row[5] or []) & set(EXCLUDED_FLAGS)}
-        self.site_entities = {entity_id for (entity_id,) in con.execute(
-            "SELECT entity_id FROM entities e WHERE role = 'brand' OR (type = 'brand' AND "
-            "source IN ('rule', 'schema') AND NOT EXISTS (SELECT 1 FROM entity_relations r "
-            "WHERE r.from_id = e.entity_id AND r.type = 'brand_of')) ORDER BY ALL").fetchall()}
+        self.site_entities = {entity_id for (entity_id,) in store.site_entity_ids(
+            con, resolver_queries.relation_from_ids(con, "brand_of"))}
         self.index: dict[str, set[int]] = defaultdict(set)
         self.normal: dict[str, set[int]] = defaultdict(set)
         for entity_id, name, *_, aliases in [(r[0], r[1], r[4]) for r in rows]:
@@ -281,10 +278,7 @@ class _Graph:
             if entity_id in self.entities:
                 self._index(entity_id, alias)
         self.mentions: dict[int, list[tuple]] = defaultdict(list)
-        for page_id, entity_id, position, flags, region, kind, cells, end in con.execute(
-                "SELECT pe.page_id, pe.entity_id, pe.position, pe.flags, b.region, b.kind, "
-                "b.cells, pe.char_end FROM page_entities pe LEFT JOIN blocks b USING (block_id) ORDER BY ALL"
-                ).fetchall():
+        for page_id, entity_id, position, flags, region, kind, cells, end in store.page_entities_for_graph___init__(con):
             skip = "template" if "template" in (flags or []) \
                 else "label" if kind == "table_row" and row_label(cells, end) else None
             self.mentions[page_id].append((entity_id, position, skip, region))
@@ -368,11 +362,7 @@ class _Graph:
     def _primary(self) -> dict[int, list[str]]:
         """Oldalanként a kinyerő modell legutóbbi kész rekordjának `primary_entities`-e."""
         found: dict[int, list[str]] = {}
-        for page_id, value in self.con.execute(
-                "SELECT p.page_id, json_extract(coalesce(p.refined, p.extraction), "
-                "'$.primary_entities') FROM entity_run_pages p JOIN entity_runs r USING (run_id) "
-                "WHERE r.method = 'llm' AND p.status = 'done' "
-                "ORDER BY p.run_id DESC, p.finished_at DESC").fetchall():
+        for page_id, value in store.entity_runs_for_graph__primary(self.con):
             if page_id not in found and value is not None:
                 names = json.loads(value)
                 found[page_id] = [n for n in names if isinstance(n, str)]
@@ -809,9 +799,8 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
     """A három táblázat: oldalanként a fő entitás (`<név>-main-entity.csv`), az éltábla
     (`<név>-edges.csv`) és az entitások súlya (`<név>-weights.csv`)."""
     out.mkdir(parents=True, exist_ok=True)
-    names = dict(con.execute("SELECT entity_id, name FROM entities ORDER BY ALL").fetchall())
-    kinds = {row[0]: (row[1], row[2]) for row in con.execute(
-        "SELECT entity_id, type, subtype FROM entities ORDER BY ALL").fetchall()}
+    names = dict(store.entities_for_export_csv(con))
+    kinds = {row[0]: (row[1], row[2]) for row in store.entities_for_export_csv_2(con)}
     urls = dict(con.execute("SELECT page_id, url FROM page_nodes ORDER BY ALL").fetchall())
     chosen: dict[int, list[tuple]] = defaultdict(list)
     for page_id, entity_id, role, confidence, evidence in con.execute(
@@ -857,12 +846,14 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
             "bizonyíték": evidence or ""})
     paths["edges"] = _write(out / f"{name}-edges.csv", edges)
     weights = []
-    for rank, row in enumerate(con.execute(
-            "SELECT w.entity_id, w.pages, w.mentions, w.structural, w.main_pages, "
-            "w.secondary_pages, w.content_anchors, w.nav_anchors, w.single_mention, "
-            "w.weight FROM "
-            "entity_weights w JOIN entities e USING (entity_id) "
-            "ORDER BY w.weight DESC, e.name").fetchall(), start=1):
+    weighted = [row for row in con.execute(
+        "SELECT w.entity_id, w.pages, w.mentions, w.structural, w.main_pages, "
+        "w.secondary_pages, w.content_anchors, w.nav_anchors, w.single_mention, "
+        "w.weight FROM entity_weights w ORDER BY w.entity_id").fetchall() if row[0] in names]
+    # súly, név; azonos súlyú és nevű entitásoknál a később létrejött áll elöl (egyértelmű
+    # sorrend, a korábbi kimenetekkel egyezően)
+    weighted.sort(key=lambda row: (-row[-1], names[row[0]], -row[0]))
+    for rank, row in enumerate(weighted, start=1):
         entity_id, *parts, weight = row
         weights.append({"rang": rank, "entitás": names.get(entity_id),
                         "típus": "/".join(filter(None, kinds.get(entity_id, ("", "")))),
@@ -877,8 +868,7 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
 def export_rejected(con: duckdb.DuckDBPyConnection, run: GraphRun, out: Path,
                     name: str) -> Path:
     """A Wikidata-osztályból kiesett `is_a`-élek okkal: `<név>-is-a-rejected.csv`."""
-    names = {row[0]: (row[1], row[2], row[3]) for row in con.execute(
-        "SELECT entity_id, name, type, wikidata_id FROM entities ORDER BY ALL").fetchall()}
+    names = {row[0]: (row[1], row[2], row[3]) for row in store.entities_for_export_rejected(con)}
     rows = [{"honnan": names[a][0], "honnan típus": names[a][1], "QID": names[a][2],
              "hová": names[b][0], "hová típus": names[b][1], "osztály": names[b][2],
              "tulajdonság": prop, "ok": reason} for a, b, prop, reason in run.is_a_rejected]

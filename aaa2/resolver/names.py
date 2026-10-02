@@ -10,11 +10,13 @@ from datetime import UTC, datetime
 
 import duckdb
 
+from aaa2.entities import store
 from aaa2.entities.rules import (
     TITLE_SEPARATORS,
     alias_key,
     title_endings,
 )
+from aaa2.resolver import queries as resolver_queries
 
 SITE_PREFIX_MIN = 4
 
@@ -140,11 +142,8 @@ def _site_name_keys(con: duckdb.DuckDBPyConnection) -> set[str]:
     """A site nevei: a brand szerepű (site-név) entitások és a brand típusú szabály-entitások
     neve és aliasai; a webshop termékmárkái (`brand_of` kapcsolattal) nem."""
     keys = set()
-    for name, aliases in con.execute(
-            "SELECT name, aliases FROM entities e WHERE (role = 'brand' "
-            "OR (type = 'brand' AND source IN ('rule', 'schema'))) AND NOT EXISTS (SELECT 1 "
-            "FROM entity_relations r WHERE r.from_id = e.entity_id AND r.type = 'brand_of') ORDER BY ALL"
-            ).fetchall():
+    for name, aliases in store.site_name_rows(
+            con, resolver_queries.relation_from_ids(con, "brand_of")):
         keys |= {alias_key(f) for f in [name, *(aliases or [])]}
     return keys - {""}
 
@@ -175,8 +174,7 @@ def _line(text: str, start: int | None) -> str:
 
 
 def _exists(con: duckdb.DuckDBPyConnection, entity_id: int) -> bool:
-    return con.execute("SELECT count(*) FROM entities WHERE entity_id = ? ORDER BY ALL",
-                       [entity_id]).fetchone()[0] > 0
+    return store.entities_for_exists(con, entity_id)[0] > 0
 
 
 def _typed_nodes(value: object) -> Iterable[dict]:
