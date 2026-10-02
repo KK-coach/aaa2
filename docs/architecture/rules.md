@@ -27,12 +27,12 @@ alapértékei; a szabályok összevonása ott, ahol ugyanazt a döntést több s
 
 | modul | szabály | „nincs teszt” | „nincs forrás” a miért oszlopban |
 |---|---|---|---|
-| `crawl` | 102 | 6 | 4 |
+| `crawl` | 103 | 6 | 4 |
 | `extract` | 101 | 1 | 12 |
 | `resolve` | 131 | 0 | 9 |
 | `graph` | 65 | 7 | 8 |
 | `findings` | 51 | 11 | 10 |
-| **összesen** | **450** | **25** | **43** |
+| **összesen** | **451** | **25** | **43** |
 
 ## crawl
 
@@ -140,6 +140,7 @@ alapértékei; a szabályok összevonása ott, ahol ugyanazt a döntést több s
 | CRAWL-100 | `aaa2/engine/config/wall_phrases.txt` | 11 UA/JS-wall és bot-challenge kifejezés (pl. „enable javascript”, „just a moment”, „verify you are human”). | #3: „a lista bővült a Cloudflare- és bot-challenge mintákkal” | nincs adat | `tests/test_render.py::test_bot_challenge_page_is_wall`, `tests/test_render.py::test_wall_page_is_invalid` |
 | CRAWL-101 | `aaa2/engine/structured.py` — `microdata_items`, `_microdata_value` | Microdata: legfelső szintű elem az `itemscope`-os, `itemprop` nélküli elem; `@type` az `itemtype`, `@id` az `itemid`; az érték elemfajtánként (`meta` → `content`, link → `href`, média → `src`, `time` → `datetime`, `data` → `value`, különben a szöveg); a beágyazott `itemscope` objektum; az `itemref` nem feloldott; a `template` és a `noscript` tartalma kimarad. Csak tárolva (`structured_data`), a szabálykör és a feloldás nem olvassa. | Krisztián döntése 2026-10-01 (AAAV2-68) | nincs adat (a hat rögzített készleten 0 oldalon van microdata) | `tests/test_structured.py::test_microdata_items_with_nested_items_and_typed_values`, `tests/test_structured.py::test_the_crawl_stores_structured_data_and_the_contract_reads_both_tables` |
 | CRAWL-102 | `aaa2/engine/structured.py` — `rdfa_items`, `_rdfa_value` | RDFa (Lite: `vocab`, `typeof`, `property`, `resource`, `prefix`): legfelső szintű elem a `typeof`-os elem, amely nem egy típusos ős tulajdonsága; `@context` a legközelebbi `vocab`; az érték `content`, `href`, `src`, `datetime`, `resource`, különben a szöveg; a típusos ős nélküli `property` (pl. Open Graph) nem elem. Csak tárolva. | Krisztián döntése 2026-10-01 (AAAV2-68) | nincs adat (a hat rögzített készleten 0 oldalon van RDFa) | `tests/test_structured.py::test_rdfa_items_with_vocab_nested_types_and_prefixes`, `tests/test_structured.py::test_structured_items_are_ordered_typed_and_json_ld_is_not_repeated` |
+| CRAWL-103 | `aaa2/engine/structured.py` — `opengraph_items`, `OPEN_GRAPH_PREFIXES` | Open Graph: oldalanként egy elem a `meta[property]` elemekből, amelyek neve `og:`, `article:`, `book:`, `profile:`, `product:`, `music:` vagy `video:` előtaggal kezdődik; a kulcs a teljes tulajdonságnév, az érték a `content`; az ismétlődő tulajdonság lista; `@type` az `og:type`; az üres `content` kimarad. Csak tárolva (`structured_data`). | Krisztián kérése 2026-10-02 (AAAV2-68) | nincs adat (a rögzített készletek tárolt DOM-ján 348 oldalon van Open Graph, de a tábla csak újracrawl után töltődik) | `tests/test_structured.py::test_open_graph_is_one_item_per_page_with_repeated_properties_as_lists` |
 
 ## extract
 
