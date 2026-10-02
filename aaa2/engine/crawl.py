@@ -409,7 +409,7 @@ class _Run:
         return page_id
 
     def _clear_children(self, page_id: int) -> None:
-        for table in ("links", "headings", "schema_blocks"):
+        for table in ("links", "headings", "schema_blocks", "structured_data"):
             column = "from_page_id" if table == "links" else "page_id"
             self.con.execute(f"DELETE FROM {table} WHERE {column} = ?", [page_id])
 
@@ -430,6 +430,13 @@ class _Run:
             self.con.executemany(
                 "INSERT INTO schema_blocks (page_id, type, json, ordinal) VALUES (?, ?, ?, ?)",
                 [(page_id, b.type, b.json, b.ordinal) for b in parsed.schema_blocks],
+            )
+        if parsed.structured_data:
+            self.con.executemany(
+                "INSERT INTO structured_data (page_id, syntax, type, json, ordinal) "
+                "VALUES (?, ?, ?, ?, ?)",
+                [(page_id, item.syntax, item.type, item.json, item.ordinal)
+                 for item in parsed.structured_data],
             )
 
     def _count(self, url: str, status: int | None, error: str | None) -> None:

@@ -53,12 +53,13 @@ from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
 from aaa2.db.stable_json import dumps
-from aaa2.entities.overrides import SiteConfig
-from aaa2.entities.pages import PageInfo, breadcrumbs, page_types, page_url
 from aaa2.entities.rules import alias_key
+from aaa2.resolver.overrides import SiteConfig
+from aaa2.resolver.pages import PageInfo, breadcrumbs, page_types, page_url
 
 if TYPE_CHECKING:
-    from aaa2.entities.site import Merger, _Context
+    from aaa2.resolver.context import _Context
+    from aaa2.resolver.merge import Merger
 
 UNITS = {"kw", "w", "m3/h", "m³/h"}
 PHASE_WORDS = {"fázis", "f", "fázisú"}
@@ -220,7 +221,9 @@ def family_name(key: tuple[str, ...], names: Sequence[str], brand: str | None) -
 def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
     """A webshop-szintek (lásd a modul leírását); termékoldal nélküli site-on üres. A `shop`
     forrású kapcsolatok minden futásban újraépülnek."""
-    from aaa2.entities.site import Name, _page_mentions, _write_aliases
+    from aaa2.resolver.names import Name
+    from aaa2.resolver.navigation import _page_mentions
+    from aaa2.resolver.offers import _write_aliases
 
     run = ShopRun()
     ctx.con.execute("DELETE FROM entity_relations WHERE source = 'shop'")
@@ -384,7 +387,7 @@ def _category_products(ctx: _Context, merger: Merger, run: ShopRun,
                        category_ids: list[int]) -> None:
     """Az oldalhoz nem kötött, nem variáns és nem család termék-entitás, amelynek írásmód-
     normalizált neve egy kategória neve vagy aliasa, a kategóriába olvad (`shop_category`)."""
-    from aaa2.entities.site import normal_key
+    from aaa2.resolver.names import normal_key
 
     con = ctx.con
     keys: dict[str, int] = {}
@@ -407,7 +410,7 @@ def _category_products(ctx: _Context, merger: Merger, run: ShopRun,
 def _site_name_cuts(ctx: _Context, merger: Merger, run: ShopRun) -> None:
     """A title végén csonkolt site-név (lásd a modul leírását): a site-szervezetbe olvad, a
     csonk nem marad alias."""
-    from aaa2.entities.site import _site_name_keys, site_name_form
+    from aaa2.resolver.names import _site_name_keys, site_name_form
 
     con = ctx.con
     site_org = con.execute("SELECT min(entity_id) FROM entities WHERE type = 'org' "
@@ -506,7 +509,7 @@ def orphan_target(name: str, targets: Sequence[tuple[int, str]]) -> tuple[list[i
     """A kapcsolat nélküli márka lehetséges céljai (azonosító, név) közül az egyezők:
     (azonosítók, egyezés). A pontos egyezés (`equal`) megelőzi az elő- vagy utótagot
     (`affix`); `ORPHAN_MIN_CHARS`-nál rövidebb normalizált névnek nincs célja."""
-    from aaa2.entities.site import normal_key
+    from aaa2.resolver.names import normal_key
 
     key = normal_key(name)
     if len(key) < ORPHAN_MIN_CHARS:
@@ -522,7 +525,8 @@ def _orphan_brands(ctx: _Context, merger: Merger, run: ShopRun, brand_ids: list[
                    family_ids: list[int]) -> None:
     """A kapcsolat nélküli márkák: a site-szervezet vagy egy termékcsalád, illetve terméket
     hordozó márka aliasa, vagy `orphan` jelölés (lásd a modul leírását)."""
-    from aaa2.entities.site import _set_flag, _site_name_keys
+    from aaa2.resolver.flags import _set_flag
+    from aaa2.resolver.names import _site_name_keys
 
     con = ctx.con
     names, targets = {}, []
@@ -666,7 +670,7 @@ def _family_entity(ctx: _Context, name: str, forms: Sequence[str]) -> int:
 
 
 def _h1_mention(ctx: _Context, entity_id: int, page_id: int, name: str) -> None:
-    from aaa2.entities.site import _add_mention
+    from aaa2.resolver.navigation import _add_mention
 
     for (ordinal,) in ctx.con.execute(
             "SELECT ordinal FROM blocks WHERE page_id = ? AND region = 'content' "
@@ -684,7 +688,7 @@ def _relate(ctx: _Context, from_id: int, to_id: int, kind: str, evidence: dict) 
 
 def _schema_brand(ctx: _Context, info: PageInfo) -> str | None:
     """A termékoldal saját JSON-LD `Product` csomópontjának `brand`-je (név vagy szöveg)."""
-    from aaa2.entities.site import _self_nodes
+    from aaa2.resolver.offers import _self_nodes
 
     for node in _self_nodes(ctx.con, [info]).get(info.page_id, []):
         brand = node.get("brand")

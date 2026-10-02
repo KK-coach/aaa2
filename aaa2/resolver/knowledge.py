@@ -30,7 +30,7 @@ from datetime import datetime
 import duckdb
 
 from aaa2.entities.gate import KnowledgeBase, base_language
-from aaa2.entities.site import Merger, _entity_rows, _mergeable, _rank, resolve
+from aaa2.resolver.merge import Merger, _entity_rows, _mergeable, _rank, resolve
 
 LINK_TYPES = ("concept", "tech", "org")
 NO_LINK_SUBTYPES = ("api_symbol",)

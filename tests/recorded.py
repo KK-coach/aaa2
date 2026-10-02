@@ -203,7 +203,7 @@ def site_set(domain: str) -> tuple[str, object]:
     """A site-fájl `[crawl]` részéből: (seed, crawl-beállítás)."""
     from aaa2.engine.crawl import CrawlOptions
     from aaa2.engine.render import RENDER_TIMEOUT
-    from aaa2.entities.overrides import load_site_config
+    from aaa2.resolver.overrides import load_site_config
 
     crawl = load_site_config(domain).crawl
     return crawl.seed, CrawlOptions(concurrency=crawl.concurrency or 4, include=crawl.include,

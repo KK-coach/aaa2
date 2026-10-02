@@ -1,4 +1,5 @@
-"""Parse: renderelt DOM → a `pages`, `links`, `headings` és `schema_blocks` sorainak tartalma.
+"""Parse: renderelt DOM → a `pages`, `links`, `headings`, `schema_blocks` és `structured_data`
+sorainak tartalma.
 
 Tiszta függvény, adatbázist nem ír; az oldalankénti tranzakció a crawl dolga.
 
@@ -17,6 +18,7 @@ Tiszta függvény, adatbázist nem ír; az oldalankénti tranzakció a crawl dol
 - `schema_blocks`: minden `application/ld+json`; tömb és `@graph` elemenként, `@type`-pal
   (több típus vesszővel); a `@graph` eleme megkapja a szülő `@context`-jét, ha nincs sajátja;
   hibás JSON `type = 'invalid'`, nyers szöveggel.
+- `structured_data`: a microdata- és az RDFa-elemek (`engine/structured.py`).
 - main content: öt stratégia sorban, az első, ami 100 szó fölött ad: `main`, `article`,
   `[role=main]`, ismert tartalom-szelektorok, readability-pontszám (szöveg / link arány a
   bekezdéssűrűséggel súlyozva) a `div` és `section` elemeken; végül a body a
@@ -35,6 +37,7 @@ from selectolax.parser import HTMLParser, Node
 
 from aaa2.engine.language import detect_language
 from aaa2.engine.normalize import UrlPolicy, is_infrastructure, is_internal, normalize
+from aaa2.engine.structured import StructuredItem, structured_items
 
 MIN_MAIN_CONTENT_WORDS = 100
 HEADING_TAGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
@@ -114,6 +117,7 @@ class ParsedPage:
     links: tuple[Link, ...]
     headings: tuple[Heading, ...]
     schema_blocks: tuple[SchemaBlock, ...]
+    structured_data: tuple[StructuredItem, ...] = ()
 
 
 def parse_page(
@@ -141,6 +145,7 @@ def parse_page(
         links=links,
         headings=headings,
         schema_blocks=schema_blocks(tree),
+        structured_data=structured_items(tree),
     )
 
 

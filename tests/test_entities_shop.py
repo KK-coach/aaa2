@@ -4,11 +4,12 @@ import json
 
 import pytest
 
-from aaa2.entities import overrides
-from aaa2.entities.overrides import load_site_config
-from aaa2.entities.pages import breadcrumbs, page_types
 from aaa2.entities.rules import run_rules
-from aaa2.entities.shop import (
+from aaa2.resolver import overrides
+from aaa2.resolver.names import cut_off, site_name_form
+from aaa2.resolver.overrides import load_site_config
+from aaa2.resolver.pages import breadcrumbs, page_types
+from aaa2.resolver.shop import (
     base_tokens,
     families,
     longest_prefix,
@@ -17,7 +18,7 @@ from aaa2.entities.shop import (
     orphan_target,
     trim_family,
 )
-from aaa2.entities.site import cut_off, run_site, site_name_form
+from aaa2.resolver.site import run_site
 from tests.test_entities_rules import html, ld, site
 from tests.test_entities_site import NOON, llm_entity
 

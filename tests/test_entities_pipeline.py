@@ -13,7 +13,6 @@ from aaa2.db.connect import connect, db_path
 from aaa2.entities.dom import page_blocks
 from aaa2.entities.extract import estimate_llm, run_llm
 from aaa2.entities.gate import KnowledgeBase
-from aaa2.entities.knowledge import link_entities
 from aaa2.entities.report import entity_table, run_report, wikipedia_url, write_entity_table
 from aaa2.entities.rules import run_rules
 from aaa2.entities.v3 import (
@@ -29,6 +28,7 @@ from aaa2.llm import ledger
 from aaa2.llm.adapters import Reply
 from aaa2.llm.client import LLMClient, Retry
 from aaa2.llm.config import Usage, load_config
+from aaa2.resolver.knowledge import link_entities
 from tests.test_entities_rules import html, site
 
 NOON = datetime(2026, 9, 28, 12, 0, tzinfo=UTC).replace(tzinfo=None)

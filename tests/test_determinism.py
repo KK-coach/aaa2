@@ -6,9 +6,9 @@ import json
 from aaa2.db.stable_json import dumps
 from aaa2.entities.report import write_entity_table
 from aaa2.entities.rules import run_rules
-from aaa2.entities.site import run_site
 from aaa2.functions.findings import build_findings, export_findings, export_views
 from aaa2.functions.graph import build_graph, export_csv
+from aaa2.resolver.site import run_site
 from tests.test_entities_site import NOON
 from tests.test_findings import built
 

@@ -17,8 +17,8 @@ from pathlib import Path
 import duckdb
 
 from aaa2.db.connect import DATA_DIR
-from aaa2.entities.overrides import load_site_config
-from aaa2.entities.pages import PAGE_TYPES, page_types
+from aaa2.resolver.overrides import load_site_config
+from aaa2.resolver.pages import PAGE_TYPES, page_types
 from tests.recorded import REFERENCE_SETS, SITE_SETS, record_crawl, replay_crawl
 
 OUT_DIR = DATA_DIR / "compare"

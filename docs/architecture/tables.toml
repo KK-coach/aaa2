@@ -47,7 +47,12 @@ note = "a headingek a `Block` szerződésben is megjelennek (a renderelt DOM-bó
 [tables.schema_blocks]
 owner = "crawl"
 contracts = ["StructuredData", "PageMeta"]
-note = "ma csak JSON-LD"
+note = "a JSON-LD blokkok"
+
+[tables.structured_data]
+owner = "crawl"
+contracts = ["StructuredData", "PageMeta"]
+note = "a microdata- és az RDFa-elemek (022-es migráció); a szabálykör és a feloldás még nem olvassa"
 
 # --- llm -------------------------------------------------------------------------------------
 

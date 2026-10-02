@@ -20,9 +20,10 @@ from pathlib import Path
 
 import duckdb
 
-from aaa2.entities.pages import PAGE_TYPES, page_url, primary_lang
+from aaa2.resolver.pages import PAGE_TYPES, page_url, primary_lang
 
-SITES_DIR = Path(__file__).parent / "config" / "sites"
+# a site-fájl több modul közös beállítása (crawl, llm, oldaltípusok, ajánlatok), a helye változatlan
+SITES_DIR = Path(__file__).resolve().parents[1] / "entities" / "config" / "sites"
 TIERS = ("core", "package", "work_mode")
 
 

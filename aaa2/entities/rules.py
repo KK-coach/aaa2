@@ -24,7 +24,8 @@ előfordulás: blokk és karakterpozíció a blokk szövegében (a schema-említ
   nevű szervezet-csomópont (pl. a blogposzt `publisher`-e) az aliasa.
 - anchor: a belső linkek anchorja, ha legalább `MIN_ANCHOR_PAGES` különböző oldalon azonos
   (kulcs szerint). Ha a kulcs egy talált entitásé, ahhoz kerül; különben nem entitás (M2/6, 5.
-  pont): két vagy több célra navigációs; egy célra, ha az entitásoldal (`pages.page_roles`),
+  pont): két vagy több célra navigációs; egy célra, ha az entitásoldal (a hívó adja meg az
+  entitásoldalak azonosítóit: `run_rules` `entity_pages`, a feloldás oldalszerepeiből),
   a céloldal entitásának aliasa lesz a site-körben (`site.run_site`); ha segédoldal,
   navigációs címke. Említés minden blokkban,
   amelyben ilyen kulcsú anchor áll, a blokk szövegében a pozíciójával (a chrome-régióban is);
@@ -55,6 +56,7 @@ import tomllib
 import unicodedata
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterator
+from collections.abc import Set as AbstractSet
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -64,8 +66,8 @@ import zstandard
 from selectolax.parser import HTMLParser
 
 from aaa2.db.stable_json import dumps
+from aaa2.engine.normalize import page_url
 from aaa2.entities.dom import build_blocks, parse_blocks
-from aaa2.entities.pages import ENTITY_ROLES, page_roles, page_url
 from aaa2.llm.schemas import ENTITY_TYPES
 
 SCHEMA_TYPES_FILE = Path(__file__).parent / "config" / "schema_types.toml"
@@ -304,7 +306,11 @@ class _PageDom:
 
 
 def run_rules(con: duckdb.DuckDBPyConnection,
-              clock: Callable[[], datetime] | None = None) -> EntityRun:
+              clock: Callable[[], datetime] | None = None,
+              entity_pages: AbstractSet[int] | None = None) -> EntityRun:
+    """A determinisztikus kör. `entity_pages`: az entitásoldalak azonosítói (a feloldás
+    oldalszerepeiből, `resolver.pages.entity_page_ids`); csak a kimaradt anchorok okát bontja
+    (entitásoldalra vagy segédoldalra mutat), nélküle az ok `anchor_to_single_page`."""
     clock = clock or _now
     started = clock()
     mapping = load_schema_types()
@@ -334,7 +340,7 @@ def run_rules(con: duckdb.DuckDBPyConnection,
     _schema(con, page_ids, dom, mapping, candidates, skipped)
     _merge_person_names(candidates)
     _site_names(con, pages, dom, candidates, skipped)
-    _anchors(con, page_ids, dom, candidates, skipped)
+    _anchors(con, page_ids, dom, candidates, skipped, entity_pages)
 
     site_languages = (con.execute("SELECT languages FROM site ORDER BY ALL").fetchone() or [None])[0] or []
     fallback_lang = _primary(site_languages[0]) if site_languages else None
@@ -599,9 +605,8 @@ def _attach(target: Candidate, mentions: list[Mention]) -> None:
         target.mentions.append(mention)
 
 
-def _anchors(con, page_ids, dom, candidates, skipped) -> None:
+def _anchors(con, page_ids, dom, candidates, skipped, entity_pages) -> None:
     homes = _home_urls(con)
-    roles = page_roles(con)
     reasons: Counter[str] = Counter()
     occurrences: dict[str, dict[int, Counter[str]]] = defaultdict(lambda: defaultdict(Counter))
     targets: dict[str, set[str]] = defaultdict(set)
@@ -640,9 +645,10 @@ def _anchors(con, page_ids, dom, candidates, skipped) -> None:
             if len(targets[key]) > 1:
                 reasons["anchor_texts_navigational"] += 1
             else:
-                role = roles.get(target_pages[key].pop()) if target_pages[key] else None
-                reasons["anchor_to_entity_page" if role is not None and role.role in
-                        ENTITY_ROLES else "anchor_to_support_page"] += 1
+                target_page = target_pages[key].pop() if target_pages[key] else None
+                reasons["anchor_to_single_page" if entity_pages is None
+                        else "anchor_to_entity_page" if target_page in entity_pages
+                        else "anchor_to_support_page"] += 1
             continue
         for page_id, forms in by_page.items():
             for form, count in forms.items():

@@ -34,9 +34,11 @@ import re
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from urllib.parse import parse_qsl, urldefrag, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urldefrag, urlsplit
 
 import duckdb
+
+from aaa2.engine.normalize import page_url
 
 ENTITY_ROLES = ("offer", "product", "component", "article")
 ROLE_TYPE = {"offer": ("service", None), "product": ("product", None),
@@ -72,12 +74,6 @@ class PageInfo:
     group: str
     role: str
     reason: str
-
-
-def page_url(url: str) -> str:
-    """Lekérdezés és töredék nélkül, a záró perjel nélkül (a csoportkulcshoz)."""
-    parts = urlsplit(urldefrag(url)[0])
-    return urlunsplit((parts.scheme, parts.netloc, parts.path.rstrip("/") or "/", "", ""))
 
 
 def same_page(a: str | None, b: str) -> bool:
@@ -196,6 +192,12 @@ def _position(value: object) -> float:
         return float(value)
     except (TypeError, ValueError):
         return float("inf")
+
+
+def entity_page_ids(roles: Mapping[int, PageInfo]) -> set[int]:
+    """Az entitásoldalak (`ENTITY_ROLES` szerepű oldalak) azonosítói; a szabálykör ezzel dönti el,
+    hogy egy anchor entitásoldalra vagy segédoldalra mutat-e."""
+    return {page_id for page_id, info in roles.items() if info.role in ENTITY_ROLES}
 
 
 def entity_groups(roles: dict[int, PageInfo]) -> dict[str, list[PageInfo]]:

@@ -86,8 +86,8 @@ import duckdb
 from aaa2.db.stable_json import dumps
 from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
-from aaa2.entities.site import normal_key
 from aaa2.functions.graph import evidence_text
+from aaa2.resolver.names import normal_key
 
 TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
          "uncovered_topic", "unclear_topic")

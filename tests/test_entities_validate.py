@@ -14,7 +14,8 @@ import aaa2.db.connect as connect_module
 from aaa2.cli.main import app
 from aaa2.db.connect import connect, db_path
 from aaa2.entities.rules import run_rules
-from aaa2.entities.validate import (
+from aaa2.llm.client import Retry
+from aaa2.resolver.validate import (
     KG_TYPES_FILE,
     WIKI_MIN_INTERVAL,
     KGMatch,
@@ -26,7 +27,6 @@ from aaa2.entities.validate import (
     validate_entities,
     wikipedia_match,
 )
-from aaa2.llm.client import Retry
 from tests.recorded import FIXTURES_DIR
 from tests.test_entities_rules import html, ld, site
 

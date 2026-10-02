@@ -22,18 +22,19 @@ from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
 from aaa2.entities.dom import build_blocks
 from aaa2.entities.extract import Worker, estimate_llm, input_models, run_llm
 from aaa2.entities.gate import KnowledgeBase
-from aaa2.entities.knowledge import link_entities
-from aaa2.entities.overrides import load_site_config
 from aaa2.entities.report import run_report, write_entity_table
 from aaa2.entities.rules import run_rules
-from aaa2.entities.site import run_site
 from aaa2.entities.v3 import V3Step, load_pipeline, v3_fingerprint
-from aaa2.entities.validate import KG_DAILY_QUOTA, _Api, validate_entities
 from aaa2.functions.findings import TYPE_LABELS, build_findings, export_findings, export_views
 from aaa2.functions.graph import build_graph, export_csv, export_rejected
 from aaa2.llm import ledger
 from aaa2.llm.client import Retry, check_models, open_clients
 from aaa2.llm.config import PIPELINE_OFF, load_config, load_site_credentials
+from aaa2.resolver.knowledge import link_entities
+from aaa2.resolver.overrides import load_site_config
+from aaa2.resolver.pages import entity_page_ids, page_roles
+from aaa2.resolver.site import run_site
+from aaa2.resolver.validate import KG_DAILY_QUOTA, _Api, validate_entities
 
 app = typer.Typer(no_args_is_help=True, help="AAA v2 — sitewide SEO/GEO elemzőmotor")
 
@@ -218,7 +219,8 @@ def entities(
     use_knowledge = steps.knowledge if knowledge is None else knowledge
     if steps.blocks:
         build_blocks(con)
-    runs = [] if estimate or not steps.rules else [run_rules(con).run_id]
+    runs = [] if estimate or not steps.rules else [
+        run_rules(con, entity_pages=entity_page_ids(page_roles(con))).run_id]
     site_lang = ((con.execute("SELECT languages FROM site ORDER BY ALL").fetchone() or [None])[0]
                  or [None])[0]
     kb = shared = linked = site_run = None

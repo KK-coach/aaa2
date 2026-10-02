@@ -24,7 +24,7 @@ from pathlib import Path
 
 import duckdb
 
-from aaa2.entities.site import normal_key
+from aaa2.resolver.names import normal_key
 
 NAMED = ("tech", "org", "person", "product", "place", "brand", "event", "work")
 OFFER_TIERS = ("core", "package", "work_mode")

@@ -68,7 +68,10 @@ from aaa2.entities.gate import (
     structure,
 )
 from aaa2.entities.rules import alias_key
-from aaa2.entities.validate import (
+from aaa2.llm.client import Retry, api_key
+from aaa2.llm.config import load_config
+from aaa2.llm.schemas import BlockEntity
+from aaa2.resolver.validate import (
     KG_ENDPOINT,
     KG_KEY_ENV,
     KG_LIMIT,
@@ -77,9 +80,6 @@ from aaa2.entities.validate import (
     concept_status,
     load_kg_types,
 )
-from aaa2.llm.client import Retry, api_key
-from aaa2.llm.config import load_config
-from aaa2.llm.schemas import BlockEntity
 
 OUT = Path(__file__).parent / "out"
 DFS_API = "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume"

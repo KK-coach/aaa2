@@ -6,9 +6,7 @@ import math
 
 import pytest
 
-from aaa2.entities import overrides
 from aaa2.entities.rules import run_rules
-from aaa2.entities.site import run_site
 from aaa2.functions.graph import (
     Candidate,
     build_graph,
@@ -18,6 +16,8 @@ from aaa2.functions.graph import (
     row_label,
     url_has_word,
 )
+from aaa2.resolver import overrides
+from aaa2.resolver.site import run_site
 from tests.test_entities_rules import html, ld, site
 from tests.test_entities_shop import shop_site
 from tests.test_entities_site import NOON, business_site, llm_entity

@@ -54,9 +54,11 @@ def test_the_analysis_recognises_reads_writes_and_import_direction():
     assert [m.group(1) for m in architecture.READ.finditer(text)] == ["pages", "links"]
     deleted = architecture.DELETE_FROM.sub(" ", "DELETE FROM findings")
     assert [m.group(1) for m in architecture.READ.finditer(deleted)] == []
-    assert architecture.module_of("aaa2/entities/site.py") == "resolve"
+    assert architecture.module_of("aaa2/resolver/site.py") == "resolve"
+    assert architecture.module_of("aaa2/entities/rules.py") == "extract"
     assert architecture.module_of("aaa2/engine/stable_hash.py") == "core"
     assert architecture.module_of("aaa2/engine/crawl.py") == "crawl"
     kinds = {issue.kind for issue in architecture.import_issues()}
     assert kinds <= {"upward", "cli_direct", "contracts_dependency"}
     assert "contracts_dependency" not in kinds      # a szerződések nem épülnek a motorra
+    assert "upward" not in kinds                    # nincs felfelé mutató import
