@@ -33,6 +33,7 @@ from pathlib import Path
 import duckdb
 import zstandard
 
+from aaa2.engine import queries as crawl
 from aaa2.entities.dom import parse_blocks
 from aaa2.entities.gate import (
     PROMINENT_KINDS,
@@ -199,8 +200,7 @@ def dom_context(html: str, title: str | None) -> tuple[list[str], list[str]]:
 def page_context(con: duckdb.DuckDBPyConnection, page_id: int, blocks: Sequence[Mapping],
                  lang: str | None) -> PageContext:
     """A tartalmi blokkok, és a renderelt DOM-ból a chrome-régió és az anchor-szövegek."""
-    title, blob = con.execute("SELECT title, rendered_html FROM pages WHERE page_id = ? ORDER BY ALL",
-                              [page_id]).fetchone()
+    title, blob = crawl.rendered(con, page_id)
     html = zstandard.ZstdDecompressor().decompress(blob).decode("utf-8", "replace")
     chrome, anchors = dom_context(html, title)
     return PageContext(list(blocks), chrome, anchors, lang or "en")

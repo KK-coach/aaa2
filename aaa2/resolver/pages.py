@@ -38,7 +38,9 @@ from urllib.parse import parse_qsl, urldefrag, urlsplit
 
 import duckdb
 
+from aaa2.engine import queries as crawl
 from aaa2.engine.normalize import page_url
+from aaa2.entities import queries as extract_queries
 
 ENTITY_ROLES = ("offer", "product", "component", "article")
 ROLE_TYPE = {"offer": ("service", None), "product": ("product", None),
@@ -92,21 +94,20 @@ def group_key(url: str, hreflang: list[str] | None) -> str:
 
 def page_roles(con: duckdb.DuckDBPyConnection) -> dict[int, PageInfo]:
     """Az alkalmas oldalak csoportja és szerepe (lásd a modul leírását)."""
-    rows = con.execute(
-        "SELECT page_id, url, lang, title, h1, hreflang FROM pages "
-        "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL "
-        "ORDER BY page_id").fetchall()
+    hreflang = {meta.page_id: meta.hreflang for meta in crawl.page_metas(con)}
+    rows = [(page.page_id, page.url, page.lang, page.title, page.h1, hreflang[page.page_id])
+            for page in crawl.rendered_pages(con)]
     homes = {page_url(u) for u in home_urls(con)}
     nodes = schema_nodes(con)
-    code_pages = {page_id for (page_id,) in con.execute(
-        "SELECT DISTINCT page_id FROM blocks WHERE kind = 'code' AND region = 'content' ORDER BY ALL"
-    ).fetchall()}
+    code_pages = {b.page_id for b in extract_queries.blocks(con)
+                  if b.kind == "code" and b.region == "content"}
     groups = {page_id: group_key(url, hreflang) for page_id, url, _, _, _, hreflang in rows}
     site_pages = {page_url(url) for _, url, _, _, _, _ in rows}
     linkers: dict[str, set[str]] = defaultdict(set)
-    for from_id, to_id in con.execute(
-            "SELECT from_page_id, to_page_id FROM links WHERE to_page_id IS NOT NULL "
-            "AND list_contains(?, position) ORDER BY ALL", [list(NAV_POSITIONS)]).fetchall():
+    for from_id, to_id in sorted({(link.from_page_id, link.to_page_id)
+                                  for link in crawl.links(con)
+                                  if link.to_page_id is not None
+                                  and link.position in NAV_POSITIONS}):
         if from_id in groups and to_id in groups and groups[from_id] != groups[to_id]:
             linkers[groups[to_id]].add(groups[from_id])
     services = service_pages(con)
@@ -147,9 +148,7 @@ def page_types(con: duckdb.DuckDBPyConnection,
                 for kind in PAGE_TYPES}
     nodes = schema_nodes(con)
     found: dict[int, str] = {}
-    for page_id, url in con.execute(
-            "SELECT page_id, url FROM pages WHERE status BETWEEN 200 AND 299 AND error IS NULL "
-            "AND rendered_html IS NOT NULL ORDER BY page_id").fetchall():
+    for page_id, url in [(page.page_id, page.url) for page in crawl.rendered_pages(con)]:
         kind = next((k for k in PAGE_TYPES if any(p.search(url) for p in compiled[k])), None)
         own = nodes.get(page_id, [])
         for schema, name in (("Product", "product"), ("Service", "service")):
@@ -233,11 +232,15 @@ def service_pages(con: duckdb.DuckDBPyConnection) -> set[int]:
 
     found: set[int] = set()
     seen: set[int] = set()
-    for page_id, record, h1, title in con.execute(
-            "SELECT p.page_id, coalesce(p.refined, p.extraction), g.h1, g.title "
+    texts = {page.page_id: (page.h1, page.title) for page in crawl.pages(con)}
+    for page_id, record in con.execute(
+            "SELECT p.page_id, coalesce(p.refined, p.extraction) "
             "FROM entity_run_pages p JOIN entity_runs r USING (run_id) "
-            "JOIN pages g ON g.page_id = p.page_id WHERE r.method = 'llm' AND p.status = 'done' "
+            "WHERE r.method = 'llm' AND p.status = 'done' "
             "ORDER BY p.run_id DESC, p.finished_at DESC").fetchall():
+        if page_id not in texts:
+            continue
+        h1, title = texts[page_id]
         if page_id in seen or record is None:
             continue
         seen.add(page_id)
@@ -300,13 +303,8 @@ def schema_nodes(con: duckdb.DuckDBPyConnection) -> dict[int, list[dict]]:
     """Oldalanként a JSON-LD blokkok legfelső szintű típusos csomópontjai (és a `@graph`
     elemei)."""
     found: dict[int, list[dict]] = defaultdict(list)
-    for page_id, raw in con.execute(
-            "SELECT page_id, json FROM schema_blocks WHERE type IS DISTINCT FROM 'invalid' "
-            "ORDER BY page_id, ordinal").fetchall():
-        try:
-            block = json.loads(raw)
-        except ValueError:
-            continue
+    for item in crawl.json_ld(con):
+        page_id, block = item.page_id, item.data
         for node in _as_list(block):
             if isinstance(node, dict):
                 graph = node.get("@graph")
@@ -316,10 +314,10 @@ def schema_nodes(con: duckdb.DuckDBPyConnection) -> dict[int, list[dict]]:
 
 
 def home_urls(con: duckdb.DuckDBPyConnection) -> set[str]:
-    row = con.execute("SELECT home_urls, seed_url FROM site ORDER BY ALL").fetchone()
-    if row is None:
+    site = crawl.site(con)
+    if site is None:
         return set()
-    return set(row[0]) if row[0] is not None else {row[1]}
+    return set(site.home_urls) if site.home_urls is not None else {site.seed_url}
 
 
 def _short(value: object) -> str:

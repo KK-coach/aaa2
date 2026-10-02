@@ -61,6 +61,7 @@ from datetime import UTC, date, datetime
 import duckdb
 
 from aaa2.db.stable_json import dumps
+from aaa2.engine import queries as crawl
 from aaa2.entities.blocks import BLOCK_PROMPT, block_input, chunk_blocks
 from aaa2.entities.dom import build_blocks, page_blocks
 from aaa2.entities.llm import site_line
@@ -71,6 +72,7 @@ from aaa2.entities.v3 import (
     store_soft_checks,
     verify_usage,
 )
+from aaa2.llm import calls as llm_calls
 from aaa2.llm.client import BudgetExceeded, LLMClient, LLMError, SchemaMismatch
 from aaa2.llm.config import LLMConfig, Usage
 from aaa2.llm.schemas import ENTITY_TYPES, BlockExtraction
@@ -153,18 +155,10 @@ ATTEMPTED = ("done", "extracted", "failed", "verify_error")
 def select_pages(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None = None,
                  limit: int | None = None) -> list[tuple[int, str | None]]:
     """Az alkalmas (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalak és a nyelvük."""
-    params: list = []
-    only = ""
-    if page_ids is not None:
-        only = " AND list_contains(?, page_id)"
-        params.append(list(page_ids))
-    if limit:
-        params.append(limit)
-    return con.execute(
-        "SELECT page_id, lang FROM pages "
-        "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL"
-        + only + " ORDER BY page_id" + (" LIMIT ?" if limit else ""), params,
-    ).fetchall()
+    wanted = None if page_ids is None else set(page_ids)
+    found = [(page.page_id, page.lang) for page in crawl.rendered_pages(con)
+             if wanted is None or page.page_id in wanted]
+    return found[:limit] if limit else found
 
 
 def resumable_run(con: duckdb.DuckDBPyConnection, model: str) -> int | None:
@@ -245,7 +239,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
     models = input_models(client.model,
                           getattr(refine, "fingerprint", None) if refine else None)
     reusable = reusable_pages(con, client.model) if reuse else {}
-    raw_hashes = dict(con.execute("SELECT page_id, raw_html_hash FROM pages ORDER BY ALL").fetchall())
+    raw_hashes = {page.page_id: page.raw_html_hash for page in crawl.pages(con)}
     hashes: dict[int, str] = {}
     parallel = workers > 1 and fork is not None
     pool = queue.Queue()
@@ -444,8 +438,8 @@ def _store(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int, lang: str 
     if save:
         con.execute(
             "DELETE FROM mention_sources WHERE source = 'llm' AND mention_id IN "
-            "(SELECT mention_id FROM page_entities WHERE page_id = ?) AND llm_call_id IN "
-            "(SELECT call_id FROM llm_calls WHERE model = ?)", [page_id, model])
+            "(SELECT mention_id FROM page_entities WHERE page_id = ?) AND "
+            "list_contains(?, llm_call_id)", [page_id, llm_calls.model_call_ids(con, model)])
         con.execute(
             "DELETE FROM page_entities WHERE page_id = ? AND mention_id NOT IN "
             "(SELECT mention_id FROM mention_sources)", [page_id])
@@ -474,8 +468,7 @@ def _store(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int, lang: str 
             "INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id) "
             "VALUES (?, 'llm', ?, ?)", [mention_id, run_id, extract_call])
     if extract_call is not None:
-        con.execute("UPDATE llm_calls SET fabricated_count = ? WHERE call_id = ?",
-                    [fabricated, extract_call])
+        llm_calls.set_fabricated_count(con, extract_call, fabricated)
     if save:
         index.write_votes(con)
         if record.get("v3") is not None:
@@ -510,10 +503,14 @@ def _stop(con: duckdb.DuckDBPyConnection, run_id: int, pages: Sequence[tuple[int
 
 
 def _run_cost(con: duckdb.DuckDBPyConnection, run_id: int) -> float:
-    return con.execute(
-        "SELECT coalesce(sum(cost_usd), 0) FROM llm_calls WHERE call_id IN "
-        "(SELECT DISTINCT unnest(call_ids) FROM entity_run_pages WHERE run_id = ?) ORDER BY ALL",
-        [run_id]).fetchone()[0]
+    return llm_calls.total_cost(con, run_call_ids(con, run_id))
+
+
+def run_call_ids(con: duckdb.DuckDBPyConnection, run_id: int) -> list[int]:
+    """A futás oldalainak LLM-hívásai (`entity_run_pages.call_ids`)."""
+    return [call_id for (call_id,) in con.execute(
+        "SELECT DISTINCT unnest(call_ids) FROM entity_run_pages WHERE run_id = ? ORDER BY 1",
+        [run_id]).fetchall() if call_id is not None]
 
 
 def _finish(con: duckdb.DuckDBPyConnection, run_id: int, model: str, seconds: float,
@@ -537,8 +534,7 @@ def _finish(con: duckdb.DuckDBPyConnection, run_id: int, model: str, seconds: fl
         "SELECT count(DISTINCT pe.entity_id), count(DISTINCT pe.page_id) FROM mention_sources ms "
         "JOIN page_entities pe USING (mention_id) WHERE ms.run_id = ? AND ms.source = 'llm' ORDER BY ALL",
         [run_id]).fetchone()
-    (cost,) = con.execute("SELECT coalesce(sum(cost_usd), 0) FROM llm_calls "
-                          "WHERE list_contains(?, call_id) ORDER BY ALL", [sorted(call_ids)]).fetchone()
+    cost = llm_calls.total_cost(con, call_ids)
     rows = sum(positions.values())
     reasons = {k: v for k, v in sorted(skipped.items()) if v}
     con.execute(

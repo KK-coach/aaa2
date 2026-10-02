@@ -1,7 +1,7 @@
 """A modulok kimeneti szerződései: típusos, verziózott adatmodellek (architektúra-spec, 2. és
 4. pont).
 
-- Modulonként: `llm` → `LLMCall`; `crawl` → `Page`, `Link`, `PageMeta`, `StructuredData`; `extract` → `Block`,
+- Modulonként: `llm` → `LLMCall`; `crawl` → `Site`, `CrawlRun`, `Page`, `Link`, `PageMeta`, `StructuredData`; `extract` → `Block`,
   `Mention`, `Candidate`; `resolve` → `Entity`, `Alias`, `Relation`, `MergeRecord`, `KbLink`;
   `graph` → `PageNode`, `Edge`, `MainEntity`, `EntityWeight`; `findings` → `Finding`.
 - Minden modell `schema_version` mezőt hordoz (`SCHEMA_VERSION`); a szerződés változása
@@ -21,7 +21,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -45,7 +45,10 @@ class Contract(BaseModel):
     def _json_text(cls, value: Any, info: Any) -> Any:
         """A JSON-oszlop szövegként érkezik az adatbázisból."""
         if isinstance(value, str) and info.field_name in cls.json_fields():
-            return json.loads(value)
+            try:
+                return json.loads(value)
+            except ValueError:
+                return value                    # pl. a hibás JSON-LD blokk nyers szövege
         return value
 
     @classmethod
@@ -86,8 +89,51 @@ class LLMCall(Contract):
 
 # --- crawl ---------------------------------------------------------------------------------
 
+class Site(Contract):
+    """A site profilja (`site`): a crawl kiindulása és amit a site-ról megállapított."""
+
+    module: ClassVar[str] = "crawl"
+    domain: str
+    seed_url: str
+    home_urls: list[str] | None = None
+    languages: list[str] | None = None
+    target_country: str | None = None
+    target_country_confidence: str | None = None
+    target_country_candidates: Any = _json()
+    market_scope: str | None = None
+    market_scope_city: str | None = None
+    tech: list[str] | None = None
+    tech_signals: list[str] | None = None
+    trailing_slash: bool | None = None
+    page_count: int | None = None
+    render_mode: str | None = None
+    https_redirect: bool | None = None
+    https_redirect_status: int | None = None
+    robots_txt: str | None = None
+    robots_status: int | None = None
+    crawled_at: datetime | None = None
+
+
+class CrawlRun(Contract):
+    """Egy crawl-futás (`crawl_runs`)."""
+
+    module: ClassVar[str] = "crawl"
+    run_id: int
+    started_at: datetime
+    finished_at: datetime | None = None
+    max_pages: int | None = None
+    concurrency: int | None = None
+    pages_done: int | None = None
+    pages_failed: int | None = None
+    pages_skipped: int | None = None
+    pages_per_sec: float | None = None
+    bytes_stored: int | None = None
+    notes: str | None = None
+
+
 class Page(Contract):
-    """Egy bejárt oldal (`pages`), a renderelt HTML nélkül."""
+    """Egy bejárt oldal (`pages`), a renderelt HTML nélkül (`has_rendered_html`: van-e tárolt
+    renderelt DOM-ja)."""
 
     module: ClassVar[str] = "crawl"
     page_id: int
@@ -109,6 +155,13 @@ class Page(Contract):
     render_ms: int | None = None
     fetched_at: datetime | None = None
     run_id: int | None = None
+    has_rendered_html: bool | None = None
+
+    @property
+    def renderable(self) -> bool:
+        """Sikeresen bejárt oldal tárolt DOM-mal: 2xx státusz, hiba nélkül."""
+        return (self.status is not None and 200 <= self.status <= 299 and self.error is None
+                and bool(self.has_rendered_html))
 
 
 class Link(Contract):
@@ -396,5 +449,5 @@ class Finding(Contract):
 
 
 CONTRACTS: tuple[type[Contract], ...] = (
-    LLMCall, Page, Link, PageMeta, StructuredData, Block, Mention, MentionSource, Candidate, Entity, Alias,
+    LLMCall, Site, CrawlRun, Page, Link, PageMeta, StructuredData, Block, Mention, MentionSource, Candidate, Entity, Alias,
     Relation, MergeRecord, KbLink, PageNode, Edge, MainEntity, EntityWeight, Finding)

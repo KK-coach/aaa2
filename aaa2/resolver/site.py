@@ -54,7 +54,7 @@
   (`label_parts`: „UX & Konverzióoptimalizálás” → UX, Konverzióoptimalizálás).
 - Webshop-szintek (9a pont, `shop.py`): kategória, márka, termékcsalád, a termék tulajdonságai
   és kapcsolatai, a csomagok után.
-- Site-szintű felülbírálat (4. pont, `overrides.py`, `config/sites/<domain>.toml`): az
+- Site-szintű felülbírálat (4. pont, `overrides.py`, `core/sites/<domain>.toml`): az
   ajánlat szintje (core, package, work_mode) név vagy URL szerint, a szintszabály után
   (`apply_overrides`). A kanonikus név nyelve a beállításé, különben a site gyökér-URL-jéé
   (`overrides.canonical_language`).

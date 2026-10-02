@@ -53,6 +53,7 @@ from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
 from aaa2.db.stable_json import dumps
+from aaa2.entities import queries as extract_queries
 from aaa2.entities.rules import alias_key
 from aaa2.resolver.overrides import SiteConfig
 from aaa2.resolver.pages import PageInfo, breadcrumbs, page_types, page_url
@@ -672,9 +673,8 @@ def _family_entity(ctx: _Context, name: str, forms: Sequence[str]) -> int:
 def _h1_mention(ctx: _Context, entity_id: int, page_id: int, name: str) -> None:
     from aaa2.resolver.navigation import _add_mention
 
-    for (ordinal,) in ctx.con.execute(
-            "SELECT ordinal FROM blocks WHERE page_id = ? AND region = 'content' "
-            "AND kind = 'heading' AND level = 1 ORDER BY ordinal", [page_id]).fetchall():
+    for ordinal in [b.ordinal for b in extract_queries.page_blocks(ctx.con, page_id)
+                    if b.region == "content" and b.kind == "heading" and b.level == 1]:
         if _add_mention(ctx, entity_id, page_id, ordinal, name, "h1"):
             return
 

@@ -34,6 +34,7 @@ ORDER = ("core", "llm", "crawl", "extract", "resolve", "graph", "findings", "rep
 MODULES: tuple[tuple[str, str], ...] = (
     ("aaa2/contracts/", "contracts"),
     ("aaa2/__init__.py", "core"),
+    ("aaa2/core/", "core"),
     ("aaa2/db/", "core"),
     ("aaa2/engine/stable_hash.py", "core"),
     ("aaa2/llm/", "llm"),
@@ -42,6 +43,7 @@ MODULES: tuple[tuple[str, str], ...] = (
     ("aaa2/entities/report.py", "report"),
     ("aaa2/entities/", "extract"),
     ("aaa2/functions/graph.py", "graph"),
+    ("aaa2/functions/graph_queries.py", "graph"),
     ("aaa2/functions/findings.py", "findings"),
     ("aaa2/functions/__init__.py", "graph"),
     ("aaa2/api/", "api"),

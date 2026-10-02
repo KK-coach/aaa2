@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import duckdb
 
+from aaa2.engine import queries as crawl
+
 TYPE_DEFINITIONS = {
     "brand": "a brand or trade name that is not itself a company",
     "product": ("goods: a product or product line, a food, a dish, a drink, a wine, an "
@@ -31,14 +33,13 @@ TYPE_DEFINITIONS = {
 def site_line(con: duckdb.DuckDBPyConnection) -> str | None:
     """Egy mondat a site-ról: a domain és a kezdőoldal title-je (`site.home_urls` első eleme; ha
     az oszlop NULL, a seed URL), ha van."""
-    row = con.execute("SELECT domain, home_urls, seed_url FROM site ORDER BY ALL").fetchone()
-    if row is None:
+    site = crawl.site(con)
+    if site is None:
         return None
-    domain, homes, seed = row
+    domain, homes, seed = site.domain, site.home_urls, site.seed_url
     home = seed if homes is None else (homes[0] if homes else None)
-    title = con.execute("SELECT title FROM pages WHERE url = ? ORDER BY ALL", [home]).fetchone() if home \
-        else None
-    title = " ".join((title[0] or "").split()) if title else ""
+    titles = [page.title for page in crawl.pages(con) if page.url == home] if home else []
+    title = " ".join((titles[0] or "").split()) if titles else ""
     return (f"This page belongs to the website {domain}, whose home page is titled "
             f"“{title}”." if title else f"This page belongs to the website {domain}.")
 

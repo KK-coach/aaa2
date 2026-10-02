@@ -12,7 +12,10 @@ from aaa2.contracts import Contract
 # szerződés → (tábla, lekérdezés); a `rendered_html` (a renderelt DOM tömörítve) nem szerződés
 SOURCES: dict[type[Contract], tuple[str, str]] = {
     contracts.LLMCall: ("llm_calls", "SELECT * FROM llm_calls ORDER BY call_id"),
-    contracts.Page: ("pages", "SELECT * EXCLUDE (rendered_html) FROM pages ORDER BY page_id"),
+    contracts.Site: ("site", "SELECT * FROM site ORDER BY domain"),
+    contracts.CrawlRun: ("crawl_runs", "SELECT * FROM crawl_runs ORDER BY run_id"),
+    contracts.Page: ("pages", ("SELECT * EXCLUDE (rendered_html), rendered_html IS NOT NULL AS "
+                               "has_rendered_html FROM pages ORDER BY page_id")),
     contracts.Link: ("links", "SELECT * FROM links ORDER BY from_page_id, ordinal, to_url"),
     contracts.StructuredData: ("schema_blocks",
                                "SELECT * FROM schema_blocks ORDER BY page_id, ordinal"),

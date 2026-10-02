@@ -20,12 +20,12 @@ note = "az alkalmazott migrációk (`db/connect.py`)"
 
 [tables.site]
 owner = "crawl"
-contracts = []
+contracts = ["Site"]
 note = "a site-profil; a frontier, a crawl és a site-profil írja"
 
 [tables.crawl_runs]
 owner = "crawl"
-contracts = []
+contracts = ["CrawlRun"]
 
 [tables.crawl_queue]
 owner = "crawl"
@@ -52,15 +52,14 @@ note = "a JSON-LD blokkok"
 [tables.structured_data]
 owner = "crawl"
 contracts = ["StructuredData", "PageMeta"]
-note = "a microdata- és az RDFa-elemek (022-es migráció); a szabálykör és a feloldás még nem olvassa"
+note = "a microdata-, RDFa- és Open Graph-elemek (022-es migráció); a szabálykör és a feloldás még nem olvassa"
 
 # --- llm -------------------------------------------------------------------------------------
 
 [tables.llm_calls]
 owner = "llm"
 contracts = ["LLMCall"]
-also_written_by = ["extract"]
-note = "az `entities/extract.py` is ír bele"
+note = "más modul az `aaa2/llm/calls.py` függvényein át éri el (a kinyerés a kitalált említések számát így írja be)"
 
 # --- extract ---------------------------------------------------------------------------------
 

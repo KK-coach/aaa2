@@ -14,7 +14,7 @@ from tests.test_entities_site import NOON
 from tests.test_findings import BASE, built
 
 SCHEMA_DIR = Path(__file__).resolve().parents[1] / "docs" / "contracts"
-NAMED = ("LLMCall", "Page", "Link", "PageMeta", "Block", "Mention", "Candidate", "Entity", "Alias",
+NAMED = ("LLMCall", "Site", "CrawlRun", "Page", "Link", "PageMeta", "Block", "Mention", "Candidate", "Entity", "Alias",
          "Relation", "MergeRecord", "KbLink", "PageNode", "Edge", "MainEntity", "EntityWeight",
          "Finding", "StructuredData")
 
@@ -42,6 +42,8 @@ def test_contracts_build_from_the_current_data(monkeypatch):
                 "blocks, mentions, prominent, rank, knowledge, sol, kept) VALUES "
                 "(?, ?, ?, ?, 'concept', 'heading', 2, 3, true, 1, NULL, NULL, true)",
                 [run_id, page_id, entity_id, name])
+    con.execute("INSERT INTO crawl_runs (started_at, pages_done, notes) VALUES (?, 11, 'teszt')",
+                [NOON])
     con.execute("INSERT INTO llm_calls (domain, page_id, model, tokens_in, tokens_out, cost_usd, "
                 "purpose, called_at) VALUES ('pelda.hu', ?, 'gpt-6-luna', 10, 5, 0.001, "
                 "'extract', ?)", [page_id, NOON])

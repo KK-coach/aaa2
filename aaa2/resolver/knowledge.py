@@ -29,6 +29,7 @@ from datetime import datetime
 
 import duckdb
 
+from aaa2.engine import queries as crawl
 from aaa2.entities.gate import KnowledgeBase, base_language
 from aaa2.resolver.merge import Merger, _entity_rows, _mergeable, _rank, resolve
 
@@ -108,8 +109,8 @@ def link_entities(con: duckdb.DuckDBPyConnection, knowledge: KnowledgeBase,
     az összevonás a biztos QID szerint. A keresés nyelvei: az entitásé, a `site_lang`, a site
     nyelvei, végül angol."""
     clear_person_links(con, clock)
-    site_langs = [base_language(code) for code in (
-        con.execute("SELECT languages FROM site ORDER BY ALL").fetchone() or [None])[0] or []]
+    site = crawl.site(con)
+    site_langs = [base_language(code) for code in (site.languages if site else None) or []]
     short: list[tuple[int, str, list[str]]] = []
     rows = con.execute(
         "SELECT entity_id, name, type, subtype, lang, flags FROM entities "

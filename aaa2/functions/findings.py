@@ -84,9 +84,12 @@ from urllib.parse import urlsplit
 import duckdb
 
 from aaa2.db.stable_json import dumps
+from aaa2.engine import queries as crawl
 from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
+from aaa2.functions import graph_queries
 from aaa2.functions.graph import evidence_text
+from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.names import normal_key
 
 TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
@@ -168,33 +171,33 @@ class _Site:
 
     def __init__(self, con: duckdb.DuckDBPyConnection):
         self.con = con
+        noindex = {page.page_id: page.noindex for page in crawl.pages(con)}
         self.pages = {row[0]: dict(zip(
             ("page_id", "url", "role", "support", "title", "h1", "lang", "group", "status",
-             "canonical", "issue", "noindex"), row, strict=True)) for row in con.execute(
-            "SELECT n.page_id, n.url, n.role, n.support_kind, n.title, n.h1, n.lang, "
-            "n.group_key, n.main_status, n.canonical_page, n.canonical_issue, "
-            "coalesce(p.noindex, false) FROM page_nodes n JOIN pages p USING (page_id) "
-            "ORDER BY n.url").fetchall()}
+             "canonical", "issue", "noindex"), (*row, bool(noindex[row[0]])), strict=True))
+            for row in [(n.page_id, n.url, n.role, n.support_kind, n.title, n.h1, n.lang,
+                         n.group_key, n.main_status, n.canonical_page, n.canonical_issue)
+                        for n in sorted(graph_queries.page_nodes(con), key=lambda n: n.url)]
+            if row[0] in noindex}
         self.entities = {row[0]: dict(zip(
             ("entity_id", "name", "type", "subtype", "aliases", "anchor", "role", "source"),
             row, strict=True)) for row in con.execute(
             "SELECT entity_id, name, type, subtype, aliases, anchor_page_id, role, source "
             "FROM entities ORDER BY ALL").fetchall()}
         self.alias_sources: dict[int, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
-        for entity_id, alias, source in con.execute(
-                "SELECT entity_id, alias, source FROM entity_aliases ORDER BY ALL").fetchall():
+        for entity_id, alias, source in [(a.entity_id, a.alias, a.source)
+                                         for a in resolver_queries.aliases(con)]:
             self.alias_sources[entity_id][alias].add(source)
         self.chosen: dict[int, list[tuple]] = defaultdict(list)     # oldal → (entitás, szerep, …)
-        for page_id, entity_id, role, confidence, evidence in con.execute(
-                "SELECT page_id, entity_id, role, confidence, evidence FROM page_main_entity "
-                "ORDER BY page_id, rank").fetchall():
-            self.chosen[page_id].append((entity_id, role, confidence, json.loads(evidence)))
+        for chosen in graph_queries.main_entities(con):
+            self.chosen[chosen.page_id].append(
+                (chosen.entity_id, chosen.role, chosen.confidence, chosen.evidence))
         self.weights = {row[0]: dict(zip(
             ("entity_id", "pages", "mentions", "structural", "main_pages", "secondary_pages",
              "content_anchors", "nav_anchors", "weight"), row, strict=True))
-            for row in con.execute(
-                "SELECT entity_id, pages, mentions, structural, main_pages, secondary_pages, "
-                "content_anchors, nav_anchors, weight FROM entity_weights ORDER BY ALL").fetchall()}
+            for row in [(w.entity_id, w.pages, w.mentions, w.structural, w.main_pages,
+                         w.secondary_pages, w.content_anchors, w.nav_anchors, w.weight)
+                        for w in graph_queries.entity_weights(con)]}
         ranked = sorted(self.weights.values(), key=lambda w: (-w["weight"], w["entity_id"]))
         self.rank = {w["entity_id"]: i for i, w in enumerate(ranked, start=1)}
         self.site_entities = {entity_id for (entity_id,) in con.execute(
@@ -202,10 +205,11 @@ class _Site:
             "source IN ('rule', 'schema') AND NOT EXISTS (SELECT 1 FROM entity_relations r "
             "WHERE r.from_id = e.entity_id AND r.type = 'brand_of')) ORDER BY ALL").fetchall()}
         self.mention_edges: dict[int, list[tuple[int, float, dict]]] = defaultdict(list)
-        for page_id, entity_id, weight, evidence in con.execute(
-                "SELECT from_id, to_id, weight, evidence FROM edges WHERE type = 'mentions' "
-                "ORDER BY from_id, weight DESC, to_id").fetchall():
-            self.mention_edges[page_id].append((entity_id, weight or 0.0, json.loads(evidence)))
+        for edge in sorted(graph_queries.edges(con, "mentions"),
+                           key=lambda e: (e.from_id, e.weight is None, -(e.weight or 0.0),
+                                          e.to_id)):
+            self.mention_edges[edge.from_id].append(
+                (edge.to_id, edge.weight or 0.0, edge.evidence))
 
     def name(self, entity_id: int) -> str:
         return self.entities[entity_id]["name"]
@@ -476,8 +480,7 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
         "WHERE e.type = 'offers' AND s.anchor_page_id IS NOT NULL ORDER BY ALL").fetchall()}
     secondary_of = {c[0] for chosen in site.chosen.values() for c in chosen
                     if c[1] == "secondary"}
-    parents = {to_id for (to_id,) in site.con.execute(
-        "SELECT to_id FROM edges WHERE type = 'part_of' ORDER BY ALL").fetchall()}
+    parents = {edge.to_id for edge in graph_queries.edges(site.con, "part_of")}
     found = []
     for entity_id, weight in site.weights.items():
         entity = site.entities[entity_id]
@@ -549,9 +552,9 @@ def _uncovered(site: _Site, run: FindingsRun) -> list[tuple]:
             run.context.append(site.name(candidate["entity_id"]))
         elif reason is None:
             kept.append(candidate)
-    parent_of = {from_id: to_id for from_id, to_id in site.con.execute(
-        "SELECT from_id, to_id FROM edges WHERE type = 'part_of' AND from_kind = 'entity' "
-        "AND to_kind = 'entity' ORDER BY ALL").fetchall()}
+    parent_of = {from_id: to_id for from_id, to_id in sorted(
+        (edge.from_id, edge.to_id) for edge in graph_queries.edges(site.con, "part_of")
+        if edge.from_kind == "entity" and edge.to_kind == "entity")}
     families = {c["entity_id"] for c in kept if c["family"]}
     under: dict[int, list[int]] = defaultdict(list)          # hiányzó szülő → alcsaládjai
     for entity_id in sorted(families):
@@ -653,9 +656,10 @@ def export_findings(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> Pat
 def _relations(site: _Site) -> dict[int, list[tuple[str, str, int]]]:
     """entitás → (éltípus, irány, a másik entitás) az entitás–entitás élekből."""
     found: dict[int, list[tuple[str, str, int]]] = defaultdict(list)
-    for from_id, to_id, kind in site.con.execute(
-            "SELECT from_id, to_id, type FROM edges WHERE from_kind = 'entity' "
-            "AND to_kind = 'entity' ORDER BY type, from_id, to_id").fetchall():
+    for from_id, to_id, kind in sorted(
+            ((edge.from_id, edge.to_id, edge.type) for edge in graph_queries.edges(site.con)
+             if edge.from_kind == "entity" and edge.to_kind == "entity"),
+            key=lambda row: (row[2], row[0], row[1])):
         if from_id in site.entities and to_id in site.entities:
             found[from_id].append((kind, "→", to_id))
             found[to_id].append((kind, "←", from_id))

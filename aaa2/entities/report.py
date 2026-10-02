@@ -23,7 +23,12 @@ from urllib.parse import quote
 
 import duckdb
 
+from aaa2.engine import queries as crawl
+from aaa2.entities import queries as extract_queries
+from aaa2.entities.extract import run_call_ids
 from aaa2.entities.gate import occurs
+from aaa2.llm import calls as llm_calls
+from aaa2.resolver import queries as resolver_queries
 
 PLACES = ("title", "heading", "nav", "card", "table_row")
 TABLE_FIELDS = ("entity", "type", "subtype", "tier", "flags", "source", "pages", "mentions",
@@ -44,10 +49,9 @@ def entity_table(con: duckdb.DuckDBPyConnection) -> list[dict]:
         "SELECT pe.entity_id, pe.page_id, b.kind, b.region FROM page_entities pe "
         "LEFT JOIN blocks b USING (block_id) ORDER BY ALL").fetchall()
     chrome: dict[int, list[str]] = defaultdict(list)
-    for page_id, text in con.execute(
-            "SELECT page_id, text FROM blocks WHERE region = 'chrome' ORDER BY page_id, ordinal"
-    ).fetchall():
-        chrome[page_id].append(text)
+    for found in extract_queries.blocks(con):
+        if found.region == "chrome":
+            chrome[found.page_id].append(found.text)
     converted = dict(con.execute(
         "SELECT entity_id, count(DISTINCT page_id) FROM soft_checks WHERE type = 'concept' "
         "AND type_changed_from = 'service' AND entity_id IS NOT NULL GROUP BY 1 ORDER BY ALL").fetchall())
@@ -61,11 +65,13 @@ def entity_table(con: duckdb.DuckDBPyConnection) -> list[dict]:
         if place in PLACES:
             places[entity_id][place].add(page_id)
     rows = []
-    for entity_id, name, kind, subtype, tier, flags, source, anchor, qid, status, wiki in \
+    urls = {page.page_id: page.url for page in crawl.pages(con)}
+    for entity_id, name, kind, subtype, tier, flags, source, anchor_id, qid, status, wiki in \
             con.execute(
                 "SELECT e.entity_id, e.name, e.type, e.subtype, e.tier, e.flags, e.source, "
-                "p.url, e.wikidata_id, e.wikidata_status, e.wikipedia FROM entities e "
-                "LEFT JOIN pages p ON p.page_id = e.anchor_page_id ORDER BY ALL").fetchall():
+                "e.anchor_page_id, e.wikidata_id, e.wikidata_status, e.wikipedia FROM entities e "
+                "ORDER BY e.entity_id").fetchall():
+        anchor = urls.get(anchor_id)
         if entity_id not in pages:
             continue
         nav = places[entity_id]["nav"]
@@ -111,11 +117,11 @@ def run_report(con: duckdb.DuckDBPyConnection, label: str,
                baseline: duckdb.DuckDBPyConnection | None = None) -> str:
     """A site legutóbbi futásának jelentése (lásd a modul leírását); `baseline`: a korábbi
     állapot adatbázisa (a regressziós összevetéshez)."""
-    (domain,) = con.execute("SELECT coalesce(max(domain), '') FROM site ORDER BY ALL").fetchone()
-    (eligible,) = con.execute(
-        "SELECT count(*) FROM pages WHERE status BETWEEN 200 AND 299 AND error IS NULL "
-        "AND rendered_html IS NOT NULL ORDER BY ALL").fetchone()
-    (crawled,) = con.execute("SELECT count(*) FROM pages ORDER BY ALL").fetchone()
+    site = crawl.site(con)
+    domain = site.domain if site else ""
+    all_pages = crawl.pages(con)
+    eligible = sum(page.renderable for page in all_pages)
+    crawled = len(all_pages)
     lines = [f"# Entitás-pipeline: {label}", "",
              f"- site: {domain or '—'}; oldal a készletben {crawled}, ebből alkalmas {eligible}"]
     rules = _latest(con, "rules")
@@ -127,9 +133,7 @@ def run_report(con: duckdb.DuckDBPyConnection, label: str,
         lines += ["- LLM-futás: nincs", ""]
     else:
         run_id, model, started, finished, seconds, pages, calls, cost, skipped = llm
-        statuses = dict(con.execute(
-            "SELECT status, count(*) FROM entity_run_pages WHERE run_id = ? GROUP BY status "
-            "ORDER BY status", [run_id]).fetchall())
+        statuses = dict(extract_queries.run_page_status_counts(con, run_id))
         lines += [
             f"- LLM-futás: #{run_id}, kinyerés {model}; indult {started:%Y-%m-%d %H:%M}, "
             + (f"lezárva {finished:%Y-%m-%d %H:%M}" if finished else "nincs lezárva")
@@ -139,12 +143,7 @@ def run_report(con: duckdb.DuckDBPyConnection, label: str,
             f"- hívások: {calls}, költség {_money(cost)}"
             + (f" ({(cost or 0) / pages:.4f} USD / oldal)" if pages else ""), "",
             "## Hívások céljuk szerint", ""]
-        by_purpose = con.execute(
-            "SELECT purpose, model, count(*), sum(tokens_in), sum(tokens_out), sum(cost_usd), "
-            "sum(coalesce(attempts, 1) - 1), count(*) FILTER (WHERE last_error IS NOT NULL) "
-            "FROM llm_calls WHERE call_id IN (SELECT DISTINCT unnest(call_ids) "
-            "FROM entity_run_pages WHERE run_id = ?) GROUP BY purpose, model "
-            "ORDER BY purpose, model", [run_id]).fetchall()
+        by_purpose = llm_calls.usage_by_purpose(con, run_call_ids(con, run_id))
         for purpose, call_model, count, t_in, t_out, usd, retries, errors in by_purpose:
             lines.append(f"- {purpose} ({call_model}): {count} hívás, token be {t_in or 0} / "
                          f"ki {t_out or 0}, {_money(usd)}; újrapróba {retries}, "
@@ -152,19 +151,17 @@ def run_report(con: duckdb.DuckDBPyConnection, label: str,
         if not by_purpose:
             lines.append("- nincs hívás")
         reasons = json.loads(skipped or "{}")
-        kb_errors = con.execute(
-            "SELECT service, count(*) FROM validation_calls WHERE error IS NOT NULL "
-            "AND called_at >= ? GROUP BY service ORDER BY service", [started]).fetchall()
+        kb_errors = resolver_queries.knowledge_errors_since(con, started)
         lines += ["", "## Hibák és kimaradások", "",
                   "- oldalszinten: " + (", ".join(f"{k} {v}" for k, v in reasons.items())
                                         or "—"),
                   "- tudásbázis-kérések hibája a futás óta: "
                   + (", ".join(f"{s} {n}" for s, n in kb_errors) or "0")]
-        for page_id, url, status, error in con.execute(
-                "SELECT rp.page_id, p.url, rp.status, rp.error FROM entity_run_pages rp "
-                "JOIN pages p USING (page_id) WHERE rp.run_id = ? AND rp.status IN "
-                "('failed', 'verify_error', 'stopped') ORDER BY rp.page_id", [run_id]
-        ).fetchall():
+        page_urls = {page.page_id: page.url for page in all_pages}
+        for page_id, status, error in extract_queries.unfinished_run_pages(con, run_id):
+            if page_id not in page_urls:
+                continue
+            url = page_urls[page_id]
             lines.append(f"  - {url}: {status}" + (f" ({error[:160]})" if error else ""))
         lines.append("")
     lines += _entities_section(con)
@@ -211,10 +208,8 @@ def _site_section(con: duckdb.DuckDBPyConnection) -> list[str]:
     flags = dict(con.execute(
         "SELECT flag, count(*) FROM (SELECT unnest(flags) AS flag FROM entities) "
         "GROUP BY flag ORDER BY ALL").fetchall())
-    merges = con.execute("SELECT rule, count(*) FROM merge_log WHERE run_id = ? GROUP BY rule "
-                         "ORDER BY rule", [run[0]]).fetchall()
-    relations = con.execute("SELECT type, count(*) FROM entity_relations GROUP BY type "
-                            "ORDER BY type").fetchall()
+    merges = resolver_queries.merge_counts(con, run[0])
+    relations = resolver_queries.relation_counts(con)
     thresholds = detail.get("thresholds", {})
     return [
         "## Site-szintű entitások", "",

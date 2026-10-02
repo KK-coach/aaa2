@@ -8,6 +8,7 @@ from datetime import datetime
 import duckdb
 
 from aaa2.db.stable_json import dumps
+from aaa2.entities import queries as extract_queries
 from aaa2.entities.rules import (
     SOURCE_STRENGTH,
     alias_key,
@@ -195,9 +196,9 @@ def _abbreviation_merges(con: duckdb.DuckDBPyConnection, merger: Merger) -> None
 def _sections(con: duckdb.DuckDBPyConnection, page_id: int) -> list[tuple[int, list[int]]]:
     """Az oldal H2-szakaszai: (a H2 blokkja, a H3 blokkjai), dokumentum-sorrendben."""
     sections: list[tuple[int, list[int]]] = []
-    for block_id, level in con.execute(
-            "SELECT block_id, level FROM blocks WHERE page_id = ? AND region = 'content' "
-            "AND kind = 'heading' AND level IN (2, 3) ORDER BY ordinal", [page_id]).fetchall():
+    for block_id, level in [(b.block_id, b.level) for b in extract_queries.page_blocks(con, page_id)
+                            if b.region == "content" and b.kind == "heading"
+                            and b.level in (2, 3)]:
         if level == 2:
             sections.append((block_id, []))
         elif sections:
@@ -227,7 +228,7 @@ def aligned_headings(left: list[tuple[int, list[int]]],
 
 def _heading_entity(con: duckdb.DuckDBPyConnection, block_id: int) -> int | None:
     """A headinget egészében lefedő említés entitása, ha pontosan egy ilyen van."""
-    (text,) = con.execute("SELECT text FROM blocks WHERE block_id = ? ORDER BY ALL", [block_id]).fetchone()
+    text = extract_queries.block(con, block_id).text
     found = {entity_id for entity_id, surface in con.execute(
         "SELECT entity_id, surface_form FROM page_entities WHERE block_id = ? ORDER BY ALL",
         [block_id]).fetchall() if alias_key(surface) == alias_key(text)}

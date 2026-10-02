@@ -4,6 +4,8 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable
 
+from aaa2.engine import queries as crawl
+from aaa2.entities import queries as extract_queries
 from aaa2.entities.rules import (
     alias_key,
     find_name,
@@ -30,10 +32,9 @@ def _qualified_anchors(ctx: _Context) -> dict[str, list[tuple[int, int, str, str
     tagoldal H1-ével vagy title-jével (cikkcímek). (forrásoldal, céloldal, szöveg, pozíció, a
     forrásoldal nyelve)."""
     roles = ctx.roles
-    rows = ctx.con.execute(
-        "SELECT from_page_id, to_page_id, anchor, position FROM links "
-        "WHERE anchor IS NOT NULL AND to_page_id IS NOT NULL ORDER BY from_page_id, ordinal"
-    ).fetchall()
+    rows = [(link.from_page_id, link.to_page_id, link.anchor, link.position)
+            for link in crawl.links(ctx.con)
+            if link.anchor is not None and link.to_page_id is not None]
     targets: dict[str, set[str]] = defaultdict(set)
     for from_id, to_id, anchor, _ in rows:
         if from_id in roles and to_id in roles and roles[from_id].group != roles[to_id].group:
@@ -66,9 +67,8 @@ def _card_headings(ctx: _Context) -> dict[str, list[tuple[int, int, str, str | N
     Csoportonként: (oldal, heading-sorszám, szöveg, az oldal nyelve)."""
     roles = ctx.roles
     queues: dict[int, dict[str, list[int]]] = defaultdict(lambda: defaultdict(list))
-    for from_id, anchor, to_id in ctx.con.execute(
-            "SELECT from_page_id, anchor, to_page_id FROM links WHERE anchor IS NOT NULL "
-            "ORDER BY from_page_id, ordinal").fetchall():
+    for from_id, anchor, to_id in [(link.from_page_id, link.anchor, link.to_page_id)
+                                   for link in crawl.links(ctx.con) if link.anchor is not None]:
         if from_id in roles:
             queues[from_id][alias_key(anchor)].append(to_id)
     found: dict[str, list] = defaultdict(list)
@@ -114,10 +114,11 @@ def _anchor_blocks(ctx: _Context, anchors: list) -> Iterable[tuple[int, int, str
 
 
 def _page_mentions(ctx: _Context, entity_id: int, info: PageInfo, names: list[Name]) -> None:
-    for ordinal, kind, level, text in ctx.con.execute(
-            "SELECT b.ordinal, b.kind, b.level, b.text FROM blocks b WHERE b.page_id = ? "
-            "AND b.region = 'content' AND (b.kind = 'title' OR (b.kind = 'heading' "
-            "AND b.level = 1)) ORDER BY b.ordinal", [info.page_id]).fetchall():
+    for ordinal, kind, text in [
+            (b.ordinal, b.kind, b.text)
+            for b in extract_queries.page_blocks(ctx.con, info.page_id)
+            if b.region == "content"
+            and (b.kind == "title" or (b.kind == "heading" and b.level == 1))]:
         position = "title" if kind == "title" else "h1"
         candidates = sorted({n.text for n in names}, key=len, reverse=True)
         target = next((c for c in candidates if find_name(text, alias_key(c))), None)
@@ -129,10 +130,10 @@ def _add_mention(ctx: _Context, entity_id: int, page_id: int, ordinal: int, name
                  position: str) -> int:
     """Egy említés a blokkban a név helyén (source = rule, a site-futás); visszaad: 1, ha új
     forrás került be."""
-    block = ctx.con.execute("SELECT block_id, text FROM blocks WHERE page_id = ? AND ordinal = ? ORDER BY ALL",
-                            [page_id, ordinal]).fetchone()
-    if block is None:
+    found = extract_queries.block_at(ctx.con, page_id, ordinal)
+    if found is None:
         return 0
+    block = (found.block_id, found.text)
     span = find_name(block[1], alias_key(name))
     if span is None:
         return 0

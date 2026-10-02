@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 import duckdb
 import zstandard
 
+from aaa2.engine import queries as crawl
+from aaa2.entities import queries as extract_queries
 from aaa2.entities.dom import parse_blocks
 from aaa2.entities.placeholder import placeholder_pages
 from aaa2.resolver.names import _site_name_keys
@@ -47,13 +49,11 @@ class _Context:
 
     def dom(self, page_id: int) -> list:
         if page_id not in self._dom:
-            title, blob = self.con.execute(
-                "SELECT title, rendered_html FROM pages WHERE page_id = ? ORDER BY ALL", [page_id]).fetchone()
+            title, blob = crawl.rendered(self.con, page_id)
             html = zstandard.ZstdDecompressor().decompress(blob).decode("utf-8", "replace")
             self._dom[page_id] = parse_blocks(html, title)
         return self._dom[page_id]
 
     def block_id(self, page_id: int, ordinal: int) -> int | None:
-        row = self.con.execute("SELECT block_id FROM blocks WHERE page_id = ? AND ordinal = ? ORDER BY ALL",
-                               [page_id, ordinal]).fetchone()
-        return row[0] if row else None
+        found = extract_queries.block_at(self.con, page_id, ordinal)
+        return found.block_id if found else None

@@ -1,4 +1,4 @@
-"""Strukturált adat a renderelt DOM-ból a JSON-LD mellett: microdata és RDFa.
+"""Strukturált adat a renderelt DOM-ból a JSON-LD mellett: microdata, RDFa és Open Graph.
 
 Tiszta függvények, adatbázist nem írnak. A kimenet elemenként egy JSON-objektum a JSON-LD-hez
 hasonló alakban (`@type`, `@id`, a tulajdonságok név szerint; az ismétlődő tulajdonság lista, a
@@ -17,6 +17,10 @@ függetlenül ugyanúgy olvasható legyen.
   A tulajdonság értéke: `typeof`-os elem → objektum; `content`; `href` vagy `src`; `datetime`;
   különben a szöveg. A típusos ős nélküli `property` (pl. az Open Graph `meta` elemei) nem
   RDFa-elem itt.
+- Open Graph: oldalanként egy elem a `head` és a `body` `meta[property]` elemeiből, amelyek
+  neve az Open Graph előtagjaival kezdődik (`OPEN_GRAPH_PREFIXES`: `og:`, `article:`, `book:`,
+  `profile:`, `product:`, `music:`, `video:`); a tulajdonság neve az előtaggal együtt a kulcs, az
+  érték a `content`; az ismétlődő tulajdonság lista; `@type` az `og:type`. Üres `content` kimarad.
 - A `<template>` és a `<noscript>` tartalma kimarad.
 """
 from __future__ import annotations
@@ -32,21 +36,23 @@ _SKIPPED = frozenset({"template", "noscript"})
 _HREF_TAGS = frozenset({"a", "area", "link"})
 _SRC_TAGS = frozenset({"img", "audio", "video", "source", "track", "embed", "iframe"})
 _VALUE_TAGS = frozenset({"data", "meter"})
+OPEN_GRAPH_PREFIXES = ("og:", "article:", "book:", "profile:", "product:", "music:", "video:")
 
 
 @dataclass(frozen=True)
 class StructuredItem:
-    syntax: str                 # microdata | rdfa
+    syntax: str                 # microdata | rdfa | opengraph
     type: str | None            # a típus rövid neve (több típus vesszővel), mint a JSON-LD-nél
     json: str
     ordinal: int
 
 
 def structured_items(tree: HTMLParser) -> tuple[StructuredItem, ...]:
-    """Az oldal microdata- és RDFa-elemei a DOM sorrendjében, előbb a microdata; `ordinal`
-    1-től, a két jelölésen át folyamatosan."""
+    """Az oldal microdata-, RDFa- és Open Graph-elemei: jelölésenként a DOM sorrendjében,
+    előbb a microdata, aztán az RDFa, végül az Open Graph; `ordinal` 1-től, folyamatosan."""
     found: list[tuple[str, dict]] = [("microdata", item) for item in microdata_items(tree)]
     found += [("rdfa", item) for item in rdfa_items(tree)]
+    found += [("opengraph", item) for item in opengraph_items(tree)]
     return tuple(
         StructuredItem(syntax, _short_type(item.get("@type")),
                        json.dumps(item, ensure_ascii=False, sort_keys=True), ordinal)
@@ -62,6 +68,19 @@ def rdfa_items(tree: HTMLParser) -> list[dict]:
     return [_rdfa_item(node) for node in tree.css("[typeof]")
             if not _skipped(node)
             and not ("property" in node.attributes and _has_ancestor(node, "typeof"))]
+
+
+def opengraph_items(tree: HTMLParser) -> list[dict]:
+    item: dict = {}
+    for node in tree.css("meta[property]"):
+        name = (node.attributes.get("property") or "").strip()
+        content = (node.attributes.get("content") or "").strip()
+        if content and name.lower().startswith(OPEN_GRAPH_PREFIXES) and not _skipped(node):
+            _add(item, name, content)
+    if not item:
+        return []
+    kind = item.get("og:type")
+    return [{"@type": kind, **item} if isinstance(kind, str) else item]
 
 
 def _microdata_item(node: Node) -> dict:

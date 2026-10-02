@@ -8,6 +8,8 @@ from collections import Counter, defaultdict
 import duckdb
 
 from aaa2.db.stable_json import dumps
+from aaa2.engine import queries as crawl
+from aaa2.entities import queries as extract_queries
 from aaa2.entities.extract import surface_offsets
 from aaa2.entities.rules import (
     SOURCE_STRENGTH,
@@ -20,7 +22,6 @@ from aaa2.resolver.names import (
     _as_list,
     _catalog_names,
     _exists,
-    _loads,
     _name_like,
     _now,
     _short,
@@ -274,10 +275,9 @@ def _self_nodes(con: duckdb.DuckDBPyConnection, members: list[PageInfo]) -> dict
     types = set(SCHEMA_SELF_TYPES.get(members[0].role, ()))
     if not types:
         return found
-    for page_id, raw in con.execute(
-            "SELECT page_id, json FROM schema_blocks WHERE type IS DISTINCT FROM 'invalid' "
-            "ORDER BY page_id, ordinal").fetchall():
-        for node in _typed_nodes(_loads(raw)):
+    for item in crawl.json_ld(con):
+        page_id = item.page_id
+        for node in _typed_nodes(item.data):
             node_types = {_short(t) for t in _as_list(node.get("@type"))}
             if not node_types & types:
                 continue
@@ -331,9 +331,10 @@ def _packages(ctx: _Context, merger: Merger, run: SiteRun, anchored: dict[str, i
         by_page: dict[int, list[int]] = {}
         nodes = _self_nodes(ctx.con, members)
         for info in members:
-            blocks = ctx.con.execute(
-                "SELECT ordinal, kind, text, cells FROM blocks WHERE page_id = ? "
-                "AND region = 'content' ORDER BY ordinal", [info.page_id]).fetchall()
+            blocks = [(b.ordinal, b.kind, b.text,
+                       json.dumps(b.cells, ensure_ascii=False) if b.cells is not None else None)
+                      for b in extract_queries.page_blocks(ctx.con, info.page_id)
+                      if b.region == "content"]
             ids = []
             primary = info.page_id == representative(members, ctx.site_lang).page_id
             for ordinal, name in pricing_rows(blocks):
@@ -413,12 +414,10 @@ def llm_types(con: duckdb.DuckDBPyConnection) -> dict[tuple[int, int, int, int],
     found: dict[tuple[int, int, int, int], tuple[str, str]] = {}
     if run_id is None:
         return found
-    for page_id, refined, extraction in con.execute(
-            "SELECT page_id, refined, extraction FROM entity_run_pages WHERE run_id = ? "
-            "AND status = 'done' ORDER BY ALL", [run_id]).fetchall():
+    for page_id, refined, extraction in extract_queries.done_run_records(con, run_id):
         record = json.loads(refined or extraction or "{}")
-        blocks = {f"b{ordinal}": (block_id, text) for block_id, ordinal, text in con.execute(
-            "SELECT block_id, ordinal, text FROM blocks WHERE page_id = ? ORDER BY ALL", [page_id]).fetchall()}
+        blocks = {f"b{b.ordinal}": (b.block_id, b.text)
+                  for b in extract_queries.page_blocks(con, page_id)}
         for raw in record.get("entities") or []:
             block = blocks.get(raw.get("block_id"))
             spans = surface_offsets(raw.get("surface_form", ""), block[1]) if block else []
@@ -553,7 +552,7 @@ def _offers(con: duckdb.DuckDBPyConnection, split: dict[int, set[int]]) -> int:
 
 
 def apply_overrides(ctx: _Context, merger: Merger, config: SiteConfig) -> int:
-    """A `config/sites/<domain>.toml` ajánlat-felülbírálatai: a megnevezett (vagy az URL
+    """A `core/sites/<domain>.toml` ajánlat-felülbírálatai: a megnevezett (vagy az URL
     oldalához kötött) entitások egy entitássá olvadnak (`override`), a szintjük a megadott, a
     típusuk service, `part_of` a megadott fő ajánlathoz; a `merge_log` egy `override` sorral
     rögzíti a korábbi típust és szintet. Visszaad: hány felülbírálat talált entitást."""

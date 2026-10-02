@@ -66,6 +66,7 @@ import zstandard
 from selectolax.parser import HTMLParser
 
 from aaa2.db.stable_json import dumps
+from aaa2.engine import queries as crawl
 from aaa2.engine.normalize import page_url
 from aaa2.entities.dom import build_blocks, parse_blocks
 from aaa2.llm.schemas import ENTITY_TYPES
@@ -314,11 +315,8 @@ def run_rules(con: duckdb.DuckDBPyConnection,
     clock = clock or _now
     started = clock()
     mapping = load_schema_types()
-    pages = con.execute(
-        "SELECT page_id, url, title, h1, lang, rendered_html FROM pages "
-        "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL "
-        "ORDER BY page_id"
-    ).fetchall()
+    pages = [(page.page_id, page.url, page.title, page.h1, page.lang,
+              crawl.rendered_html(con, page.page_id)) for page in crawl.rendered_pages(con)]
     page_ids = [row[0] for row in pages]
     build_blocks(con, page_ids)
     block_ids = {(page_id, ordinal): block_id for block_id, page_id, ordinal in con.execute(
@@ -342,7 +340,8 @@ def run_rules(con: duckdb.DuckDBPyConnection,
     _site_names(con, pages, dom, candidates, skipped)
     _anchors(con, page_ids, dom, candidates, skipped, entity_pages)
 
-    site_languages = (con.execute("SELECT languages FROM site ORDER BY ALL").fetchone() or [None])[0] or []
+    site = crawl.site(con)
+    site_languages = (site.languages if site else None) or []
     fallback_lang = _primary(site_languages[0]) if site_languages else None
     keys_of: dict[int, list[tuple[str, str]]] = defaultdict(list)
     unique: dict[int, Candidate] = {}
@@ -454,13 +453,10 @@ def _schema(con, page_ids, dom, mapping, candidates, skipped) -> None:
     unmapped: Counter[str] = Counter()
     nameless: Counter[str] = Counter()
     per_page: dict[tuple[int, str, str], Mention] = {}
-    for page_id, raw in con.execute(
-        "SELECT page_id, json FROM schema_blocks WHERE type IS DISTINCT FROM 'invalid' "
-        "AND list_contains(?, page_id) ORDER BY page_id, ordinal", [page_ids],
-    ).fetchall():
-        try:
-            block = json.loads(raw)
-        except ValueError:
+    wanted = set(page_ids)
+    for item in crawl.json_ld(con):
+        page_id, block = item.page_id, item.data
+        if page_id not in wanted:
             continue
         for node in _typed_nodes(block, SCHEMA_ATTRIBUTES):
             types = [_short_type(t) for t in _as_list(node.get("@type"))]
@@ -611,13 +607,16 @@ def _anchors(con, page_ids, dom, candidates, skipped, entity_pages) -> None:
     occurrences: dict[str, dict[int, Counter[str]]] = defaultdict(lambda: defaultdict(Counter))
     targets: dict[str, set[str]] = defaultdict(set)
     target_pages: dict[str, set[int]] = defaultdict(set)
-    for from_id, anchor, to_url, to_id, from_url, from_lang, to_lang in con.execute(
-        "SELECT l.from_page_id, l.anchor, l.to_url, l.to_page_id, p.url, p.lang, t.lang "
-        "FROM links l JOIN pages p ON p.page_id = l.from_page_id "
-        "LEFT JOIN pages t ON t.page_id = l.to_page_id "
-        "WHERE l.anchor IS NOT NULL AND list_contains(?, l.from_page_id) "
-        "ORDER BY l.from_page_id, l.ordinal", [page_ids],
-    ).fetchall():
+    by_id = {page.page_id: page for page in crawl.pages(con)}
+    wanted = set(page_ids)
+    for link in crawl.links(con):
+        if link.anchor is None or link.from_page_id not in wanted \
+                or link.from_page_id not in by_id:
+            continue
+        from_id, anchor, to_url, to_id = (link.from_page_id, link.anchor, link.to_url,
+                                          link.to_page_id)
+        from_url, from_lang = by_id[from_id].url, by_id[from_id].lang
+        to_lang = by_id[to_id].lang if to_id in by_id else None
         key = alias_key(anchor)
         reason = trivial_anchor(anchor)
         if reason is None:
@@ -674,10 +673,10 @@ def _anchor_mentions(blocks: list, page_id: int, key: str) -> list[Mention]:
 
 def _home_urls(con: duckdb.DuckDBPyConnection) -> set[str]:
     """A `site.home_urls` (a site-profil írja); ha a crawl ennél régebbi, a seed URL."""
-    row = con.execute("SELECT home_urls, seed_url FROM site ORDER BY ALL").fetchone()
-    if row is None:
+    site = crawl.site(con)
+    if site is None:
         return set()
-    return set(row[0]) if row[0] is not None else {row[1]}
+    return set(site.home_urls) if site.home_urls is not None else {site.seed_url}
 
 
 def _language(candidate: Candidate, name: str, page_lang: dict[int, str | None]) -> str | None:

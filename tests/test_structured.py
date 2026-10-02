@@ -10,7 +10,12 @@ from aaa2.db.connect import connect
 from aaa2.engine.crawl import _Run
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.parse import parse_page
-from aaa2.engine.structured import microdata_items, rdfa_items, structured_items
+from aaa2.engine.structured import (
+    microdata_items,
+    opengraph_items,
+    rdfa_items,
+    structured_items,
+)
 from tests.contract_rows import build_all
 
 MICRODATA = """
@@ -83,8 +88,28 @@ def test_structured_items_are_ordered_typed_and_json_ld_is_not_repeated():
     parsed = parse_page(html, "https://pelda.hu/", UrlPolicy.from_seed("https://pelda.hu/"))
     assert parsed.structured_data == items
     assert [b.type for b in parsed.schema_blocks] == ["Service"]        # a JSON-LD külön marad
-    # az Open Graph (típusos ős nélküli property) és a jelölés nélküli oldal nem ad elemet
-    assert structured_items(HTMLParser(f"<html>{OPEN_GRAPH}<body><p>x</p></body></html>")) == ()
+    # a jelölés nélküli oldal nem ad elemet
+    assert structured_items(HTMLParser("<html><body><p>x</p></body></html>")) == ()
+
+
+def test_open_graph_is_one_item_per_page_with_repeated_properties_as_lists():
+    head = ('<head><meta property="og:title" content="Cím"><meta property="og:type" '
+            'content="article"><meta property="og:image" content="/a.jpg"><meta property='
+            '"og:image" content="/b.jpg"><meta property="article:author" content="Kiss Anna">'
+            '<meta property="og:description" content=""><meta property="fb:app_id" content="1">'
+            '<meta name="twitter:card" content="summary"></head>')
+    tree = HTMLParser(f"<html>{head}<body>{RDFA}</body></html>")
+    assert opengraph_items(tree) == [
+        {"@type": "article", "og:title": "Cím", "og:type": "article",
+         "og:image": ["/a.jpg", "/b.jpg"], "article:author": "Kiss Anna"}]
+    items = structured_items(tree)
+    assert [(i.syntax, i.type, i.ordinal) for i in items] == [
+        ("rdfa", "Person", 1), ("rdfa", "Article,Document", 2), ("opengraph", "article", 3)]
+    assert opengraph_items(HTMLParser("<html><head></head><body></body></html>")) == []
+    # típus nélküli Open Graph: az elem megvan, típus nélkül
+    untyped = structured_items(HTMLParser(
+        '<html><head><meta property="og:title" content="x"></head></html>'))
+    assert [(i.syntax, i.type) for i in untyped] == [("opengraph", None)]
 
 
 def test_the_crawl_stores_structured_data_and_the_contract_reads_both_tables():

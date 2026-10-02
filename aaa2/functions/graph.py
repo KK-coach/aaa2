@@ -84,9 +84,12 @@ from urllib.parse import urljoin, urlsplit
 import duckdb
 
 from aaa2.db.stable_json import dumps
+from aaa2.engine import queries as crawl
+from aaa2.entities import queries as extract_queries
 from aaa2.entities.gate import occurs
 from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import alias_key
+from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.names import normal_key
 from aaa2.resolver.pages import PageInfo, home_urls, page_roles, page_types, page_url, support_url
 from aaa2.resolver.pages import schema_nodes as page_schema_nodes
@@ -255,9 +258,9 @@ class _Graph:
         for page_id, info in self.roles.items():
             self.groups[info.group].append(page_id)
         self.urls = {info.page_id: info.url for info in self.roles.values()}
-        self.alternates = {page_id: {page_url(entry.split("|", 1)[-1]) for entry in hreflang or []}
-                           for page_id, hreflang in con.execute(
-                               "SELECT page_id, hreflang FROM pages ORDER BY ALL").fetchall()}
+        self.alternates = {meta.page_id: {page_url(entry.split("|", 1)[-1])
+                                          for entry in meta.hreflang}
+                           for meta in crawl.page_metas(con)}
         self.page_of_url = {page_url(info.url): info.page_id for info in self.roles.values()}
         rows = con.execute("SELECT entity_id, name, type, subtype, aliases, flags, role, "
                            "anchor_page_id, wikidata_id, wikidata_status FROM entities ORDER BY ALL"
@@ -273,8 +276,8 @@ class _Graph:
         for entity_id, name, *_, aliases in [(r[0], r[1], r[4]) for r in rows]:
             for form in [name, *(aliases or [])]:
                 self._index(entity_id, form)
-        for entity_id, alias in con.execute("SELECT entity_id, alias FROM entity_aliases ORDER BY ALL"
-                                            ).fetchall():
+        for entity_id, alias in sorted({(a.entity_id, a.alias)
+                                        for a in resolver_queries.aliases(con)}):
             if entity_id in self.entities:
                 self._index(entity_id, alias)
         self.mentions: dict[int, list[tuple]] = defaultdict(list)
@@ -291,17 +294,17 @@ class _Graph:
         self.primary = self._primary()
         self.inbound: dict[int, list[tuple[int, str, bool]]] = defaultdict(list)
         self.outbound: dict[int, list[tuple[int, str]]] = defaultdict(list)
-        for from_id, to_id, anchor, position in con.execute(
-                "SELECT from_page_id, to_page_id, anchor, position FROM links "
-                "WHERE to_page_id IS NOT NULL ORDER BY ALL").fetchall():
+        for from_id, to_id, anchor, position in sorted(
+                ((link.from_page_id, link.to_page_id, link.anchor, link.position)
+                 for link in crawl.links(con) if link.to_page_id is not None),
+                key=lambda row: (row[0], row[1], row[2] is None, row[2] or "", row[3])):
             if from_id in self.roles and to_id in self.roles \
                     and self.roles[from_id].group != self.roles[to_id].group:
                 self.inbound[to_id].append((from_id, anchor or "", position == "body"))
                 self.outbound[from_id].append((to_id, alias_key(anchor or "")))
         self.texts: dict[int, list[str]] = defaultdict(list)
-        for page_id, text in con.execute(
-                "SELECT page_id, text FROM blocks WHERE region = 'content' AND kind IN "
-                "('heading', 'paragraph') ORDER BY page_id, ordinal").fetchall():
+        for page_id, text in [(b.page_id, b.text) for b in extract_queries.blocks(con)
+                              if b.region == "content" and b.kind in ("heading", "paragraph")]:
             if alias_key(text or ""):
                 self.texts[page_id].append(alias_key(text))
         self.articles = {e for e, row in self.entities.items() if row[7] is not None
@@ -315,11 +318,13 @@ class _Graph:
         """A canonical szerinti duplikátumok (a láncot az eredetiig követve) és a canonical
         nélküli döntés okai (`CANONICAL_ISSUES`)."""
         node = {canonical_key(info.url): page_id for page_id, info in self.roles.items()}
-        status = {canonical_key(url): code for url, code in self.con.execute(
-            "SELECT url, status FROM pages ORDER BY ALL").fetchall()}
+        status = {canonical_key(url): code for url, code in sorted(
+            ((page.url, page.status) for page in crawl.pages(self.con)),
+            key=lambda row: (row[0], row[1] is None, row[1] or 0))}
         declared: dict[int, int] = {}
-        for page_id, canonical in self.con.execute(
-                "SELECT page_id, canonical FROM pages WHERE canonical IS NOT NULL ORDER BY ALL").fetchall():
+        for page_id, canonical in [(meta.page_id, meta.canonical)
+                                   for meta in crawl.page_metas(self.con)
+                                   if meta.canonical is not None]:
             if page_id not in self.roles:
                 continue
             target = canonical_key(urljoin(self.roles[page_id].url, canonical))
@@ -666,13 +671,13 @@ def _edges(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig,
              for (article, topic), evidence in sorted(about.items())]
     rows += [(kind, source, "entity", offer, "supports", "schema_about", evidence, None)
              for (kind, source, offer), evidence in sorted(supports.items())]
-    for from_id, to_id, kind, source, evidence in con.execute(
-            "SELECT from_id, to_id, type, source, evidence FROM entity_relations "
-            "ORDER BY type, from_id, to_id").fetchall():
+    for from_id, to_id, kind, source, evidence in [
+            (r.from_id, r.to_id, r.type, r.source, r.evidence)
+            for r in resolver_queries.relations(con)]:
         if from_id in graph.excluded or to_id in graph.excluded \
                 or from_id not in graph.entities or to_id not in graph.entities:
             continue
-        detail = json.loads(evidence) if evidence else None
+        detail = None if evidence in (None, "") else evidence
         if kind == "in_category":
             rows.append(("entity", from_id, "entity", to_id, "is_a", "category_page", detail,
                          None))
