@@ -40,6 +40,7 @@ import duckdb
 
 from aaa2.engine import queries as crawl
 from aaa2.engine.normalize import page_url
+from aaa2.entities import queries as extract_queries
 
 ENTITY_ROLES = ("offer", "product", "component", "article")
 ROLE_TYPE = {"offer": ("service", None), "product": ("product", None),
@@ -98,9 +99,8 @@ def page_roles(con: duckdb.DuckDBPyConnection) -> dict[int, PageInfo]:
             for page in crawl.rendered_pages(con)]
     homes = {page_url(u) for u in home_urls(con)}
     nodes = schema_nodes(con)
-    code_pages = {page_id for (page_id,) in con.execute(
-        "SELECT DISTINCT page_id FROM blocks WHERE kind = 'code' AND region = 'content' ORDER BY ALL"
-    ).fetchall()}
+    code_pages = {b.page_id for b in extract_queries.blocks(con)
+                  if b.kind == "code" and b.region == "content"}
     groups = {page_id: group_key(url, hreflang) for page_id, url, _, _, _, hreflang in rows}
     site_pages = {page_url(url) for _, url, _, _, _, _ in rows}
     linkers: dict[str, set[str]] = defaultdict(set)

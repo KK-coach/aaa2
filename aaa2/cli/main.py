@@ -34,6 +34,7 @@ from aaa2.llm import calls as llm_calls
 from aaa2.llm import ledger
 from aaa2.llm.client import Retry, check_models, open_clients
 from aaa2.llm.config import PIPELINE_OFF, load_config, load_site_credentials
+from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.knowledge import link_entities
 from aaa2.resolver.overrides import load_site_config
 from aaa2.resolver.pages import entity_page_ids, page_roles
@@ -486,9 +487,7 @@ def validate(
                f"{run.mismatches}")
     for name, before, after in run.type_changes:
         typer.echo(f"    {name}: {before} → {after}")
-    (kg_today,) = con.execute(
-        "SELECT count(*) FROM validation_calls WHERE service = 'kg' AND "
-        "CAST(called_at AS DATE) = current_date ORDER BY ALL").fetchone()
+    kg_today = resolver_queries.kg_calls_today(con)
     typer.echo(
         f"  API-hívás: KG {run.calls.get('kg', 0)}, Wikipedia {run.calls.get('wikipedia', 0)}; "
         f"cache: site {run.cache_site}, shared {run.cache_shared}; hiba: "

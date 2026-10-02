@@ -89,6 +89,7 @@ from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
 from aaa2.functions import graph_queries
 from aaa2.functions.graph import evidence_text
+from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.names import normal_key
 
 TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
@@ -184,8 +185,8 @@ class _Site:
             "SELECT entity_id, name, type, subtype, aliases, anchor_page_id, role, source "
             "FROM entities ORDER BY ALL").fetchall()}
         self.alias_sources: dict[int, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
-        for entity_id, alias, source in con.execute(
-                "SELECT entity_id, alias, source FROM entity_aliases ORDER BY ALL").fetchall():
+        for entity_id, alias, source in [(a.entity_id, a.alias, a.source)
+                                         for a in resolver_queries.aliases(con)]:
             self.alias_sources[entity_id][alias].add(source)
         self.chosen: dict[int, list[tuple]] = defaultdict(list)     # oldal → (entitás, szerep, …)
         for chosen in graph_queries.main_entities(con):

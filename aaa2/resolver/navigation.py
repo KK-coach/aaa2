@@ -5,6 +5,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 
 from aaa2.engine import queries as crawl
+from aaa2.entities import queries as extract_queries
 from aaa2.entities.rules import (
     alias_key,
     find_name,
@@ -113,10 +114,11 @@ def _anchor_blocks(ctx: _Context, anchors: list) -> Iterable[tuple[int, int, str
 
 
 def _page_mentions(ctx: _Context, entity_id: int, info: PageInfo, names: list[Name]) -> None:
-    for ordinal, kind, level, text in ctx.con.execute(
-            "SELECT b.ordinal, b.kind, b.level, b.text FROM blocks b WHERE b.page_id = ? "
-            "AND b.region = 'content' AND (b.kind = 'title' OR (b.kind = 'heading' "
-            "AND b.level = 1)) ORDER BY b.ordinal", [info.page_id]).fetchall():
+    for ordinal, kind, text in [
+            (b.ordinal, b.kind, b.text)
+            for b in extract_queries.page_blocks(ctx.con, info.page_id)
+            if b.region == "content"
+            and (b.kind == "title" or (b.kind == "heading" and b.level == 1))]:
         position = "title" if kind == "title" else "h1"
         candidates = sorted({n.text for n in names}, key=len, reverse=True)
         target = next((c for c in candidates if find_name(text, alias_key(c))), None)
@@ -128,10 +130,10 @@ def _add_mention(ctx: _Context, entity_id: int, page_id: int, ordinal: int, name
                  position: str) -> int:
     """Egy említés a blokkban a név helyén (source = rule, a site-futás); visszaad: 1, ha új
     forrás került be."""
-    block = ctx.con.execute("SELECT block_id, text FROM blocks WHERE page_id = ? AND ordinal = ? ORDER BY ALL",
-                            [page_id, ordinal]).fetchone()
-    if block is None:
+    found = extract_queries.block_at(ctx.con, page_id, ordinal)
+    if found is None:
         return 0
+    block = (found.block_id, found.text)
     span = find_name(block[1], alias_key(name))
     if span is None:
         return 0

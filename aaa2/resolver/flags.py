@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 
 import duckdb
 
+from aaa2.entities import queries as extract_queries
 from aaa2.entities.rules import (
     alias_key,
 )
@@ -61,9 +62,8 @@ def _template(ctx: _Context, run: SiteRun) -> None:
                           template_min_share=TEMPLATE_MIN_SHARE, template_groups=total,
                           template_needed=needed)
     unit_groups: dict[tuple[str, str], set[str]] = defaultdict(set)
-    for page_id, kind, text in con.execute(
-            "SELECT page_id, kind, text FROM blocks WHERE region = 'content' "
-            "AND kind <> 'title' ORDER BY ALL").fetchall():
+    for page_id, kind, text in [(b.page_id, b.kind, b.text) for b in extract_queries.blocks(con)
+                                if b.region == "content" and b.kind != "title"]:
         if page_id in groups:
             for line in (text.split("\n") if kind == "code" else [text]):
                 unit_groups[(kind, alias_key(line))].add(groups[page_id])

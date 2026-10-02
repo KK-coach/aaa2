@@ -85,9 +85,11 @@ import duckdb
 
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
+from aaa2.entities import queries as extract_queries
 from aaa2.entities.gate import occurs
 from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import alias_key
+from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.names import normal_key
 from aaa2.resolver.pages import PageInfo, home_urls, page_roles, page_types, page_url, support_url
 from aaa2.resolver.pages import schema_nodes as page_schema_nodes
@@ -274,8 +276,8 @@ class _Graph:
         for entity_id, name, *_, aliases in [(r[0], r[1], r[4]) for r in rows]:
             for form in [name, *(aliases or [])]:
                 self._index(entity_id, form)
-        for entity_id, alias in con.execute("SELECT entity_id, alias FROM entity_aliases ORDER BY ALL"
-                                            ).fetchall():
+        for entity_id, alias in sorted({(a.entity_id, a.alias)
+                                        for a in resolver_queries.aliases(con)}):
             if entity_id in self.entities:
                 self._index(entity_id, alias)
         self.mentions: dict[int, list[tuple]] = defaultdict(list)
@@ -301,9 +303,8 @@ class _Graph:
                 self.inbound[to_id].append((from_id, anchor or "", position == "body"))
                 self.outbound[from_id].append((to_id, alias_key(anchor or "")))
         self.texts: dict[int, list[str]] = defaultdict(list)
-        for page_id, text in con.execute(
-                "SELECT page_id, text FROM blocks WHERE region = 'content' AND kind IN "
-                "('heading', 'paragraph') ORDER BY page_id, ordinal").fetchall():
+        for page_id, text in [(b.page_id, b.text) for b in extract_queries.blocks(con)
+                              if b.region == "content" and b.kind in ("heading", "paragraph")]:
             if alias_key(text or ""):
                 self.texts[page_id].append(alias_key(text))
         self.articles = {e for e, row in self.entities.items() if row[7] is not None
@@ -670,13 +671,13 @@ def _edges(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig,
              for (article, topic), evidence in sorted(about.items())]
     rows += [(kind, source, "entity", offer, "supports", "schema_about", evidence, None)
              for (kind, source, offer), evidence in sorted(supports.items())]
-    for from_id, to_id, kind, source, evidence in con.execute(
-            "SELECT from_id, to_id, type, source, evidence FROM entity_relations "
-            "ORDER BY type, from_id, to_id").fetchall():
+    for from_id, to_id, kind, source, evidence in [
+            (r.from_id, r.to_id, r.type, r.source, r.evidence)
+            for r in resolver_queries.relations(con)]:
         if from_id in graph.excluded or to_id in graph.excluded \
                 or from_id not in graph.entities or to_id not in graph.entities:
             continue
-        detail = json.loads(evidence) if evidence else None
+        detail = None if evidence in (None, "") else evidence
         if kind == "in_category":
             rows.append(("entity", from_id, "entity", to_id, "is_a", "category_page", detail,
                          None))
