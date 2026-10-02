@@ -21,6 +21,7 @@ from aaa2.engine.crawl import CrawlOptions, run_crawl
 from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
+from aaa2.entities import store
 from aaa2.entities.dom import build_blocks
 from aaa2.entities.extract import Worker, estimate_llm, input_models, run_llm
 from aaa2.entities.gate import KnowledgeBase
@@ -309,8 +310,7 @@ def entities(
             f"SELECT {ENTITY_RUN_COLUMNS} FROM entity_runs WHERE run_id = ?", [run_id]
         ).fetchone()
         typer.echo(_entity_run_line(*entity_run))
-        for reason, value in json.loads(con.execute(
-                "SELECT skipped FROM entity_runs WHERE run_id = ? ORDER BY ALL", [run_id]).fetchone()[0]
+        for reason, value in json.loads(store.entity_runs_for_entities(con, run_id)[0]
                 ).items():
             shown = (", ".join(f"{k} {v}" for k, v in list(value.items())[:8])
                      if isinstance(value, dict) else ", ".join(value)
@@ -327,11 +327,7 @@ def entities(
                    f"valószínű {linked.probable}, nincs {linked.none}; összevonás "
                    f"{linked.merged}; hibás lekérdezés miatt ellenőrizetlen {linked.errors}; "
                    f"technológiai osztály → tech {linked.retyped}")
-    for kind, count, rows in con.execute(
-        "SELECT e.type, count(DISTINCT e.entity_id), count(*) FROM entities e "
-        "JOIN page_entities pe USING (entity_id) "
-        "GROUP BY e.type ORDER BY count(DISTINCT e.entity_id) DESC, e.type"
-    ).fetchall():
+    for kind, count, rows in store.entities_for_entities(con):
         typer.echo(f"  {kind}: {count} entitás, {rows} sor")
 
 

@@ -25,6 +25,7 @@ import duckdb
 
 from aaa2.engine import queries as crawl
 from aaa2.entities import queries as extract_queries
+from aaa2.entities import store
 from aaa2.entities.extract import run_call_ids
 from aaa2.entities.gate import occurs
 from aaa2.llm import calls as llm_calls
@@ -45,16 +46,12 @@ def wikipedia_url(value: str | None) -> str:
 
 
 def entity_table(con: duckdb.DuckDBPyConnection) -> list[dict]:
-    mentions = con.execute(
-        "SELECT pe.entity_id, pe.page_id, b.kind, b.region FROM page_entities pe "
-        "LEFT JOIN blocks b USING (block_id) ORDER BY ALL").fetchall()
+    mentions = store.page_entities_for_entity_table(con)
     chrome: dict[int, list[str]] = defaultdict(list)
     for found in extract_queries.blocks(con):
         if found.region == "chrome":
             chrome[found.page_id].append(found.text)
-    converted = dict(con.execute(
-        "SELECT entity_id, count(DISTINCT page_id) FROM soft_checks WHERE type = 'concept' "
-        "AND type_changed_from = 'service' AND entity_id IS NOT NULL GROUP BY 1 ORDER BY ALL").fetchall())
+    converted = dict(store.soft_checks_for_entity_table(con))
     pages: dict[int, set[int]] = defaultdict(set)
     count: Counter[int] = Counter()
     places: dict[int, dict[str, set[int]]] = defaultdict(lambda: defaultdict(set))
@@ -67,10 +64,7 @@ def entity_table(con: duckdb.DuckDBPyConnection) -> list[dict]:
     rows = []
     urls = {page.page_id: page.url for page in crawl.pages(con)}
     for entity_id, name, kind, subtype, tier, flags, source, anchor_id, qid, status, wiki in \
-            con.execute(
-                "SELECT e.entity_id, e.name, e.type, e.subtype, e.tier, e.flags, e.source, "
-                "e.anchor_page_id, e.wikidata_id, e.wikidata_status, e.wikipedia FROM entities e "
-                "ORDER BY e.entity_id").fetchall():
+            store.entities_for_entity_table(con):
         anchor = urls.get(anchor_id)
         if entity_id not in pages:
             continue
@@ -103,10 +97,7 @@ def write_entity_table(con: duckdb.DuckDBPyConnection, path: Path) -> int:
 
 
 def _latest(con: duckdb.DuckDBPyConnection, method: str) -> tuple | None:
-    return con.execute(
-        "SELECT run_id, model, started_at, finished_at, seconds, pages, llm_calls, cost_usd, "
-        "skipped FROM entity_runs WHERE method = ? ORDER BY run_id DESC LIMIT 1",
-        [method]).fetchone()
+    return store.entity_runs_for_latest(con, method)
 
 
 def _money(value: float | None) -> str:
@@ -172,24 +163,15 @@ def run_report(con: duckdb.DuckDBPyConnection, label: str,
 
 
 def _entities_section(con: duckdb.DuckDBPyConnection) -> list[str]:
-    rows = con.execute(
-        "SELECT e.type, count(DISTINCT e.entity_id), count(*), count(DISTINCT pe.page_id), "
-        "count(DISTINCT e.entity_id) FILTER (WHERE e.wikidata_id IS NOT NULL), "
-        "count(DISTINCT e.entity_id) FILTER (WHERE e.wikipedia IS NOT NULL) "
-        "FROM entities e JOIN page_entities pe USING (entity_id) GROUP BY e.type "
-        "ORDER BY count(DISTINCT e.entity_id) DESC, e.type").fetchall()
+    rows = store.entities_for_entities_section(con)
     lines = ["## Entitások típusonként", "",
              "| típus | entitás | említés | oldal | Wikidata | Wikipedia |", "|---|---|---|---|---|---|"]
     lines += [f"| {kind} | {entities} | {mentions} | {pages} | {qid} | {wiki} |"
               for kind, entities, mentions, pages, qid, wiki in rows]
     total = [sum(r[i] for r in rows) for i in (1, 2, 4, 5)]
     lines.append(f"| **összesen** | {total[0]} | {total[1]} | — | {total[2]} | {total[3]} |")
-    by_source = con.execute(
-        "SELECT source, count(DISTINCT entity_id) FROM entities WHERE entity_id IN "
-        "(SELECT entity_id FROM page_entities) GROUP BY source ORDER BY source").fetchall()
-    (unchecked,) = con.execute(
-        "SELECT count(*) FROM entities WHERE knowledge_checked_at IS NULL AND entity_id IN "
-        "(SELECT entity_id FROM page_entities) ORDER BY ALL").fetchone()
+    by_source = store.entities_for_entities_section_2(con)
+    (unchecked,) = store.entities_for_entities_section_3(con)
     lines += ["", "Forrás szerint: " + (", ".join(f"{s} {n}" for s, n in by_source) or "—")
               + f"; tudásbázis-ellenőrzés nélkül: {unchecked}", ""]
     return lines
@@ -200,14 +182,9 @@ def _site_section(con: duckdb.DuckDBPyConnection) -> list[str]:
     if run is None:
         return []
     detail = json.loads(run[8] or "{}")
-    tiers = dict(con.execute(
-        "SELECT tier, count(*) FROM entities WHERE tier IS NOT NULL GROUP BY tier ORDER BY ALL").fetchall())
-    anchored = con.execute(
-        "SELECT e.type, coalesce(e.subtype, ''), count(*) FROM entities e "
-        "WHERE e.anchor_page_id IS NOT NULL GROUP BY ALL ORDER BY ALL").fetchall()
-    flags = dict(con.execute(
-        "SELECT flag, count(*) FROM (SELECT unnest(flags) AS flag FROM entities) "
-        "GROUP BY flag ORDER BY ALL").fetchall())
+    tiers = dict(store.entities_for_site_section_2(con))
+    anchored = store.entities_for_site_section(con)
+    flags = dict(store.entities_for_site_section_3(con))
     merges = resolver_queries.merge_counts(con, run[0])
     relations = resolver_queries.relation_counts(con)
     thresholds = detail.get("thresholds", {})
@@ -229,18 +206,8 @@ def _site_section(con: duckdb.DuckDBPyConnection) -> list[str]:
 
 
 def _soft_section(con: duckdb.DuckDBPyConnection) -> list[str]:
-    services = con.execute(
-        "SELECT count(*), count(*) FILTER (WHERE kept), "
-        "count(*) FILTER (WHERE structure IS NULL OR structure = 'anchor'), "
-        "count(*) FILTER (WHERE sol = false), count(*) FILTER (WHERE sol IS NULL AND kept), "
-        "count(DISTINCT lower(canonical)) FILTER (WHERE kept) "
-        "FROM soft_checks WHERE type = 'service' ORDER BY ALL").fetchone()
-    concepts = con.execute(
-        "SELECT count(*), count(DISTINCT entity_id), count(*) FILTER (WHERE prominent), "
-        "count(*) FILTER (WHERE structure IS NOT NULL), count(*) FILTER (WHERE blocks >= 2), "
-        "count(*) FILTER (WHERE knowledge IS NOT NULL), count(DISTINCT page_id), "
-        "count(*) FILTER (WHERE type_changed_from = 'service') "
-        "FROM soft_checks WHERE type = 'concept' ORDER BY ALL").fetchone()
+    services = store.soft_checks_for_soft_section(con)
+    concepts = store.soft_checks_for_soft_section_2(con)
     total, kept, no_place, vetoed, unanswered, distinct = services
     c_total, c_entities, prominent, placed, repeated, known, c_pages, converted = concepts
     return [

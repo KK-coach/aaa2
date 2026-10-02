@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 
 import duckdb
 
+from aaa2.entities import store
 from aaa2.entities.rules import (
     TITLE_SEPARATORS,
     alias_key,
@@ -175,8 +176,7 @@ def _line(text: str, start: int | None) -> str:
 
 
 def _exists(con: duckdb.DuckDBPyConnection, entity_id: int) -> bool:
-    return con.execute("SELECT count(*) FROM entities WHERE entity_id = ? ORDER BY ALL",
-                       [entity_id]).fetchone()[0] > 0
+    return store.entities_for_exists(con, entity_id)[0] > 0
 
 
 def _typed_nodes(value: object) -> Iterable[dict]:

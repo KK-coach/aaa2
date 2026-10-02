@@ -42,6 +42,7 @@ from urllib.parse import quote
 import duckdb
 import httpx
 
+from aaa2.entities import store
 from aaa2.entities.rules import alias_key
 from aaa2.llm.client import ENV_PATH, Retry, api_key
 from aaa2.llm.schemas import ENTITY_TYPES
@@ -131,11 +132,7 @@ def concept_status(kg: KGMatch, wiki_own: bool | None) -> str | None:
 
 def navigational_concepts(con: duckdb.DuckDBPyConnection) -> set[int]:
     """A conceptek, amelyeknek minden `page_entities` sora anchor vagy title."""
-    return {entity_id for (entity_id,) in con.execute(
-        "SELECT pe.entity_id FROM page_entities pe JOIN entities e USING (entity_id) "
-        "WHERE e.type = 'concept' GROUP BY pe.entity_id "
-        "HAVING bool_and(list_contains(?, pe.position)) ORDER BY ALL", [list(NAVIGATIONAL_POSITIONS)],
-    ).fetchall()}
+    return {entity_id for (entity_id,) in store.page_entities_for_navigational_concepts(con, list(NAVIGATIONAL_POSITIONS))}
 
 
 def decide_type(current: str, suggested: str | None, kg: KGMatch | None
@@ -311,10 +308,7 @@ def validate_entities(con: duckdb.DuckDBPyConnection,
     try:
         for entity_id, name, kind, suggested, aliases, lang in rows:
             if entity_id in navigational:
-                con.execute(
-                    "UPDATE entities SET kg_status = 'stub', kg_reason = 'navigational', "
-                    "kg_id = NULL, kg_type = NULL, kg_type_mismatch = NULL, wikipedia_url = NULL, "
-                    "validated_at = ? WHERE entity_id = ?", [clock(), entity_id])
+                store.update_entities_in_validate_entities_2(con, clock(), entity_id)
                 continue
             keys = {alias_key(n) for n in [name, *(aliases or [])]}
             langs = [lang, "en"] if lang and lang != "en" else ["en"]
@@ -350,18 +344,11 @@ def validate_entities(con: duckdb.DuckDBPyConnection,
                 mismatches += mismatch
                 if changed_from:
                     changes.append((name, changed_from, new_type))
-                con.execute(
-                    "UPDATE entities SET kg_status = ?, kg_reason = NULL, kg_id = ?, kg_type = ?, "
-                    "kg_type_mismatch = ?, type = ?, type_changed_from = coalesce(?, "
-                    "type_changed_from) WHERE entity_id = ?",
-                    [kg.status, kg.kg_id, kg.kg_type, mismatch, new_type, changed_from,
-                     entity_id])
+                store.update_entities_in_validate_entities_3(con, kg.status, kg.kg_id, kg.kg_type, mismatch, new_type, changed_from, entity_id)
             if wiki_ok or url:
                 found += url is not None
-                con.execute("UPDATE entities SET wikipedia_url = ? WHERE entity_id = ?",
-                            [url, entity_id])
-            con.execute("UPDATE entities SET validated_at = ? WHERE entity_id = ?",
-                        [clock(), entity_id])
+                store.update_entities_in_validate_entities_4(con, url, entity_id)
+            store.update_entities_in_validate_entities(con, clock(), entity_id)
     finally:
         if own_http:
             http.close()

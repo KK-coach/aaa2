@@ -85,6 +85,7 @@ import duckdb
 
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
+from aaa2.entities import store
 from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
 from aaa2.functions import graph_queries
@@ -181,9 +182,7 @@ class _Site:
             if row[0] in noindex}
         self.entities = {row[0]: dict(zip(
             ("entity_id", "name", "type", "subtype", "aliases", "anchor", "role", "source"),
-            row, strict=True)) for row in con.execute(
-            "SELECT entity_id, name, type, subtype, aliases, anchor_page_id, role, source "
-            "FROM entities ORDER BY ALL").fetchall()}
+            row, strict=True)) for row in store.entities_for_site___init__(con)}
         self.alias_sources: dict[int, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
         for entity_id, alias, source in [(a.entity_id, a.alias, a.source)
                                          for a in resolver_queries.aliases(con)]:

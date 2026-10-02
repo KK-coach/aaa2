@@ -30,6 +30,7 @@ from datetime import datetime
 import duckdb
 
 from aaa2.engine import queries as crawl
+from aaa2.entities import store
 from aaa2.entities.gate import KnowledgeBase, base_language
 from aaa2.resolver.merge import Merger, _entity_rows, _mergeable, _rank, resolve
 
@@ -82,11 +83,7 @@ def clear_person_links(con: duckdb.DuckDBPyConnection,
                        clock: Callable[[], datetime]) -> int:
     """A személyek automatikus Wikidata- és Wikipedia-kapcsolása ki van kapcsolva: a meglévő
     linkjük törlődik, a státuszuk none. Visszaad: hány személy változott."""
-    rows = con.execute(
-        "UPDATE entities SET wikidata_id = NULL, wikipedia = NULL, wikidata_status = 'none', "
-        "knowledge_checked_at = coalesce(knowledge_checked_at, ?) WHERE type = 'person' "
-        "AND (wikidata_id IS NOT NULL OR wikipedia IS NOT NULL OR wikidata_status IS NULL) "
-        "RETURNING entity_id", [clock()]).fetchall()
+    rows = store.update_entities_in_clear_person_links(con, clock())
     return len(rows)
 
 
@@ -112,10 +109,7 @@ def link_entities(con: duckdb.DuckDBPyConnection, knowledge: KnowledgeBase,
     site = crawl.site(con)
     site_langs = [base_language(code) for code in (site.languages if site else None) or []]
     short: list[tuple[int, str, list[str]]] = []
-    rows = con.execute(
-        "SELECT entity_id, name, type, subtype, lang, flags FROM entities "
-        "WHERE wikidata_status IS NULL AND entity_id IN (SELECT entity_id FROM page_entities) "
-        "ORDER BY entity_id").fetchall()
+    rows = store.entities_for_link_entities(con)
     counts = defaultdict(int)
     for entity_id, name, kind, subtype, lang, flags in rows:
         codes = list(dict.fromkeys([base_language(lang or site_lang), base_language(site_lang),
@@ -155,10 +149,7 @@ def link_entities(con: duckdb.DuckDBPyConnection, knowledge: KnowledgeBase,
 def retype_tech_classes(con: duckdb.DuckDBPyConnection) -> int:
     """A biztos QID-jű fogalom, amely technológiai osztály (`TECH_CLASSES`), tech típust kap;
     a korábbi típus a `type_changed_from`-ban. Visszaad: hány entitás változott."""
-    return len(con.execute(
-        "UPDATE entities SET type = 'tech', type_changed_from = type WHERE type = 'concept' "
-        "AND wikidata_status = 'confident' AND list_contains(?, wikidata_id) "
-        "RETURNING entity_id", [sorted(TECH_CLASSES)]).fetchall())
+    return len(store.update_entities_in_retype_tech_classes(con, sorted(TECH_CLASSES)))
 
 
 def _ambiguous(knowledge: KnowledgeBase, kind: str, hit: dict) -> bool:
@@ -182,13 +173,10 @@ def _corroborated(con: duckdb.DuckDBPyConnection, knowledge: KnowledgeBase,
     """A `MIN_NAME_CHARS`-nál rövidebb nevű entitás önmagában nem kap linket; ha a pontos
     címke- vagy alias-találata ugyanaz a QID, amelyet egy azonos típusú, hosszabb nevű entitás
     biztosan (confident) kapott, ahhoz olvad (`wikidata_short_name`). (rövid, cél, QID)."""
-    confident = {(kind, qid): entity_id for entity_id, kind, qid in con.execute(
-        "SELECT entity_id, type, wikidata_id FROM entities WHERE wikidata_status = "
-        "'confident' ORDER BY entity_id").fetchall()}
+    confident = {(kind, qid): entity_id for entity_id, kind, qid in store.entities_for_corroborated_2(con)}
     pairs = []
     for entity_id, name, codes in short:
-        (kind,) = con.execute("SELECT type FROM entities WHERE entity_id = ? ORDER BY ALL",
-                              [entity_id]).fetchone()
+        (kind,) = store.entities_for_corroborated(con, entity_id)
         hit = next((found for code in codes if (found := knowledge.wikidata(name, code))), None)
         if hit is not None and (kind, hit["id"]) in confident                 and not _ambiguous(knowledge, kind, hit):
             pairs.append((entity_id, confident[(kind, hit["id"])], hit["id"]))
@@ -197,9 +185,7 @@ def _corroborated(con: duckdb.DuckDBPyConnection, knowledge: KnowledgeBase,
 
 def _store(con: duckdb.DuckDBPyConnection, entity_id: int, qid: str | None, wiki: str | None,
            status: str, clock: Callable[[], datetime]) -> None:
-    con.execute("UPDATE entities SET wikidata_id = ?, wikipedia = ?, wikidata_status = ?, "
-                "knowledge_checked_at = ? WHERE entity_id = ?",
-                [qid, wiki, status, clock(), entity_id])
+    store.update_entities_in_store(con, qid, wiki, status, clock(), entity_id)
 
 
 def _merge_confident(con: duckdb.DuckDBPyConnection, clock: Callable[[], datetime],
@@ -207,14 +193,12 @@ def _merge_confident(con: duckdb.DuckDBPyConnection, clock: Callable[[], datetim
     """Az azonos típusú, azonos biztos QID-jű entitások összevonása, és a megerősített rövid
     nevek (`short`) beolvasztása, a legutóbbi site-körhöz kötött `merge_log`-gal; ha nincs
     site-kör, nincs összevonás."""
-    run = con.execute("SELECT max(run_id) FROM entity_runs WHERE method = 'site' ORDER BY ALL").fetchone()[0]
+    run = store.entity_runs_for_merge_confident(con)[0]
     if run is None:
         return 0
     merger = Merger(con, run, clock)
     groups: dict[tuple[str, str], list[int]] = defaultdict(list)
-    for entity_id, kind, qid in con.execute(
-            "SELECT entity_id, type, wikidata_id FROM entities WHERE wikidata_status = "
-            "'confident' AND wikidata_id IS NOT NULL ORDER BY entity_id").fetchall():
+    for entity_id, kind, qid in store.entities_for_merge_confident(con):
         groups[(kind, qid)].append(entity_id)
     rows = _entity_rows(con)
     for (kind, qid), ids in sorted(groups.items()):

@@ -9,6 +9,7 @@ import duckdb
 
 from aaa2.db.stable_json import dumps
 from aaa2.entities import queries as extract_queries
+from aaa2.entities import store
 from aaa2.entities.rules import (
     SOURCE_STRENGTH,
     alias_key,
@@ -55,27 +56,16 @@ class Merger:
         if keep == remove:
             return
         con = self.con
-        kept = con.execute("SELECT name, aliases, source FROM entities WHERE entity_id = ? ORDER BY ALL",
-                           [keep]).fetchone()
-        gone = con.execute("SELECT name, aliases, source FROM entities WHERE entity_id = ? ORDER BY ALL",
-                           [remove]).fetchone()
+        kept = store.entities_for_merger_merge(con, keep)
+        gone = store.entities_for_merger_merge(con, remove)
         if kept is None or gone is None:
             return
-        for old, new in con.execute(
-                "SELECT r.mention_id, k.mention_id FROM page_entities r JOIN page_entities k "
-                "ON k.page_id = r.page_id AND k.block_id IS NOT DISTINCT FROM r.block_id "
-                "AND k.char_start IS NOT DISTINCT FROM r.char_start "
-                "AND k.char_end IS NOT DISTINCT FROM r.char_end "
-                "AND (k.position = r.position OR r.block_id IS NOT NULL) "
-                "WHERE r.entity_id = ? AND k.entity_id = ? ORDER BY ALL", [remove, keep]).fetchall():
-            con.execute(
-                "INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id, count) "
-                "SELECT ?, source, run_id, llm_call_id, count FROM mention_sources "
-                "WHERE mention_id = ? ON CONFLICT DO NOTHING", [new, old])
-            con.execute("DELETE FROM mention_sources WHERE mention_id = ?", [old])
-            con.execute("DELETE FROM page_entities WHERE mention_id = ?", [old])
-        con.execute("UPDATE page_entities SET entity_id = ? WHERE entity_id = ?", [keep, remove])
-        con.execute("UPDATE soft_checks SET entity_id = ? WHERE entity_id = ?", [keep, remove])
+        for old, new in store.page_entities_for_merger_merge(con, remove, keep):
+            store.insert_mention_sources_in_merger_merge(con, new, old)
+            store.delete_mention_sources_in_merger_merge(con, old)
+            store.delete_page_entities_in_merger_merge(con, old)
+        store.update_page_entities_in_merger_merge(con, keep, remove)
+        store.update_soft_checks_in_merger_merge(con, keep, remove)
         for column, other in (("from_id", "to_id"), ("to_id", "from_id")):
             con.execute(
                 f"DELETE FROM entity_relations r WHERE r.{column} = ? AND EXISTS (SELECT 1 FROM "
@@ -90,10 +80,7 @@ class Merger:
             [keep, remove])
         con.execute("DELETE FROM entity_aliases WHERE entity_id = ?", [remove])
         forms = [gone[0], *(gone[1] or [])]
-        con.execute(
-            "UPDATE entities SET aliases = list_sort(list_distinct(list_filter(list_concat(coalesce("
-            "aliases, []), ?), x -> x <> name))), source = ? WHERE entity_id = ?",
-            [forms, stronger_source(kept[2], gone[2]), keep])
+        store.update_entities_in_merger_merge(con, forms, stronger_source(kept[2], gone[2]), keep)
         con.execute("INSERT INTO entity_aliases (entity_id, alias, lang, source) "
                     "VALUES (?, ?, NULL, 'merge') ON CONFLICT DO NOTHING", [keep, gone[0]])
         con.execute(
@@ -101,7 +88,7 @@ class Merger:
             "evidence, merged_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [self.run_id, keep, remove, kept[0], gone[0], rule,
              dumps(evidence or {}, ensure_ascii=False), self.clock()])
-        con.execute("DELETE FROM entities WHERE entity_id = ?", [remove])
+        store.delete_entities_in_merger_merge(con, remove)
         self.counts[rule] += 1
 
 
@@ -115,10 +102,7 @@ def _rank(row: tuple) -> tuple:
 
 def _entity_rows(con: duckdb.DuckDBPyConnection) -> dict[int, tuple]:
     """entity_id → (entity_id, anchor, tier, source, említésszám, típus, altípus)."""
-    return {row[0]: row for row in con.execute(
-        "SELECT e.entity_id, e.anchor_page_id, e.tier, e.source, (SELECT count(*) FROM "
-        "page_entities pe WHERE pe.entity_id = e.entity_id), e.type, e.subtype "
-        "FROM entities e ORDER BY ALL").fetchall()}
+    return {row[0]: row for row in store.page_entities_for_entity_rows(con)}
 
 
 def _mergeable(a: tuple, b: tuple) -> bool:
@@ -140,10 +124,7 @@ def _normalized_merges(con: duckdb.DuckDBPyConnection, merger: Merger) -> None:
     kezeli)."""
     rows = _entity_rows(con)
     groups: dict[tuple[str, str], list[int]] = defaultdict(list)
-    for entity_id, name, kind, aliases in con.execute(
-            "SELECT entity_id, name, type, aliases FROM entities WHERE type <> 'person' "
-            "AND (anchor_page_id IS NOT NULL OR entity_id IN (SELECT entity_id FROM "
-            "page_entities)) ORDER BY entity_id").fetchall():
+    for entity_id, name, kind, aliases in store.entities_for_normalized_merges(con):
         forms = {name, *(aliases or [])}
         forms |= {long for form in list(forms) if (long := long_form(form))}
         if kind == "org":
@@ -171,10 +152,7 @@ def _abbreviation_merges(con: duckdb.DuckDBPyConnection, merger: Merger) -> None
     rows = _entity_rows(con)
     expanded: dict[tuple[str, str], set[int]] = defaultdict(set)
     named: dict[tuple[str, str], list[int]] = defaultdict(list)
-    for entity_id, name, kind, aliases in con.execute(
-            "SELECT entity_id, name, type, aliases FROM entities WHERE type <> 'person' "
-            "AND (anchor_page_id IS NOT NULL OR entity_id IN (SELECT entity_id FROM "
-            "page_entities)) ORDER BY entity_id").fetchall():
+    for entity_id, name, kind, aliases in store.entities_for_normalized_merges(con):
         for form in [name, *(aliases or [])]:
             parts = expansions(form)
             if parts:
@@ -229,9 +207,7 @@ def aligned_headings(left: list[tuple[int, list[int]]],
 def _heading_entity(con: duckdb.DuckDBPyConnection, block_id: int) -> int | None:
     """A headinget egészében lefedő említés entitása, ha pontosan egy ilyen van."""
     text = extract_queries.block(con, block_id).text
-    found = {entity_id for entity_id, surface in con.execute(
-        "SELECT entity_id, surface_form FROM page_entities WHERE block_id = ? ORDER BY ALL",
-        [block_id]).fetchall() if alias_key(surface) == alias_key(text)}
+    found = {entity_id for entity_id, surface in store.page_entities_for_heading_entity(con, block_id) if alias_key(surface) == alias_key(text)}
     return found.pop() if len(found) == 1 else None
 
 
@@ -269,8 +245,7 @@ def _place_pair(con: duckdb.DuckDBPyConnection, a: int, b: int,
     szinten a `prefer` (az elsődleges nyelvű oldalé); service és csak headingben álló
     concept esetén a service."""
     rows = _entity_rows(con)
-    types = dict(con.execute("SELECT entity_id, type FROM entities WHERE list_contains(?, "
-                             "entity_id) ORDER BY ALL", [[a, b]]).fetchall())
+    types = dict(store.entities_for_place_pair(con, [a, b]))
     if not _mergeable(rows[a], rows[b]):
         return None, b
     if types[a] == types[b]:
@@ -285,9 +260,7 @@ def _place_pair(con: duckdb.DuckDBPyConnection, a: int, b: int,
 
 
 def _only_headings(con: duckdb.DuckDBPyConnection, entity_id: int) -> bool:
-    (others,) = con.execute(
-        "SELECT count(*) FROM page_entities pe JOIN blocks b USING (block_id) "
-        "WHERE pe.entity_id = ? AND b.kind <> 'heading' ORDER BY ALL", [entity_id]).fetchone()
+    (others,) = store.page_entities_for_only_headings(con, entity_id)
     return others == 0
 
 
