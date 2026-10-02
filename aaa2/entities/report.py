@@ -24,7 +24,9 @@ from urllib.parse import quote
 import duckdb
 
 from aaa2.engine import queries as crawl
+from aaa2.entities.extract import run_call_ids
 from aaa2.entities.gate import occurs
+from aaa2.llm import calls as llm_calls
 
 PLACES = ("title", "heading", "nav", "card", "table_row")
 TABLE_FIELDS = ("entity", "type", "subtype", "tier", "flags", "source", "pages", "mentions",
@@ -142,12 +144,7 @@ def run_report(con: duckdb.DuckDBPyConnection, label: str,
             f"- hívások: {calls}, költség {_money(cost)}"
             + (f" ({(cost or 0) / pages:.4f} USD / oldal)" if pages else ""), "",
             "## Hívások céljuk szerint", ""]
-        by_purpose = con.execute(
-            "SELECT purpose, model, count(*), sum(tokens_in), sum(tokens_out), sum(cost_usd), "
-            "sum(coalesce(attempts, 1) - 1), count(*) FILTER (WHERE last_error IS NOT NULL) "
-            "FROM llm_calls WHERE call_id IN (SELECT DISTINCT unnest(call_ids) "
-            "FROM entity_run_pages WHERE run_id = ?) GROUP BY purpose, model "
-            "ORDER BY purpose, model", [run_id]).fetchall()
+        by_purpose = llm_calls.usage_by_purpose(con, run_call_ids(con, run_id))
         for purpose, call_model, count, t_in, t_out, usd, retries, errors in by_purpose:
             lines.append(f"- {purpose} ({call_model}): {count} hívás, token be {t_in or 0} / "
                          f"ki {t_out or 0}, {_money(usd)}; újrapróba {retries}, "

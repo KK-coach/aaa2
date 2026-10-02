@@ -59,8 +59,7 @@ note = "a microdata-, RDFa- és Open Graph-elemek (022-es migráció); a szabál
 [tables.llm_calls]
 owner = "llm"
 contracts = ["LLMCall"]
-also_written_by = ["extract"]
-note = "az `entities/extract.py` is ír bele"
+note = "más modul az `aaa2/llm/calls.py` függvényein át éri el (a kinyerés a kitalált említések számát így írja be)"
 
 # --- extract ---------------------------------------------------------------------------------
 
