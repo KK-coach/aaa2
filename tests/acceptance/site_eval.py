@@ -37,8 +37,8 @@ from pathlib import Path
 
 import duckdb
 
-from aaa2.entities.pages import entity_groups, page_roles
 from aaa2.entities.rules import alias_key
+from aaa2.resolver.pages import entity_groups, page_roles
 
 OFFERINGS = Path(__file__).parent / "kk_coach_offerings.json"
 OUT_DIR = Path(__file__).parent / "out" / "m26"

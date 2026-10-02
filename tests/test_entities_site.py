@@ -4,18 +4,13 @@ sablonjelölés, a módosított anchor-szabály."""
 import json
 from datetime import UTC, datetime
 
-from aaa2.entities.knowledge import clear_person_links
-from aaa2.entities.pages import entity_groups, page_roles, representative
 from aaa2.entities.rules import run_rules
-from aaa2.entities.site import (
-    aligned_headings,
-    expansions,
-    label_parts,
-    long_form,
-    normal_key,
-    pricing_rows,
-    run_site,
-)
+from aaa2.resolver.knowledge import clear_person_links
+from aaa2.resolver.merge import aligned_headings
+from aaa2.resolver.names import expansions, label_parts, long_form, normal_key
+from aaa2.resolver.offers import pricing_rows
+from aaa2.resolver.pages import entity_groups, entity_page_ids, page_roles, representative
+from aaa2.resolver.site import run_site
 from tests.test_entities_rules import html, ld, site
 
 NOON = datetime(2026, 9, 29, 12, 0, tzinfo=UTC).replace(tzinfo=None)
@@ -199,7 +194,7 @@ def test_unequal_pricing_rows_are_not_paired():
 
 def test_article_entity_and_navigation_is_not_an_entity():
     con = business_site()
-    run = run_rules(con)
+    run = run_rules(con, entity_pages=entity_page_ids(page_roles(con)))
     assert run.skipped.get("anchor_to_support_page") == 1           # „Kapcsolat” (4 oldalon)
     assert run.skipped.get("anchor_to_entity_page") == 2            # „Mérés”, „Blog”
     assert con.execute("SELECT count(*) FROM entities WHERE type = 'concept'").fetchone() == (0,)
@@ -419,7 +414,7 @@ def test_hreflang_place_merges_parallel_headings():
 
 def test_confident_wikidata_merges_language_pairs_and_excluded_entities_get_no_link():
     from aaa2.entities.gate import KnowledgeBase
-    from aaa2.entities.knowledge import link_entities, status_of
+    from aaa2.resolver.knowledge import link_entities, status_of
     from tests.test_entities_pipeline import Knowledge
     con = business_site()
     run_rules(con)
@@ -527,7 +522,7 @@ def test_a_generic_article_page_naming_a_service_is_an_offer():
 
 
 def test_hungarian_legal_slugs():
-    from aaa2.entities.pages import support_url
+    from aaa2.resolver.pages import support_url
     for path in ("/hu/sutik/", "/suti-tajekoztato/", "/adatkezeles/", "/adatkezelesi-tajekoztato/",
                  "/jogi-nyilatkozat/", "/felhasznalasi-feltetelek/"):
         assert support_url(f"https://x.hu{path}"), path
@@ -583,8 +578,9 @@ def test_an_offer_hub_lists_offers_and_is_not_an_offer():
 
 
 def test_the_canonical_offer_name_is_the_naming_h1_then_schema_then_title():
-    from aaa2.entities.pages import PageInfo
-    from aaa2.entities.site import Name, _canonical, h1_names_offer
+    from aaa2.resolver.names import Name
+    from aaa2.resolver.offers import _canonical, h1_names_offer
+    from aaa2.resolver.pages import PageInfo
 
     names = [Name("Web analytics consulting", "schema", "en"), Name("Measurement", "nav", "en"),
              Name("Web analytics consulting and GA4 audit services", "title", "en")]
@@ -610,7 +606,7 @@ def test_the_canonical_offer_name_is_the_naming_h1_then_schema_then_title():
 
 
 def test_confident_technology_classes_become_tech():
-    from aaa2.entities.knowledge import retype_tech_classes
+    from aaa2.resolver.knowledge import retype_tech_classes
     con = business_site()
     for name, qid, status in (("software", "Q7397", "confident"), ("szoftver", "Q7397",
                                                                     "probable"),
@@ -642,7 +638,7 @@ def exec_site(root_lang="hu"):
 
 
 def test_overrides_set_the_tier_and_part_of_and_are_logged(tmp_path, monkeypatch):
-    from aaa2.entities import overrides
+    from aaa2.resolver import overrides
     (tmp_path / "pelda.hu.toml").write_text(
         '[[offers]]\nnames = ["Strukturált felügyelet", "Structured Oversight"]\n'
         'tier = "work_mode"\npart_of = "Execution"\n', encoding="utf-8")
@@ -664,7 +660,7 @@ def test_overrides_set_the_tier_and_part_of_and_are_logged(tmp_path, monkeypatch
 
 
 def test_canonical_language_is_the_root_page_language_unless_configured():
-    from aaa2.entities.overrides import SiteConfig, canonical_language
+    from aaa2.resolver.overrides import SiteConfig, canonical_language
     con = exec_site(root_lang="en")
     assert canonical_language(con) == "en"
     assert canonical_language(con, SiteConfig(canonical_lang="hu")) == "hu"
@@ -677,7 +673,7 @@ def test_canonical_language_is_the_root_page_language_unless_configured():
 def test_merge_keeps_one_mention_per_span_whatever_its_position():
     """Ugyanaz a szövegrész két entitáson, eltérő pozícióval (h1 és heading): az összevonás
     után egy említés marad, a források egyesítve."""
-    from aaa2.entities.site import Merger
+    from aaa2.resolver.merge import Merger
     con = business_site()
     run_rules(con)
     url = "https://pelda.hu/blog/cikk/"
@@ -692,7 +688,7 @@ def test_merge_keeps_one_mention_per_span_whatever_its_position():
 
 
 def test_legal_pages_by_whole_path_segment_or_known_slug():
-    from aaa2.entities.pages import support_url
+    from aaa2.resolver.pages import support_url
 
     for url in ("https://x.hu/privacy-policy/", "https://x.hu/hu/adatvedelem/",
                 "https://x.hu/aszf", "https://x.hu/impresszum/", "https://x.hu/terms/",
@@ -718,7 +714,7 @@ def test_organisation_names_merge_without_the_legal_form():
     assert len(orgs) == 1
     assert con.execute("SELECT count(*) FROM merge_log WHERE rule = 'normalized_name' AND "
                        "removed_name = 'Pelda Hungary'").fetchone() == (1,)
-    from aaa2.entities.site import without_legal_form
+    from aaa2.resolver.names import without_legal_form
     assert without_legal_form("DUEX HUNGARY Kft.") == "DUEX HUNGARY"
     assert without_legal_form("Acme, Inc.") == "Acme"
     assert without_legal_form("Kft.") == "Kft."

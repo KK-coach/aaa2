@@ -47,10 +47,10 @@ from aaa2.entities.blocks import block_text
 from aaa2.entities.gate import KnowledgeBase, soft_items
 from aaa2.entities.rules import alias_key
 from aaa2.entities.v3 import apply_v3, service_place  # noqa: F401  (a mérés és a tesztek innen)
-from aaa2.entities.validate import _Api
 from aaa2.entities.verify import item_block
 from aaa2.llm.client import Retry
 from aaa2.llm.config import load_config
+from aaa2.resolver.validate import _Api
 
 SOL = "gpt-6-sol"
 

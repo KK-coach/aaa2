@@ -2,7 +2,7 @@
 entitást, és a rajta álló említés demó-környezet."""
 from aaa2.entities.placeholder import placeholder_share
 from aaa2.entities.rules import run_rules
-from aaa2.entities.site import run_site
+from aaa2.resolver.site import run_site
 from tests.test_entities_rules import html, ld, site
 from tests.test_entities_site import NOON, llm_entity
 

@@ -28,7 +28,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import lru_cache
 from itertools import islice
-from urllib.parse import unquote_plus, urlsplit, urlunsplit
+from urllib.parse import unquote_plus, urldefrag, urlsplit, urlunsplit
 
 import tldextract
 
@@ -148,6 +148,12 @@ def normalize(url: str, policy: UrlPolicy) -> str | None:
     if internal:
         path = _apply_trailing_slash(path, policy.trailing_slash)
     return urlunsplit((scheme, netloc, path, _clean_query(parts.query), ""))
+
+
+def page_url(url: str) -> str:
+    """Lekérdezés és töredék nélkül, a záró perjel nélkül (az oldalak csoportkulcsához)."""
+    parts = urlsplit(urldefrag(url)[0])
+    return urlunsplit((parts.scheme, parts.netloc, parts.path.rstrip("/") or "/", "", ""))
 
 
 def normalize_path_encoding(path: str) -> str:

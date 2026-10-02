@@ -4,7 +4,6 @@ import csv
 import json
 
 from aaa2.entities.rules import run_rules
-from aaa2.entities.site import run_site
 from aaa2.functions import findings
 from aaa2.functions.findings import (
     PAGINATION,
@@ -17,6 +16,7 @@ from aaa2.functions.findings import (
     title_similarity,
 )
 from aaa2.functions.graph import build_graph
+from aaa2.resolver.site import run_site
 from tests.test_entities_rules import html, ld, site
 from tests.test_entities_site import NOON, llm_entity
 from tests.test_graph import primary

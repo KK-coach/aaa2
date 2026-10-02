@@ -85,18 +85,11 @@ import duckdb
 
 from aaa2.db.stable_json import dumps
 from aaa2.entities.gate import occurs
-from aaa2.entities.pages import (
-    PageInfo,
-    home_urls,
-    page_roles,
-    page_types,
-    page_url,
-    support_url,
-)
-from aaa2.entities.pages import schema_nodes as page_schema_nodes
 from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import alias_key
-from aaa2.entities.site import normal_key
+from aaa2.resolver.names import normal_key
+from aaa2.resolver.pages import PageInfo, home_urls, page_roles, page_types, page_url, support_url
+from aaa2.resolver.pages import schema_nodes as page_schema_nodes
 
 CONFIG_FILE = Path(__file__).parent / "config" / "graph.toml"
 EVIDENCE_RANK = {"anchored": 1, "home": 1, "schema_about": 2, "profile": 2, "primary": 3,

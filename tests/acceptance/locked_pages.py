@@ -35,8 +35,8 @@ from urllib.parse import urlsplit, urlunsplit
 import duckdb
 
 from aaa2.db.connect import DATA_DIR
-from aaa2.entities.overrides import load_site_config
-from aaa2.entities.pages import page_types
+from aaa2.resolver.overrides import load_site_config
+from aaa2.resolver.pages import page_types
 
 OUT = Path(__file__).parent / "locked_pages.json"
 PER_SITE = 3

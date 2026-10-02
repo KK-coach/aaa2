@@ -17,8 +17,8 @@ from aaa2.entities.gate import (
     wikidata_hit,
     wikipedia_page,
 )
-from aaa2.entities.validate import WIKI_MIN_INTERVAL, _Api
 from aaa2.llm.client import Retry
+from aaa2.resolver.validate import WIKI_MIN_INTERVAL, _Api
 
 NOON = datetime(2026, 9, 28, 12, 0, tzinfo=UTC).replace(tzinfo=None)
 BLOCKS = [

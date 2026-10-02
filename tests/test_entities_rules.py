@@ -23,6 +23,7 @@ from aaa2.entities.rules import (
     trivial_anchor,
 )
 from aaa2.llm.schemas import ENTITY_TYPES
+from aaa2.resolver.pages import entity_page_ids, page_roles
 
 SEED = "https://pelda.hu/"
 POLICY = UrlPolicy.from_seed(SEED)
@@ -307,7 +308,7 @@ def test_navigational_home_short_and_roman_anchors_drop_out():
         for i in range(1, 4)})
     pages.update(stub("/cikk-0/", "/cikk-1/", "/x/", "/y/", "/z/", "/anna-0/", "/anna-1/"))
     con = site(pages)
-    run = run_rules(con)
+    run = run_rules(con, entity_pages=entity_page_ids(page_roles(con)))
     # A „Mix” egyetlen, segédoldalra mutat: navigációs címke, nem entitás (M2/6, 5. pont).
     assert con.execute("SELECT type, name FROM entities ORDER BY type").fetchall() == [
         ("person", "Kiss Anna")]
@@ -325,7 +326,7 @@ def test_anchor_to_an_uncrawled_target_drops_out():
     pages = {f"/{i}/": html(f"P{i}", "<a href='/demo/'>Kattints ide</a>"
                             "<a href='/program/'>Programok</a>") for i in range(3)}
     con = site({**pages, **stub("/program/")})
-    run = run_rules(con)
+    run = run_rules(con, entity_pages=entity_page_ids(page_roles(con)))
     assert con.execute("SELECT type, name FROM entities").fetchall() == []
     assert run.skipped["anchor_uncrawled_target"] == 3
     assert run.skipped["anchor_to_support_page"] == 1
@@ -339,7 +340,7 @@ def test_anchor_to_an_entity_page_is_left_to_the_site_round():
     pages = {f"/{i}/": html(f"P{i}", "<a href='/meres/'>Mérés</a>") for i in range(3)}
     pages["/meres/"] = html("Mérés", "<p>Szolgáltatás</p>", head=service)
     con = site(pages)
-    run = run_rules(con)
+    run = run_rules(con, entity_pages=entity_page_ids(page_roles(con)))
     assert run.skipped["anchor_to_entity_page"] == 1
     assert con.execute("SELECT type, name FROM entities").fetchall() == [
         ("service", "Mérés és adatarchitektúra")]
@@ -392,7 +393,7 @@ def test_anchor_candidates_with_structural_filters():
         **stub("/ritka/"),
     }
     con = site(pages)
-    run = run_rules(con)
+    run = run_rules(con, entity_pages=entity_page_ids(page_roles(con)))
     rows = entity_rows(con)
     # A „Szolgáltatások” menüpont 4 oldalon (a /szolgaltatasok/ saját linkje önmagára mutat),
     # egyetlen segédoldalra: navigációs címke, nem entitás.

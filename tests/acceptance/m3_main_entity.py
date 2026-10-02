@@ -33,9 +33,9 @@ from urllib.parse import urlsplit
 
 import duckdb
 
-from aaa2.entities.pages import page_url
 from aaa2.entities.rules import alias_key
 from aaa2.functions.graph import evidence_text
+from aaa2.resolver.pages import page_url
 from tests.acceptance.annotation import LOCKED_DIR
 
 DEV_DIR = Path(__file__).parent / "dev_pages"
