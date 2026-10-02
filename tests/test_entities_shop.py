@@ -116,12 +116,14 @@ def test_site_file_crawl_and_page_type_sections(tmp_path):
     (tmp_path / "x.hu.toml").write_text(
         "[crawl]\nseed = 'https://shop.x.hu/'\ninclude = '^https://shop\\\\.x\\\\.hu/'\n"
         "exclude = ['shop_cart', '^https?://[^/]+[^?]*//']\nconcurrency = 2\n"
-        "render_timeout = 30\n[page_types]\ncategory = '/sct/'\nbrand_category = ['/spl/']\n",
+        "render_timeout = 30\nmax_pages = 300\nsitemap_only = true\n[page_types]\ncategory = '/sct/'\nbrand_category = ['/spl/']\n",
         encoding="utf-8")
     config = load_site_config("x.hu", tmp_path)
     assert config.crawl.seed == "https://shop.x.hu/"
     assert config.crawl.exclude_pattern == "(?:shop_cart)|(?:^https?://[^/]+[^?]*//)"
     assert (config.crawl.concurrency, config.crawl.render_timeout) == (2, 30)
+    assert (config.crawl.max_pages, config.crawl.sitemap_only) == (300, True)
+    assert load_site_config("nincs.hu", tmp_path).crawl.sitemap_only is False
     assert config.page_types == {"category": ("/sct/",), "brand_category": ("/spl/",)}
     (tmp_path / "y.hu.toml").write_text("[page_types]\nshelf = ['/x/']\n", encoding="utf-8")
     with pytest.raises(ValueError, match="oldaltípus"):

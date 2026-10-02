@@ -10,6 +10,14 @@
 
 `--resume`: a `site` táblában rögzített szabályokkal a várakozó sorokból folytat.
 
+Keretek (`CrawlOptions`): `max_pages` a sor méretének keményhatára. `sitemap_only`: a sorba csak
+a seed és a sitemap-URL-ek kerülnek, az oldalak linkjei nem (a linkek tárolása változatlan).
+`overrun_factor`: a sitemap alapján várt oldalszám (`Frontier.expected_pages`) és a várt idő
+(az első `CALIBRATION_PAGES` oldal mért üteméből a várt oldalszámra vetítve) ennyiszerese fölött
+a crawl megáll: új oldalt nem kezd, a futó oldalak befejeződnek, a sor többi része várakozó
+marad, az ok a `CrawlSummary.stopped`-ban és a `crawl_runs.notes`-ban áll. Sitemap nélkül nincs
+várt érték, ott csak a `max_pages` korlátoz.
+
 Oldalanként egy tranzakció: a `pages` sor, a `links`, `headings`, `schema_blocks` sorai és a
 sor állapota (`crawl_queue`, a talált linkek felvétele) együtt, vagy sehogy. A tranzakción
 belül nincs `await`, így egy megszakítás nem hagy félkész oldalt.
@@ -66,6 +74,8 @@ from aaa2.engine.site_profile import update_site_profile
 from aaa2.engine.stable_hash import decode_raw, stable_hash
 
 SKIP_MAX_AGE = timedelta(days=7)
+# Ennyi feldolgozott oldal után becsüli a várt időt a mért ütemből.
+CALIBRATION_PAGES = 10
 NORMALIZED_404 = "normalized form 404, original served"
 HTTP_TIMEOUT = 20.0
 
@@ -92,6 +102,8 @@ class CrawlOptions:
     resume: bool = False
     include: str | None = None
     exclude: str | None = None
+    sitemap_only: bool = False
+    overrun_factor: float | None = None
 
 
 @dataclass(frozen=True)
@@ -103,6 +115,9 @@ class CrawlSummary:
     pages_per_sec: float
     bytes_stored: int
     seconds: float
+    expected_pages: int | None = None
+    expected_seconds: float | None = None
+    stopped: str | None = None
 
 
 Progress = Callable[[str, int | None, str | None], None]
@@ -160,11 +175,15 @@ class _Run:
         self.frontier: Frontier | None = None
         self.run_id = 0
         self.done = self.failed = self.skipped = self.bytes_stored = 0
+        self.expected_pages: int | None = None
+        self.expected_seconds: float | None = None
+        self.stopped: str | None = None
+        self._clock = 0.0
         self._compressor = zstandard.ZstdCompressor()
 
     async def execute(self, seed_url: str) -> CrawlSummary:
         started = _now()
-        clock = asyncio.get_running_loop().time()
+        clock = self._clock = asyncio.get_running_loop().time()
         mode = "resume" if self.options.resume else "új"
         if self.options.resume:
             await self._resume()
@@ -209,7 +228,9 @@ class _Run:
         self.frontier = Frontier.start(
             self.con, seed_url, discovery, seed_links, max_pages=options.max_pages,
             include=options.include, exclude=options.exclude,
+            follow_links=not options.sitemap_only,
         )
+        self.expected_pages = self.frontier.expected_pages(discovery.sitemap_urls)
         self.con.execute("UPDATE site SET crawled_at = ?", [started])
         (item,) = self.frontier.next_batch(1)
         error = await self._normalization_404(item.url, result)
@@ -227,7 +248,9 @@ class _Run:
         self.frontier = Frontier.start(
             self.con, seed_url, discovery, [(link.to_url, link.position) for link in parsed.links],
             max_pages=options.max_pages, include=options.include, exclude=options.exclude,
+            follow_links=not options.sitemap_only,
         )
+        self.expected_pages = self.frontier.expected_pages(discovery.sitemap_urls)
         self.con.execute("UPDATE site SET crawled_at = ?", [started])
         (item,) = self.frontier.next_batch(1)
         self._skip(item, page_id)
@@ -240,7 +263,28 @@ class _Run:
         self.frontier = Frontier.resume(
             self.con, robots=robots, max_pages=self.options.max_pages,
             include=self.options.include, exclude=self.options.exclude,
+            follow_links=not self.options.sitemap_only,
         )
+
+    def _overrun(self) -> bool:
+        """Túllépte-e a crawl a sitemap alapján várt oldalszám vagy idő `overrun_factor`-szorosát;
+        az okot a `stopped` őrzi. A várt idő az első `CALIBRATION_PAGES` oldal üteméből készül."""
+        factor, expected = self.options.overrun_factor, self.expected_pages
+        if self.stopped is not None:
+            return True
+        if factor is None or expected is None:
+            return False
+        handled = self.done + self.failed + self.skipped
+        elapsed = asyncio.get_running_loop().time() - self._clock
+        if self.expected_seconds is None and handled >= CALIBRATION_PAGES:
+            self.expected_seconds = expected * elapsed / handled
+        if handled > factor * expected:
+            self.stopped = (f"oldalszám: {handled} feldolgozva, a sitemap alapján várt "
+                            f"{expected} {factor:g}-szerese fölött")
+        elif self.expected_seconds is not None and elapsed > factor * self.expected_seconds:
+            self.stopped = (f"idő: {elapsed:.0f} mp, a várt {self.expected_seconds:.0f} mp "
+                            f"{factor:g}-szerese fölött ({handled} oldal a várt {expected}-ből)")
+        return self.stopped is not None
 
     async def _drain(self) -> None:
         condition = asyncio.Condition()
@@ -250,7 +294,12 @@ class _Run:
             nonlocal in_flight
             while True:
                 async with condition:
-                    while not (batch := self.frontier.next_batch(1)):
+                    while True:
+                        if self._overrun():
+                            condition.notify_all()
+                            return
+                        if batch := self.frontier.next_batch(1):
+                            break
                         if in_flight == 0:
                             condition.notify_all()
                             return
@@ -468,12 +517,15 @@ class _Run:
             "pages_skipped = ?, pages_per_sec = ?, bytes_stored = ?, "
             "notes = notes || ? WHERE run_id = ?",
             [_now() if finished else None, self.done, self.failed, self.skipped, rate,
-             self.bytes_stored, "" if finished else " (megszakítva)", self.run_id],
+             self.bytes_stored,
+             ("" if finished else " (megszakítva)")
+             + (f" (megállt: {self.stopped})" if self.stopped else ""), self.run_id],
         )
         return CrawlSummary(
             run_id=self.run_id, pages_done=self.done, pages_failed=self.failed,
             pages_skipped=self.skipped, pages_per_sec=rate, bytes_stored=self.bytes_stored,
-            seconds=seconds,
+            seconds=seconds, expected_pages=self.expected_pages,
+            expected_seconds=self.expected_seconds, stopped=self.stopped,
         )
 
 

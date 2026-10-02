@@ -22,6 +22,8 @@ exclude = [
 ]
 concurrency = 2
 render_timeout = 30
+# a felvett crawl 372 oldal, a teszt-site-ok alap oldalkorlátja (200) fölött
+max_pages = 5000
 
 # [page_types]: a bolt URL-szerkezete (Unas): /sct/ kategória, /spl/ márka × kategória lista.
 [page_types]

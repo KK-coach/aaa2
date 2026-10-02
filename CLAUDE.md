@@ -69,6 +69,18 @@ Az ngx-bootstrap mérése (2026-09-25, `Renderer` + `Frontier`, 300-as felső ko
 
 A MicroStore-boltok kiestek: a kirakatukban nincs `<a>`, a navigáció JS-kezelőkön megy. A victoria.microstore.app negatív esetként maradt: a render sikeres, 0 belső link, 59 szó. A `tests/test_fixture_sites.py` őrzi, visszajátszva a `tests/fixtures/` alatti felvételből.
 
+### Crawl-keretek a teszt-site-okhoz
+
+Hosszú crawl nem futhat: a teszt-site-ok felvétele keretek között megy (`tests/recorded.py`, `tests/acceptance/record_sites.py`).
+
+- **Oldalkorlát**: a sor mérete alapból 200 (`TEST_MAX_PAGES`); nagyobb készletnél a site-fájl `[crawl] max_pages` adja meg (a duex 372 oldalas felvétele ezért kapott explicit értéket).
+- **Sitemap-mód**: a site-fájl `[crawl] sitemap_only = true` (`CrawlOptions.sitemap_only`): a sorba csak a seed és a sitemap URL-jei kerülnek, az oldalak linkjei nem; a linkek tárolása változatlan. A vak próba két webshopja így fut.
+- **Várt oldalszám és idő**: a crawl a sitemap alapján várt oldalszámot adja (`CrawlSummary.expected_pages`: a szűrőkön átjutó sitemap-URL-ek és a seed), a várt időt az első 10 oldal mért üteméből vetíti (`expected_seconds`). A felvétel `overrun_factor = 2`-vel fut: ha a feldolgozott oldalak száma vagy az eltelt idő a várt kétszerese fölé megy, a crawl megáll (új oldalt nem kezd), az ok a `CrawlSummary.stopped`-ban és a `crawl_runs.notes`-ban áll, a `record` hibával lép ki. Ilyenkor a készlet beállítását kell javítani (kizárás, sitemap-mód), nem a korlátot emelni. Sitemap nélkül nincs várt érték, ott csak az oldalkorlát fog.
+- **Ellenőrző visszajátszás mintavétellel**: a `verify` alapból 50 oldalt (`VERIFY_SAMPLE`, a készlet neve szerinti rögzített véletlen minta) renderel újra a felvételből, és a státuszt, a nyers HTML hash-ét, a title-t, a H1-et és a canonicalt veti össze a felvételkori sorral. A teljes visszajátszás `verify --full`.
+- **`replay`**: a felvétel visszajátszása a készlet mostani beállításával a `data/compare/<név>.duckdb`-be, élő hívás nélkül; a korábbi adatbázis `<név>-full.duckdb` néven marad.
+
+A vak próba (AAAV2-43) két webshopja, `serafimszappan.hu` és `napviragszappan.hu` (Shoprenter, microdatával): a linkeket követő crawl a sitemap többszörösét adta (567 a 129 helyett, 1099 a 192 helyett), a többlet kategória-útvonalas termék-dupla, belső keresőoldal (`keyword=`) és lapozás. A felvétel (`serafim-crawl`, `napvirag-crawl`) a teljes crawlt őrzi; a készlet sitemap-módban ebből a sitemap oldalait játssza vissza, a pipeline ezeken fut. A pipeline a riport-MVP előtt fut, addig a kimeneteket nem nézzük; a referenciákat ezekre a site-okra nem alkalmazzuk.
+
 ## M2 — kész (2026-09-30)
 
 ### A végleges M2-pipeline

@@ -235,11 +235,13 @@ class Frontier:
         max_pages: int = MAX_PAGES,
         include: str | None = None,
         exclude: str | None = None,
+        follow_links: bool = True,
     ) -> None:
         self.con = con
         self.policy = policy
         self.robots = robots
         self.max_pages = max_pages
+        self.follow_links = follow_links
         self._include = re.compile(include) if include else None
         self._exclude = re.compile(exclude) if exclude else None
         self._known = {url for (url,) in con.execute("SELECT url FROM crawl_queue").fetchall()}
@@ -256,10 +258,12 @@ class Frontier:
         max_pages: int = MAX_PAGES,
         include: str | None = None,
         exclude: str | None = None,
+        follow_links: bool = True,
     ) -> Frontier:
         """Új crawl. A sor kiürül, a site-döntések a `site` táblába kerülnek, a sorba a seed,
         a sitemap-URL-ek és a seed linkjei. `seed_links`: (abszolút URL, pozíció) a seed
-        renderelt oldaláról, DOM-sorrendben."""
+        renderelt oldaláról, DOM-sorrendben. `follow_links=False` (sitemap-mód): a sorba csak a
+        seed és a sitemap-URL-ek kerülnek, az oldalak linkjei nem."""
         links = list(seed_links)
         policy = UrlPolicy.from_seed(seed_url, https_redirect=discovery.https_redirect)
         policy = replace(
@@ -291,7 +295,7 @@ class Frontier:
             )
             frontier = cls(
                 con, policy, robots=discovery.robots, max_pages=max_pages,
-                include=include, exclude=exclude,
+                include=include, exclude=exclude, follow_links=follow_links,
             )
             frontier._insert(seed, depth=0, priority=PRIORITY["seed"], discovered_from=None)
             for url in discovery.sitemap_urls:
@@ -312,6 +316,7 @@ class Frontier:
         max_pages: int = MAX_PAGES,
         include: str | None = None,
         exclude: str | None = None,
+        follow_links: bool = True,
     ) -> Frontier:
         """Folytatás a DB-ben lévő sorból, a `site` táblában rögzített döntésekkel."""
         row = con.execute("SELECT seed_url, https_redirect, trailing_slash FROM site").fetchone()
@@ -327,7 +332,8 @@ class Frontier:
             seed_url, https_redirect=bool(https_redirect), trailing_slash=trailing_slash
         )
         return cls(
-            con, policy, robots=robots, max_pages=max_pages, include=include, exclude=exclude
+            con, policy, robots=robots, max_pages=max_pages, include=include, exclude=exclude,
+            follow_links=follow_links,
         )
 
     @property
@@ -376,7 +382,10 @@ class Frontier:
         return True
 
     def add_links(self, source: QueueItem, links: Iterable[tuple[str, str]]) -> int:
-        """Egy oldal linkjei (abszolút URL, pozíció) a sorba; a pozíció a prioritást adja."""
+        """Egy oldal linkjei (abszolút URL, pozíció) a sorba; a pozíció a prioritást adja.
+        Sitemap-módban (`follow_links=False`) a linkek nem kerülnek a sorba."""
+        if not self.follow_links:
+            return 0
         return sum(
             self.add(
                 url,
@@ -386,6 +395,14 @@ class Frontier:
             )
             for url, position in links
         )
+
+    def expected_pages(self, sitemap_urls: Iterable[str]) -> int | None:
+        """A sitemap alapján várható oldalszám: a szűrőkön átjutó sitemap-URL-ek és a seed,
+        ismétlés nélkül; None, ha a sitemap üres vagy egy URL-je sem jut át."""
+        admitted = {target for url in sitemap_urls if (target := self.admit(url)) is not None}
+        if not admitted:
+            return None
+        return len(admitted | {self.seed_url})
 
     def next_batch(self, n: int) -> list[QueueItem]:
         """Legfeljebb n várakozó URL, amit még nem adott ki. Egy kiadott URL a

@@ -12,3 +12,7 @@ exclude = [
 ]
 concurrency = 2
 render_timeout = 30
+# Sitemap-mód: a sorba csak a seed és a sitemap URL-jei kerülnek. A linkeket követő crawl a
+# sitemap többszörösét adta (kategória-útvonalas termék-duplák, belső keresőoldalak,
+# lapozás); a felvétel a teljes crawlt őrzi, a készlet ebből a sitemap oldalait játssza vissza.
+sitemap_only = true

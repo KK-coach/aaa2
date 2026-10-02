@@ -156,7 +156,9 @@ def load_page(name: str) -> dict | None:
 async def record_crawl(name: str, seed: str, options, retries: int = 0):
     """Élő crawl, közben minden válasz felvéve; (Recording, kapcsolat, összesítő). `retries`:
     ennyiszer kerülnek újra sorra a válasz nélkül maradt (időtúllépés, hálózati hiba) URL-ek, a
-    crawl folytatásával ugyanabba a felvételbe; az összesítő az utolsó köré."""
+    crawl folytatásával ugyanabba a felvételbe; az összesítő az utolsó köré. A felvétel megáll,
+    ha a crawl a sitemap alapján várt oldalszám vagy idő `OVERRUN_FACTOR`-szorosa fölé megy
+    (`CrawlSummary.stopped`); ilyenkor nincs újrapróbálás."""
     from dataclasses import replace
 
     from aaa2.db.connect import connect
@@ -172,8 +174,9 @@ async def record_crawl(name: str, seed: str, options, retries: int = 0):
                 headers={"User-Agent": renderer.user_agent, **NAVIGATION_HEADERS},
             ) as client:
         con = connect(":memory:")
-        summary = await crawl(con, seed, options, client=client, renderer=renderer)
-        for _ in range(retries):
+        summary = await crawl(con, seed, replace(options, overrun_factor=OVERRUN_FACTOR),
+                              client=client, renderer=renderer)
+        for _ in range(0 if summary.stopped else retries):
             failed = con.execute("UPDATE crawl_queue SET status = 'queued', error = NULL "
                                  "WHERE status = 'failed' RETURNING url").fetchall()
             if not failed:
@@ -208,7 +211,17 @@ def site_set(domain: str) -> tuple[str, object]:
     crawl = load_site_config(domain).crawl
     return crawl.seed, CrawlOptions(concurrency=crawl.concurrency or 4, include=crawl.include,
                                     exclude=crawl.exclude_pattern,
-                                    render_timeout=crawl.render_timeout or RENDER_TIMEOUT)
+                                    render_timeout=crawl.render_timeout or RENDER_TIMEOUT,
+                                    max_pages=crawl.max_pages or TEST_MAX_PAGES,
+                                    sitemap_only=crawl.sitemap_only)
+
+
+# A teszt-site-ok keretei: a sor méretének korlátja, ha a site-fájl `[crawl] max_pages` nem ad
+# mást; a felvétel megáll a sitemap alapján várt oldalszám vagy idő ennyiszerese fölött; az
+# ellenőrző visszajátszás ennyi oldalt vesz mintának.
+TEST_MAX_PAGES = 200
+OVERRUN_FACTOR = 2.0
+VERIFY_SAMPLE = 50
 
 
 # Az idegen site-ok (M2/7 B): felvétel neve → a site-fájl domainje.
@@ -218,6 +231,21 @@ SITE_SETS = {"marketinglens-crawl": "marketinglens.com", "duex-crawl": "duexhung
 
 # A referencia-készletek: felvétel neve → (seed, crawl-beállítás).
 REFERENCE_SETS = _reference_sets()
+
+
+async def replay_pages(name: str, urls: list[str], options) -> list | None:
+    """A megadott URL-ek renderelése a felvételből, hálózat nélkül: `RenderResult`-ok az URL-ek
+    sorrendjében, vagy None, ha nincs felvétel."""
+    import asyncio
+
+    from aaa2.engine.render import Renderer
+
+    recording = Recording(name)
+    if not recording.exists:
+        return None
+    async with Renderer(concurrency=options.concurrency, render_timeout=options.render_timeout,
+                        upstream=recording.replay) as renderer:
+        return list(await asyncio.gather(*(renderer.render(url) for url in urls)))
 
 
 async def replay_crawl(name: str, seed: str, options):
