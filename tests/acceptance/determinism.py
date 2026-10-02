@@ -1,6 +1,6 @@
 """Mérés: ugyanazon az adatbázison kétszer futtatva bájtra azonos-e a kimenet.
 
-`python -m tests.acceptance.determinism [--hashes FÁJL] [--write] [--keep MAPPA]
+`python -m tests.acceptance.determinism [--hashes FÁJL] [--write] [--keep MAPPA] [--jobs N]
 <domain>=<adatbázis> …`
 
 Site-onként az adatbázis munkamásolatán kétszer egymás után lefut a site-lépés LLM nélkül
@@ -8,31 +8,43 @@ Site-onként az adatbázis munkamásolatán kétszer egymás után lefut a site-
 entitásjelentés (`aaa entity-report`); a két futás kimeneti fájljai bájtra összevetve. A forrás
 adatbázis nem változik. A futásjelentés a futás sorszáma és időpontja nélkül számít. `--hashes`: a kimenetek sha256-a a megadott fájl rögzített értékeivel
 összevetve; `--write`-tal a fájl a mostani értékekkel íródik. `--keep`: a munkamásolatok és a
-kimenetek a megadott mappában maradnak. LLM-hívás nincs."""
+kimenetek a megadott mappában maradnak. `--jobs`: ennyi site fut egyszerre (alapból mind; a
+site-ok külön munkamásolaton, külön folyamatokban futnak, a sorok a megadott sorrendben jelennek
+meg, a végén site-onként az idővel). A site-ok lépései saját munkamappából futnak, a közös
+adatbázis (`data/shared.duckdb`) ottani másolatával; az eredeti nem változik. LLM-hívás nincs."""
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+REPO = Path(__file__).resolve().parents[2]
+SHARED = Path("data") / "shared.duckdb"
 RUN_REPORT = "-run.md"
 RUN_MARKS = (re.compile(rb"#\d+"), re.compile(rb"\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?"))
 STEPS = (("entities", "--no-llm"), ("graph", "--out"), ("findings", "--out"),
          ("entity-report", "--out"))
 
 
-def run_once(domain: str, db: Path, out: Path) -> None:
+def run_once(domain: str, db: Path, out: Path, cwd: Path) -> None:
+    """Egy futás a `cwd` munkamappából: a közös adatbázis (`data/shared.duckdb`) a mappa saját
+    példánya, így több site futhat egyszerre (a fájlt egyszerre egy folyamat tarthatja)."""
     out.mkdir(parents=True)
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join(
+        filter(None, [str(REPO), os.environ.get("PYTHONPATH")]))}
     for command, flag in STEPS:
         args = [sys.executable, "-m", "aaa2.cli.main", command, domain, "--db", str(db)]
         args += [flag] if flag == "--no-llm" else [flag, str(out)]
         done = subprocess.run(args, capture_output=True, text=True, encoding="utf-8",
-                              check=False)
+                              check=False, cwd=cwd, env=env)
         if done.returncode != 0:
             raise RuntimeError(f"{command} {domain}: {done.stderr[-2000:]}")
 
@@ -52,16 +64,23 @@ def digests(out: Path) -> dict[str, str]:
             for path in sorted(out.iterdir()) if path.is_file()}
 
 
-def probe(name: str, domain: str, source: Path, work: Path) -> tuple[dict[str, str], list[str]]:
-    """A kimenetek sha256-a az első futásból, és a két futás között eltérő fájlok."""
+def probe(name: str, domain: str, source: Path, work: Path
+          ) -> tuple[dict[str, str], list[str], float]:
+    """A kimenetek sha256-a az első futásból, a két futás között eltérő fájlok, és az idő (mp)."""
+    started = time.monotonic()
+    work = work.resolve()
     db = work / f"{name}.duckdb"
     shutil.copyfile(source, db)
+    cwd = work / f"{name}-cwd"
+    (cwd / "data").mkdir(parents=True)
+    if SHARED.exists():
+        shutil.copyfile(SHARED, cwd / "data" / SHARED.name)
     first, second = work / f"{name}-1", work / f"{name}-2"
-    run_once(domain, db, first)
-    run_once(domain, db, second)
+    run_once(domain, db, first, cwd)
+    run_once(domain, db, second, cwd)
     one, two = digests(first), digests(second)
     differing = sorted(f for f in set(one) | set(two) if one.get(f) != two.get(f))
-    return one, differing
+    return one, differing, time.monotonic() - started
 
 
 def main() -> None:
@@ -79,12 +98,19 @@ def main() -> None:
     if keep is not None:
         shutil.rmtree(keep, ignore_errors=True)
         keep.mkdir(parents=True)
-    with tempfile.TemporaryDirectory() as temporary:
+    jobs = int(args[args.index("--jobs") + 1]) if "--jobs" in args else len(sites)
+    started = time.monotonic()
+    with tempfile.TemporaryDirectory() as temporary, \
+            ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
         tmp = keep or temporary
-        for site in sites:
-            domain, source = site.split("=", 1)
-            name = Path(source).stem
-            one, differing = probe(name, domain, Path(source), Path(tmp))
+        named = [(Path(source).stem, domain, Path(source))
+                 for domain, source in (site.split("=", 1) for site in sites)]
+        if len({name for name, _, _ in named}) != len(named):
+            raise SystemExit("két site adatbázisának azonos a neve")
+        running = [pool.submit(probe, name, domain, source, Path(tmp))
+                   for name, domain, source in named]
+        for (name, _, _), future in zip(named, running, strict=True):
+            one, differing, seconds = future.result()
             current[name] = one
             line = f"{name}: {len(one)} fájl, a két futás között eltérő: {len(differing)}"
             if differing:
@@ -97,7 +123,8 @@ def main() -> None:
                 if changed:
                     failed += 1
                     line += " (" + ", ".join(changed) + ")"
-            print(line, flush=True)
+            print(f"{line} [{seconds:.0f} mp]", flush=True)
+    print(f"összesen {time.monotonic() - started:.0f} mp, {jobs} site egyszerre", flush=True)
     if hashes_file and write:
         hashes_file.write_text(json.dumps(current, ensure_ascii=False, indent=1, sort_keys=True)
                                + "\n", encoding="utf-8", newline="\n")
