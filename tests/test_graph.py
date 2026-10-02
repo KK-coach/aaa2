@@ -161,7 +161,7 @@ def test_edges_from_mentions_main_entities_relations_and_wikidata_classes():
     assert (run.class_lookups, run.class_failures) == (2, 1)
     assert con.execute("SELECT from_id, to_id, source, evidence FROM edges WHERE type = 'is_a'"
                        ).fetchall() == [(ids["Mérés"], ids["Pelda"], "wikidata",
-                                         '{"property": "P279", "qid": "Q10", "class": "Q20"}')]
+                                         '{"class": "Q20", "property": "P279", "qid": "Q10"}')]
     assert run.edges["part_of"] == 2 and run.edges["main_entity"] == 4
     weights = load_graph_config().mention_weights
     edge = con.execute("SELECT evidence, weight FROM edges WHERE type = 'mentions' AND "

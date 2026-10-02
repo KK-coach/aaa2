@@ -74,6 +74,7 @@ from datetime import UTC, datetime
 import duckdb
 import zstandard
 
+from aaa2.db.stable_json import dumps
 from aaa2.entities.dom import parse_blocks
 from aaa2.entities.extract import surface_offsets
 from aaa2.entities.overrides import (
@@ -189,9 +190,9 @@ class Merger:
         if keep == remove:
             return
         con = self.con
-        kept = con.execute("SELECT name, aliases, source FROM entities WHERE entity_id = ?",
+        kept = con.execute("SELECT name, aliases, source FROM entities WHERE entity_id = ? ORDER BY ALL",
                            [keep]).fetchone()
-        gone = con.execute("SELECT name, aliases, source FROM entities WHERE entity_id = ?",
+        gone = con.execute("SELECT name, aliases, source FROM entities WHERE entity_id = ? ORDER BY ALL",
                            [remove]).fetchone()
         if kept is None or gone is None:
             return
@@ -201,7 +202,7 @@ class Merger:
                 "AND k.char_start IS NOT DISTINCT FROM r.char_start "
                 "AND k.char_end IS NOT DISTINCT FROM r.char_end "
                 "AND (k.position = r.position OR r.block_id IS NOT NULL) "
-                "WHERE r.entity_id = ? AND k.entity_id = ?", [remove, keep]).fetchall():
+                "WHERE r.entity_id = ? AND k.entity_id = ? ORDER BY ALL", [remove, keep]).fetchall():
             con.execute(
                 "INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id, count) "
                 "SELECT ?, source, run_id, llm_call_id, count FROM mention_sources "
@@ -225,8 +226,8 @@ class Merger:
         con.execute("DELETE FROM entity_aliases WHERE entity_id = ?", [remove])
         forms = [gone[0], *(gone[1] or [])]
         con.execute(
-            "UPDATE entities SET aliases = list_distinct(list_filter(list_concat(coalesce("
-            "aliases, []), ?), x -> x <> name)), source = ? WHERE entity_id = ?",
+            "UPDATE entities SET aliases = list_sort(list_distinct(list_filter(list_concat(coalesce("
+            "aliases, []), ?), x -> x <> name))), source = ? WHERE entity_id = ?",
             [forms, stronger_source(kept[2], gone[2]), keep])
         con.execute("INSERT INTO entity_aliases (entity_id, alias, lang, source) "
                     "VALUES (?, ?, NULL, 'merge') ON CONFLICT DO NOTHING", [keep, gone[0]])
@@ -234,7 +235,7 @@ class Merger:
             "INSERT INTO merge_log (run_id, kept_id, removed_id, kept_name, removed_name, rule, "
             "evidence, merged_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [self.run_id, keep, remove, kept[0], gone[0], rule,
-             json.dumps(evidence or {}, ensure_ascii=False), self.clock()])
+             dumps(evidence or {}, ensure_ascii=False), self.clock()])
         con.execute("DELETE FROM entities WHERE entity_id = ?", [remove])
         self.counts[rule] += 1
 
@@ -283,7 +284,7 @@ def run_site(con: duckdb.DuckDBPyConnection,
             "UPDATE entity_runs SET finished_at = ?, pages = ?, entities = ?, row_count = ?, "
             "skipped = ? WHERE run_id = ?",
             [clock(), len(roles), run.page_entities + run.packages, run.anchor_mentions,
-             json.dumps({"roles": run.roles, "merges": dict(run.merges),
+             dumps({"roles": run.roles, "merges": dict(run.merges),
                          "packages": run.packages, "steps": run.steps, "offers": run.offers,
                          "overrides": run.overrides, "shop": run.shop,
                          "demo": run.demo, "placeholder_pages": run.placeholder_pages,
@@ -310,13 +311,13 @@ class _Context:
     def dom(self, page_id: int) -> list:
         if page_id not in self._dom:
             title, blob = self.con.execute(
-                "SELECT title, rendered_html FROM pages WHERE page_id = ?", [page_id]).fetchone()
+                "SELECT title, rendered_html FROM pages WHERE page_id = ? ORDER BY ALL", [page_id]).fetchone()
             html = zstandard.ZstdDecompressor().decompress(blob).decode("utf-8", "replace")
             self._dom[page_id] = parse_blocks(html, title)
         return self._dom[page_id]
 
     def block_id(self, page_id: int, ordinal: int) -> int | None:
-        row = self.con.execute("SELECT block_id FROM blocks WHERE page_id = ? AND ordinal = ?",
+        row = self.con.execute("SELECT block_id FROM blocks WHERE page_id = ? AND ordinal = ? ORDER BY ALL",
                                [page_id, ordinal]).fetchone()
         return row[0] if row else None
 
@@ -347,8 +348,8 @@ def _page_entities(ctx: _Context, merger: Merger, run: SiteRun) -> dict[str, int
                 "ORDER BY length(alias), alias LIMIT 1", [entity_id]).fetchone()
             if named and named[0] != name:
                 ctx.con.execute(
-                    "UPDATE entities SET name = ?, aliases = list_distinct(list_filter("
-                    "list_concat(coalesce(aliases, []), [?]), x -> x <> ?)) WHERE entity_id = ?",
+                    "UPDATE entities SET name = ?, aliases = list_sort(list_distinct(list_filter("
+                    "list_concat(coalesce(aliases, []), [?]), x -> x <> ?))) WHERE entity_id = ?",
                     [named[0], name, named[0], entity_id])
     anchors = _qualified_anchors(ctx)
     cards = _card_headings(ctx)
@@ -372,7 +373,7 @@ def _page_entities(ctx: _Context, merger: Merger, run: SiteRun) -> dict[str, int
         ctx.con.execute(
             "UPDATE entities SET name = ?, type = ?, subtype = coalesce(?, subtype), "
             "tier = ?, anchor_page_id = ?, lang = coalesce(lang, ?), aliases = "
-            "list_distinct(list_filter(list_concat(coalesce(aliases, []), ?), x -> x <> ?)) "
+            "list_sort(list_distinct(list_filter(list_concat(coalesce(aliases, []), ?), x -> x <> ?))) "
             "WHERE entity_id = ?",
             [canonical, kind, subtype, "core" if role == "offer" else None, rep.page_id,
              rep.lang or ctx.site_lang, forms, canonical, entity_id])
@@ -429,14 +430,14 @@ def _position_identity(ctx: _Context, merger: Merger, entity_id: int, keys: set[
     fogalom külön marad."""
     evidence = {row[0] for row in ctx.con.execute(
         "SELECT DISTINCT block_id FROM page_entities WHERE entity_id = ? "
-        "AND block_id IS NOT NULL", [entity_id]).fetchall()}
+        "AND block_id IS NOT NULL ORDER BY ALL", [entity_id]).fetchall()}
     if not evidence:
         return
     for other, name, aliases, blocks in ctx.con.execute(
-            "SELECT e.entity_id, e.name, e.aliases, list(DISTINCT pe.block_id) FROM entities e "
+            "SELECT e.entity_id, e.name, e.aliases, list_sort(list(DISTINCT pe.block_id)) FROM entities e "
             "JOIN page_entities pe USING (entity_id) WHERE e.entity_id <> ? "
             "AND pe.block_id IS NOT NULL AND NOT list_contains(?, e.type) "
-            "GROUP BY e.entity_id, e.name, e.aliases",
+            "GROUP BY e.entity_id, e.name, e.aliases ORDER BY ALL",
             [entity_id, list(IDENTITY_EXCLUDED_TYPES)]).fetchall():
         if set(blocks) <= evidence and alias_key(name) in keys:
             merger.merge(entity_id, other, "page_identity_position",
@@ -692,7 +693,7 @@ def _add_mention(ctx: _Context, entity_id: int, page_id: int, ordinal: int, name
                  position: str) -> int:
     """Egy említés a blokkban a név helyén (source = rule, a site-futás); visszaad: 1, ha új
     forrás került be."""
-    block = ctx.con.execute("SELECT block_id, text FROM blocks WHERE page_id = ? AND ordinal = ?",
+    block = ctx.con.execute("SELECT block_id, text FROM blocks WHERE page_id = ? AND ordinal = ? ORDER BY ALL",
                             [page_id, ordinal]).fetchone()
     if block is None:
         return 0
@@ -702,7 +703,7 @@ def _add_mention(ctx: _Context, entity_id: int, page_id: int, ordinal: int, name
     start, end = span
     found = ctx.con.execute(
         "SELECT mention_id FROM page_entities WHERE page_id = ? AND block_id = ? "
-        "AND char_start = ? AND char_end = ? AND entity_id = ?",
+        "AND char_start = ? AND char_end = ? AND entity_id = ? ORDER BY ALL",
         [page_id, block[0], start, end, entity_id]).fetchone()
     if found is None:
         (mention_id,) = ctx.con.execute(
@@ -780,7 +781,7 @@ def _packages(ctx: _Context, merger: Merger, run: SiteRun, anchored: dict[str, i
                 for name in _catalog_names(node):
                     _package_entity(ctx, core, name, info, "schema_catalog")
         _pair_rows(ctx, merger, members, by_page)
-    (run.packages,) = ctx.con.execute("SELECT count(*) FROM entities WHERE tier = 'package'"
+    (run.packages,) = ctx.con.execute("SELECT count(*) FROM entities WHERE tier = 'package' ORDER BY ALL"
                                       ).fetchone()
 
 
@@ -790,7 +791,7 @@ def _package_entity(ctx: _Context, core: int, name: str, info: PageInfo,
     árazási sora adja a nevét."""
     key = alias_key(name)
     (core_name, core_aliases) = ctx.con.execute(
-        "SELECT name, aliases FROM entities WHERE entity_id = ?", [core]).fetchone()
+        "SELECT name, aliases FROM entities WHERE entity_id = ? ORDER BY ALL", [core]).fetchone()
     if key in {alias_key(f) for f in [core_name, *(core_aliases or [])]}:
         return None
     entity_id = next((entity_id for entity_id, name_, aliases in ctx.con.execute(
@@ -803,13 +804,13 @@ def _package_entity(ctx: _Context, core: int, name: str, info: PageInfo,
             "VALUES (?, ?, 'service', [], 'rule', ?) RETURNING entity_id",
             [name, info.lang or ctx.site_lang, _now()]).fetchone()
     ctx.con.execute("UPDATE entities SET tier = 'package', name = CASE WHEN ? THEN ? ELSE name "
-                    "END, aliases = list_distinct(list_filter(list_append(coalesce(aliases, []), "
-                    "name), x -> x <> CASE WHEN ? THEN ? ELSE name END)) WHERE entity_id = ?",
+                    "END, aliases = list_sort(list_distinct(list_filter(list_append(coalesce(aliases, []), "
+                    "name), x -> x <> CASE WHEN ? THEN ? ELSE name END))) WHERE entity_id = ?",
                     [primary, name, primary, name, entity_id])
     ctx.con.execute(
         "INSERT INTO entity_relations (from_id, to_id, type, source, evidence) "
         "VALUES (?, ?, 'part_of', ?, ?) ON CONFLICT DO NOTHING",
-        [entity_id, core, source, json.dumps({"page_id": info.page_id, "name": name},
+        [entity_id, core, source, dumps({"page_id": info.page_id, "name": name},
                                              ensure_ascii=False)])
     return entity_id
 
@@ -888,7 +889,7 @@ def _entity_rows(con: duckdb.DuckDBPyConnection) -> dict[int, tuple]:
     return {row[0]: row for row in con.execute(
         "SELECT e.entity_id, e.anchor_page_id, e.tier, e.source, (SELECT count(*) FROM "
         "page_entities pe WHERE pe.entity_id = e.entity_id), e.type, e.subtype "
-        "FROM entities e").fetchall()}
+        "FROM entities e ORDER BY ALL").fetchall()}
 
 
 def _mergeable(a: tuple, b: tuple) -> bool:
@@ -998,9 +999,9 @@ def aligned_headings(left: list[tuple[int, list[int]]],
 
 def _heading_entity(con: duckdb.DuckDBPyConnection, block_id: int) -> int | None:
     """A headinget egészében lefedő említés entitása, ha pontosan egy ilyen van."""
-    (text,) = con.execute("SELECT text FROM blocks WHERE block_id = ?", [block_id]).fetchone()
+    (text,) = con.execute("SELECT text FROM blocks WHERE block_id = ? ORDER BY ALL", [block_id]).fetchone()
     found = {entity_id for entity_id, surface in con.execute(
-        "SELECT entity_id, surface_form FROM page_entities WHERE block_id = ?",
+        "SELECT entity_id, surface_form FROM page_entities WHERE block_id = ? ORDER BY ALL",
         [block_id]).fetchall() if alias_key(surface) == alias_key(text)}
     return found.pop() if len(found) == 1 else None
 
@@ -1040,7 +1041,7 @@ def _place_pair(con: duckdb.DuckDBPyConnection, a: int, b: int,
     concept esetén a service."""
     rows = _entity_rows(con)
     types = dict(con.execute("SELECT entity_id, type FROM entities WHERE list_contains(?, "
-                             "entity_id)", [[a, b]]).fetchall())
+                             "entity_id) ORDER BY ALL", [[a, b]]).fetchall())
     if not _mergeable(rows[a], rows[b]):
         return None, b
     if types[a] == types[b]:
@@ -1057,7 +1058,7 @@ def _place_pair(con: duckdb.DuckDBPyConnection, a: int, b: int,
 def _only_headings(con: duckdb.DuckDBPyConnection, entity_id: int) -> bool:
     (others,) = con.execute(
         "SELECT count(*) FROM page_entities pe JOIN blocks b USING (block_id) "
-        "WHERE pe.entity_id = ? AND b.kind <> 'heading'", [entity_id]).fetchone()
+        "WHERE pe.entity_id = ? AND b.kind <> 'heading' ORDER BY ALL", [entity_id]).fetchone()
     return others == 0
 
 
@@ -1069,17 +1070,17 @@ def _only_headings(con: duckdb.DuckDBPyConnection, entity_id: int) -> bool:
 def llm_types(con: duckdb.DuckDBPyConnection) -> dict[tuple[int, int, int, int], tuple[str, str]]:
     """A legutóbbi LLM-futás tárolt rekordjaiból említésenként (oldal, blokk, kezdet, vég) az
     LLM típusa és kanonikus neve."""
-    (run_id,) = con.execute("SELECT max(run_id) FROM entity_runs WHERE method = 'llm'"
+    (run_id,) = con.execute("SELECT max(run_id) FROM entity_runs WHERE method = 'llm' ORDER BY ALL"
                             ).fetchone()
     found: dict[tuple[int, int, int, int], tuple[str, str]] = {}
     if run_id is None:
         return found
     for page_id, refined, extraction in con.execute(
             "SELECT page_id, refined, extraction FROM entity_run_pages WHERE run_id = ? "
-            "AND status = 'done'", [run_id]).fetchall():
+            "AND status = 'done' ORDER BY ALL", [run_id]).fetchall():
         record = json.loads(refined or extraction or "{}")
         blocks = {f"b{ordinal}": (block_id, text) for block_id, ordinal, text in con.execute(
-            "SELECT block_id, ordinal, text FROM blocks WHERE page_id = ?", [page_id]).fetchall()}
+            "SELECT block_id, ordinal, text FROM blocks WHERE page_id = ? ORDER BY ALL", [page_id]).fetchall()}
         for raw in record.get("entities") or []:
             block = blocks.get(raw.get("block_id"))
             spans = surface_offsets(raw.get("surface_form", ""), block[1]) if block else []
@@ -1124,15 +1125,15 @@ def _type_split(con: duckdb.DuckDBPyConnection, merger: Merger) -> dict[int, set
         moved[entity_id].add(concept)
         counts[(entity_id, concept)] += 1
     for (entity_id, concept), count in counts.items():
-        (source_name,) = con.execute("SELECT name FROM entities WHERE entity_id = ?",
+        (source_name,) = con.execute("SELECT name FROM entities WHERE entity_id = ? ORDER BY ALL",
                                      [entity_id]).fetchone()
-        (concept_name,) = con.execute("SELECT name FROM entities WHERE entity_id = ?",
+        (concept_name,) = con.execute("SELECT name FROM entities WHERE entity_id = ? ORDER BY ALL",
                                       [concept]).fetchone()
         con.execute(
             "INSERT INTO merge_log (run_id, kept_id, removed_id, kept_name, removed_name, rule, "
             "evidence, merged_at) VALUES (?, ?, NULL, ?, ?, 'type_split', ?, ?)",
             [merger.run_id, concept, concept_name, source_name,
-             json.dumps({"from_id": entity_id, "mentions": count}), merger.clock()])
+             dumps({"from_id": entity_id, "mentions": count}), merger.clock()])
         merger.counts["type_split"] += 1
     return moved
 
@@ -1141,11 +1142,11 @@ def _service_names(con: duckdb.DuckDBPyConnection) -> dict[int, set[str]]:
     """Service → a neve, az aliasai és az `entity_aliases` sorai normalizált kulccsal."""
     found: dict[int, set[str]] = defaultdict(set)
     for entity_id, name, aliases in con.execute(
-            "SELECT entity_id, name, aliases FROM entities WHERE type = 'service'").fetchall():
+            "SELECT entity_id, name, aliases FROM entities WHERE type = 'service' ORDER BY ALL").fetchall():
         found[entity_id] |= {normal_key(f) for f in [name, *(aliases or [])]}
     for entity_id, alias in con.execute(
             "SELECT a.entity_id, a.alias FROM entity_aliases a JOIN entities e "
-            "USING (entity_id) WHERE e.type = 'service'").fetchall():
+            "USING (entity_id) WHERE e.type = 'service' ORDER BY ALL").fetchall():
         found[entity_id].add(normal_key(alias))
     return found
 
@@ -1165,11 +1166,11 @@ def _move_mention(con: duckdb.DuckDBPyConnection, mention_id: int, entity_id: in
     """Az említés átkerül az entitáshoz; ha ott már van azonos helyű említés, a forrásai
     oda kerülnek."""
     row = con.execute("SELECT page_id, block_id, char_start, char_end FROM page_entities "
-                      "WHERE mention_id = ?", [mention_id]).fetchone()
+                      "WHERE mention_id = ? ORDER BY ALL", [mention_id]).fetchone()
     same = con.execute(
         "SELECT mention_id FROM page_entities WHERE page_id = ? AND block_id IS NOT DISTINCT "
         "FROM ? AND char_start IS NOT DISTINCT FROM ? AND char_end IS NOT DISTINCT FROM ? "
-        "AND entity_id = ?", [*row, entity_id]).fetchone()
+        "AND entity_id = ? ORDER BY ALL", [*row, entity_id]).fetchone()
     if same is None:
         con.execute("UPDATE page_entities SET entity_id = ? WHERE mention_id = ?",
                     [entity_id, mention_id])
@@ -1197,19 +1198,19 @@ def _offers(con: duckdb.DuckDBPyConnection, split: dict[int, set[int]]) -> int:
     rows = set()
     for entity_id, name, aliases in con.execute(
             "SELECT entity_id, name, aliases FROM entities WHERE type = 'service' "
-            "AND tier IN ('core', 'package', 'work_mode')").fetchall():
+            "AND tier IN ('core', 'package', 'work_mode') ORDER BY ALL").fetchall():
         forms = {name} | {alias for (alias,) in con.execute(
-            "SELECT alias FROM entity_aliases WHERE entity_id = ? AND list_contains(?, source)",
+            "SELECT alias FROM entity_aliases WHERE entity_id = ? AND list_contains(?, source) ORDER BY ALL",
             [entity_id, list(OFFER_LABEL_SOURCES)]).fetchall()}
         for form in forms:
             for part in label_parts(form):
                 concept = concepts.get(normal_key(part))
                 if concept is not None:
-                    rows.add((entity_id, concept, "name", json.dumps({"name": part},
+                    rows.add((entity_id, concept, "name", dumps({"name": part},
                                                                      ensure_ascii=False)))
         for concept in {resolve(con, c) for c in split.get(entity_id, ())}:
             if concept is not None:
-                rows.add((entity_id, concept, "type_split", json.dumps({})))
+                rows.add((entity_id, concept, "type_split", dumps({})))
     unique: dict[tuple[int, int], tuple] = {}
     for row in sorted(rows):
         unique.setdefault(row[:2], row)
@@ -1256,7 +1257,7 @@ def apply_overrides(ctx: _Context, merger: Merger, config: SiteConfig) -> int:
         for other in sorted(ids - {keep}):
             merger.merge(keep, other, "override", {"names": list(override.names),
                                                    "url": override.url})
-        name, kind, tier = con.execute("SELECT name, type, tier FROM entities WHERE entity_id = ?",
+        name, kind, tier = con.execute("SELECT name, type, tier FROM entities WHERE entity_id = ? ORDER BY ALL",
                                        [keep]).fetchone()
         con.execute(
             "UPDATE entities SET type = 'service', subtype = CASE WHEN type = 'service' THEN "
@@ -1272,12 +1273,12 @@ def apply_overrides(ctx: _Context, merger: Merger, config: SiteConfig) -> int:
                         [keep])
             con.execute("INSERT INTO entity_relations (from_id, to_id, type, source, evidence) "
                         "VALUES (?, ?, 'part_of', 'override', ?) ON CONFLICT DO NOTHING",
-                        [keep, core, json.dumps({"part_of": override.part_of},
+                        [keep, core, dumps({"part_of": override.part_of},
                                                 ensure_ascii=False)])
         con.execute(
             "INSERT INTO merge_log (run_id, kept_id, removed_id, kept_name, removed_name, rule, "
             "evidence, merged_at) VALUES (?, ?, NULL, ?, ?, 'override', ?, ?)",
-            [merger.run_id, keep, name, name, json.dumps(
+            [merger.run_id, keep, name, name, dumps(
                 {"tier": override.tier, "previous_type": kind, "previous_tier": tier,
                  "part_of": core}, ensure_ascii=False), merger.clock()])
         merger.counts["override"] += 1
@@ -1296,19 +1297,19 @@ def _override_entities(ctx: _Context, names: tuple[str, ...], url: str | None) -
         groups = {ctx.roles[p].group for p in pages}
         members = [info.page_id for info in ctx.roles.values() if info.group in groups]
         found |= {e for (e,) in con.execute(
-            "SELECT entity_id FROM entities WHERE list_contains(?, anchor_page_id)",
+            "SELECT entity_id FROM entities WHERE list_contains(?, anchor_page_id) ORDER BY ALL",
             [members]).fetchall()}
     keys = {normal_key(n) for n in names} - {""}
     if keys:
         for entity_id, name, aliases in con.execute(
                 "SELECT entity_id, name, aliases FROM entities WHERE type <> 'person' AND "
                 "(anchor_page_id IS NOT NULL OR entity_id IN (SELECT entity_id FROM "
-                "page_entities))").fetchall():
+                "page_entities)) ORDER BY ALL").fetchall():
             if {normal_key(f) for f in [name, *(aliases or [])]} & keys:
                 found.add(entity_id)
         for entity_id, alias in con.execute(
                 "SELECT a.entity_id, a.alias FROM entity_aliases a JOIN entities e "
-                "USING (entity_id) WHERE e.type <> 'person'").fetchall():
+                "USING (entity_id) WHERE e.type <> 'person' ORDER BY ALL").fetchall():
             if normal_key(alias) in keys:
                 found.add(entity_id)
     return found
@@ -1323,7 +1324,7 @@ def _demo(con: duckdb.DuckDBPyConnection, run: SiteRun,
     rows = con.execute(
         "SELECT pe.entity_id, pe.page_id, b.kind, b.text FROM page_entities pe "
         "JOIN entities e USING (entity_id) LEFT JOIN blocks b USING (block_id) "
-        "WHERE list_contains(?, e.type)", [list(DEMO_TYPES)]).fetchall()
+        "WHERE list_contains(?, e.type) ORDER BY ALL", [list(DEMO_TYPES)]).fetchall()
     code_pages: dict[int, set[int]] = defaultdict(set)
     for entity_id, page_id, kind, _ in rows:
         if kind == "code":
@@ -1354,7 +1355,7 @@ def _template(ctx: _Context, run: SiteRun) -> None:
     unit_groups: dict[tuple[str, str], set[str]] = defaultdict(set)
     for page_id, kind, text in con.execute(
             "SELECT page_id, kind, text FROM blocks WHERE region = 'content' "
-            "AND kind <> 'title'").fetchall():
+            "AND kind <> 'title' ORDER BY ALL").fetchall():
         if page_id in groups:
             for line in (text.split("\n") if kind == "code" else [text]):
                 unit_groups[(kind, alias_key(line))].add(groups[page_id])
@@ -1365,15 +1366,15 @@ def _template(ctx: _Context, run: SiteRun) -> None:
     for mention_id, entity_id, kind, text, start in con.execute(
             "SELECT pe.mention_id, pe.entity_id, b.kind, b.text, pe.char_start "
             "FROM page_entities pe JOIN blocks b USING (block_id) "
-            "WHERE b.region = 'content' AND b.kind <> 'title'").fetchall():
+            "WHERE b.region = 'content' AND b.kind <> 'title' ORDER BY ALL").fetchall():
         unit = (kind, alias_key(_line(text, start) if kind == "code" else text))
         template = len(unit_groups[unit]) >= needed
         by_entity[entity_id].append(template)
         if template:
             flagged.append(mention_id)
     if flagged:
-        con.execute("UPDATE page_entities SET flags = list_distinct(list_append(coalesce(flags, "
-                    "[]), 'template')) WHERE list_contains(?, mention_id)", [flagged])
+        con.execute("UPDATE page_entities SET flags = list_sort(list_distinct(list_append(coalesce(flags, "
+                    "[]), 'template'))) WHERE list_contains(?, mention_id)", [flagged])
     entities = [e for e, marks in by_entity.items() if marks and all(marks)]
     _set_flag(con, "template", entities)
     run.template_mentions = len(flagged)
@@ -1401,7 +1402,7 @@ def _site_name_keys(con: duckdb.DuckDBPyConnection) -> set[str]:
     for name, aliases in con.execute(
             "SELECT name, aliases FROM entities e WHERE (role = 'brand' "
             "OR (type = 'brand' AND source IN ('rule', 'schema'))) AND NOT EXISTS (SELECT 1 "
-            "FROM entity_relations r WHERE r.from_id = e.entity_id AND r.type = 'brand_of')"
+            "FROM entity_relations r WHERE r.from_id = e.entity_id AND r.type = 'brand_of') ORDER BY ALL"
             ).fetchall():
         keys |= {alias_key(f) for f in [name, *(aliases or [])]}
     return keys - {""}
@@ -1433,7 +1434,7 @@ def _line(text: str, start: int | None) -> str:
 
 
 def _exists(con: duckdb.DuckDBPyConnection, entity_id: int) -> bool:
-    return con.execute("SELECT count(*) FROM entities WHERE entity_id = ?",
+    return con.execute("SELECT count(*) FROM entities WHERE entity_id = ? ORDER BY ALL",
                        [entity_id]).fetchone()[0] > 0
 
 

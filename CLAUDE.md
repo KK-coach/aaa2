@@ -130,6 +130,14 @@ A spec a projektdokumentum „Architektúra (spec)” fülén: modulok (`core` �
 - `docs/architecture/rules.md`: szabályjegyzék-vázlat (azonosító, kódhely, mit csinál, miért, melyik site-on mérve, melyik teszt fedi).
 - Mérés valódi adatbázison: `python -m tests.acceptance.contracts_probe <adatbázis> …`.
 
+Determinizmus (az architektúra 2. lépése előtt, Krisztián döntése 2026-10-01): ugyanazon az adatbázison kétszer futtatva a kimenet bájtra azonos. Amit ez megkövetel, és amit új kódnál tartani kell:
+
+- Minden több sort adó lekérdezés explicit rendezést kap; ahol nincs természetes kulcs, `ORDER BY ALL` (a DuckDB a kiválasztott oszlopok szerint rendez). Rendezetlen `SELECT` eredményén ne menjen végig kód.
+- A DuckDB `list_distinct` és `list(DISTINCT …)` nem őrzi a sorrendet: mindig `list_sort`-ba kerül (így az `entities.aliases` tömb rendezett).
+- A tárolt és a kiírt JSON a `aaa2/db/stable_json.py` `dumps` függvényével készül (rendezett kulcsok); a listák sorrendjét a hívó adja, halmazból lista csak rendezve lesz.
+- Mérés: `python -m tests.acceptance.determinism [--hashes tests/acceptance/output_hashes.json] [--write] [--keep MAPPA] <domain>=<adatbázis> …` (a munkamásolaton kétszer fut a site-lépés LLM nélkül, a gráf, a megállapítások és az entitásjelentés; a futásjelentésben a futás sorszáma és időpontja nem számít). A hat adatbázis (régi kk.coach, ngx, Materia, marketinglens, duex, kk-coach-2026-10; `data/m3/`) kimeneteinek rögzített sha256-a: `tests/acceptance/output_hashes.json`; ez az alap a következő lépések „bájtra azonos” elfogadásához. Két kimeneti mappa sorrendtől független összevetése: `python -m tests.acceptance.content_equal <régi> <új>`. A tesztsorban: `tests/test_determinism.py` (szintetikus site).
+- A rendezés bevezetésekor a tartalom nem változott, egy kivétellel: a H1/title-eltérés bizonyítékában az „elfogadott megnevezések” az első 8 megnevezést mutatja (`forms[:8]`), és ez a 8 a régi kk.coach két megállapításában más lett (korábban futásonként változott, most a név szerinti első 8).
+
 ## Stack
 
 Python 3.12, asyncio, Playwright (Chromium), selectolax, DuckDB, Typer, pydantic, zstandard, pytest; az LLM-hez anthropic, openai, google-genai, python-dotenv. `pip install -e ".[dev]"`, `playwright install chromium`, `pytest`, `aaa --help`.

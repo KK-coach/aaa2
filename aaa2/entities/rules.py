@@ -63,6 +63,7 @@ import duckdb
 import zstandard
 from selectolax.parser import HTMLParser
 
+from aaa2.db.stable_json import dumps
 from aaa2.entities.dom import build_blocks, parse_blocks
 from aaa2.entities.pages import ENTITY_ROLES, page_roles, page_url
 from aaa2.llm.schemas import ENTITY_TYPES
@@ -315,14 +316,14 @@ def run_rules(con: duckdb.DuckDBPyConnection,
     page_ids = [row[0] for row in pages]
     build_blocks(con, page_ids)
     block_ids = {(page_id, ordinal): block_id for block_id, page_id, ordinal in con.execute(
-        "SELECT block_id, page_id, ordinal FROM blocks WHERE list_contains(?, page_id)",
+        "SELECT block_id, page_id, ordinal FROM blocks WHERE list_contains(?, page_id) ORDER BY ALL",
         [page_ids]).fetchall()}
     page_lang = {page_id: _primary(lang) for page_id, _, _, _, lang, _ in pages}
     decompressor = zstandard.ZstdDecompressor()
     dom = {page_id: _page_dom(decompressor.decompress(blob).decode("utf-8", "replace"), title)
            for page_id, _, title, _, _, blob in pages}
     stored = {(page_id, ordinal): text for page_id, ordinal, text in con.execute(
-        "SELECT page_id, ordinal, text FROM blocks WHERE list_contains(?, page_id)",
+        "SELECT page_id, ordinal, text FROM blocks WHERE list_contains(?, page_id) ORDER BY ALL",
         [page_ids]).fetchall()}
     for page_id, page in dom.items():
         for block in page.blocks:
@@ -335,7 +336,7 @@ def run_rules(con: duckdb.DuckDBPyConnection,
     _site_names(con, pages, dom, candidates, skipped)
     _anchors(con, page_ids, dom, candidates, skipped)
 
-    site_languages = (con.execute("SELECT languages FROM site").fetchone() or [None])[0] or []
+    site_languages = (con.execute("SELECT languages FROM site ORDER BY ALL").fetchone() or [None])[0] or []
     fallback_lang = _primary(site_languages[0]) if site_languages else None
     keys_of: dict[int, list[tuple[str, str]]] = defaultdict(list)
     unique: dict[int, Candidate] = {}
@@ -371,11 +372,11 @@ def run_rules(con: duckdb.DuckDBPyConnection,
                      started],
                 ).fetchone()
             else:
-                (current,) = con.execute("SELECT source FROM entities WHERE entity_id = ?",
+                (current,) = con.execute("SELECT source FROM entities WHERE entity_id = ? ORDER BY ALL",
                                          [entity_id]).fetchone()
                 con.execute(
-                    "UPDATE entities SET aliases = list_distinct(list_concat(coalesce(aliases, "
-                    "[]), ?)), lang = coalesce(lang, ?), source = ?, role = coalesce(?, role) "
+                    "UPDATE entities SET aliases = list_sort(list_distinct(list_concat(coalesce(aliases, "
+                    "[]), ?))), lang = coalesce(lang, ?), source = ?, role = coalesce(?, role) "
                     "WHERE entity_id = ?",
                     [aliases, lang, stronger_source(current, candidate.source), candidate.role,
                      entity_id],
@@ -402,7 +403,7 @@ def run_rules(con: duckdb.DuckDBPyConnection,
             "entities = ?, row_count = ?, by_position = ?, skipped = ? WHERE run_id = ?",
             [clock(), len(pages), len(pages_with), len(entity_ids), rows,
              json.dumps(dict(sorted(by_position.items()))),
-             json.dumps(skipped, ensure_ascii=False), run_id],
+             dumps(skipped, ensure_ascii=False), run_id],
         )
         con.commit()
     except Exception:
@@ -419,14 +420,14 @@ def _store_mention(con: duckdb.DuckDBPyConnection, mention: Mention, entity_id: 
     if mention.ordinal is None:
         found = con.execute(
             "SELECT mention_id FROM page_entities WHERE page_id = ? AND entity_id = ? "
-            "AND position = 'schema'", [mention.page_id, entity_id]).fetchone()
+            "AND position = 'schema' ORDER BY ALL", [mention.page_id, entity_id]).fetchone()
         block_id, start, end = None, None, None
     else:
         block_id = block_ids[(mention.page_id, mention.ordinal)]
         start, end = mention.span
         found = con.execute(
             "SELECT mention_id FROM page_entities WHERE page_id = ? AND block_id = ? "
-            "AND char_start = ? AND char_end = ? AND entity_id = ?",
+            "AND char_start = ? AND char_end = ? AND entity_id = ? ORDER BY ALL",
             [mention.page_id, block_id, start, end, entity_id]).fetchone()
     if found:
         return found[0]
@@ -667,7 +668,7 @@ def _anchor_mentions(blocks: list, page_id: int, key: str) -> list[Mention]:
 
 def _home_urls(con: duckdb.DuckDBPyConnection) -> set[str]:
     """A `site.home_urls` (a site-profil írja); ha a crawl ennél régebbi, a seed URL."""
-    row = con.execute("SELECT home_urls, seed_url FROM site").fetchone()
+    row = con.execute("SELECT home_urls, seed_url FROM site ORDER BY ALL").fetchone()
     if row is None:
         return set()
     return set(row[0]) if row[0] is not None else {row[1]}

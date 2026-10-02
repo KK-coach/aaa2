@@ -42,7 +42,7 @@ def wikipedia_url(value: str | None) -> str:
 def entity_table(con: duckdb.DuckDBPyConnection) -> list[dict]:
     mentions = con.execute(
         "SELECT pe.entity_id, pe.page_id, b.kind, b.region FROM page_entities pe "
-        "LEFT JOIN blocks b USING (block_id)").fetchall()
+        "LEFT JOIN blocks b USING (block_id) ORDER BY ALL").fetchall()
     chrome: dict[int, list[str]] = defaultdict(list)
     for page_id, text in con.execute(
             "SELECT page_id, text FROM blocks WHERE region = 'chrome' ORDER BY page_id, ordinal"
@@ -50,7 +50,7 @@ def entity_table(con: duckdb.DuckDBPyConnection) -> list[dict]:
         chrome[page_id].append(text)
     converted = dict(con.execute(
         "SELECT entity_id, count(DISTINCT page_id) FROM soft_checks WHERE type = 'concept' "
-        "AND type_changed_from = 'service' AND entity_id IS NOT NULL GROUP BY 1").fetchall())
+        "AND type_changed_from = 'service' AND entity_id IS NOT NULL GROUP BY 1 ORDER BY ALL").fetchall())
     pages: dict[int, set[int]] = defaultdict(set)
     count: Counter[int] = Counter()
     places: dict[int, dict[str, set[int]]] = defaultdict(lambda: defaultdict(set))
@@ -65,7 +65,7 @@ def entity_table(con: duckdb.DuckDBPyConnection) -> list[dict]:
             con.execute(
                 "SELECT e.entity_id, e.name, e.type, e.subtype, e.tier, e.flags, e.source, "
                 "p.url, e.wikidata_id, e.wikidata_status, e.wikipedia FROM entities e "
-                "LEFT JOIN pages p ON p.page_id = e.anchor_page_id").fetchall():
+                "LEFT JOIN pages p ON p.page_id = e.anchor_page_id ORDER BY ALL").fetchall():
         if entity_id not in pages:
             continue
         nav = places[entity_id]["nav"]
@@ -111,11 +111,11 @@ def run_report(con: duckdb.DuckDBPyConnection, label: str,
                baseline: duckdb.DuckDBPyConnection | None = None) -> str:
     """A site legutóbbi futásának jelentése (lásd a modul leírását); `baseline`: a korábbi
     állapot adatbázisa (a regressziós összevetéshez)."""
-    (domain,) = con.execute("SELECT coalesce(max(domain), '') FROM site").fetchone()
+    (domain,) = con.execute("SELECT coalesce(max(domain), '') FROM site ORDER BY ALL").fetchone()
     (eligible,) = con.execute(
         "SELECT count(*) FROM pages WHERE status BETWEEN 200 AND 299 AND error IS NULL "
-        "AND rendered_html IS NOT NULL").fetchone()
-    (crawled,) = con.execute("SELECT count(*) FROM pages").fetchone()
+        "AND rendered_html IS NOT NULL ORDER BY ALL").fetchone()
+    (crawled,) = con.execute("SELECT count(*) FROM pages ORDER BY ALL").fetchone()
     lines = [f"# Entitás-pipeline: {label}", "",
              f"- site: {domain or '—'}; oldal a készletben {crawled}, ebből alkalmas {eligible}"]
     rules = _latest(con, "rules")
@@ -192,7 +192,7 @@ def _entities_section(con: duckdb.DuckDBPyConnection) -> list[str]:
         "(SELECT entity_id FROM page_entities) GROUP BY source ORDER BY source").fetchall()
     (unchecked,) = con.execute(
         "SELECT count(*) FROM entities WHERE knowledge_checked_at IS NULL AND entity_id IN "
-        "(SELECT entity_id FROM page_entities)").fetchone()
+        "(SELECT entity_id FROM page_entities) ORDER BY ALL").fetchone()
     lines += ["", "Forrás szerint: " + (", ".join(f"{s} {n}" for s, n in by_source) or "—")
               + f"; tudásbázis-ellenőrzés nélkül: {unchecked}", ""]
     return lines
@@ -204,13 +204,13 @@ def _site_section(con: duckdb.DuckDBPyConnection) -> list[str]:
         return []
     detail = json.loads(run[8] or "{}")
     tiers = dict(con.execute(
-        "SELECT tier, count(*) FROM entities WHERE tier IS NOT NULL GROUP BY tier").fetchall())
+        "SELECT tier, count(*) FROM entities WHERE tier IS NOT NULL GROUP BY tier ORDER BY ALL").fetchall())
     anchored = con.execute(
         "SELECT e.type, coalesce(e.subtype, ''), count(*) FROM entities e "
         "WHERE e.anchor_page_id IS NOT NULL GROUP BY ALL ORDER BY ALL").fetchall()
     flags = dict(con.execute(
         "SELECT flag, count(*) FROM (SELECT unnest(flags) AS flag FROM entities) "
-        "GROUP BY flag").fetchall())
+        "GROUP BY flag ORDER BY ALL").fetchall())
     merges = con.execute("SELECT rule, count(*) FROM merge_log WHERE run_id = ? GROUP BY rule "
                          "ORDER BY rule", [run[0]]).fetchall()
     relations = con.execute("SELECT type, count(*) FROM entity_relations GROUP BY type "
@@ -239,13 +239,13 @@ def _soft_section(con: duckdb.DuckDBPyConnection) -> list[str]:
         "count(*) FILTER (WHERE structure IS NULL OR structure = 'anchor'), "
         "count(*) FILTER (WHERE sol = false), count(*) FILTER (WHERE sol IS NULL AND kept), "
         "count(DISTINCT lower(canonical)) FILTER (WHERE kept) "
-        "FROM soft_checks WHERE type = 'service'").fetchone()
+        "FROM soft_checks WHERE type = 'service' ORDER BY ALL").fetchone()
     concepts = con.execute(
         "SELECT count(*), count(DISTINCT entity_id), count(*) FILTER (WHERE prominent), "
         "count(*) FILTER (WHERE structure IS NOT NULL), count(*) FILTER (WHERE blocks >= 2), "
         "count(*) FILTER (WHERE knowledge IS NOT NULL), count(DISTINCT page_id), "
         "count(*) FILTER (WHERE type_changed_from = 'service') "
-        "FROM soft_checks WHERE type = 'concept'").fetchone()
+        "FROM soft_checks WHERE type = 'concept' ORDER BY ALL").fetchone()
     total, kept, no_place, vetoed, unanswered, distinct = services
     c_total, c_entities, prominent, placed, repeated, known, c_pages, converted = concepts
     return [

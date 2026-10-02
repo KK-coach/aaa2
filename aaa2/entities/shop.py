@@ -46,13 +46,13 @@
 """
 from __future__ import annotations
 
-import json
 import re
 from collections import Counter, defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
+from aaa2.db.stable_json import dumps
 from aaa2.entities.overrides import SiteConfig
 from aaa2.entities.pages import PageInfo, breadcrumbs, page_types, page_url
 from aaa2.entities.rules import alias_key
@@ -315,7 +315,7 @@ def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
         attributes = name_attributes(product.name)
         ctx.con.execute("UPDATE entities SET subtype = 'variant', attributes = ? "
                         "WHERE entity_id = ?",
-                        [json.dumps(attributes, ensure_ascii=False) if attributes else None,
+                        [dumps(attributes, ensure_ascii=False) if attributes else None,
                          product.entity_id])
         run.with_attributes += bool(attributes)
         if product.category is not None:
@@ -411,7 +411,7 @@ def _site_name_cuts(ctx: _Context, merger: Merger, run: ShopRun) -> None:
 
     con = ctx.con
     site_org = con.execute("SELECT min(entity_id) FROM entities WHERE type = 'org' "
-                           "AND role = 'brand'").fetchone()[0]
+                           "AND role = 'brand' ORDER BY ALL").fetchone()[0]
     if site_org is None:
         return
     keys = _site_name_keys(con)
@@ -532,10 +532,10 @@ def _orphan_brands(ctx: _Context, merger: Merger, run: ShopRun, brand_ids: list[
         names[entity_id] = name
         targets += [(entity_id, form) for form in [name, *(aliases or [])]]
     parent_of = dict(con.execute("SELECT from_id, to_id FROM entity_relations WHERE type = "
-                                 "'part_of' AND source = 'shop' AND list_contains(?, from_id)",
+                                 "'part_of' AND source = 'shop' AND list_contains(?, from_id) ORDER BY ALL",
                                  [family_ids]).fetchall())
     site_org = con.execute("SELECT min(entity_id) FROM entities WHERE type = 'org' "
-                           "AND role = 'brand'").fetchone()[0]
+                           "AND role = 'brand' ORDER BY ALL").fetchone()[0]
     site_keys = _site_name_keys(con)
     orphans: list[int] = []
     for entity_id, name in con.execute(
@@ -546,7 +546,7 @@ def _orphan_brands(ctx: _Context, merger: Merger, run: ShopRun, brand_ids: list[
         if site_org is not None and alias_key(name) in site_keys:
             merger.merge(site_org, entity_id, "orphan_brand_site", {"brand": name})
             run.orphan_aliases[name] = con.execute(
-                "SELECT name FROM entities WHERE entity_id = ?", [site_org]).fetchone()[0]
+                "SELECT name FROM entities WHERE entity_id = ? ORDER BY ALL", [site_org]).fetchone()[0]
             continue
         found, match = orphan_target(name, targets)
         found = sorted(set(found))
@@ -601,8 +601,8 @@ def _anchored_entity(ctx: _Context, merger: Merger, members: list[PageInfo], kin
     forms = sorted({n.text for n in names} - {canonical})
     ctx.con.execute(
         "UPDATE entities SET name = ?, type = ?, subtype = ?, anchor_page_id = ?, "
-        "lang = coalesce(lang, ?), aliases = list_distinct(list_filter(list_concat("
-        "coalesce(aliases, []), ?), x -> x <> ?)) WHERE entity_id = ?",
+        "lang = coalesce(lang, ?), aliases = list_sort(list_distinct(list_filter(list_concat("
+        "coalesce(aliases, []), ?), x -> x <> ?))) WHERE entity_id = ?",
         [canonical, kind, subtype, rep.page_id, rep.lang or ctx.site_lang, forms, canonical,
          entity_id])
     return entity_id
@@ -630,8 +630,8 @@ def _brand_entity(ctx: _Context, merger: Merger, key: str, canonical: str,
             [canonical, ctx.site_lang, merger.clock()]).fetchone()
     aliases = sorted(set(forms) - {canonical})
     ctx.con.execute(
-        "UPDATE entities SET name = ?, type = 'brand', aliases = list_distinct(list_filter("
-        "list_concat(coalesce(aliases, []), ?), x -> x <> ?)) WHERE entity_id = ?",
+        "UPDATE entities SET name = ?, type = 'brand', aliases = list_sort(list_distinct(list_filter("
+        "list_concat(coalesce(aliases, []), ?), x -> x <> ?))) WHERE entity_id = ?",
         [canonical, aliases, canonical, entity_id])
     ctx.con.executemany("INSERT INTO entity_aliases (entity_id, alias, lang, source) "
                         "VALUES (?, ?, NULL, 'nav') ON CONFLICT DO NOTHING",
@@ -655,8 +655,8 @@ def _family_entity(ctx: _Context, name: str, forms: Sequence[str]) -> int:
             "VALUES (?, ?, 'product', 'line', [], 'rule', current_timestamp) "
             "RETURNING entity_id", [name, ctx.site_lang]).fetchone()
     ctx.con.execute(
-        "UPDATE entities SET name = ?, aliases = list_distinct(list_filter(list_concat("
-        "coalesce(aliases, []), ?, [name]), x -> x <> ?)) WHERE entity_id = ?",
+        "UPDATE entities SET name = ?, aliases = list_sort(list_distinct(list_filter(list_concat("
+        "coalesce(aliases, []), ?, [name]), x -> x <> ?))) WHERE entity_id = ?",
         [name, aliases, name, found])
     if aliases:
         ctx.con.executemany("INSERT INTO entity_aliases (entity_id, alias, lang, source) "
@@ -679,7 +679,7 @@ def _relate(ctx: _Context, from_id: int, to_id: int, kind: str, evidence: dict) 
     ctx.con.execute(
         "INSERT INTO entity_relations (from_id, to_id, type, source, evidence) "
         "VALUES (?, ?, ?, 'shop', ?) ON CONFLICT DO NOTHING",
-        [from_id, to_id, kind, json.dumps(evidence, ensure_ascii=False)])
+        [from_id, to_id, kind, dumps(evidence, ensure_ascii=False)])
 
 
 def _schema_brand(ctx: _Context, info: PageInfo) -> str | None:

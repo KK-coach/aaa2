@@ -103,14 +103,14 @@ def page_roles(con: duckdb.DuckDBPyConnection) -> dict[int, PageInfo]:
     homes = {page_url(u) for u in home_urls(con)}
     nodes = schema_nodes(con)
     code_pages = {page_id for (page_id,) in con.execute(
-        "SELECT DISTINCT page_id FROM blocks WHERE kind = 'code' AND region = 'content'"
+        "SELECT DISTINCT page_id FROM blocks WHERE kind = 'code' AND region = 'content' ORDER BY ALL"
     ).fetchall()}
     groups = {page_id: group_key(url, hreflang) for page_id, url, _, _, _, hreflang in rows}
     site_pages = {page_url(url) for _, url, _, _, _, _ in rows}
     linkers: dict[str, set[str]] = defaultdict(set)
     for from_id, to_id in con.execute(
             "SELECT from_page_id, to_page_id FROM links WHERE to_page_id IS NOT NULL "
-            "AND list_contains(?, position)", [list(NAV_POSITIONS)]).fetchall():
+            "AND list_contains(?, position) ORDER BY ALL", [list(NAV_POSITIONS)]).fetchall():
         if from_id in groups and to_id in groups and groups[from_id] != groups[to_id]:
             linkers[groups[to_id]].add(groups[from_id])
     services = service_pages(con)
@@ -314,7 +314,7 @@ def schema_nodes(con: duckdb.DuckDBPyConnection) -> dict[int, list[dict]]:
 
 
 def home_urls(con: duckdb.DuckDBPyConnection) -> set[str]:
-    row = con.execute("SELECT home_urls, seed_url FROM site").fetchone()
+    row = con.execute("SELECT home_urls, seed_url FROM site ORDER BY ALL").fetchone()
     if row is None:
         return set()
     return set(row[0]) if row[0] is not None else {row[1]}

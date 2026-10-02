@@ -199,7 +199,7 @@ def dom_context(html: str, title: str | None) -> tuple[list[str], list[str]]:
 def page_context(con: duckdb.DuckDBPyConnection, page_id: int, blocks: Sequence[Mapping],
                  lang: str | None) -> PageContext:
     """A tartalmi blokkok, és a renderelt DOM-ból a chrome-régió és az anchor-szövegek."""
-    title, blob = con.execute("SELECT title, rendered_html FROM pages WHERE page_id = ?",
+    title, blob = con.execute("SELECT title, rendered_html FROM pages WHERE page_id = ? ORDER BY ALL",
                               [page_id]).fetchone()
     html = zstandard.ZstdDecompressor().decompress(blob).decode("utf-8", "replace")
     chrome, anchors = dom_context(html, title)

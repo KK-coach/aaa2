@@ -68,7 +68,7 @@ def placeholder_pages(con: duckdb.DuckDBPyConnection) -> set[int]:
     found = set()
     for page_id, text in con.execute(
             "SELECT page_id, string_agg(text, ' ' ORDER BY ordinal) FROM blocks "
-            "WHERE region = 'content' AND kind <> 'title' GROUP BY page_id").fetchall():
+            "WHERE region = 'content' AND kind <> 'title' GROUP BY page_id ORDER BY page_id").fetchall():
         if len(words(text)) >= PAGE_MIN_WORDS and placeholder_share(text) >= PAGE_SHARE:
             found.add(page_id)
     return found
