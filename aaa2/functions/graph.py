@@ -850,7 +850,9 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
         "SELECT w.entity_id, w.pages, w.mentions, w.structural, w.main_pages, "
         "w.secondary_pages, w.content_anchors, w.nav_anchors, w.single_mention, "
         "w.weight FROM entity_weights w ORDER BY w.entity_id").fetchall() if row[0] in names]
-    weighted.sort(key=lambda row: (-row[-1], names[row[0]], row[0]))
+    # súly, név; azonos súlyú és nevű entitásoknál a később létrejött áll elöl (egyértelmű
+    # sorrend, a korábbi kimenetekkel egyezően)
+    weighted.sort(key=lambda row: (-row[-1], names[row[0]], -row[0]))
     for rank, row in enumerate(weighted, start=1):
         entity_id, *parts, weight = row
         weights.append({"rang": rank, "entitás": names.get(entity_id),

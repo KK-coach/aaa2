@@ -444,7 +444,7 @@ def _move_mention(con: duckdb.DuckDBPyConnection, mention_id: int, entity_id: in
     """Az említés átkerül az entitáshoz; ha ott már van azonos helyű említés, a forrásai
     oda kerülnek."""
     row = store.page_entities_for_move_mention(con, mention_id)
-    same = store.page_entities_for_move_mention_2(con, *row, entity_id)
+    same = store.page_entities_for_move_mention_2(con, row, entity_id)
     if same is None:
         store.update_page_entities_in_move_mention(con, entity_id, mention_id)
         return

@@ -755,12 +755,13 @@ def page_entities_for_move_mention(con: duckdb.DuckDBPyConnection, mention_id) -
         "mention_id = ? ORDER BY ALL", [mention_id]).fetchone()
 
 
-def page_entities_for_move_mention_2(con: duckdb.DuckDBPyConnection, value, entity_id) -> tuple | None:
-    """Lekérdezés: page_entities. Hívja: resolver/offers.py: move_mention."""
+def page_entities_for_move_mention_2(con: duckdb.DuckDBPyConnection, place, entity_id) -> tuple | None:
+    """Lekérdezés: page_entities; `place`: (oldal, blokk, kezdet, vég). Hívja: resolver/offers.py:
+    move_mention."""
     return con.execute(
         "SELECT mention_id FROM page_entities WHERE page_id = ? AND block_id IS NOT "
         "DISTINCT FROM ? AND char_start IS NOT DISTINCT FROM ? AND char_end IS NOT "
-        "DISTINCT FROM ? AND entity_id = ? ORDER BY ALL", [value, entity_id]).fetchone()
+        "DISTINCT FROM ? AND entity_id = ? ORDER BY ALL", [*place, entity_id]).fetchone()
 
 
 def entities_for_offers(con: duckdb.DuckDBPyConnection) -> list[tuple]:
