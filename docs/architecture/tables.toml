@@ -1,9 +1,11 @@
 # Táblatulajdonlás: melyik tábla melyik modulé, a mai állapot szerint (2026-10-01).
 #
 # - `owner`: a tábla gazdája az architektúra-spec moduljai közül (core, llm, crawl, extract,
-#   resolve, graph, findings). A gazda az a modul, amelynek a kimenete a tábla; ahol ma több
-#   modul ír egy táblát, a `also_written_by` sorolja a többit (ezek az architektúra-teszt
-#   „idegen írás” tételei).
+#   resolve, graph, findings). A gazda az a modul, amelynek a kimenete a tábla; más modul a
+#   gazda lekérdező függvényein át éri el.
+# - `store = true`: az entitástár táblája (`aaa2/entities/store.py`). A tár az extract modulé; az
+#   extract és a resolve is ezen keresztül ír és olvas (Krisztián döntése, 2026-10-02). Ezekhez a
+#   táblákhoz SQL csak a tár fájljában állhat.
 # - `contracts`: a tábla soraiból épülő szerződések (`aaa2/contracts`); üres, ha a táblának ma
 #   nincs szerződése.
 # - `note`: amit a tulajdonlásról tudni kell.
@@ -73,14 +75,14 @@ contracts = []
 
 [tables.page_entities]
 owner = "extract"
+store = true
 contracts = ["Mention"]
-also_written_by = ["resolve"]
-note = "a site-kör (`entities/site.py`) is módosítja: összevonás, sablon- és demójelölés"
+note = "a site-kör is módosítja (összevonás, anchor- és kártyacím-említés, sablonjelölés), a táron át"
 
 [tables.mention_sources]
 owner = "extract"
+store = true
 contracts = ["MentionSource"]
-also_written_by = ["resolve"]
 
 [tables.page_entities_v1]
 owner = "extract"
@@ -89,8 +91,8 @@ note = "a v1 említéstábla mentése a 012-es migrációból; a kód nem haszn�
 
 [tables.entity_runs]
 owner = "extract"
+store = true
 contracts = []
-also_written_by = ["resolve"]
 note = "a szabálykör, az LLM-kör és a site-kör futásai egy táblában"
 
 [tables.entity_run_pages]
@@ -99,16 +101,16 @@ contracts = []
 
 [tables.soft_checks]
 owner = "extract"
+store = true
 contracts = ["Candidate"]
-also_written_by = ["resolve"]
-
-# --- resolve ---------------------------------------------------------------------------------
 
 [tables.entities]
-owner = "resolve"
+owner = "extract"
+store = true
 contracts = ["Entity", "KbLink"]
-also_written_by = ["extract"]
-note = "a szabálykör és az LLM-kör hozza létre a sorokat, a site-kör, a webshop-szintek és a tudásbázis-kapcsolás alakítja"
+note = "a szabálykör és az LLM-kör hozza létre a sorokat, a site-kör, a webshop-szintek és a tudásbázis-kapcsolás alakítja, mind a táron át; az `Entity` és a `KbLink` a resolve szerződése marad"
+
+# --- resolve ---------------------------------------------------------------------------------
 
 [tables.entity_aliases]
 owner = "resolve"

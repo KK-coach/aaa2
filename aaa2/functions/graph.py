@@ -266,10 +266,8 @@ class _Graph:
         rows = store.entities_for_graph___init__(con)
         self.entities = {row[0]: row for row in rows}
         self.excluded = {row[0] for row in rows if set(row[5] or []) & set(EXCLUDED_FLAGS)}
-        self.site_entities = {entity_id for (entity_id,) in con.execute(
-            "SELECT entity_id FROM entities e WHERE role = 'brand' OR (type = 'brand' AND "
-            "source IN ('rule', 'schema') AND NOT EXISTS (SELECT 1 FROM entity_relations r "
-            "WHERE r.from_id = e.entity_id AND r.type = 'brand_of')) ORDER BY ALL").fetchall()}
+        self.site_entities = {entity_id for (entity_id,) in store.site_entity_ids(
+            con, resolver_queries.relation_from_ids(con, "brand_of"))}
         self.index: dict[str, set[int]] = defaultdict(set)
         self.normal: dict[str, set[int]] = defaultdict(set)
         for entity_id, name, *_, aliases in [(r[0], r[1], r[4]) for r in rows]:
@@ -848,12 +846,12 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
             "bizonyíték": evidence or ""})
     paths["edges"] = _write(out / f"{name}-edges.csv", edges)
     weights = []
-    for rank, row in enumerate(con.execute(
-            "SELECT w.entity_id, w.pages, w.mentions, w.structural, w.main_pages, "
-            "w.secondary_pages, w.content_anchors, w.nav_anchors, w.single_mention, "
-            "w.weight FROM "
-            "entity_weights w JOIN entities e USING (entity_id) "
-            "ORDER BY w.weight DESC, e.name").fetchall(), start=1):
+    weighted = [row for row in con.execute(
+        "SELECT w.entity_id, w.pages, w.mentions, w.structural, w.main_pages, "
+        "w.secondary_pages, w.content_anchors, w.nav_anchors, w.single_mention, "
+        "w.weight FROM entity_weights w ORDER BY w.entity_id").fetchall() if row[0] in names]
+    weighted.sort(key=lambda row: (-row[-1], names[row[0]], row[0]))
+    for rank, row in enumerate(weighted, start=1):
         entity_id, *parts, weight = row
         weights.append({"rang": rank, "entitás": names.get(entity_id),
                         "típus": "/".join(filter(None, kinds.get(entity_id, ("", "")))),

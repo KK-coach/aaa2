@@ -225,10 +225,10 @@ def _regression_section(con: duckdb.DuckDBPyConnection,
                         baseline: duckdb.DuckDBPyConnection | None) -> list[str]:
     if baseline is None:
         return []
-    query = ("SELECT e.type, count(DISTINCT e.entity_id), count(*) FROM entities e "
-             "JOIN page_entities pe USING (entity_id) GROUP BY e.type")
-    old = {kind: (entities, rows) for kind, entities, rows in baseline.execute(query).fetchall()}
-    new = {kind: (entities, rows) for kind, entities, rows in con.execute(query).fetchall()}
+    old = {kind: (entities, rows)
+           for kind, entities, rows in store.entity_and_mention_counts_by_type(baseline)}
+    new = {kind: (entities, rows)
+           for kind, entities, rows in store.entity_and_mention_counts_by_type(con)}
     lines = ["## Regresszió: a korábbi állapot és a mostani", "",
              "| típus | korábbi entitás | most | korábbi említés | most |", "|---|---|---|---|---|"]
     for kind in sorted(set(old) | set(new), key=lambda k: (-new.get(k, (0, 0))[0], k)):

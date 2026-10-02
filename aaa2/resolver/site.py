@@ -103,8 +103,9 @@ def run_site(con: duckdb.DuckDBPyConnection,
         run = SiteRun(run_id, dict(Counter(info.role for info in roles.values())))
         # a korábbi körök óta törölt entitásokra mutató kapcsolatok (újrafuttatáskor a
         # szabálykör az említés nélküli szabály-entitásokat törli)
-        con.execute("DELETE FROM entity_relations WHERE from_id NOT IN (SELECT entity_id FROM "
-                    "entities) OR to_id NOT IN (SELECT entity_id FROM entities)")
+        known = store.entity_ids(con)
+        con.execute("DELETE FROM entity_relations WHERE NOT list_contains(CAST(? AS INTEGER[]), "
+                    "from_id) OR NOT list_contains(CAST(? AS INTEGER[]), to_id)", [known, known])
         merger = Merger(con, run_id, clock)
         context = _Context(con, roles, site_lang, run_id)
         anchored = _page_entities(context, merger, run)

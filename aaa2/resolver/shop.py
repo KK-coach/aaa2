@@ -56,6 +56,7 @@ from aaa2.db.stable_json import dumps
 from aaa2.entities import queries as extract_queries
 from aaa2.entities import store
 from aaa2.entities.rules import alias_key
+from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.overrides import SiteConfig
 from aaa2.resolver.pages import PageInfo, breadcrumbs, page_types, page_url
 
@@ -524,11 +525,8 @@ def _orphan_brands(ctx: _Context, merger: Merger, run: ShopRun, brand_ids: list[
     site_org = store.entities_for_site_name_cuts_2(con)[0]
     site_keys = _site_name_keys(con)
     orphans: list[int] = []
-    for entity_id, name in con.execute(
-            "SELECT entity_id, name FROM entities e WHERE type = 'brand' "
-            "AND anchor_page_id IS NULL AND NOT list_contains(?, entity_id) AND NOT EXISTS "
-            "(SELECT 1 FROM entity_relations r WHERE r.type = 'brand_of' "
-            "AND r.from_id = e.entity_id) ORDER BY name, entity_id", [brand_ids]).fetchall():
+    for entity_id, name in store.unanchored_brands(
+            con, brand_ids, resolver_queries.relation_from_ids(con, "brand_of")):
         if site_org is not None and alias_key(name) in site_keys:
             merger.merge(site_org, entity_id, "orphan_brand_site", {"brand": name})
             run.orphan_aliases[name] = store.entities_for_type_split(con, site_org)[0]

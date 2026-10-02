@@ -16,6 +16,7 @@ from aaa2.entities.rules import (
     alias_key,
     title_endings,
 )
+from aaa2.resolver import queries as resolver_queries
 
 SITE_PREFIX_MIN = 4
 
@@ -141,11 +142,8 @@ def _site_name_keys(con: duckdb.DuckDBPyConnection) -> set[str]:
     """A site nevei: a brand szerepű (site-név) entitások és a brand típusú szabály-entitások
     neve és aliasai; a webshop termékmárkái (`brand_of` kapcsolattal) nem."""
     keys = set()
-    for name, aliases in con.execute(
-            "SELECT name, aliases FROM entities e WHERE (role = 'brand' "
-            "OR (type = 'brand' AND source IN ('rule', 'schema'))) AND NOT EXISTS (SELECT 1 "
-            "FROM entity_relations r WHERE r.from_id = e.entity_id AND r.type = 'brand_of') ORDER BY ALL"
-            ).fetchall():
+    for name, aliases in store.site_name_rows(
+            con, resolver_queries.relation_from_ids(con, "brand_of")):
         keys |= {alias_key(f) for f in [name, *(aliases or [])]}
     return keys - {""}
 

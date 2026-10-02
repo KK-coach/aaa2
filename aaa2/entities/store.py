@@ -1025,3 +1025,94 @@ def page_entities_for_navigational_concepts(con: duckdb.DuckDBPyConnection, valu
         "SELECT pe.entity_id FROM page_entities pe JOIN entities e USING (entity_id) "
         "WHERE e.type = 'concept' GROUP BY pe.entity_id HAVING "
         "bool_and(list_contains(?, pe.position)) ORDER BY ALL", [value]).fetchall()
+
+
+# --- kézzel írt függvények: ahol a korábbi lekérdezés más gazda tábláját is kapcsolta ----------
+# (a másik gazda adatát a hívó kéri le annak lekérdező függvényével, és paraméterként adja át)
+
+ENTITY_RUN_COLUMNS = (
+    "run_id, method, model, finished_at, pages, pages_with_entities, entities, row_count, "
+    "llm_calls, cost_usd, fabricated, by_position"
+)
+
+
+def latest_runs_by_method(con: duckdb.DuckDBPyConnection) -> list[tuple]:
+    """Módszerenként a legutóbbi futás (`ENTITY_RUN_COLUMNS` oszlopai), `run_id` szerint."""
+    return con.execute(
+        f"SELECT {ENTITY_RUN_COLUMNS} FROM entity_runs "
+        "WHERE run_id IN (SELECT max(run_id) FROM entity_runs GROUP BY method) ORDER BY run_id"
+    ).fetchall()
+
+
+def entity_run(con: duckdb.DuckDBPyConnection, run_id: int) -> tuple | None:
+    """Egy futás sora (`ENTITY_RUN_COLUMNS` oszlopai)."""
+    return con.execute(
+        f"SELECT {ENTITY_RUN_COLUMNS} FROM entity_runs WHERE run_id = ?", [run_id]).fetchone()
+
+
+def entities_for_validation(con: duckdb.DuckDBPyConnection, limit: int | None) -> list[tuple]:
+    """Az entitások a validáláshoz, `entity_id` szerint; `limit`: legfeljebb ennyi."""
+    return con.execute(
+        "SELECT entity_id, name, type, type_suggested, aliases, lang FROM entities "
+        "ORDER BY entity_id" + (" LIMIT ?" if limit else ""), [limit] if limit else [],
+    ).fetchall()
+
+
+def entity_ids(con: duckdb.DuckDBPyConnection) -> list[int]:
+    return [entity_id for (entity_id,) in con.execute(
+        "SELECT entity_id FROM entities ORDER BY entity_id").fetchall()]
+
+
+def entity_types(con: duckdb.DuckDBPyConnection) -> dict[int, str]:
+    return dict(con.execute("SELECT entity_id, type FROM entities ORDER BY entity_id").fetchall())
+
+
+def anchored_entity_ids(con: duckdb.DuckDBPyConnection) -> set[int]:
+    """Az oldalhoz kötött entitások."""
+    return {entity_id for (entity_id,) in con.execute(
+        "SELECT entity_id FROM entities WHERE anchor_page_id IS NOT NULL").fetchall()}
+
+
+def site_entity_ids(con: duckdb.DuckDBPyConnection, product_brands: list[int]) -> list[tuple]:
+    """A site saját entitásai: a brand szerepűek és a szabályból vagy schemából jött brand
+    típusúak, a termékmárkák (`product_brands`: `brand_of` kapcsolattal bíró entitások) nélkül."""
+    return con.execute(
+        "SELECT entity_id FROM entities e WHERE role = 'brand' OR (type = 'brand' AND "
+        "source IN ('rule', 'schema') AND NOT list_contains(CAST(? AS INTEGER[]), e.entity_id)) ORDER BY ALL",
+        [product_brands]).fetchall()
+
+
+def site_name_rows(con: duckdb.DuckDBPyConnection, product_brands: list[int]) -> list[tuple]:
+    """A site neveit adó entitások neve és aliasai, a termékmárkák nélkül."""
+    return con.execute(
+        "SELECT name, aliases FROM entities e WHERE (role = 'brand' "
+        "OR (type = 'brand' AND source IN ('rule', 'schema'))) AND NOT list_contains(?, "
+        "e.entity_id) ORDER BY ALL", [product_brands]).fetchall()
+
+
+def unanchored_brands(con: duckdb.DuckDBPyConnection, known_brands: list[int],
+                      product_brands: list[int]) -> list[tuple]:
+    """Az oldalhoz nem kötött brand entitások, amelyek nem ismert márkák és nem termékmárkák:
+    (azonosító, név), név szerint."""
+    return con.execute(
+        "SELECT entity_id, name FROM entities e WHERE type = 'brand' "
+        "AND anchor_page_id IS NULL AND NOT list_contains(CAST(? AS INTEGER[]), entity_id) AND NOT "
+        "list_contains(CAST(? AS INTEGER[]), e.entity_id) ORDER BY name, entity_id",
+        [known_brands, product_brands]).fetchall()
+
+
+def mention_placement(con: duckdb.DuckDBPyConnection, page_ids: list[int]) -> list[tuple]:
+    """Entitásonként a megadott oldalakon: (entitás, említések száma, ebből chrome-régióban
+    vagy sablonjelöléssel)."""
+    return con.execute(
+        "SELECT pe.entity_id, count(*), count(*) FILTER (WHERE b.region = 'chrome' "
+        "OR list_contains(coalesce(pe.flags, []), 'template')) FROM page_entities pe "
+        "LEFT JOIN blocks b USING (block_id) WHERE list_contains(CAST(? AS INTEGER[]), pe.page_id) "
+        "GROUP BY 1 ORDER BY ALL", [page_ids]).fetchall()
+
+
+def entity_and_mention_counts_by_type(con: duckdb.DuckDBPyConnection) -> list[tuple]:
+    """Típusonként az említéssel bíró entitások és az említések száma."""
+    return con.execute(
+        "SELECT e.type, count(DISTINCT e.entity_id), count(*) FROM entities e "
+        "JOIN page_entities pe USING (entity_id) GROUP BY e.type ORDER BY e.type").fetchall()

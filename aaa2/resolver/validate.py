@@ -300,10 +300,7 @@ def validate_entities(con: duckdb.DuckDBPyConnection,
     statuses: Counter[str] = Counter()
     changes: list[tuple[str, str, str]] = []
     mismatches = found = 0
-    rows = con.execute(
-        "SELECT entity_id, name, type, type_suggested, aliases, lang FROM entities "
-        "ORDER BY entity_id" + (" LIMIT ?" if limit else ""), [limit] if limit else [],
-    ).fetchall()
+    rows = store.entities_for_validation(con, limit)
     navigational = navigational_concepts(con) & {row[0] for row in rows}
     try:
         for entity_id, name, kind, suggested, aliases, lang in rows:

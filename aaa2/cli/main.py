@@ -48,10 +48,6 @@ EXPORT_TABLES = (
     "pages", "links", "headings", "schema_blocks", "crawl_queue", "crawl_runs", "site",
     "entities", "page_entities", "mention_sources", "blocks", "llm_calls", "entity_runs",
 )
-ENTITY_RUN_COLUMNS = (
-    "run_id, method, model, finished_at, pages, pages_with_entities, entities, row_count, "
-    "llm_calls, cost_usd, fabricated, by_position"
-)
 
 
 @app.command()
@@ -169,10 +165,7 @@ def status(
             f"  utolsó crawl #{run_id} ({notes}): indult {started:%Y-%m-%d %H:%M}, {state}; "
             f"{done} rendben, {failed} hibás, {skipped} kihagyva, {rate or 0:.2f} oldal/mp"
         )
-    for entity_run in con.execute(
-        f"SELECT {ENTITY_RUN_COLUMNS} FROM entity_runs "
-        "WHERE run_id IN (SELECT max(run_id) FROM entity_runs GROUP BY method) ORDER BY run_id"
-    ).fetchall():
+    for entity_run in store.latest_runs_by_method(con):
         typer.echo("  " + _entity_run_line(*entity_run))
     _llm_spend(con)
 
@@ -306,9 +299,7 @@ def entities(
         if shared is not None:
             shared.close()
     for run_id in runs:
-        entity_run = con.execute(
-            f"SELECT {ENTITY_RUN_COLUMNS} FROM entity_runs WHERE run_id = ?", [run_id]
-        ).fetchone()
+        entity_run = store.entity_run(con, run_id)
         typer.echo(_entity_run_line(*entity_run))
         for reason, value in json.loads(store.entity_runs_for_entities(con, run_id)[0]
                 ).items():

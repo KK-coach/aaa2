@@ -16,6 +16,7 @@ from aaa2.entities.rules import (
     SOURCE_STRENGTH,
     alias_key,
 )
+from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.context import SiteRun, _Context
 from aaa2.resolver.merge import Merger, _entity_rows, _rank, resolve
 from aaa2.resolver.names import (
@@ -423,9 +424,9 @@ def _service_names(con: duckdb.DuckDBPyConnection) -> dict[int, set[str]]:
     found: dict[int, set[str]] = defaultdict(set)
     for entity_id, name, aliases in store.entities_for_service_names(con):
         found[entity_id] |= {normal_key(f) for f in [name, *(aliases or [])]}
-    for entity_id, alias in con.execute(
-            "SELECT a.entity_id, a.alias FROM entity_aliases a JOIN entities e "
-            "USING (entity_id) WHERE e.type = 'service' ORDER BY ALL").fetchall():
+    types = store.entity_types(con)
+    for entity_id, alias in [(a.entity_id, a.alias) for a in resolver_queries.aliases(con)
+                             if types.get(a.entity_id) == "service"]:
         found[entity_id].add(normal_key(alias))
     return found
 
@@ -539,9 +540,9 @@ def _override_entities(ctx: _Context, names: tuple[str, ...], url: str | None) -
         for entity_id, name, aliases in store.entities_for_override_entities(con):
             if {normal_key(f) for f in [name, *(aliases or [])]} & keys:
                 found.add(entity_id)
-        for entity_id, alias in con.execute(
-                "SELECT a.entity_id, a.alias FROM entity_aliases a JOIN entities e "
-                "USING (entity_id) WHERE e.type <> 'person' ORDER BY ALL").fetchall():
+        types = store.entity_types(con)
+        for entity_id, alias in [(a.entity_id, a.alias) for a in resolver_queries.aliases(con)
+                                 if a.entity_id in types and types[a.entity_id] != "person"]:
             if normal_key(alias) in keys:
                 found.add(entity_id)
     return found
