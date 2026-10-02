@@ -34,6 +34,7 @@ ORDER = ("core", "llm", "crawl", "extract", "resolve", "graph", "findings", "rep
 MODULES: tuple[tuple[str, str], ...] = (
     ("aaa2/contracts/", "contracts"),
     ("aaa2/__init__.py", "core"),
+    ("aaa2/core/", "core"),
     ("aaa2/db/", "core"),
     ("aaa2/engine/stable_hash.py", "core"),
     ("aaa2/llm/", "llm"),

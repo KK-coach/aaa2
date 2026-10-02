@@ -1,4 +1,4 @@
-"""Site-szintű beállítás és felülbírálat (M2 spec, M2/6, 4. pont): `config/sites/<domain>.toml`.
+"""Site-szintű beállítás és felülbírálat (M2 spec, M2/6, 4. pont): `core/sites/<domain>.toml`.
 
 - `canonical_lang`: a kanonikus név nyelve; ha nincs megadva, a site gyökér-URL-jének (a seed,
   illetve az első kezdőoldal) nyelve, ha az sincs, a site első nyelve (`canonical_language`).
@@ -20,10 +20,9 @@ from pathlib import Path
 
 import duckdb
 
+from aaa2.core.site_files import SITES_DIR
 from aaa2.resolver.pages import PAGE_TYPES, page_url, primary_lang
 
-# a site-fájl több modul közös beállítása (crawl, llm, oldaltípusok, ajánlatok), a helye változatlan
-SITES_DIR = Path(__file__).resolve().parents[1] / "entities" / "config" / "sites"
 TIERS = ("core", "package", "work_mode")
 
 

@@ -75,7 +75,7 @@ def crawl(
 ) -> None:
     """Egy site sitewide crawlja Playwright-renderrel a data/<domain>.duckdb-be. Az include, az
     exclude és a párhuzamosság alapja a site-fájl `[crawl]` része, ha van
-    (`aaa2/entities/config/sites/<domain>.toml`); a parancssor felülírja."""
+    (`aaa2/core/sites/<domain>.toml`); a parancssor felülírja."""
     try:
         site = load_site_config(UrlPolicy.from_seed(url).domain).crawl
     except ValueError as exc:

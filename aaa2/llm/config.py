@@ -7,6 +7,8 @@ from datetime import date
 from itertools import pairwise
 from pathlib import Path
 
+from aaa2.core.site_files import SITES_DIR
+
 CONFIG_PATH = Path(__file__).with_name("models.toml")
 PROVIDERS = ("anthropic", "openai", "gemini")
 
@@ -98,9 +100,7 @@ class Credentials:
     project: str | None = None
 
 
-# A site-fájlok helye (`entities/config/sites/<domain>.toml`); az LLM-réteg csak az `[llm]`
-# részt olvassa belőlük, a többit az entitás-réteg.
-SITES_DIR = Path(__file__).resolve().parents[1] / "entities" / "config" / "sites"
+# A site-fájlokból (`core/sites/<domain>.toml`) az LLM-réteg csak az `[llm]` részt olvassa.
 PROJECT_PROVIDERS = ("openai",)
 
 

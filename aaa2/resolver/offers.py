@@ -553,7 +553,7 @@ def _offers(con: duckdb.DuckDBPyConnection, split: dict[int, set[int]]) -> int:
 
 
 def apply_overrides(ctx: _Context, merger: Merger, config: SiteConfig) -> int:
-    """A `config/sites/<domain>.toml` ajánlat-felülbírálatai: a megnevezett (vagy az URL
+    """A `core/sites/<domain>.toml` ajánlat-felülbírálatai: a megnevezett (vagy az URL
     oldalához kötött) entitások egy entitássá olvadnak (`override`), a szintjük a megadott, a
     típusuk service, `part_of` a megadott fő ajánlathoz; a `merge_log` egy `override` sorral
     rögzíti a korábbi típust és szintet. Visszaad: hány felülbírálat talált entitást."""
