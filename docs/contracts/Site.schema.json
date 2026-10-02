@@ -1,32 +1,8 @@
 {
   "additionalProperties": false,
-  "description": "Egy bejárt oldal (`pages`), a renderelt HTML nélkül (`has_rendered_html`: van-e tárolt\nrenderelt DOM-ja).",
+  "description": "A site profilja (`site`): a crawl kiindulása és amit a site-ról megállapított.",
   "properties": {
-    "error": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Error"
-    },
-    "external_link_count": {
-      "anyOf": [
-        {
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "External Link Count"
-    },
-    "fetched_at": {
+    "crawled_at": {
       "anyOf": [
         {
           "format": "date-time",
@@ -37,33 +13,28 @@
         }
       ],
       "default": null,
-      "title": "Fetched At"
+      "title": "Crawled At"
     },
-    "final_url": {
+    "domain": {
+      "title": "Domain",
+      "type": "string"
+    },
+    "home_urls": {
       "anyOf": [
         {
-          "type": "string"
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         {
           "type": "null"
         }
       ],
       "default": null,
-      "title": "Final Url"
+      "title": "Home Urls"
     },
-    "h1": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "H1"
-    },
-    "has_rendered_html": {
+    "https_redirect": {
       "anyOf": [
         {
           "type": "boolean"
@@ -73,97 +44,9 @@
         }
       ],
       "default": null,
-      "title": "Has Rendered Html"
+      "title": "Https Redirect"
     },
-    "lang": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Lang"
-    },
-    "main_content": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Main Content"
-    },
-    "main_content_method": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Main Content Method"
-    },
-    "meta_description": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Meta Description"
-    },
-    "noindex": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Noindex"
-    },
-    "page_id": {
-      "title": "Page Id",
-      "type": "integer"
-    },
-    "page_type": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Page Type"
-    },
-    "raw_html_hash": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Raw Html Hash"
-    },
-    "render_ms": {
+    "https_redirect_status": {
       "anyOf": [
         {
           "type": "integer"
@@ -173,9 +56,48 @@
         }
       ],
       "default": null,
-      "title": "Render Ms"
+      "title": "Https Redirect Status"
     },
-    "run_id": {
+    "languages": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Languages"
+    },
+    "market_scope": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Market Scope"
+    },
+    "market_scope_city": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Market Scope City"
+    },
+    "page_count": {
       "anyOf": [
         {
           "type": "integer"
@@ -185,26 +107,54 @@
         }
       ],
       "default": null,
-      "title": "Run Id"
+      "title": "Page Count"
+    },
+    "render_mode": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Render Mode"
+    },
+    "robots_status": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Robots Status"
+    },
+    "robots_txt": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Robots Txt"
     },
     "schema_version": {
       "default": "1.1",
       "title": "Schema Version",
       "type": "string"
     },
-    "status": {
-      "anyOf": [
-        {
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Status"
+    "seed_url": {
+      "title": "Seed Url",
+      "type": "string"
     },
-    "title": {
+    "target_country": {
       "anyOf": [
         {
           "type": "string"
@@ -214,30 +164,72 @@
         }
       ],
       "default": null,
-      "title": "Title"
+      "title": "Target Country"
     },
-    "url": {
-      "title": "Url",
-      "type": "string"
+    "target_country_candidates": {
+      "default": null,
+      "title": "Target Country Candidates"
     },
-    "word_count": {
+    "target_country_confidence": {
       "anyOf": [
         {
-          "type": "integer"
+          "type": "string"
         },
         {
           "type": "null"
         }
       ],
       "default": null,
-      "title": "Word Count"
+      "title": "Target Country Confidence"
+    },
+    "tech": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tech"
+    },
+    "tech_signals": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tech Signals"
+    },
+    "trailing_slash": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Trailing Slash"
     }
   },
   "required": [
-    "page_id",
-    "url"
+    "domain",
+    "seed_url"
   ],
-  "title": "Page",
+  "title": "Site",
   "type": "object",
   "x-module": "crawl",
   "x-schema-version": "1.1"

@@ -52,6 +52,7 @@ import duckdb
 import zstandard
 from selectolax.parser import HTMLParser, Node
 
+from aaa2.engine import queries as crawl
 from aaa2.engine.parse import anchor_text
 
 # Ugyanazok, mint az `engine.parse` zajszűrőjéé; tests/test_boundaries.py őrzi.
@@ -525,27 +526,25 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
     ha az oldal M1-es stabil hash-e azóta más (`blocks_built`, a crawl újra lekérte és
     megváltozott): akkor az oldal említései, bizonyítékai és blokkjai törlődnek, és a blokkok
     újraépülnek. A `blocks_built` előtti blokkok a jelenlegi hash-sel kerülnek a táblába."""
-    params: list = []
-    only = ""
-    if page_ids is not None:
-        only = " AND list_contains(?, page_id)"
-        params.append(list(page_ids))
-    con.execute(
-        "INSERT INTO blocks_built SELECT DISTINCT b.page_id, p.raw_html_hash, current_timestamp "
-        "FROM blocks b JOIN pages p USING (page_id) "
-        "WHERE b.page_id NOT IN (SELECT page_id FROM blocks_built)")
-    for (page_id,) in con.execute(
-            "SELECT b.page_id FROM blocks_built b JOIN pages p USING (page_id) "
-            "WHERE p.raw_html_hash IS NOT NULL AND b.raw_html_hash IS DISTINCT FROM "
-            "p.raw_html_hash" + only.replace("page_id", "b.page_id") + " ORDER BY b.page_id",
-            params).fetchall():
-        drop_page_blocks(con, page_id)
-    pages = con.execute(
-        "SELECT page_id, title, rendered_html FROM pages "
-        "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL "
-        "AND page_id NOT IN (SELECT DISTINCT page_id FROM blocks)" + only + " ORDER BY page_id",
-        params,
-    ).fetchall()
+    wanted = None if page_ids is None else set(page_ids)
+    crawled = crawl.pages(con)
+    hashes = {page.page_id: page.raw_html_hash for page in crawled}
+    unrecorded = [page_id for (page_id,) in con.execute(
+        "SELECT DISTINCT page_id FROM blocks WHERE page_id NOT IN (SELECT page_id FROM "
+        "blocks_built) ORDER BY page_id").fetchall() if page_id in hashes]
+    if unrecorded:
+        con.executemany("INSERT INTO blocks_built VALUES (?, ?, current_timestamp)",
+                        [(page_id, hashes[page_id]) for page_id in unrecorded])
+    for page_id, built_hash in con.execute(
+            "SELECT page_id, raw_html_hash FROM blocks_built ORDER BY page_id").fetchall():
+        if hashes.get(page_id) is not None and built_hash != hashes[page_id] \
+                and (wanted is None or page_id in wanted):
+            drop_page_blocks(con, page_id)
+    with_blocks = {page_id for (page_id,) in con.execute(
+        "SELECT DISTINCT page_id FROM blocks").fetchall()}
+    pages = [(page.page_id, *crawl.rendered(con, page.page_id)) for page in crawled
+             if page.renderable and page.page_id not in with_blocks
+             and (wanted is None or page.page_id in wanted)]
     decompressor = zstandard.ZstdDecompressor()
     for page_id, title, blob in pages:
         html = decompressor.decompress(blob).decode("utf-8", "replace")
@@ -556,8 +555,8 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
             con.executemany(
                 "INSERT INTO blocks (page_id, ordinal, kind, region, level, heading_path, text, "
                 "cells) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", rows)
-        con.execute("INSERT OR REPLACE INTO blocks_built SELECT page_id, raw_html_hash, "
-                    "current_timestamp FROM pages WHERE page_id = ?", [page_id])
+        con.execute("INSERT OR REPLACE INTO blocks_built VALUES (?, ?, current_timestamp)",
+                    [page_id, hashes[page_id]])
     return len(pages)
 
 

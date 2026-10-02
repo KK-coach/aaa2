@@ -20,12 +20,12 @@ note = "az alkalmazott migrációk (`db/connect.py`)"
 
 [tables.site]
 owner = "crawl"
-contracts = []
+contracts = ["Site"]
 note = "a site-profil; a frontier, a crawl és a site-profil írja"
 
 [tables.crawl_runs]
 owner = "crawl"
-contracts = []
+contracts = ["CrawlRun"]
 
 [tables.crawl_queue]
 owner = "crawl"

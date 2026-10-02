@@ -1,8 +1,8 @@
 """A rétegek határa: motor (engine) → entitás-réteg (entities) → funkciók.
 
 Az entitás-réteg a motorból csak a `parse` publikus segédfüggvényeit importálhatja
-(`anchor_text`, `schema_items`) és a `normalize` `page_url` URL-segédjét importálhatja; a motor
-semmit az entitás-rétegből. A teszt a két csomag
+(`anchor_text`, `schema_items`) és a `normalize` `page_url` URL-segédjét importálhatja, és a crawl lekérdező modulját
+(`engine.queries`) használhatja; a motor semmit az entitás-rétegből. A teszt a két csomag
 modulgráfját bejárja a forrásból (ast), a köztes aaa2-modulokon (llm, db) és a szülőcsomagjaik
 `__init__`-jén át is: egy tiltott él közvetett úton is bukás. A két réteg `__init__`-je nem importál
 semmit (a `parse` importja a motor `__init__`-jét is lefuttatja).
@@ -16,6 +16,8 @@ from aaa2.engine import parse
 from aaa2.entities import dom
 
 ROOT = Path(__file__).resolve().parent.parent
+# a crawl lekérdező függvényei: a crawl tábláit az entitás-réteg ezeken át olvassa
+ALLOWED_ENGINE_MODULES = {"aaa2.engine.queries"}
 ALLOWED_FROM_ENGINE = {"aaa2.engine.parse": {"anchor_text", "schema_items"},
                        "aaa2.engine.normalize": {"page_url"}}
 
@@ -79,6 +81,8 @@ def violations(root: Path) -> list[str]:
 
     def entity_to_engine(target: str, names: tuple) -> bool:
         allowed = ALLOWED_FROM_ENGINE.get(target)
+        if target in ALLOWED_ENGINE_MODULES:
+            return False
         return in_package(target, "aaa2.engine") and not (allowed and names
                                                             and set(names) <= allowed)
 

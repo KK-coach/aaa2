@@ -6,6 +6,7 @@ import csv
 import json
 import sys
 import time
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
@@ -15,6 +16,7 @@ import httpx
 import typer
 
 from aaa2.db.connect import connect, db_path, shared_path
+from aaa2.engine import queries as crawl_queries
 from aaa2.engine.crawl import CrawlOptions, run_crawl
 from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
@@ -120,32 +122,32 @@ def status(
         _llm_spend(None)
         return
     con = _open(domain)
-    (pages,) = con.execute("SELECT count(*) FROM pages ORDER BY ALL").fetchone()
-    (errors,) = con.execute("SELECT count(*) FROM pages WHERE error IS NOT NULL ORDER BY ALL").fetchone()
-    by_class = con.execute(
-        "SELECT coalesce(CAST(status // 100 AS VARCHAR) || 'xx', 'nincs válasz') AS class, "
-        "count(*) FROM pages GROUP BY class ORDER BY class"
-    ).fetchall()
-    queue = dict(con.execute("SELECT status, count(*) FROM crawl_queue GROUP BY status ORDER BY ALL").fetchall())
+    crawled = crawl_queries.pages(con)
+    pages = len(crawled)
+    errors = sum(page.error is not None for page in crawled)
+    by_class = sorted(Counter(
+        f"{page.status // 100}xx" if page.status is not None else "nincs válasz"
+        for page in crawled).items())
+    queue = dict(crawl_queries.queue_status_counts(con))
     typer.echo(f"{_domain(domain)}: {pages} oldal, {errors} hibával")
     typer.echo("  státusz: " + ", ".join(f"{name} {count}" for name, count in by_class))
     typer.echo(
         f"  sor: {queue.get('queued', 0)} várakozik, {queue.get('done', 0)} kész, "
         f"{queue.get('failed', 0)} hibás"
     )
-    profile = con.execute(
-        "SELECT target_country, target_country_confidence, target_country_candidates, "
-        "market_scope, market_scope_city, languages, page_count, tech_signals FROM site ORDER BY ALL"
-    ).fetchone()
+    profile = crawl_queries.site(con)
     if profile:
-        country, confidence, candidates, scope, city, languages, page_count, signals = profile
+        country, confidence, candidates, scope, city, languages, page_count, signals = (
+            profile.target_country, profile.target_country_confidence,
+            profile.target_country_candidates, profile.market_scope, profile.market_scope_city,
+            profile.languages, profile.page_count, profile.tech_signals)
         typer.echo(
             f"  profil: célország {country or '—'}"
             + (f" ({confidence})" if confidence else "")
             + f", piaci hatókör {scope or '—'}" + (f" ({city})" if city else "")
             + f", nyelvek {', '.join(languages or []) or '—'}, {page_count or 0} sikeres oldal"
         )
-        for candidate in json.loads(candidates or "[]"):
+        for candidate in candidates or []:
             typer.echo(
                 f"    jelölt {candidate['country']} {candidate['score']:.2f}: "
                 + ", ".join(candidate["signals"])
@@ -153,12 +155,11 @@ def status(
         if signals:
             shown = ", ".join(signals[:8]) + (f" (+{len(signals) - 8})" if len(signals) > 8 else "")
             typer.echo(f"  tech-jelek: {shown}")
-    last = con.execute(
-        "SELECT run_id, started_at, finished_at, pages_done, pages_failed, pages_skipped, "
-        "pages_per_sec, notes FROM crawl_runs ORDER BY run_id DESC LIMIT 1"
-    ).fetchone()
+    last = crawl_queries.latest_crawl_run(con)
     if last:
-        run_id, started, finished, done, failed, skipped, rate, notes = last
+        run_id, started, finished, done, failed, skipped, rate, notes = (
+            last.run_id, last.started_at, last.finished_at, last.pages_done, last.pages_failed,
+            last.pages_skipped, last.pages_per_sec, last.notes)
         state = f"kész {finished:%Y-%m-%d %H:%M}" if finished else "nincs lezárva"
         typer.echo(
             f"  utolsó crawl #{run_id} ({notes}): indult {started:%Y-%m-%d %H:%M}, {state}; "
@@ -221,8 +222,8 @@ def entities(
         build_blocks(con)
     runs = [] if estimate or not steps.rules else [
         run_rules(con, entity_pages=entity_page_ids(page_roles(con))).run_id]
-    site_lang = ((con.execute("SELECT languages FROM site ORDER BY ALL").fetchone() or [None])[0]
-                 or [None])[0]
+    profile = crawl_queries.site(con)
+    site_lang = ((profile.languages if profile else None) or [None])[0]
     kb = shared = linked = site_run = None
     if use_knowledge and not estimate:
         shared = connect(shared_path())
@@ -444,8 +445,8 @@ def _utcnow() -> datetime:
 
 
 def _site_domain(con) -> str | None:
-    row = con.execute("SELECT domain FROM site ORDER BY ALL").fetchone()
-    return row[0] if row else None
+    profile = crawl_queries.site(con)
+    return profile.domain if profile else None
 
 
 def _pipeline_client(con, model: str, credentials=None):

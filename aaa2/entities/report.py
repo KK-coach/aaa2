@@ -23,6 +23,7 @@ from urllib.parse import quote
 
 import duckdb
 
+from aaa2.engine import queries as crawl
 from aaa2.entities.gate import occurs
 
 PLACES = ("title", "heading", "nav", "card", "table_row")
@@ -61,11 +62,13 @@ def entity_table(con: duckdb.DuckDBPyConnection) -> list[dict]:
         if place in PLACES:
             places[entity_id][place].add(page_id)
     rows = []
-    for entity_id, name, kind, subtype, tier, flags, source, anchor, qid, status, wiki in \
+    urls = {page.page_id: page.url for page in crawl.pages(con)}
+    for entity_id, name, kind, subtype, tier, flags, source, anchor_id, qid, status, wiki in \
             con.execute(
                 "SELECT e.entity_id, e.name, e.type, e.subtype, e.tier, e.flags, e.source, "
-                "p.url, e.wikidata_id, e.wikidata_status, e.wikipedia FROM entities e "
-                "LEFT JOIN pages p ON p.page_id = e.anchor_page_id ORDER BY ALL").fetchall():
+                "e.anchor_page_id, e.wikidata_id, e.wikidata_status, e.wikipedia FROM entities e "
+                "ORDER BY e.entity_id").fetchall():
+        anchor = urls.get(anchor_id)
         if entity_id not in pages:
             continue
         nav = places[entity_id]["nav"]
@@ -111,11 +114,11 @@ def run_report(con: duckdb.DuckDBPyConnection, label: str,
                baseline: duckdb.DuckDBPyConnection | None = None) -> str:
     """A site legutóbbi futásának jelentése (lásd a modul leírását); `baseline`: a korábbi
     állapot adatbázisa (a regressziós összevetéshez)."""
-    (domain,) = con.execute("SELECT coalesce(max(domain), '') FROM site ORDER BY ALL").fetchone()
-    (eligible,) = con.execute(
-        "SELECT count(*) FROM pages WHERE status BETWEEN 200 AND 299 AND error IS NULL "
-        "AND rendered_html IS NOT NULL ORDER BY ALL").fetchone()
-    (crawled,) = con.execute("SELECT count(*) FROM pages ORDER BY ALL").fetchone()
+    site = crawl.site(con)
+    domain = site.domain if site else ""
+    all_pages = crawl.pages(con)
+    eligible = sum(page.renderable for page in all_pages)
+    crawled = len(all_pages)
     lines = [f"# Entitás-pipeline: {label}", "",
              f"- site: {domain or '—'}; oldal a készletben {crawled}, ebből alkalmas {eligible}"]
     rules = _latest(con, "rules")
@@ -160,11 +163,15 @@ def run_report(con: duckdb.DuckDBPyConnection, label: str,
                                         or "—"),
                   "- tudásbázis-kérések hibája a futás óta: "
                   + (", ".join(f"{s} {n}" for s, n in kb_errors) or "0")]
-        for page_id, url, status, error in con.execute(
-                "SELECT rp.page_id, p.url, rp.status, rp.error FROM entity_run_pages rp "
-                "JOIN pages p USING (page_id) WHERE rp.run_id = ? AND rp.status IN "
+        page_urls = {page.page_id: page.url for page in all_pages}
+        for page_id, status, error in con.execute(
+                "SELECT rp.page_id, rp.status, rp.error FROM entity_run_pages rp "
+                "WHERE rp.run_id = ? AND rp.status IN "
                 "('failed', 'verify_error', 'stopped') ORDER BY rp.page_id", [run_id]
         ).fetchall():
+            if page_id not in page_urls:
+                continue
+            url = page_urls[page_id]
             lines.append(f"  - {url}: {status}" + (f" ({error[:160]})" if error else ""))
         lines.append("")
     lines += _entities_section(con)

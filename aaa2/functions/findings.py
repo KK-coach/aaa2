@@ -84,6 +84,7 @@ from urllib.parse import urlsplit
 import duckdb
 
 from aaa2.db.stable_json import dumps
+from aaa2.engine import queries as crawl
 from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
 from aaa2.functions.graph import evidence_text
@@ -168,13 +169,14 @@ class _Site:
 
     def __init__(self, con: duckdb.DuckDBPyConnection):
         self.con = con
+        noindex = {page.page_id: page.noindex for page in crawl.pages(con)}
         self.pages = {row[0]: dict(zip(
             ("page_id", "url", "role", "support", "title", "h1", "lang", "group", "status",
-             "canonical", "issue", "noindex"), row, strict=True)) for row in con.execute(
-            "SELECT n.page_id, n.url, n.role, n.support_kind, n.title, n.h1, n.lang, "
-            "n.group_key, n.main_status, n.canonical_page, n.canonical_issue, "
-            "coalesce(p.noindex, false) FROM page_nodes n JOIN pages p USING (page_id) "
-            "ORDER BY n.url").fetchall()}
+             "canonical", "issue", "noindex"), (*row, bool(noindex[row[0]])), strict=True))
+            for row in con.execute(
+                "SELECT n.page_id, n.url, n.role, n.support_kind, n.title, n.h1, n.lang, "
+                "n.group_key, n.main_status, n.canonical_page, n.canonical_issue "
+                "FROM page_nodes n ORDER BY n.url").fetchall() if row[0] in noindex}
         self.entities = {row[0]: dict(zip(
             ("entity_id", "name", "type", "subtype", "aliases", "anchor", "role", "source"),
             row, strict=True)) for row in con.execute(

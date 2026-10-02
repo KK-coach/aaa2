@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 import duckdb
 
 from aaa2.db.stable_json import dumps
+from aaa2.engine import queries as crawl
 from aaa2.entities.extract import surface_offsets
 from aaa2.entities.rules import (
     SOURCE_STRENGTH,
@@ -20,7 +21,6 @@ from aaa2.resolver.names import (
     _as_list,
     _catalog_names,
     _exists,
-    _loads,
     _name_like,
     _now,
     _short,
@@ -274,10 +274,9 @@ def _self_nodes(con: duckdb.DuckDBPyConnection, members: list[PageInfo]) -> dict
     types = set(SCHEMA_SELF_TYPES.get(members[0].role, ()))
     if not types:
         return found
-    for page_id, raw in con.execute(
-            "SELECT page_id, json FROM schema_blocks WHERE type IS DISTINCT FROM 'invalid' "
-            "ORDER BY page_id, ordinal").fetchall():
-        for node in _typed_nodes(_loads(raw)):
+    for item in crawl.json_ld(con):
+        page_id = item.page_id
+        for node in _typed_nodes(item.data):
             node_types = {_short(t) for t in _as_list(node.get("@type"))}
             if not node_types & types:
                 continue

@@ -6,6 +6,7 @@ from aaa2.contracts.models import (
     Block,
     Candidate,
     Contract,
+    CrawlRun,
     Edge,
     Entity,
     EntityWeight,
@@ -21,6 +22,7 @@ from aaa2.contracts.models import (
     PageMeta,
     PageNode,
     Relation,
+    Site,
     StructuredData,
 )
 
@@ -31,6 +33,7 @@ __all__ = [
     "Block",
     "Candidate",
     "Contract",
+    "CrawlRun",
     "Edge",
     "Entity",
     "EntityWeight",
@@ -46,5 +49,6 @@ __all__ = [
     "PageMeta",
     "PageNode",
     "Relation",
+    "Site",
     "StructuredData",
 ]

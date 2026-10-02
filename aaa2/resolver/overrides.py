@@ -21,6 +21,7 @@ from pathlib import Path
 import duckdb
 
 from aaa2.core.site_files import SITES_DIR
+from aaa2.engine import queries as crawl
 from aaa2.resolver.pages import PAGE_TYPES, page_url, primary_lang
 
 TIERS = ("core", "package", "work_mode")
@@ -57,8 +58,8 @@ class SiteConfig:
 
 
 def site_domain(con: duckdb.DuckDBPyConnection) -> str | None:
-    row = con.execute("SELECT domain FROM site ORDER BY ALL").fetchone()
-    return row[0] if row else None
+    site = crawl.site(con)
+    return site.domain if site else None
 
 
 def load_site_config(domain: str | None, directory: Path | None = None) -> SiteConfig:
@@ -102,16 +103,16 @@ def canonical_language(con: duckdb.DuckDBPyConnection, config: SiteConfig | None
     első nyelve."""
     if config is not None and config.canonical_lang:
         return config.canonical_lang
-    row = con.execute("SELECT seed_url, home_urls, languages FROM site ORDER BY ALL").fetchone()
-    if row is None:
+    site = crawl.site(con)
+    if site is None:
         return None
-    seed, homes, languages = row
+    seed, homes, languages = site.seed_url, site.home_urls, site.languages
+    pages = crawl.pages(con)
     for url in [seed, *(homes or [])]:
         if not url:
             continue
-        found = con.execute(
-            "SELECT lang FROM pages WHERE lang IS NOT NULL AND (url = ? OR url = ?) ORDER BY ALL",
-            [url, page_url(url)]).fetchone()
+        found = sorted(page.lang for page in pages
+                       if page.lang is not None and page.url in (url, page_url(url)))
         if found:
             return primary_lang(found[0])
     return primary_lang(languages[0]) if languages else None

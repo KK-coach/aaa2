@@ -61,6 +61,7 @@ from datetime import UTC, date, datetime
 import duckdb
 
 from aaa2.db.stable_json import dumps
+from aaa2.engine import queries as crawl
 from aaa2.entities.blocks import BLOCK_PROMPT, block_input, chunk_blocks
 from aaa2.entities.dom import build_blocks, page_blocks
 from aaa2.entities.llm import site_line
@@ -153,18 +154,10 @@ ATTEMPTED = ("done", "extracted", "failed", "verify_error")
 def select_pages(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None = None,
                  limit: int | None = None) -> list[tuple[int, str | None]]:
     """Az alkalmas (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalak és a nyelvük."""
-    params: list = []
-    only = ""
-    if page_ids is not None:
-        only = " AND list_contains(?, page_id)"
-        params.append(list(page_ids))
-    if limit:
-        params.append(limit)
-    return con.execute(
-        "SELECT page_id, lang FROM pages "
-        "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL"
-        + only + " ORDER BY page_id" + (" LIMIT ?" if limit else ""), params,
-    ).fetchall()
+    wanted = None if page_ids is None else set(page_ids)
+    found = [(page.page_id, page.lang) for page in crawl.rendered_pages(con)
+             if wanted is None or page.page_id in wanted]
+    return found[:limit] if limit else found
 
 
 def resumable_run(con: duckdb.DuckDBPyConnection, model: str) -> int | None:
@@ -245,7 +238,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
     models = input_models(client.model,
                           getattr(refine, "fingerprint", None) if refine else None)
     reusable = reusable_pages(con, client.model) if reuse else {}
-    raw_hashes = dict(con.execute("SELECT page_id, raw_html_hash FROM pages ORDER BY ALL").fetchall())
+    raw_hashes = {page.page_id: page.raw_html_hash for page in crawl.pages(con)}
     hashes: dict[int, str] = {}
     parallel = workers > 1 and fork is not None
     pool = queue.Queue()

@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable
 
+from aaa2.engine import queries as crawl
 from aaa2.entities.rules import (
     alias_key,
     find_name,
@@ -30,10 +31,9 @@ def _qualified_anchors(ctx: _Context) -> dict[str, list[tuple[int, int, str, str
     tagoldal H1-ével vagy title-jével (cikkcímek). (forrásoldal, céloldal, szöveg, pozíció, a
     forrásoldal nyelve)."""
     roles = ctx.roles
-    rows = ctx.con.execute(
-        "SELECT from_page_id, to_page_id, anchor, position FROM links "
-        "WHERE anchor IS NOT NULL AND to_page_id IS NOT NULL ORDER BY from_page_id, ordinal"
-    ).fetchall()
+    rows = [(link.from_page_id, link.to_page_id, link.anchor, link.position)
+            for link in crawl.links(ctx.con)
+            if link.anchor is not None and link.to_page_id is not None]
     targets: dict[str, set[str]] = defaultdict(set)
     for from_id, to_id, anchor, _ in rows:
         if from_id in roles and to_id in roles and roles[from_id].group != roles[to_id].group:
@@ -66,9 +66,8 @@ def _card_headings(ctx: _Context) -> dict[str, list[tuple[int, int, str, str | N
     Csoportonként: (oldal, heading-sorszám, szöveg, az oldal nyelve)."""
     roles = ctx.roles
     queues: dict[int, dict[str, list[int]]] = defaultdict(lambda: defaultdict(list))
-    for from_id, anchor, to_id in ctx.con.execute(
-            "SELECT from_page_id, anchor, to_page_id FROM links WHERE anchor IS NOT NULL "
-            "ORDER BY from_page_id, ordinal").fetchall():
+    for from_id, anchor, to_id in [(link.from_page_id, link.anchor, link.to_page_id)
+                                   for link in crawl.links(ctx.con) if link.anchor is not None]:
         if from_id in roles:
             queues[from_id][alias_key(anchor)].append(to_id)
     found: dict[str, list] = defaultdict(list)

@@ -84,6 +84,7 @@ from urllib.parse import urljoin, urlsplit
 import duckdb
 
 from aaa2.db.stable_json import dumps
+from aaa2.engine import queries as crawl
 from aaa2.entities.gate import occurs
 from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import alias_key
@@ -255,9 +256,9 @@ class _Graph:
         for page_id, info in self.roles.items():
             self.groups[info.group].append(page_id)
         self.urls = {info.page_id: info.url for info in self.roles.values()}
-        self.alternates = {page_id: {page_url(entry.split("|", 1)[-1]) for entry in hreflang or []}
-                           for page_id, hreflang in con.execute(
-                               "SELECT page_id, hreflang FROM pages ORDER BY ALL").fetchall()}
+        self.alternates = {meta.page_id: {page_url(entry.split("|", 1)[-1])
+                                          for entry in meta.hreflang}
+                           for meta in crawl.page_metas(con)}
         self.page_of_url = {page_url(info.url): info.page_id for info in self.roles.values()}
         rows = con.execute("SELECT entity_id, name, type, subtype, aliases, flags, role, "
                            "anchor_page_id, wikidata_id, wikidata_status FROM entities ORDER BY ALL"
@@ -291,9 +292,10 @@ class _Graph:
         self.primary = self._primary()
         self.inbound: dict[int, list[tuple[int, str, bool]]] = defaultdict(list)
         self.outbound: dict[int, list[tuple[int, str]]] = defaultdict(list)
-        for from_id, to_id, anchor, position in con.execute(
-                "SELECT from_page_id, to_page_id, anchor, position FROM links "
-                "WHERE to_page_id IS NOT NULL ORDER BY ALL").fetchall():
+        for from_id, to_id, anchor, position in sorted(
+                ((link.from_page_id, link.to_page_id, link.anchor, link.position)
+                 for link in crawl.links(con) if link.to_page_id is not None),
+                key=lambda row: (row[0], row[1], row[2] is None, row[2] or "", row[3])):
             if from_id in self.roles and to_id in self.roles \
                     and self.roles[from_id].group != self.roles[to_id].group:
                 self.inbound[to_id].append((from_id, anchor or "", position == "body"))
@@ -315,11 +317,13 @@ class _Graph:
         """A canonical szerinti duplikátumok (a láncot az eredetiig követve) és a canonical
         nélküli döntés okai (`CANONICAL_ISSUES`)."""
         node = {canonical_key(info.url): page_id for page_id, info in self.roles.items()}
-        status = {canonical_key(url): code for url, code in self.con.execute(
-            "SELECT url, status FROM pages ORDER BY ALL").fetchall()}
+        status = {canonical_key(url): code for url, code in sorted(
+            ((page.url, page.status) for page in crawl.pages(self.con)),
+            key=lambda row: (row[0], row[1] is None, row[1] or 0))}
         declared: dict[int, int] = {}
-        for page_id, canonical in self.con.execute(
-                "SELECT page_id, canonical FROM pages WHERE canonical IS NOT NULL ORDER BY ALL").fetchall():
+        for page_id, canonical in [(meta.page_id, meta.canonical)
+                                   for meta in crawl.page_metas(self.con)
+                                   if meta.canonical is not None]:
             if page_id not in self.roles:
                 continue
             target = canonical_key(urljoin(self.roles[page_id].url, canonical))

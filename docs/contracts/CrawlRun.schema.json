@@ -1,8 +1,8 @@
 {
   "additionalProperties": false,
-  "description": "Egy modellhívás a költségével (`llm_calls`).",
+  "description": "Egy crawl-futás (`crawl_runs`).",
   "properties": {
-    "attempts": {
+    "bytes_stored": {
       "anyOf": [
         {
           "type": "integer"
@@ -12,34 +12,9 @@
         }
       ],
       "default": null,
-      "title": "Attempts"
+      "title": "Bytes Stored"
     },
-    "call_id": {
-      "title": "Call Id",
-      "type": "integer"
-    },
-    "called_at": {
-      "format": "date-time",
-      "title": "Called At",
-      "type": "string"
-    },
-    "cost_usd": {
-      "anyOf": [
-        {
-          "type": "number"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Cost Usd"
-    },
-    "domain": {
-      "title": "Domain",
-      "type": "string"
-    },
-    "fabricated_count": {
+    "concurrency": {
       "anyOf": [
         {
           "type": "integer"
@@ -49,9 +24,34 @@
         }
       ],
       "default": null,
-      "title": "Fabricated Count"
+      "title": "Concurrency"
     },
-    "last_error": {
+    "finished_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "max_pages": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Max Pages"
+    },
+    "notes": {
       "anyOf": [
         {
           "type": "string"
@@ -61,9 +61,9 @@
         }
       ],
       "default": null,
-      "title": "Last Error"
+      "title": "Notes"
     },
-    "latency_ms": {
+    "pages_done": {
       "anyOf": [
         {
           "type": "integer"
@@ -73,13 +73,9 @@
         }
       ],
       "default": null,
-      "title": "Latency Ms"
+      "title": "Pages Done"
     },
-    "model": {
-      "title": "Model",
-      "type": "string"
-    },
-    "page_id": {
+    "pages_failed": {
       "anyOf": [
         {
           "type": "integer"
@@ -89,51 +85,53 @@
         }
       ],
       "default": null,
-      "title": "Page Id"
+      "title": "Pages Failed"
     },
-    "purpose": {
-      "title": "Purpose",
-      "type": "string"
+    "pages_per_sec": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pages Per Sec"
+    },
+    "pages_skipped": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pages Skipped"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "integer"
     },
     "schema_version": {
       "default": "1.1",
       "title": "Schema Version",
       "type": "string"
     },
-    "tokens_in": {
-      "anyOf": [
-        {
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Tokens In"
-    },
-    "tokens_out": {
-      "anyOf": [
-        {
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Tokens Out"
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
     }
   },
   "required": [
-    "call_id",
-    "domain",
-    "model",
-    "purpose",
-    "called_at"
+    "run_id",
+    "started_at"
   ],
-  "title": "LLMCall",
+  "title": "CrawlRun",
   "type": "object",
-  "x-module": "llm",
+  "x-module": "crawl",
   "x-schema-version": "1.1"
 }
