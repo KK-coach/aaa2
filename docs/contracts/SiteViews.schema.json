@@ -1,0 +1,517 @@
+{
+  "$defs": {
+    "EntityRelation": {
+      "additionalProperties": false,
+      "description": "Egy entitás egy kapcsolata a nézetben: az él típusa, iránya (`→` kifelé, `←` befelé) és\na másik entitás.",
+      "properties": {
+        "direction": {
+          "enum": [
+            "→",
+            "←"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "entity": {
+          "title": "Entity",
+          "type": "string"
+        },
+        "entity_id": {
+          "title": "Entity Id",
+          "type": "integer"
+        },
+        "schema_version": {
+          "default": "1.2",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "direction",
+        "entity_id",
+        "entity"
+      ],
+      "title": "EntityRelation",
+      "type": "object"
+    },
+    "EntityView": {
+      "additionalProperties": false,
+      "description": "Egy entitás a site-áttekintőben: rang és súly, a kapcsolatai, a fő oldalai és a csak\nemlítő oldalak.",
+      "properties": {
+        "entity_id": {
+          "title": "Entity Id",
+          "type": "integer"
+        },
+        "main_pages": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Main Pages",
+          "type": "array"
+        },
+        "mention_only_pages": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Mention Only Pages",
+          "type": "array"
+        },
+        "mentions": {
+          "title": "Mentions",
+          "type": "integer"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        },
+        "rank": {
+          "title": "Rank",
+          "type": "integer"
+        },
+        "relations": {
+          "items": {
+            "$ref": "#/$defs/EntityRelation"
+          },
+          "title": "Relations",
+          "type": "array"
+        },
+        "schema_version": {
+          "default": "1.2",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "subtype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subtype"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "entity_id",
+        "name",
+        "type",
+        "rank",
+        "weight",
+        "pages",
+        "mentions"
+      ],
+      "title": "EntityView",
+      "type": "object"
+    },
+    "FindingView": {
+      "additionalProperties": false,
+      "description": "Egy megállapítás a megjelenítéshez: a tárolt mezők mellett a típus címkéje, az entitás\nneve és az érintett oldalak. A `recommendation` (javaslat) ma nem keletkezik.",
+      "properties": {
+        "entity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entity"
+        },
+        "entity_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entity Id"
+        },
+        "evidence": {
+          "default": null,
+          "title": "Evidence"
+        },
+        "finding_id": {
+          "title": "Finding Id",
+          "type": "integer"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "pages": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Pages",
+          "type": "array"
+        },
+        "recommendation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recommendation"
+        },
+        "schema_version": {
+          "default": "1.2",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "finding_id",
+        "type",
+        "label",
+        "severity",
+        "summary"
+      ],
+      "title": "FindingView",
+      "type": "object"
+    },
+    "PageMention": {
+      "additionalProperties": false,
+      "description": "Egy oldalon említett további entitás a súlyával.",
+      "properties": {
+        "entity": {
+          "title": "Entity",
+          "type": "string"
+        },
+        "entity_id": {
+          "title": "Entity Id",
+          "type": "integer"
+        },
+        "schema_version": {
+          "default": "1.2",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "entity_id",
+        "entity",
+        "weight"
+      ],
+      "title": "PageMention",
+      "type": "object"
+    },
+    "PageView": {
+      "additionalProperties": false,
+      "description": "Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a\nmásodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a további említett\nentitások és az oldal megállapításai.",
+      "properties": {
+        "canonical_issue": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonical Issue"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "enum": [
+                "strong",
+                "medium",
+                "weak"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
+        "duplicate_of": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duplicate Of"
+        },
+        "evidence": {
+          "default": null,
+          "title": "Evidence"
+        },
+        "evidence_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Text"
+        },
+        "findings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Findings",
+          "type": "array"
+        },
+        "h1": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "H1"
+        },
+        "in_h1": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "In H1"
+        },
+        "in_title": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "In Title"
+        },
+        "lang": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lang"
+        },
+        "main_entity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Main Entity"
+        },
+        "main_entity_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Main Entity Id"
+        },
+        "main_entity_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Main Entity Type"
+        },
+        "other_mentions": {
+          "items": {
+            "$ref": "#/$defs/PageMention"
+          },
+          "title": "Other Mentions",
+          "type": "array"
+        },
+        "page_id": {
+          "title": "Page Id",
+          "type": "integer"
+        },
+        "role": {
+          "title": "Role",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1.2",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "secondary": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Secondary",
+          "type": "array"
+        },
+        "support_kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Support Kind"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "page_id",
+        "url",
+        "role"
+      ],
+      "title": "PageView",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A riport bemenete egy site-ra: a megállapítások, az entitások és az oldalak nézete,\nverziózva (`schema_version`).",
+  "properties": {
+    "domain": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Domain"
+    },
+    "entities": {
+      "items": {
+        "$ref": "#/$defs/EntityView"
+      },
+      "title": "Entities",
+      "type": "array"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/FindingView"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "pages": {
+      "items": {
+        "$ref": "#/$defs/PageView"
+      },
+      "title": "Pages",
+      "type": "array"
+    },
+    "schema_version": {
+      "default": "1.2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "site": {
+      "title": "Site",
+      "type": "string"
+    }
+  },
+  "required": [
+    "site"
+  ],
+  "title": "SiteViews",
+  "type": "object",
+  "x-module": "findings",
+  "x-schema-version": "1.2"
+}

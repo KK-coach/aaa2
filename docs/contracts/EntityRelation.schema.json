@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "description": "Egy entitás egy kapcsolata a nézetben: az él típusa, iránya (`→` kifelé, `←` befelé) és\na másik entitás.",
+  "properties": {
+    "direction": {
+      "enum": [
+        "→",
+        "←"
+      ],
+      "title": "Direction",
+      "type": "string"
+    },
+    "entity": {
+      "title": "Entity",
+      "type": "string"
+    },
+    "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": "1.2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "type": {
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "direction",
+    "entity_id",
+    "entity"
+  ],
+  "title": "EntityRelation",
+  "type": "object",
+  "x-module": "findings",
+  "x-schema-version": "1.2"
+}

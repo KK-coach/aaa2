@@ -3,7 +3,8 @@ riport, a HTTP API) csak ezt használja.
 
 Egy site megnyitása: `open_site(domain, db=None)` → `Site`. A lépések site-onként hívhatók
 (`crawl`, `extract`, `resolve`, `build_graph`, `find`), a lekérdezések szerződést adnak vissza
-(`aaa2/contracts`: `pages`, `entities`, `edges`, `main_entities`, `weights`, `findings`, …).
+(`aaa2/contracts`: `pages`, `entities`, `edges`, `main_entities`, `weights`, `findings`, …);
+a riport bemenete a `views` (verziózott JSON: `views_json`, `export_views_json`).
 
     from aaa2 import api
 
@@ -26,6 +27,7 @@ from aaa2.api.queries import (
     entity_run,
     entity_run_skipped,
     entity_type_counts,
+    export_views_json,
     findings,
     kb_links,
     kg_calls_today,
@@ -41,6 +43,8 @@ from aaa2.api.queries import (
     status,
     structured_data,
     table_rows,
+    views,
+    views_json,
     weights,
 )
 from aaa2.api.site import ApiError, GraphMissing, Site, SiteNotFound, domain_of, open_site
@@ -97,6 +101,7 @@ __all__ = [
     "entity_run",
     "entity_run_skipped",
     "entity_type_counts",
+    "export_views_json",
     "extract",
     "find",
     "findings",
@@ -118,5 +123,7 @@ __all__ = [
     "structured_data",
     "table_rows",
     "validate",
+    "views",
+    "views_json",
     "weights",
 ]

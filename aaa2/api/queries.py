@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 from collections import Counter
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from aaa2.api.site import ApiError, Site
 from aaa2.contracts import (
@@ -21,9 +22,11 @@ from aaa2.contracts import (
     Page,
     PageMeta,
     PageNode,
+    SiteViews,
     StructuredData,
 )
 from aaa2.contracts import Site as SiteProfile
+from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl_queries
 from aaa2.entities import store
 from aaa2.functions import findings as findings_module
@@ -110,6 +113,28 @@ def weights(site: Site) -> list[EntityWeight]:
 def findings(site: Site) -> list[Finding]:
     """A tárolt SEO-megállapítások, az azonosítójuk szerint."""
     return findings_module.stored_findings(site.con)
+
+
+def views(site: Site) -> SiteViews:
+    """A riport bemenete: a megállapítások (típuscímkével, az entitás nevével, az érintett
+    oldalakkal), az entitások nézete (rang, súly, kapcsolatok, fő és csak említő oldalak) és
+    az oldalak nézete (szerep, fő entitás a bizonyítékokkal, a H1 és a title megnevezése,
+    további említések, az oldal megállapításai), egy verziózott szerződésben. A `find` után
+    hívható."""
+    return findings_module.site_views(site.con, site.name, site.domain)
+
+
+def views_json(site: Site) -> str:
+    """A `views` JSON-szövegként: rendezett kulcsokkal, UTF-8-ban, a `schema_version`-nel."""
+    return dumps(views(site).model_dump(mode="json"), ensure_ascii=False, indent=1) + "\n"
+
+
+def export_views_json(site: Site, out: Path) -> Path:
+    """A `views_json` fájlba: `<out>/<név>-views.json`."""
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / f"{site.name}-views.json"
+    path.write_text(views_json(site), encoding="utf-8", newline="\n")
+    return path
 
 
 # --- állapot és költség (a parancssornak) --------------------------------------------------

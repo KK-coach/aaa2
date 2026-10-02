@@ -7,7 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from aaa2 import contracts
-from aaa2.contracts import CONTRACTS, SCHEMA_VERSION
+from aaa2.contracts import CONTRACTS, DERIVED, SCHEMA_VERSION
 from aaa2.contracts.export import export, json_schemas, schema_text
 from tests.contract_rows import SOURCES, build_all, table_rows
 from tests.test_entities_site import NOON
@@ -56,7 +56,7 @@ def test_contracts_build_from_the_current_data(monkeypatch):
         rows, items = result[model.__name__]
         assert rows == con.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
         assert len(items) == rows
-    assert set(result) == {model.__name__ for model in CONTRACTS}
+    assert set(result) == {model.__name__ for model in CONTRACTS if model not in DERIVED}
     for name, (rows, _) in result.items():
         assert rows > 0, name                               # nem üres zöld
     # a szerződés a sor értékeit hordozza: a mezők a forrásoszlopokkal egyeznek

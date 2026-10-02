@@ -1,7 +1,19 @@
 {
   "additionalProperties": false,
-  "description": "Egy SEO-megállapítás (`findings`). A `recommendation` (javaslat) ma nem keletkezik.",
+  "description": "Egy megállapítás a megjelenítéshez: a tárolt mezők mellett a típus címkéje, az entitás\nneve és az érintett oldalak. A `recommendation` (javaslat) ma nem keletkezik.",
   "properties": {
+    "entity": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Entity"
+    },
     "entity_id": {
       "anyOf": [
         {
@@ -22,17 +34,16 @@
       "title": "Finding Id",
       "type": "integer"
     },
-    "page_id": {
-      "anyOf": [
-        {
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Page Id"
+    "label": {
+      "title": "Label",
+      "type": "string"
+    },
+    "pages": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Pages",
+      "type": "array"
     },
     "recommendation": {
       "anyOf": [
@@ -72,10 +83,11 @@
   "required": [
     "finding_id",
     "type",
+    "label",
     "severity",
     "summary"
   ],
-  "title": "Finding",
+  "title": "FindingView",
   "type": "object",
   "x-module": "findings",
   "x-schema-version": "1.2"

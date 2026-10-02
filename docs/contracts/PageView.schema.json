@@ -1,0 +1,250 @@
+{
+  "$defs": {
+    "PageMention": {
+      "additionalProperties": false,
+      "description": "Egy oldalon említett további entitás a súlyával.",
+      "properties": {
+        "entity": {
+          "title": "Entity",
+          "type": "string"
+        },
+        "entity_id": {
+          "title": "Entity Id",
+          "type": "integer"
+        },
+        "schema_version": {
+          "default": "1.2",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "entity_id",
+        "entity",
+        "weight"
+      ],
+      "title": "PageMention",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a\nmásodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a további említett\nentitások és az oldal megállapításai.",
+  "properties": {
+    "canonical_issue": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Canonical Issue"
+    },
+    "confidence": {
+      "anyOf": [
+        {
+          "enum": [
+            "strong",
+            "medium",
+            "weak"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Confidence"
+    },
+    "duplicate_of": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Duplicate Of"
+    },
+    "evidence": {
+      "default": null,
+      "title": "Evidence"
+    },
+    "evidence_text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Evidence Text"
+    },
+    "findings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "h1": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "H1"
+    },
+    "in_h1": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "In H1"
+    },
+    "in_title": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "In Title"
+    },
+    "lang": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Lang"
+    },
+    "main_entity": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Main Entity"
+    },
+    "main_entity_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Main Entity Id"
+    },
+    "main_entity_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Main Entity Type"
+    },
+    "other_mentions": {
+      "items": {
+        "$ref": "#/$defs/PageMention"
+      },
+      "title": "Other Mentions",
+      "type": "array"
+    },
+    "page_id": {
+      "title": "Page Id",
+      "type": "integer"
+    },
+    "role": {
+      "title": "Role",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "secondary": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Secondary",
+      "type": "array"
+    },
+    "support_kind": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Support Kind"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    },
+    "url": {
+      "title": "Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "page_id",
+    "url",
+    "role"
+  ],
+  "title": "PageView",
+  "type": "object",
+  "x-module": "findings",
+  "x-schema-version": "1.2"
+}

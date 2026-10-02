@@ -1,0 +1,126 @@
+{
+  "$defs": {
+    "EntityRelation": {
+      "additionalProperties": false,
+      "description": "Egy entitás egy kapcsolata a nézetben: az él típusa, iránya (`→` kifelé, `←` befelé) és\na másik entitás.",
+      "properties": {
+        "direction": {
+          "enum": [
+            "→",
+            "←"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "entity": {
+          "title": "Entity",
+          "type": "string"
+        },
+        "entity_id": {
+          "title": "Entity Id",
+          "type": "integer"
+        },
+        "schema_version": {
+          "default": "1.2",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "direction",
+        "entity_id",
+        "entity"
+      ],
+      "title": "EntityRelation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Egy entitás a site-áttekintőben: rang és súly, a kapcsolatai, a fő oldalai és a csak\nemlítő oldalak.",
+  "properties": {
+    "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+    },
+    "main_pages": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Main Pages",
+      "type": "array"
+    },
+    "mention_only_pages": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Mention Only Pages",
+      "type": "array"
+    },
+    "mentions": {
+      "title": "Mentions",
+      "type": "integer"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "pages": {
+      "title": "Pages",
+      "type": "integer"
+    },
+    "rank": {
+      "title": "Rank",
+      "type": "integer"
+    },
+    "relations": {
+      "items": {
+        "$ref": "#/$defs/EntityRelation"
+      },
+      "title": "Relations",
+      "type": "array"
+    },
+    "schema_version": {
+      "default": "1.2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "subtype": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Subtype"
+    },
+    "type": {
+      "title": "Type",
+      "type": "string"
+    },
+    "weight": {
+      "title": "Weight",
+      "type": "number"
+    }
+  },
+  "required": [
+    "entity_id",
+    "name",
+    "type",
+    "rank",
+    "weight",
+    "pages",
+    "mentions"
+  ],
+  "title": "EntityView",
+  "type": "object",
+  "x-module": "findings",
+  "x-schema-version": "1.2"
+}
