@@ -52,7 +52,7 @@ note = "a JSON-LD blokkok"
 [tables.structured_data]
 owner = "crawl"
 contracts = ["StructuredData", "PageMeta"]
-note = "a microdata- és az RDFa-elemek (022-es migráció); a szabálykör és a feloldás még nem olvassa"
+note = "a microdata-, RDFa- és Open Graph-elemek (022-es migráció); a szabálykör és a feloldás még nem olvassa"
 
 # --- llm -------------------------------------------------------------------------------------
 
