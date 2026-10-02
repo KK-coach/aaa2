@@ -212,7 +212,9 @@ def site_set(domain: str) -> tuple[str, object]:
 
 
 # Az idegen site-ok (M2/7 B): felvétel neve → a site-fájl domainje.
-SITE_SETS = {"marketinglens-crawl": "marketinglens.com", "duex-crawl": "duexhungary.hu"}
+SITE_SETS = {"marketinglens-crawl": "marketinglens.com", "duex-crawl": "duexhungary.hu",
+             # a vak próba két webshopja (microdata; 2026-10-02)
+             "serafim-crawl": "serafimszappan.hu", "napvirag-crawl": "napviragszappan.hu"}
 
 # A referencia-készletek: felvétel neve → (seed, crawl-beállítás).
 REFERENCE_SETS = _reference_sets()

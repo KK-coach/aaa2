@@ -1,0 +1,14 @@
+# Vak próba (AAAV2-43): Shoprenter-webshop microdatával. A crawl a www hostra szűkül; kimarad
+# minden `index.php?route=` URL az információs oldalak és a terméklisták kivételével (a kosárba
+# tevő, a gyorsnézet-, a fiók- és a keresőlinkek), és a rendező, lapméret- és szűrőparaméterek.
+# A robots.txt mindent enged (2026-10-02); a site kímélése miatt 2 párhuzamos szál.
+
+[crawl]
+seed = "https://www.napviragszappan.hu/"
+include = '^https?://www\.napviragszappan\.hu/'
+exclude = [
+    'route=(?!information/|product/list)',
+    '[?&](sort|order|limit|filter)[=\[]',
+]
+concurrency = 2
+render_timeout = 30
