@@ -83,6 +83,7 @@ from urllib.parse import urlsplit
 
 import duckdb
 
+from aaa2.contracts import Finding
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
 from aaa2.entities import store
@@ -625,6 +626,13 @@ def _findings(con: duckdb.DuckDBPyConnection) -> list[dict]:
                      (*row[:6], json.loads(row[6])), strict=True)) for row in con.execute(
         "SELECT finding_id, type, severity, page_id, entity_id, summary, evidence FROM findings "
         "ORDER BY finding_id").fetchall()]
+
+
+def stored_findings(con: duckdb.DuckDBPyConnection) -> list[Finding]:
+    """A tárolt megállapítások szerződésként, az azonosítójuk szerint."""
+    cursor = con.execute("SELECT * FROM findings ORDER BY finding_id")
+    names = [column[0] for column in cursor.description]
+    return [Finding.from_row(dict(zip(names, row, strict=True))) for row in cursor.fetchall()]
 
 
 def _affected(finding: dict) -> list[str]:
