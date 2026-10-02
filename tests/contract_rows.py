@@ -50,7 +50,8 @@ def tables(con: duckdb.DuckDBPyConnection) -> set[str]:
 def build_all(con: duckdb.DuckDBPyConnection) -> dict[str, tuple[int, list[Contract]]]:
     """Szerződésnév → (a forrástábla sorainak száma, a felépített szerződések). A hiányzó
     tábla szerződése kimarad. A `Mention` a forrásaival, a `PageMeta` az oldal strukturált
-    adataival együtt épül."""
+    adataival együtt épül; a `StructuredData` a JSON-LD blokkokból (`schema_blocks`) és a
+    microdata-, RDFa-elemekből (`structured_data`)."""
     present = tables(con)
     built: dict[str, tuple[int, list[Contract]]] = {}
     for model, (table, query) in SOURCES.items():
@@ -68,6 +69,11 @@ def build_all(con: duckdb.DuckDBPyConnection) -> dict[str, tuple[int, list[Contr
                                     for m in mentions])
         built["MentionSource"] = (sum(len(s) for s in sources.values()),
                                   [s for group in sources.values() for s in group])
+    if "StructuredData" in built and "structured_data" in present:
+        rows = table_rows(con, "SELECT * FROM structured_data ORDER BY page_id, ordinal, syntax")
+        count, items = built["StructuredData"]
+        built["StructuredData"] = (count + len(rows), items + [
+            contracts.StructuredData.from_row(row) for row in rows])
     if "Page" in built:
         structured = defaultdict(list)
         for item in built.get("StructuredData", (0, []))[1]:

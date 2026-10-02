@@ -9,8 +9,8 @@
 - `from_row`: a modell egy mai adatbázissorból (oszlopnév → érték) épül fel; a sor többi oszlopa
   kimarad, a JSON-oszlop szövege objektummá válik. A modellek csak adatot írnak le: adatbázist
   nem érnek el, és a csomag a motor egyik moduljára sem épül.
-- `StructuredData`: a JSON-LD, a microdata, az RDFa és az Open Graph közös alakja; ma csak
-  JSON-LD keletkezik (`schema_blocks`).
+- `StructuredData`: a JSON-LD (`schema_blocks`), a microdata és az RDFa (`structured_data`),
+  később az Open Graph közös alakja.
 """
 from __future__ import annotations
 
