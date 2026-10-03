@@ -40,10 +40,12 @@ kimenetéből. Minden futás újraépíti a `page_nodes`, `edges`, `page_main_en
   6. a más oldalcsoportokról érkező anchorok szövege (`inbound_anchor`) és az URL utolsó
      szakasza (`url`).
   A jelöltek sorrendje: a legerősebb bizonyíték, a `primary` sorszáma (a nyelvi pár listáin
-  a legkisebb), a pár hány tagja nevezi meg, az elsődleges nyelvű tag megnevezi-e
-  (`pages.representative`, a `canonical_language` szerint), a bizonyítékfajták száma, az
-  említésszám. A pár tagjai így ugyanazt a fő entitást kapják, ha bármelyikük kinyerése megnevez
-  fő témát; az oldalankénti bizonyíték (title, H1, említésszám) csak ezután dönt. Jelzés a
+  a legkisebb), a pár hány tagja nevezi meg, a bizonyítékfajták száma és az említésszám a pár
+  oldalain együtt, az elsődleges nyelvű tag megnevezi-e (`pages.representative`, a
+  `canonical_language` szerint), a páron belül a régebbi entitás, végül az oldal saját
+  bizonyítékfajtái és említésszáma. A pár
+  tagjai így ugyanazt a fő entitást kapják, ha bármelyikük kinyerése megnevez fő témát; pár
+  nélküli oldalon a sorrend a korábbi (bizonyíték, sorszám, fajták száma, említésszám). Jelzés a
   döntésben (`signals`): `primary_empty` (a kinyerés nem nevezett meg fő témát),
   `pair_differs` (a pár egy tagjának mégis más a fő entitása). Jelölt nem lehet a demó- és a navigációs jelölésű entitás; a site
   entitása csak a kezdőoldalon, ha oldalhoz kötött vagy JSON-LD bizonyítéka van, vagy ha a
@@ -199,12 +201,19 @@ class Candidate:
     mentions: int = 0
     primary_index: int | None = None       # a legkisebb sorszám a nyelvi pár tagjainak listáin
     group_votes: int = 0                    # a pár hány tagjának `primary` listáján áll
+    group_kinds: int | None = None          # bizonyítékfajták a pár oldalain együtt
+    group_mentions: int | None = None       # említések a pár oldalain együtt
     group_first: bool = False               # a pár elsődleges nyelvű tagja megnevezi-e
 
     def key(self) -> tuple:
         best = min(EVIDENCE_RANK[kind] for kind in self.evidence)
+        kinds = len(self.evidence) if self.group_kinds is None else self.group_kinds
+        mentions = self.mentions if self.group_mentions is None else self.group_mentions
+        # a páron belül a teljes döntetlent az entitás azonosítója dönti el (a régebbi nyer),
+        # még az oldal saját bizonyítéka előtt, hogy a sorrend a pár minden oldalán ugyanaz legyen
+        tie = self.entity_id if self.group_kinds is not None else 0
         return (best, 99 if self.primary_index is None else self.primary_index,
-                -self.group_votes, not self.group_first,
+                -self.group_votes, -kinds, -mentions, not self.group_first, tie,
                 -len(self.evidence), -self.mentions, self.entity_id)
 
     def confidence(self) -> str:
@@ -327,6 +336,7 @@ class _Graph:
         self.articles = {e for e, row in self.entities.items() if row[7] is not None
                          and row[2] == "work" and row[3] == "article"}
         self.supports: dict[int, list[tuple[int, str]]] = {}   # cikkoldal → (ajánlat, tulajd.)
+        self._own: dict[int, dict[int, Candidate]] = {}        # oldal → saját jelöltek
         self.canonical: dict[int, int] = {}          # duplikátum → az eredeti oldal
         self.canonical_issue: dict[int, dict] = {}
         self._canonicals()
@@ -530,10 +540,60 @@ class _Graph:
 
     def candidates(self, info: PageInfo, home: bool = False,
                    profile: bool = False) -> dict[int, Candidate]:
-        """Az oldal jelöltjei a bizonyítékaikkal. A site oldalaihoz kötött cikk-entitások nem
-        jelöltek (a cikkoldal fő entitása a téma). `profile`: rólam- vagy szerzői oldal; a
-        legtöbbet említett személy `profile` bizonyítékot kap."""
+        """Az oldal jelöltjei: a saját bizonyítékai (`own_candidates`), és ha nyelvi pár tagja,
+        a pár többi tagjának `primary_entities` listája is (`group_primary`). A páron belül a
+        jelölt sorszáma a tagok listáin a legkisebb; `group_votes`: hány tag nevezi meg;
+        `group_kinds` és `group_mentions`: a jelölt bizonyítékfajtái és említései a pár
+        oldalain együtt; `group_first`: az elsődleges nyelvű tag megnevezi-e. Ezek a pár
+        minden tagján ugyanazok, így a sorrend eleje (`Candidate.key`) oldalfüggetlen."""
+        own = self.own_candidates(info, home, profile)
+        pair = self.pair(info)
+        if len(pair) == 1:
+            return own
+        found = {entity_id: Candidate(entity_id, dict(item.evidence), item.mentions,
+                                      item.primary_index)
+                 for entity_id, item in own.items()}
+        members: dict[int, dict[int, Candidate]] = {info.page_id: own}
+        for member in pair[1:]:
+            role, _ = self.role_of(self.roles[member])
+            members[member] = self.own_candidates(self.roles[member], role == "home",
+                                                  role == "profile")
+        first = representative([self.roles[p] for p in pair], self.site_lang).page_id
+        for member in pair[1:]:
+            for index, name in enumerate(self.primary.get(member, [])):
+                entity_id = self.resolve(name, member)
+                if entity_id is None or entity_id in self.excluded \
+                        or entity_id in self.articles:
+                    continue
+                item = found.setdefault(entity_id, Candidate(entity_id))
+                item.evidence.setdefault(
+                    "group_primary", {"index": index, "name": name,
+                                      "page": self.urls.get(member)})
+        for entity_id, item in found.items():
+            named = {member: sets[entity_id].primary_index for member, sets in members.items()
+                     if entity_id in sets and sets[entity_id].primary_index is not None}
+            if named:
+                item.primary_index = min(named.values())
+            item.group_votes = len(named)
+            item.group_first = first in named
+            kinds: set[str] = set()
+            for sets in members.values():
+                if entity_id in sets:
+                    kinds |= set(sets[entity_id].evidence)
+            item.group_kinds = len(kinds)
+            item.group_mentions = sum(sets[entity_id].mentions for sets in members.values()
+                                      if entity_id in sets)
+        return found
+
+    def own_candidates(self, info: PageInfo, home: bool = False,
+                       profile: bool = False) -> dict[int, Candidate]:
+        """Az oldal jelöltjei a saját bizonyítékaikkal (oldalanként egyszer számolva). A site
+        oldalaihoz kötött cikk-entitások nem jelöltek (a cikkoldal fő entitása a téma).
+        `profile`: rólam- vagy szerzői oldal; a legtöbbet említett személy `profile`
+        bizonyítékot kap."""
         page_id = info.page_id
+        if page_id in self._own:
+            return self._own[page_id]
         found: dict[int, Candidate] = {}
         articles = self.articles
 
@@ -566,25 +626,11 @@ class _Graph:
                              "page": self.urls.get(target) if target in self.urls else None}
                             if name or target else None)
         self.supports[page_id] = supports
-        pair = self.pair(info)
-        first = representative([self.roles[p] for p in pair], self.site_lang).page_id
-        for member in pair:                                   # az oldal maga az első
-            named: set[int] = set()
-            for index, name in enumerate(self.primary.get(member, [])):
-                entity_id = self.resolve(name, member)
-                if member == page_id:
-                    add(entity_id, "primary", {"index": index, "name": name})
-                else:
-                    add(entity_id, "group_primary",
-                        {"index": index, "name": name, "page": self.urls.get(member)})
-                if entity_id not in found or entity_id in named:
-                    continue
-                named.add(entity_id)
-                item = found[entity_id]
-                item.primary_index = index if item.primary_index is None \
-                    else min(item.primary_index, index)
-                item.group_votes += 1
-                item.group_first = item.group_first or member == first
+        for index, name in enumerate(self.primary.get(page_id, [])):
+            entity_id = self.resolve(name, page_id)
+            add(entity_id, "primary", {"index": index, "name": name})
+            if entity_id in found and found[entity_id].primary_index is None:
+                found[entity_id].primary_index = index
         content = Counter()
         for entity_id, position, skip, _ in self.mentions.get(page_id, []):
             if skip:
@@ -627,6 +673,7 @@ class _Graph:
                     and not set(found[entity_id].evidence) & {"anchored", "schema_about"} \
                     and found[entity_id].primary_index != 0:
                 del found[entity_id]
+        self._own[page_id] = found
         return found
 
     def _own_offer(self, entity_id: int | None, group: set[int]) -> bool:
