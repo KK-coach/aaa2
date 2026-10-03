@@ -11,8 +11,9 @@ import aaa2.db.connect as connect_module
 from aaa2.cli.main import app
 from aaa2.db.connect import connect, db_path
 from aaa2.entities.dom import page_blocks
-from aaa2.entities.extract import estimate_llm, run_llm
+from aaa2.entities.extract import estimate_llm, page_estimate, run_llm
 from aaa2.entities.gate import KnowledgeBase
+from aaa2.entities.llm import site_line
 from aaa2.entities.report import entity_table, run_report, wikipedia_url, write_entity_table
 from aaa2.entities.rules import run_rules
 from aaa2.entities.v3 import (
@@ -284,7 +285,13 @@ def test_the_cost_cap_stops_the_remaining_pages(tmp_path):
     con = site({f"/{i}/": html(f"P{i}", "<p>szöveg itt</p>") for i in range(3)})
     adapter = Scripted([reply()] * 3)
     cost = (1000 * 0.75 + 200 * 3.75) / 1e6
-    run = pipeline_run(con, adapter, tmp_path, max_usd=cost * 1.5)
+    # a határ két oldal valós költségét és egy foglalást enged: a harmadik oldal foglalása (a
+    # becslés, de legalább az eddigi legdrágább oldal) már nem fér be
+    blocks = page_blocks(con, 1, region="content")
+    client = client_for(con, Scripted(), tmp_path)
+    estimate = page_estimate(client, V3Step(con, ALL_STEPS, client), site_line(con) or "",
+                             blocks, {}, NOON.date())
+    run = pipeline_run(con, adapter, tmp_path, max_usd=cost + 1.01 * max(estimate, cost))
     assert len(adapter.calls) == 2
     assert run.skipped == {"cost_cap_stopped_pages": 1}
     assert con.execute("SELECT status, count(*) FROM entity_run_pages GROUP BY status "

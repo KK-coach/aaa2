@@ -136,6 +136,7 @@ Vélemények (Krisztián döntése, 2026-10-03): a `Review` típusú csomópont 
 ### Működési javítások (2026-10-03, független review nyomán)
 
 - **Részleges kinyerés** (`aaa2/entities/extract.py`): ha egy oldal darabjai közül legalább egy minden újrapróbálkozás után hibás, de van sikeres darab, az oldal állapota `partial` (023-as migráció), nem `done`; a sikeres darabok említései mentődnek, a rekord `failed_chunks` mezője a hibás darabok sorszáma. A `--resume` csak a hibás darabokat kéri újra (ha a darabolás megváltozott, az egész oldalt), és a kinyerés utáni lépés újra lefut; az újrahasználó futás a részleges rekordot nem veszi át, az oldal teljes kinyerést kap. A futásjelentés az állapotok között és az okok között (`partial_pages`) mutatja a számukat.
+- **Költségplafon foglalással** (`--max-usd`; `extract.py`: `_CostCap`, `page_estimate`): egy oldal csak akkor indul, ha a futás lekönyvelt költsége, a folyamatban lévő oldalak lefoglalt költsége és az új oldal foglalása együtt a plafon alatt marad. A foglalás az oldal becsült költsége (a kinyerés darabonként és az ellenőrzés), de legalább a futás eddigi legdrágább oldalának valós költsége. Ha a foglalás nem fér be, de van folyamatban lévő oldal, a futás megvárja; ha nincs, megáll (`cost_cap_stopped_pages`). A foglalás becslés: a becslésnél drágább valós hívás a különbséggel túllépheti a plafont, amíg a futás nem látott ilyen oldalt; a szolgáltatói keretet a kliens keret-őre a hívás legnagyobb költségével őrzi.
 
 ### Nyitott pontok
 
