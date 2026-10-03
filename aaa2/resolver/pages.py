@@ -141,7 +141,8 @@ def page_types(con: duckdb.DuckDBPyConnection,
 
     1. a site-fájl `[page_types]` mintái (típus → regexek a normalizált URL-re, `re.search`),
        a `PAGE_TYPES` sorrendjében; a site szerkezetéből, pl. a márka × kategória oldal;
-    2. az oldalra mutató JSON-LD `Product` → product, `Service` → service;
+    2. az oldalra mutató JSON-LD vagy microdata `Product` → product, `Service` → service (a
+       microdata forrása és az oldalra mutatás szabálya: `crawl.schema_items`);
     3. `BlogPosting` / `NewsArticle` csomópont → blog (az `Article` nem: a WordPress SEO-bővítménye
        minden oldalra teszi);
     4. különben other."""
@@ -166,7 +167,8 @@ def page_types(con: duckdb.DuckDBPyConnection,
 
 
 def breadcrumbs(con: duckdb.DuckDBPyConnection) -> dict[int, list[tuple[str, str | None]]]:
-    """Oldalanként az első JSON-LD `BreadcrumbList` elemei sorrendben: (név, URL vagy None)."""
+    """Oldalanként az első `BreadcrumbList` (JSON-LD, ennek híján microdata) elemei sorrendben:
+    (név, URL vagy None)."""
     found: dict[int, list[tuple[str, str | None]]] = {}
     for page_id, nodes in schema_nodes(con).items():
         for node in nodes:
@@ -297,10 +299,10 @@ def offer_hub(node: dict, url: str, site_pages: frozenset[str] | set[str]) -> bo
 
 
 def schema_nodes(con: duckdb.DuckDBPyConnection) -> dict[int, list[dict]]:
-    """Oldalanként a JSON-LD blokkok legfelső szintű típusos csomópontjai (és a `@graph`
-    elemei)."""
+    """Oldalanként a schema.org-elemek (`crawl.schema_items`: JSON-LD, utána microdata) legfelső
+    szintű típusos csomópontjai (és a `@graph` elemei)."""
     found: dict[int, list[dict]] = defaultdict(list)
-    for item in crawl.json_ld(con):
+    for item in crawl.schema_items(con):
         page_id, block = item.page_id, item.data
         for node in _as_list(block):
             if isinstance(node, dict):

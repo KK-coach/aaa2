@@ -5,7 +5,8 @@ felépíti (`dom.build_blocks`), az `entities`, a `page_entities` (említéstáb
 Csak a sikeres (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalakból dolgozik. Egy említés egy
 előfordulás: blokk és karakterpozíció a blokk szövegében (a schema-említésnek nincs blokkja).
 
-- schema: a JSON-LD blokkok minden `@type`-os csomópontja, a beágyazottak is (az attribútum-
+- schema: a JSON-LD blokkok és a microdata-elemek (`crawl.schema_items`) minden `@type`-os
+  csomópontja, a beágyazottak is (az attribútum-
   tulajdonságok, `SCHEMA_ATTRIBUTES` alatt nem: jobTitle, areaServed, knowsAbout, description),
   ha a típusa a `config/schema_types.toml` leképezésében szerepel és van szöveges `name`-je →
   entitás a leképezett típussal; oldalanként és entitásonként egy említés, blokk nélkül: position = schema,
@@ -420,7 +421,7 @@ def _schema(con, page_ids, dom, mapping, candidates, skipped) -> None:
     nameless: Counter[str] = Counter()
     per_page: dict[tuple[int, str, str], Mention] = {}
     wanted = set(page_ids)
-    for item in crawl.json_ld(con):
+    for item in crawl.schema_items(con):
         page_id, block = item.page_id, item.data
         if page_id not in wanted:
             continue

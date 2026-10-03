@@ -639,7 +639,8 @@ def _relate(ctx: _Context, from_id: int, to_id: int, kind: str, evidence: dict) 
 
 
 def _schema_brand(ctx: _Context, info: PageInfo) -> str | None:
-    """A termékoldal saját JSON-LD `Product` csomópontjának `brand`-je (név vagy szöveg)."""
+    """A termékoldal saját `Product` csomópontjának (JSON-LD vagy microdata) `brand`-je (név
+    vagy szöveg)."""
     from aaa2.resolver.offers import _self_nodes
 
     for node in _self_nodes(ctx.con, [info]).get(info.page_id, []):

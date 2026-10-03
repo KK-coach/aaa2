@@ -235,15 +235,15 @@ def _canonical(role: str, rep: PageInfo, names: list[Name]) -> str:
 
 
 def _self_nodes(con: duckdb.DuckDBPyConnection, members: list[PageInfo]) -> dict[int, list[dict]]:
-    """Tagoldalanként a szerepkörös JSON-LD csomópontok, amelyek az oldalra mutatnak (`url` vagy
-    `@id` a töredék nélkül), bármelyik oldal JSON-LD-jében; cikknél a tagoldal saját cikk-
-    csomópontja is."""
+    """Tagoldalanként a szerepkörös schema.org-csomópontok (JSON-LD vagy microdata), amelyek az
+    oldalra mutatnak (`url` vagy `@id` a töredék nélkül), bármelyik oldal jelölésében; cikknél a
+    tagoldal saját cikk-csomópontja is."""
     found: dict[int, list[dict]] = defaultdict(list)
     urls = {m.page_id: m.url for m in members}
     types = set(SCHEMA_SELF_TYPES.get(members[0].role, ()))
     if not types:
         return found
-    for item in crawl.json_ld(con):
+    for item in crawl.schema_items(con):
         page_id = item.page_id
         for node in _typed_nodes(item.data):
             node_types = {_short(t) for t in _as_list(node.get("@type"))}

@@ -44,7 +44,8 @@ def ld(data):
 
 
 def site(pages, languages=("hu",)):
-    """Oldalak a crawl sémájában: pages, headings, links (to_page_id-vel), schema_blocks; a
+    """Oldalak a crawl sémájában: pages, headings, links (to_page_id-vel), schema_blocks,
+    structured_data; a
     `site.home_urls` a seed oldal, ha az is az oldalak között van (ahogy a site-profil írja)."""
     con = connect(":memory:")
     con.execute("INSERT INTO site (domain, seed_url, languages) VALUES ('pelda.hu', ?, ?)",
@@ -70,6 +71,10 @@ def site(pages, languages=("hu",)):
         for block in parsed.schema_blocks:
             con.execute("INSERT INTO schema_blocks VALUES (?, ?, ?, ?)",
                         [page_id, block.type, block.json, block.ordinal])
+        for item in parsed.structured_data:
+            con.execute("INSERT INTO structured_data (page_id, syntax, type, json, ordinal) "
+                        "VALUES (?, ?, ?, ?, ?)",
+                        [page_id, item.syntax, item.type, item.json, item.ordinal])
     con.execute("UPDATE links SET to_page_id = pages.page_id FROM pages "
                 "WHERE links.to_url = pages.url")
     seed = normalize(SEED, POLICY)
