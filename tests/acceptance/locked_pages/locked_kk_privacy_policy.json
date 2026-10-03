@@ -1,1148 +1,1156 @@
 {
-  "page_id": "locked_kk_privacy_policy",
-  "set": "locked",
-  "url": "https://kk.coach/privacy-policy/",
-  "lang": "en-US",
-  "site_description": "This page belongs to the website kk.coach, whose home page is titled “SEO & AI-Driven Organic Growth Consultant | Kk.coach”.",
-  "blocks": [
-    {
-      "id": "b0",
-      "kind": "title",
-      "heading_path": [],
-      "text": "Privacy Policy - KK"
-    },
-    {
-      "id": "b1",
-      "kind": "other",
-      "heading_path": [],
-      "text": "Skip to content"
-    },
-    {
-      "id": "b15",
-      "kind": "heading",
-      "heading_path": [
-        "Privacy Policy",
-        "Who we are"
-      ],
-      "text": "Who we are"
-    },
-    {
-      "id": "b16",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "Who we are"
-      ],
-      "text": "This website is operated by Krisztian Kiss , trading as kk.coach — an independent organic growth consultancy. Our website address is: https://kk.coach ."
-    },
-    {
-      "id": "b17",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "Who we are"
-      ],
-      "text": "For any privacy-related questions, contact: info@kk.coach"
-    },
-    {
-      "id": "b18",
-      "kind": "heading",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why"
-      ],
-      "text": "What personal data we collect and why"
-    },
-    {
-      "id": "b19",
-      "kind": "heading",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why",
-        "Contact form"
-      ],
-      "text": "Contact form"
-    },
-    {
-      "id": "b20",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why",
-        "Contact form"
-      ],
-      "text": "When you submit the contact form on this website, we collect your name , email address , and the content of your message . We use this data solely to respond to your inquiry. The legal basis for processing is our legitimate interest in providing the service you requested (GDPR Art. 6(1)(f)), or, where applicable, steps taken prior to entering a contract (GDPR Art. 6(1)(b))."
-    },
-    {
-      "id": "b21",
-      "kind": "heading",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why",
-        "Analytics"
-      ],
-      "text": "Analytics"
-    },
-    {
-      "id": "b22",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why",
-        "Analytics"
-      ],
-      "text": "We use Google Analytics to understand how visitors use this site (pages visited, traffic sources, approximate geographic region). This data is collected via cookies and is aggregated and anonymised — it does not identify you personally. The legal basis is your consent, which you provide via the cookie banner on your first visit."
-    },
-    {
-      "id": "b23",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why",
-        "Analytics"
-      ],
-      "text": "Google Analytics data is processed by Google LLC under their own privacy policy: https://policies.google.com/privacy . You may opt out at any time using the Google Analytics opt-out browser add-on ."
-    },
-    {
-      "id": "b24",
-      "kind": "heading",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why",
-        "Cookies"
-      ],
-      "text": "Cookies"
-    },
-    {
-      "id": "b25",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why",
-        "Cookies"
-      ],
-      "text": "This website uses the following categories of cookies:"
-    },
-    {
-      "id": "b26",
-      "kind": "list_item",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why",
-        "Cookies"
-      ],
-      "text": "Strictly necessary: Session and security cookies required for the site to function. These do not require your consent."
-    },
-    {
-      "id": "b27",
-      "kind": "list_item",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why",
-        "Cookies"
-      ],
-      "text": "Analytics: Google Analytics cookies (e.g. _ga , _gid ) that help us understand site usage. These are set only with your consent."
-    },
-    {
-      "id": "b28",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why",
-        "Cookies"
-      ],
-      "text": "You can withdraw your analytics consent at any time by clearing your cookies and declining when the consent banner reappears."
-    },
-    {
-      "id": "b29",
-      "kind": "heading",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why",
-        "Embedded content from other websites"
-      ],
-      "text": "Embedded content from other websites"
-    },
-    {
-      "id": "b30",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "What personal data we collect and why",
-        "Embedded content from other websites"
-      ],
-      "text": "Pages on this site may include embedded content (e.g. videos, maps). Embedded content from other websites behaves as if you had visited those websites directly and may set their own cookies or collect data about you. Please refer to the respective third party’s privacy policy for details."
-    },
-    {
-      "id": "b31",
-      "kind": "heading",
-      "heading_path": [
-        "Privacy Policy",
-        "How long we retain your data"
-      ],
-      "text": "How long we retain your data"
-    },
-    {
-      "id": "b32",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "How long we retain your data"
-      ],
-      "text": "Contact form submissions are retained for as long as necessary to respond to your inquiry and for a reasonable period thereafter (up to 24 months) in case of follow-up. Analytics data is retained according to Google Analytics default retention settings (up to 26 months)."
-    },
-    {
-      "id": "b33",
-      "kind": "heading",
-      "heading_path": [
-        "Privacy Policy",
-        "Who we share your data with"
-      ],
-      "text": "Who we share your data with"
-    },
-    {
-      "id": "b34",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "Who we share your data with"
-      ],
-      "text": "We do not sell or rent your personal data. Data may be shared with the following processors:"
-    },
-    {
-      "id": "b35",
-      "kind": "list_item",
-      "heading_path": [
-        "Privacy Policy",
-        "Who we share your data with"
-      ],
-      "text": "Automattic / WordPress.com — website hosting infrastructure"
-    },
-    {
-      "id": "b36",
-      "kind": "list_item",
-      "heading_path": [
-        "Privacy Policy",
-        "Who we share your data with"
-      ],
-      "text": "Google LLC — Google Analytics (analytics data only)"
-    },
-    {
-      "id": "b37",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "Who we share your data with"
-      ],
-      "text": "These processors operate under their own data processing agreements and are bound by GDPR-equivalent safeguards."
-    },
-    {
-      "id": "b38",
-      "kind": "heading",
-      "heading_path": [
-        "Privacy Policy",
-        "Your rights under GDPR"
-      ],
-      "text": "Your rights under GDPR"
-    },
-    {
-      "id": "b39",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "Your rights under GDPR"
-      ],
-      "text": "If you are located in the European Economic Area, you have the following rights regarding your personal data:"
-    },
-    {
-      "id": "b40",
-      "kind": "list_item",
-      "heading_path": [
-        "Privacy Policy",
-        "Your rights under GDPR"
-      ],
-      "text": "Access: You may request a copy of the personal data we hold about you."
-    },
-    {
-      "id": "b41",
-      "kind": "list_item",
-      "heading_path": [
-        "Privacy Policy",
-        "Your rights under GDPR"
-      ],
-      "text": "Rectification: You may request that inaccurate or incomplete data be corrected."
-    },
-    {
-      "id": "b42",
-      "kind": "list_item",
-      "heading_path": [
-        "Privacy Policy",
-        "Your rights under GDPR"
-      ],
-      "text": "Erasure: You may request that we delete your personal data, subject to legal retention obligations."
-    },
-    {
-      "id": "b43",
-      "kind": "list_item",
-      "heading_path": [
-        "Privacy Policy",
-        "Your rights under GDPR"
-      ],
-      "text": "Restriction: You may request that we limit processing of your data in certain circumstances."
-    },
-    {
-      "id": "b44",
-      "kind": "list_item",
-      "heading_path": [
-        "Privacy Policy",
-        "Your rights under GDPR"
-      ],
-      "text": "Objection: You may object to processing based on legitimate interests."
-    },
-    {
-      "id": "b45",
-      "kind": "list_item",
-      "heading_path": [
-        "Privacy Policy",
-        "Your rights under GDPR"
-      ],
-      "text": "Portability: You may request a machine-readable copy of data you have provided to us."
-    },
-    {
-      "id": "b46",
-      "kind": "list_item",
-      "heading_path": [
-        "Privacy Policy",
-        "Your rights under GDPR"
-      ],
-      "text": "Withdraw consent: Where processing is based on consent, you may withdraw it at any time without affecting the lawfulness of prior processing."
-    },
-    {
-      "id": "b47",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "Your rights under GDPR"
-      ],
-      "text": "To exercise any of these rights, contact us at hello@kk.coach . We will respond within 30 days. You also have the right to lodge a complaint with the Hungarian supervisory authority: Nemzeti Adatvédelmi és Információszabadság Hatóság (NAIH) — www.naih.hu ."
-    },
-    {
-      "id": "b48",
-      "kind": "heading",
-      "heading_path": [
-        "Privacy Policy",
-        "Data transfers outside the EU"
-      ],
-      "text": "Data transfers outside the EU"
-    },
-    {
-      "id": "b49",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "Data transfers outside the EU"
-      ],
-      "text": "Google Analytics may transfer data to the United States. Google LLC participates in the EU–US Data Privacy Framework, providing an adequate level of protection under GDPR."
-    },
-    {
-      "id": "b50",
-      "kind": "heading",
-      "heading_path": [
-        "Privacy Policy",
-        "Changes to this policy"
-      ],
-      "text": "Changes to this policy"
-    },
-    {
-      "id": "b51",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "Changes to this policy"
-      ],
-      "text": "We may update this Privacy Policy from time to time. The date at the top of this page reflects the most recent revision. Continued use of the website after changes constitutes acceptance of the updated policy."
-    },
-    {
-      "id": "b52",
-      "kind": "paragraph",
-      "heading_path": [
-        "Privacy Policy",
-        "Changes to this policy"
-      ],
-      "text": "Last updated: April 2026 · kk.coach — Krisztian Kiss"
-    }
-  ],
-  "gold": {
-    "primary_entities": [],
-    "entities": [
-      {
-        "canonical": "kk.coach",
-        "type": "org",
-        "subtype": "company",
-        "aliases": [
-          "KK",
-          "Kk.coach"
-        ],
-        "note": "a site saját cége",
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b0",
-            "text": "KK"
-          },
-          {
-            "block": "b16",
-            "text": "kk.coach"
-          },
-          {
-            "block": "b17",
-            "text": "kk.coach"
-          },
-          {
-            "block": "b47",
-            "text": "kk.coach"
-          },
-          {
-            "block": "b52",
-            "text": "kk.coach"
-          }
-        ]
-      },
-      {
-        "canonical": "Krisztian Kiss",
-        "type": "person",
-        "aliases": [
-          "Kiss Krisztián",
-          "Kiss Krisztian"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b16",
-            "text": "Krisztian Kiss"
-          },
-          {
-            "block": "b52",
-            "text": "Krisztian Kiss"
-          }
-        ]
-      },
-      {
-        "canonical": "Google Analytics",
-        "type": "tech",
-        "subtype": "software",
-        "difficulty": "easy",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b22",
-            "text": "Google Analytics"
-          },
-          {
-            "block": "b23",
-            "text": "Google Analytics"
-          },
-          {
-            "block": "b27",
-            "text": "Google Analytics"
-          },
-          {
-            "block": "b32",
-            "text": "Google Analytics"
-          },
-          {
-            "block": "b36",
-            "text": "Google Analytics"
-          },
-          {
-            "block": "b49",
-            "text": "Google Analytics"
-          }
-        ]
-      },
-      {
-        "canonical": "Google",
-        "type": "org",
-        "subtype": "company",
-        "aliases": [
-          "Google LLC"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b23",
-            "text": "Google LLC"
-          },
-          {
-            "block": "b36",
-            "text": "Google LLC"
-          },
-          {
-            "block": "b49",
-            "text": "Google LLC"
-          }
-        ]
-      },
-      {
-        "canonical": "Automattic",
-        "type": "org",
-        "subtype": "company",
-        "difficulty": "easy",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b35",
-            "text": "Automattic"
-          }
-        ]
-      },
-      {
-        "canonical": "WordPress.com",
-        "type": "tech",
-        "subtype": "software",
-        "aliases": [
-          "WordPress"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b35",
-            "text": "WordPress.com"
-          }
-        ]
-      },
-      {
-        "canonical": "Nemzeti Adatvédelmi és Információszabadság Hatóság",
-        "type": "org",
-        "subtype": "institution",
-        "aliases": [
-          "NAIH"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b47",
-            "text": "Nemzeti Adatvédelmi és Információszabadság Hatóság"
-          },
-          {
-            "block": "b47",
-            "text": "NAIH"
-          }
-        ]
-      },
-      {
-        "canonical": "European Economic Area",
-        "type": "place",
-        "subtype": "region",
-        "aliases": [
-          "EEA",
-          "Európai Gazdasági Térség"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b39",
-            "text": "European Economic Area"
-          }
-        ]
-      },
-      {
-        "canonical": "Európai Unió",
-        "type": "place",
-        "subtype": "region",
-        "aliases": [
-          "EU",
-          "European Union"
-        ],
-        "acceptable_types": [
-          "place",
-          "org"
-        ],
-        "acceptable_subtypes": [
-          "region",
-          "institution"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b48",
-            "text": "EU"
-          },
-          {
-            "block": "b49",
-            "text": "EU"
-          }
-        ]
-      },
-      {
-        "canonical": "United States",
-        "type": "place",
-        "subtype": "country",
-        "aliases": [
-          "USA",
-          "Egyesült Államok"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b49",
-            "text": "United States"
-          }
-        ]
-      },
-      {
-        "canonical": "EU–US Data Privacy Framework",
-        "type": "concept",
-        "subtype": "other",
-        "aliases": [
-          "Data Privacy Framework",
-          "DPF"
-        ],
-        "acceptable_types": [
-          "concept",
-          "work"
-        ],
-        "acceptable_subtypes": [
-          "other",
-          "designation"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b49",
-            "text": "EU–US Data Privacy Framework"
-          }
-        ]
-      },
-      {
-        "canonical": "GDPR",
-        "type": "concept",
-        "subtype": "other",
-        "aliases": [
-          "General Data Protection Regulation",
-          "általános adatvédelmi rendelet"
-        ],
-        "note": "headingben is",
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b20",
-            "text": "GDPR"
-          },
-          {
-            "block": "b37",
-            "text": "GDPR-equivalent"
-          },
-          {
-            "block": "b38",
-            "text": "GDPR"
-          },
-          {
-            "block": "b49",
-            "text": "GDPR"
-          }
-        ]
-      },
-      {
-        "canonical": "privacy policy",
-        "type": "concept",
-        "subtype": "other",
-        "aliases": [
-          "adatvédelmi tájékoztató",
-          "adatkezelési tájékoztató"
-        ],
-        "note": "a title-ben",
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b0",
-            "text": "Privacy Policy"
-          },
-          {
-            "block": "b51",
-            "text": "Privacy Policy"
-          }
-        ]
-      },
-      {
-        "canonical": "HTTP cookie",
-        "type": "concept",
-        "subtype": "other",
-        "aliases": [
-          "cookie",
-          "cookies",
-          "süti"
-        ],
-        "note": "headingben is",
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b22",
-            "text": "cookies"
-          },
-          {
-            "block": "b24",
-            "text": "Cookies"
-          },
-          {
-            "block": "b25",
-            "text": "cookies"
-          },
-          {
-            "block": "b26",
-            "text": "cookies"
-          },
-          {
-            "block": "b27",
-            "text": "cookies"
-          },
-          {
-            "block": "b28",
-            "text": "cookies"
-          },
-          {
-            "block": "b30",
-            "text": "cookies"
-          }
-        ]
-      }
-    ],
-    "optional": [
-      {
-        "canonical": "Google Analytics opt-out browser add-on",
-        "type": "tech",
-        "subtype": "software",
-        "difficulty": "easy",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b23",
-            "text": "Google Analytics opt-out browser add-on"
-          }
-        ]
-      },
-      {
-        "canonical": "webanalitika",
-        "type": "concept",
-        "subtype": "discipline",
-        "aliases": [
-          "analytics",
-          "web analytics"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b21",
-            "text": "Analytics"
-          }
-        ]
-      },
-      {
-        "canonical": "personal data",
-        "type": "concept",
-        "subtype": "other",
-        "aliases": [
-          "személyes adat"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b18",
-            "text": "personal data"
-          },
-          {
-            "block": "b34",
-            "text": "personal data"
-          },
-          {
-            "block": "b39",
-            "text": "personal data"
-          },
-          {
-            "block": "b40",
-            "text": "personal data"
-          },
-          {
-            "block": "b42",
-            "text": "personal data"
-          }
-        ]
-      },
-      {
-        "canonical": "legitimate interest",
-        "type": "concept",
-        "subtype": "other",
-        "aliases": [
-          "jogos érdek"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b20",
-            "text": "legitimate interest"
-          },
-          {
-            "block": "b44",
-            "text": "legitimate interests"
-          }
-        ]
-      },
-      {
-        "canonical": "consent",
-        "type": "concept",
-        "subtype": "other",
-        "aliases": [
-          "hozzájárulás"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b22",
-            "text": "consent"
-          },
-          {
-            "block": "b26",
-            "text": "consent"
-          },
-          {
-            "block": "b27",
-            "text": "consent"
-          },
-          {
-            "block": "b28",
-            "text": "consent"
-          },
-          {
-            "block": "b46",
-            "text": "consent"
-          }
-        ]
-      },
-      {
-        "canonical": "cookie banner",
-        "type": "concept",
-        "subtype": "ui_pattern",
-        "aliases": [
-          "consent banner"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b22",
-            "text": "cookie banner"
-          },
-          {
-            "block": "b28",
-            "text": "consent banner"
-          }
-        ]
-      },
-      {
-        "canonical": "data processing agreement",
-        "type": "concept",
-        "subtype": "other",
-        "aliases": [
-          "DPA",
-          "adatfeldolgozási szerződés"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b37",
-            "text": "data processing agreements"
-          }
-        ]
-      },
-      {
-        "canonical": "right to erasure",
-        "type": "concept",
-        "subtype": "other",
-        "aliases": [
-          "right to be forgotten"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b42",
-            "text": "Erasure"
-          }
-        ]
-      },
-      {
-        "canonical": "data portability",
-        "type": "concept",
-        "subtype": "other",
-        "aliases": [
-          "right to data portability"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b45",
-            "text": "Portability"
-          }
-        ]
-      },
-      {
-        "canonical": "right of access",
-        "type": "concept",
-        "subtype": "other",
-        "aliases": [
-          "right of access"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b40",
-            "text": "Access"
-          }
-        ]
-      },
-      {
-        "canonical": "anonymisation",
-        "type": "concept",
-        "subtype": "method",
-        "aliases": [
-          "anonymization",
-          "anonimizálás"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b22",
-            "text": "anonymised"
-          }
-        ]
-      },
-      {
-        "canonical": "_ga",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "namespace": "Google Analytics",
-        "difficulty": "easy",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b27",
-            "text": "_ga"
-          }
-        ]
-      },
-      {
-        "canonical": "_gid",
-        "type": "tech",
-        "subtype": "api_symbol",
-        "namespace": "Google Analytics",
-        "difficulty": "easy",
-        "aliases": [],
-        "surface_forms": [
-          {
-            "block": "b27",
-            "text": "_gid"
-          }
-        ]
-      },
-      {
-        "canonical": "organic growth",
-        "type": "concept",
-        "subtype": "discipline",
-        "aliases": [
-          "organikus növekedés"
-        ],
-        "difficulty": "easy",
-        "surface_forms": [
-          {
-            "block": "b16",
-            "text": "organic growth"
-          }
-        ]
-      }
-    ],
-    "negatives": [
-      {
-        "text": "Skip to content"
-      },
-      {
-        "text": "Who we are"
-      },
-      {
-        "text": "What personal data we collect and why"
-      },
-      {
-        "text": "How long we retain your data"
-      },
-      {
-        "text": "Last updated"
-      },
-      {
-        "text": "info@kk.coach"
-      },
-      {
-        "text": "hello@kk.coach"
-      }
-    ]
+ "page_id": "locked_kk_privacy_policy",
+ "set": "locked",
+ "url": "https://kk.coach/privacy-policy/",
+ "lang": "en-US",
+ "site_description": "This page belongs to the website kk.coach, whose home page is titled “SEO & AI-Driven Organic Growth Consultant | Kk.coach”.",
+ "blocks": [
+  {
+   "id": "b0",
+   "kind": "title",
+   "heading_path": [],
+   "text": "Privacy Policy - KK"
   },
-  "gold_status": "final (Krisztián jóváhagyta, 2026-09-28)",
-  "annotation_notes": [
-    "Jogi oldal: főtéma nincs (üres lista).",
-    "A GDPR-jogok (hozzáférés, törlés stb.) és az adatvédelmi fogalmak opcionálisak; a GDPR, a cookie és a privacy policy kötelező, mert headingben/title-ben állnak.",
-    "Szolgáltatás nincs az oldalon."
-  ],
-  "rules": {
-    "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
-    "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
-    "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
-    "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
-    "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
-    "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
-    "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
-    "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
-    "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
-    "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
-    "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
-    "ambiguous_aliases": "a többértelmű rövidítés (pl. GTM) felismerésnek elég, de az elnevezés csak a kontextus szerinti teljes névvel helyes; site-szinten azonos rövidítés nem vonható össze automatikusan",
-    "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service)."
+  {
+   "id": "b1",
+   "kind": "other",
+   "heading_path": [],
+   "text": "Skip to content"
   },
-  "subtype_glossary": {
-    "service": {
-      "audit": "felmérés, átvilágítás",
-      "implementation": "beállítás, kiépítés, bevezetés",
-      "consulting": "tanácsadás",
-      "reporting": "riport, dashboard",
-      "training": "képzés, workshop",
-      "other": "egyéb"
-    },
-    "org": {
-      "company": "cég",
-      "restaurant": "étterem, vendéglátóhely",
-      "institution": "intézmény, szervezet",
-      "team": "csapat",
-      "other": "egyéb"
-    },
-    "tech": {
-      "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
-      "library": "programkönyvtár",
-      "framework": "keretrendszer",
-      "language": "programozási nyelv",
-      "package": "telepíthető csomag (npm, pip)",
-      "component": "egy könyvtár konkrét komponense",
-      "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
-      "api": "programozói interfész, amit szolgáltatásként hívnak",
-      "standard": "műszaki szabvány, specifikáció",
-      "feature": "egy szoftver funkciója",
-      "other": "egyéb"
-    },
-    "product": {
-      "dish": "étel vagy desszert az étlapon",
-      "ingredient": "alapanyag, tésztafajta",
-      "wine": "bor",
-      "drink": "ital, koktél",
-      "physical_good": "egyéb fizikai áru",
-      "other": "egyéb"
-    },
-    "concept": {
-      "method": "módszer, keretrendszer, eljárás",
-      "discipline": "szakterület",
-      "metric": "mérhető mennyiség, mutató",
-      "ui_pattern": "általános felületi minta",
-      "license": "licenc",
-      "designation": "eredetvédelmi vagy minőségi jelölés",
-      "other": "egyéb"
-    },
-    "place": {
-      "city": "város",
-      "region": "régió, tartomány",
-      "country": "ország",
-      "venue": "helyszín, épület",
-      "other": "egyéb"
-    },
-    "work": {
-      "article": "cikk",
-      "case_study": "esettanulmány",
-      "book": "könyv",
-      "course": "tanfolyam",
-      "other": "egyéb"
-    },
-    "event": {
-      "conference": "konferencia",
-      "webinar": "webinár",
-      "festival": "fesztivál",
-      "other": "egyéb"
-    },
-    "brand": {
-      "other": "egyéb"
-    },
-    "person": {}
+  {
+   "id": "b14",
+   "kind": "heading",
+   "heading_path": [
+    "Privacy Policy"
+   ],
+   "text": "Privacy Policy"
   },
-  "subtype_vocabulary": {
-    "service": [
-      "audit",
-      "implementation",
-      "consulting",
-      "reporting",
-      "training",
-      "other"
-    ],
-    "org": [
-      "company",
-      "restaurant",
-      "institution",
-      "team",
-      "other"
-    ],
-    "tech": [
-      "software",
-      "library",
-      "framework",
-      "language",
-      "package",
-      "component",
-      "api_symbol",
-      "api",
-      "standard",
-      "feature",
-      "other"
-    ],
-    "product": [
-      "dish",
-      "ingredient",
-      "wine",
-      "drink",
-      "physical_good",
-      "other"
-    ],
-    "concept": [
-      "method",
-      "discipline",
-      "metric",
-      "ui_pattern",
-      "license",
-      "designation",
-      "other"
-    ],
-    "place": [
-      "city",
-      "region",
-      "country",
-      "venue",
-      "other"
-    ],
-    "work": [
-      "article",
-      "case_study",
-      "book",
-      "course",
-      "other"
-    ],
-    "event": [
-      "conference",
-      "webinar",
-      "festival",
-      "other"
-    ],
-    "brand": [
-      "other"
-    ],
-    "person": []
+  {
+   "id": "b15",
+   "kind": "heading",
+   "heading_path": [
+    "Privacy Policy",
+    "Who we are"
+   ],
+   "text": "Who we are"
+  },
+  {
+   "id": "b16",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "Who we are"
+   ],
+   "text": "This website is operated by Krisztian Kiss , trading as kk.coach — an independent organic growth consultancy. Our website address is: https://kk.coach ."
+  },
+  {
+   "id": "b17",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "Who we are"
+   ],
+   "text": "For any privacy-related questions, contact: info@kk.coach"
+  },
+  {
+   "id": "b18",
+   "kind": "heading",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why"
+   ],
+   "text": "What personal data we collect and why"
+  },
+  {
+   "id": "b19",
+   "kind": "heading",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why",
+    "Contact form"
+   ],
+   "text": "Contact form"
+  },
+  {
+   "id": "b20",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why",
+    "Contact form"
+   ],
+   "text": "When you submit the contact form on this website, we collect your name , email address , and the content of your message . We use this data solely to respond to your inquiry. The legal basis for processing is our legitimate interest in providing the service you requested (GDPR Art. 6(1)(f)), or, where applicable, steps taken prior to entering a contract (GDPR Art. 6(1)(b))."
+  },
+  {
+   "id": "b21",
+   "kind": "heading",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why",
+    "Analytics"
+   ],
+   "text": "Analytics"
+  },
+  {
+   "id": "b22",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why",
+    "Analytics"
+   ],
+   "text": "We use Google Analytics to understand how visitors use this site (pages visited, traffic sources, approximate geographic region). This data is collected via cookies and is aggregated and anonymised — it does not identify you personally. The legal basis is your consent, which you provide via the cookie banner on your first visit."
+  },
+  {
+   "id": "b23",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why",
+    "Analytics"
+   ],
+   "text": "Google Analytics data is processed by Google LLC under their own privacy policy: https://policies.google.com/privacy . You may opt out at any time using the Google Analytics opt-out browser add-on ."
+  },
+  {
+   "id": "b24",
+   "kind": "heading",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why",
+    "Cookies"
+   ],
+   "text": "Cookies"
+  },
+  {
+   "id": "b25",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why",
+    "Cookies"
+   ],
+   "text": "This website uses the following categories of cookies:"
+  },
+  {
+   "id": "b26",
+   "kind": "list_item",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why",
+    "Cookies"
+   ],
+   "text": "Strictly necessary: Session and security cookies required for the site to function. These do not require your consent."
+  },
+  {
+   "id": "b27",
+   "kind": "list_item",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why",
+    "Cookies"
+   ],
+   "text": "Analytics: Google Analytics cookies (e.g. _ga , _gid ) that help us understand site usage. These are set only with your consent."
+  },
+  {
+   "id": "b28",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why",
+    "Cookies"
+   ],
+   "text": "You can withdraw your analytics consent at any time by clearing your cookies and declining when the consent banner reappears."
+  },
+  {
+   "id": "b29",
+   "kind": "heading",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why",
+    "Embedded content from other websites"
+   ],
+   "text": "Embedded content from other websites"
+  },
+  {
+   "id": "b30",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "What personal data we collect and why",
+    "Embedded content from other websites"
+   ],
+   "text": "Pages on this site may include embedded content (e.g. videos, maps). Embedded content from other websites behaves as if you had visited those websites directly and may set their own cookies or collect data about you. Please refer to the respective third party’s privacy policy for details."
+  },
+  {
+   "id": "b31",
+   "kind": "heading",
+   "heading_path": [
+    "Privacy Policy",
+    "How long we retain your data"
+   ],
+   "text": "How long we retain your data"
+  },
+  {
+   "id": "b32",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "How long we retain your data"
+   ],
+   "text": "Contact form submissions are retained for as long as necessary to respond to your inquiry and for a reasonable period thereafter (up to 24 months) in case of follow-up. Analytics data is retained according to Google Analytics default retention settings (up to 26 months)."
+  },
+  {
+   "id": "b33",
+   "kind": "heading",
+   "heading_path": [
+    "Privacy Policy",
+    "Who we share your data with"
+   ],
+   "text": "Who we share your data with"
+  },
+  {
+   "id": "b34",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "Who we share your data with"
+   ],
+   "text": "We do not sell or rent your personal data. Data may be shared with the following processors:"
+  },
+  {
+   "id": "b35",
+   "kind": "list_item",
+   "heading_path": [
+    "Privacy Policy",
+    "Who we share your data with"
+   ],
+   "text": "Automattic / WordPress.com — website hosting infrastructure"
+  },
+  {
+   "id": "b36",
+   "kind": "list_item",
+   "heading_path": [
+    "Privacy Policy",
+    "Who we share your data with"
+   ],
+   "text": "Google LLC — Google Analytics (analytics data only)"
+  },
+  {
+   "id": "b37",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "Who we share your data with"
+   ],
+   "text": "These processors operate under their own data processing agreements and are bound by GDPR-equivalent safeguards."
+  },
+  {
+   "id": "b38",
+   "kind": "heading",
+   "heading_path": [
+    "Privacy Policy",
+    "Your rights under GDPR"
+   ],
+   "text": "Your rights under GDPR"
+  },
+  {
+   "id": "b39",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "Your rights under GDPR"
+   ],
+   "text": "If you are located in the European Economic Area, you have the following rights regarding your personal data:"
+  },
+  {
+   "id": "b40",
+   "kind": "list_item",
+   "heading_path": [
+    "Privacy Policy",
+    "Your rights under GDPR"
+   ],
+   "text": "Access: You may request a copy of the personal data we hold about you."
+  },
+  {
+   "id": "b41",
+   "kind": "list_item",
+   "heading_path": [
+    "Privacy Policy",
+    "Your rights under GDPR"
+   ],
+   "text": "Rectification: You may request that inaccurate or incomplete data be corrected."
+  },
+  {
+   "id": "b42",
+   "kind": "list_item",
+   "heading_path": [
+    "Privacy Policy",
+    "Your rights under GDPR"
+   ],
+   "text": "Erasure: You may request that we delete your personal data, subject to legal retention obligations."
+  },
+  {
+   "id": "b43",
+   "kind": "list_item",
+   "heading_path": [
+    "Privacy Policy",
+    "Your rights under GDPR"
+   ],
+   "text": "Restriction: You may request that we limit processing of your data in certain circumstances."
+  },
+  {
+   "id": "b44",
+   "kind": "list_item",
+   "heading_path": [
+    "Privacy Policy",
+    "Your rights under GDPR"
+   ],
+   "text": "Objection: You may object to processing based on legitimate interests."
+  },
+  {
+   "id": "b45",
+   "kind": "list_item",
+   "heading_path": [
+    "Privacy Policy",
+    "Your rights under GDPR"
+   ],
+   "text": "Portability: You may request a machine-readable copy of data you have provided to us."
+  },
+  {
+   "id": "b46",
+   "kind": "list_item",
+   "heading_path": [
+    "Privacy Policy",
+    "Your rights under GDPR"
+   ],
+   "text": "Withdraw consent: Where processing is based on consent, you may withdraw it at any time without affecting the lawfulness of prior processing."
+  },
+  {
+   "id": "b47",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "Your rights under GDPR"
+   ],
+   "text": "To exercise any of these rights, contact us at hello@kk.coach . We will respond within 30 days. You also have the right to lodge a complaint with the Hungarian supervisory authority: Nemzeti Adatvédelmi és Információszabadság Hatóság (NAIH) — www.naih.hu ."
+  },
+  {
+   "id": "b48",
+   "kind": "heading",
+   "heading_path": [
+    "Privacy Policy",
+    "Data transfers outside the EU"
+   ],
+   "text": "Data transfers outside the EU"
+  },
+  {
+   "id": "b49",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "Data transfers outside the EU"
+   ],
+   "text": "Google Analytics may transfer data to the United States. Google LLC participates in the EU–US Data Privacy Framework, providing an adequate level of protection under GDPR."
+  },
+  {
+   "id": "b50",
+   "kind": "heading",
+   "heading_path": [
+    "Privacy Policy",
+    "Changes to this policy"
+   ],
+   "text": "Changes to this policy"
+  },
+  {
+   "id": "b51",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "Changes to this policy"
+   ],
+   "text": "We may update this Privacy Policy from time to time. The date at the top of this page reflects the most recent revision. Continued use of the website after changes constitutes acceptance of the updated policy."
+  },
+  {
+   "id": "b52",
+   "kind": "paragraph",
+   "heading_path": [
+    "Privacy Policy",
+    "Changes to this policy"
+   ],
+   "text": "Last updated: April 2026 · kk.coach — Krisztian Kiss"
   }
+ ],
+ "gold": {
+  "primary_entities": [],
+  "entities": [
+   {
+    "canonical": "kk.coach",
+    "type": "org",
+    "subtype": "company",
+    "aliases": [
+     "KK",
+     "Kk.coach"
+    ],
+    "note": "a site saját cége",
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "KK"
+     },
+     {
+      "block": "b16",
+      "text": "kk.coach"
+     },
+     {
+      "block": "b17",
+      "text": "kk.coach"
+     },
+     {
+      "block": "b47",
+      "text": "kk.coach"
+     },
+     {
+      "block": "b52",
+      "text": "kk.coach"
+     }
+    ]
+   },
+   {
+    "canonical": "Krisztian Kiss",
+    "type": "person",
+    "aliases": [
+     "Kiss Krisztián",
+     "Kiss Krisztian"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b16",
+      "text": "Krisztian Kiss"
+     },
+     {
+      "block": "b52",
+      "text": "Krisztian Kiss"
+     }
+    ]
+   },
+   {
+    "canonical": "Google Analytics",
+    "type": "tech",
+    "subtype": "software",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b22",
+      "text": "Google Analytics"
+     },
+     {
+      "block": "b23",
+      "text": "Google Analytics"
+     },
+     {
+      "block": "b27",
+      "text": "Google Analytics"
+     },
+     {
+      "block": "b32",
+      "text": "Google Analytics"
+     },
+     {
+      "block": "b36",
+      "text": "Google Analytics"
+     },
+     {
+      "block": "b49",
+      "text": "Google Analytics"
+     }
+    ]
+   },
+   {
+    "canonical": "Google",
+    "type": "org",
+    "subtype": "company",
+    "aliases": [
+     "Google LLC"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b23",
+      "text": "Google LLC"
+     },
+     {
+      "block": "b36",
+      "text": "Google LLC"
+     },
+     {
+      "block": "b49",
+      "text": "Google LLC"
+     }
+    ]
+   },
+   {
+    "canonical": "Automattic",
+    "type": "org",
+    "subtype": "company",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b35",
+      "text": "Automattic"
+     }
+    ]
+   },
+   {
+    "canonical": "WordPress.com",
+    "type": "tech",
+    "subtype": "software",
+    "aliases": [
+     "WordPress"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b35",
+      "text": "WordPress.com"
+     }
+    ]
+   },
+   {
+    "canonical": "Nemzeti Adatvédelmi és Információszabadság Hatóság",
+    "type": "org",
+    "subtype": "institution",
+    "aliases": [
+     "NAIH"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b47",
+      "text": "Nemzeti Adatvédelmi és Információszabadság Hatóság"
+     },
+     {
+      "block": "b47",
+      "text": "NAIH"
+     }
+    ]
+   },
+   {
+    "canonical": "European Economic Area",
+    "type": "place",
+    "subtype": "region",
+    "aliases": [
+     "EEA",
+     "Európai Gazdasági Térség"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b39",
+      "text": "European Economic Area"
+     }
+    ]
+   },
+   {
+    "canonical": "Európai Unió",
+    "type": "place",
+    "subtype": "region",
+    "aliases": [
+     "EU",
+     "European Union"
+    ],
+    "acceptable_types": [
+     "place",
+     "org"
+    ],
+    "acceptable_subtypes": [
+     "region",
+     "institution"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b48",
+      "text": "EU"
+     },
+     {
+      "block": "b49",
+      "text": "EU"
+     }
+    ]
+   },
+   {
+    "canonical": "United States",
+    "type": "place",
+    "subtype": "country",
+    "aliases": [
+     "USA",
+     "Egyesült Államok"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b49",
+      "text": "United States"
+     }
+    ]
+   },
+   {
+    "canonical": "EU–US Data Privacy Framework",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "Data Privacy Framework",
+     "DPF"
+    ],
+    "acceptable_types": [
+     "concept",
+     "work"
+    ],
+    "acceptable_subtypes": [
+     "other",
+     "designation"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b49",
+      "text": "EU–US Data Privacy Framework"
+     }
+    ]
+   },
+   {
+    "canonical": "GDPR",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "General Data Protection Regulation",
+     "általános adatvédelmi rendelet"
+    ],
+    "note": "headingben is",
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b20",
+      "text": "GDPR"
+     },
+     {
+      "block": "b37",
+      "text": "GDPR-equivalent"
+     },
+     {
+      "block": "b38",
+      "text": "GDPR"
+     },
+     {
+      "block": "b49",
+      "text": "GDPR"
+     }
+    ]
+   },
+   {
+    "canonical": "privacy policy",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "adatvédelmi tájékoztató",
+     "adatkezelési tájékoztató"
+    ],
+    "note": "a title-ben",
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b0",
+      "text": "Privacy Policy"
+     },
+     {
+      "block": "b51",
+      "text": "Privacy Policy"
+     }
+    ]
+   },
+   {
+    "canonical": "HTTP cookie",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "cookie",
+     "cookies",
+     "süti"
+    ],
+    "note": "headingben is",
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b22",
+      "text": "cookies"
+     },
+     {
+      "block": "b24",
+      "text": "Cookies"
+     },
+     {
+      "block": "b25",
+      "text": "cookies"
+     },
+     {
+      "block": "b26",
+      "text": "cookies"
+     },
+     {
+      "block": "b27",
+      "text": "cookies"
+     },
+     {
+      "block": "b28",
+      "text": "cookies"
+     },
+     {
+      "block": "b30",
+      "text": "cookies"
+     }
+    ]
+   }
+  ],
+  "optional": [
+   {
+    "canonical": "Google Analytics opt-out browser add-on",
+    "type": "tech",
+    "subtype": "software",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b23",
+      "text": "Google Analytics opt-out browser add-on"
+     }
+    ]
+   },
+   {
+    "canonical": "webanalitika",
+    "type": "concept",
+    "subtype": "discipline",
+    "aliases": [
+     "analytics",
+     "web analytics"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b21",
+      "text": "Analytics"
+     }
+    ]
+   },
+   {
+    "canonical": "personal data",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "személyes adat"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b18",
+      "text": "personal data"
+     },
+     {
+      "block": "b34",
+      "text": "personal data"
+     },
+     {
+      "block": "b39",
+      "text": "personal data"
+     },
+     {
+      "block": "b40",
+      "text": "personal data"
+     },
+     {
+      "block": "b42",
+      "text": "personal data"
+     }
+    ]
+   },
+   {
+    "canonical": "legitimate interest",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "jogos érdek"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b20",
+      "text": "legitimate interest"
+     },
+     {
+      "block": "b44",
+      "text": "legitimate interests"
+     }
+    ]
+   },
+   {
+    "canonical": "consent",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "hozzájárulás"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b22",
+      "text": "consent"
+     },
+     {
+      "block": "b26",
+      "text": "consent"
+     },
+     {
+      "block": "b27",
+      "text": "consent"
+     },
+     {
+      "block": "b28",
+      "text": "consent"
+     },
+     {
+      "block": "b46",
+      "text": "consent"
+     }
+    ]
+   },
+   {
+    "canonical": "cookie banner",
+    "type": "concept",
+    "subtype": "ui_pattern",
+    "aliases": [
+     "consent banner"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b22",
+      "text": "cookie banner"
+     },
+     {
+      "block": "b28",
+      "text": "consent banner"
+     }
+    ]
+   },
+   {
+    "canonical": "data processing agreement",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "DPA",
+     "adatfeldolgozási szerződés"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b37",
+      "text": "data processing agreements"
+     }
+    ]
+   },
+   {
+    "canonical": "right to erasure",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "right to be forgotten"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b42",
+      "text": "Erasure"
+     }
+    ]
+   },
+   {
+    "canonical": "data portability",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "right to data portability"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b45",
+      "text": "Portability"
+     }
+    ]
+   },
+   {
+    "canonical": "right of access",
+    "type": "concept",
+    "subtype": "other",
+    "aliases": [
+     "right of access"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b40",
+      "text": "Access"
+     }
+    ]
+   },
+   {
+    "canonical": "anonymisation",
+    "type": "concept",
+    "subtype": "method",
+    "aliases": [
+     "anonymization",
+     "anonimizálás"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b22",
+      "text": "anonymised"
+     }
+    ]
+   },
+   {
+    "canonical": "_ga",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "namespace": "Google Analytics",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b27",
+      "text": "_ga"
+     }
+    ]
+   },
+   {
+    "canonical": "_gid",
+    "type": "tech",
+    "subtype": "api_symbol",
+    "namespace": "Google Analytics",
+    "difficulty": "easy",
+    "aliases": [],
+    "surface_forms": [
+     {
+      "block": "b27",
+      "text": "_gid"
+     }
+    ]
+   },
+   {
+    "canonical": "organic growth",
+    "type": "concept",
+    "subtype": "discipline",
+    "aliases": [
+     "organikus növekedés"
+    ],
+    "difficulty": "easy",
+    "surface_forms": [
+     {
+      "block": "b16",
+      "text": "organic growth"
+     }
+    ]
+   }
+  ],
+  "negatives": [
+   {
+    "text": "Skip to content"
+   },
+   {
+    "text": "Who we are"
+   },
+   {
+    "text": "What personal data we collect and why"
+   },
+   {
+    "text": "How long we retain your data"
+   },
+   {
+    "text": "Last updated"
+   },
+   {
+    "text": "info@kk.coach"
+   },
+   {
+    "text": "hello@kk.coach"
+   }
+  ]
+ },
+ "gold_status": "final (Krisztián jóváhagyta, 2026-09-28)",
+ "annotation_notes": [
+  "Jogi oldal: főtéma nincs (üres lista).",
+  "A GDPR-jogok (hozzáférés, törlés stb.) és az adatvédelmi fogalmak opcionálisak; a GDPR, a cookie és a privacy policy kötelező, mert headingben/title-ben állnak.",
+  "Szolgáltatás nincs az oldalon."
+ ],
+ "rules": {
+  "entity": "megnevezett dolog, kínált termék vagy szolgáltatás, vagy meghatározható szakmai fogalom; egy előfordulás elég",
+  "not_entity": "generikus főnév (döntés, riport, látogató), CTA- és navigációs szöveg, ár, példakódbeli változó",
+  "compound": "tulajdonviszony (Apple ITP-je, a Stripe fizetési oldala) önálló utalás: mindkét entitás külön. A hivatalos terméknévben szereplő márka (Meta Conversions API, Google Ads) nem ad külön entitást. Általános főnév (beállítás, konténer, események) nem tapad a névhez.",
+  "optional": "vitatható tétel: ha a modell megtalálja, nem hiba, ha kihagyja, nem hiány",
+  "surface_form": "a teljes szóalak, ahogy a blokkban áll, raggal együtt (Looker Studióban, Perplexityből); az ellenőrzés szóhatárral keres",
+  "origin_names": "eredetmegjelölésű terméknél (brontei pisztácia, pármai sonka) a termék a kötelező entitás; a hely csak akkor, ha a szöveg magára a helyre utal",
+  "example_code": "a példakódban deklarált azonosító (osztály, változó, selector) nem entitás; a példakód által importált vagy használt csomag, könyvtár, API igen; dokumentált API-tag (input, output) opcionális",
+  "cta_nav": "gomb-, menü- és CTA-szöveg önmagában nem entitás; a benne szereplő név igen",
+  "acceptable_types": "ha egy tételnél acceptable_types szerepel, bármelyik típus helyes",
+  "primary_entities": "az oldal témája; a site saját neve csak akkor, ha az oldal magáról a szervezetről szól (rólunk, kezdőoldal)",
+  "acceptable_subtypes": "ha egy tételnél acceptable_subtypes szerepel, bármelyik altípus helyes",
+  "ambiguous_aliases": "a többértelmű rövidítés (pl. GTM) felismerésnek elég, de az elnevezés csak a kontextus szerinti teljes névvel helyes; site-szinten azonos rövidítés nem vonható össze automatikusan",
+  "concept_scope": "kötelező fogalom: a title-ben vagy egy headingben áll, vagy az oldal központi témája; a többi fogalom opcionális. Kötelező a megnevezett entitás (tech, org, person, product, place) és a site saját ajánlata (service)."
+ },
+ "subtype_glossary": {
+  "service": {
+   "audit": "felmérés, átvilágítás",
+   "implementation": "beállítás, kiépítés, bevezetés",
+   "consulting": "tanácsadás",
+   "reporting": "riport, dashboard",
+   "training": "képzés, workshop",
+   "other": "egyéb"
+  },
+  "org": {
+   "company": "cég",
+   "restaurant": "étterem, vendéglátóhely",
+   "institution": "intézmény, szervezet",
+   "team": "csapat",
+   "other": "egyéb"
+  },
+  "tech": {
+   "software": "szoftver, alkalmazás, SaaS, platform, felhőszolgáltatás",
+   "library": "programkönyvtár",
+   "framework": "keretrendszer",
+   "language": "programozási nyelv",
+   "package": "telepíthető csomag (npm, pip)",
+   "component": "egy könyvtár konkrét komponense",
+   "api_symbol": "dokumentált API-elem (osztály, modul, input, output)",
+   "api": "programozói interfész, amit szolgáltatásként hívnak",
+   "standard": "műszaki szabvány, specifikáció",
+   "feature": "egy szoftver funkciója",
+   "other": "egyéb"
+  },
+  "product": {
+   "dish": "étel vagy desszert az étlapon",
+   "ingredient": "alapanyag, tésztafajta",
+   "wine": "bor",
+   "drink": "ital, koktél",
+   "physical_good": "egyéb fizikai áru",
+   "other": "egyéb"
+  },
+  "concept": {
+   "method": "módszer, keretrendszer, eljárás",
+   "discipline": "szakterület",
+   "metric": "mérhető mennyiség, mutató",
+   "ui_pattern": "általános felületi minta",
+   "license": "licenc",
+   "designation": "eredetvédelmi vagy minőségi jelölés",
+   "other": "egyéb"
+  },
+  "place": {
+   "city": "város",
+   "region": "régió, tartomány",
+   "country": "ország",
+   "venue": "helyszín, épület",
+   "other": "egyéb"
+  },
+  "work": {
+   "article": "cikk",
+   "case_study": "esettanulmány",
+   "book": "könyv",
+   "course": "tanfolyam",
+   "other": "egyéb"
+  },
+  "event": {
+   "conference": "konferencia",
+   "webinar": "webinár",
+   "festival": "fesztivál",
+   "other": "egyéb"
+  },
+  "brand": {
+   "other": "egyéb"
+  },
+  "person": {}
+ },
+ "subtype_vocabulary": {
+  "service": [
+   "audit",
+   "implementation",
+   "consulting",
+   "reporting",
+   "training",
+   "other"
+  ],
+  "org": [
+   "company",
+   "restaurant",
+   "institution",
+   "team",
+   "other"
+  ],
+  "tech": [
+   "software",
+   "library",
+   "framework",
+   "language",
+   "package",
+   "component",
+   "api_symbol",
+   "api",
+   "standard",
+   "feature",
+   "other"
+  ],
+  "product": [
+   "dish",
+   "ingredient",
+   "wine",
+   "drink",
+   "physical_good",
+   "other"
+  ],
+  "concept": [
+   "method",
+   "discipline",
+   "metric",
+   "ui_pattern",
+   "license",
+   "designation",
+   "other"
+  ],
+  "place": [
+   "city",
+   "region",
+   "country",
+   "venue",
+   "other"
+  ],
+  "work": [
+   "article",
+   "case_study",
+   "book",
+   "course",
+   "other"
+  ],
+  "event": [
+   "conference",
+   "webinar",
+   "festival",
+   "other"
+  ],
+  "brand": [
+   "other"
+  ],
+  "person": []
+ }
 }
