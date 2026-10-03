@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.3"
+SCHEMA_VERSION = "1.4"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -532,7 +532,9 @@ class HeadingOutside(Contract):
 class HeadingView(Contract):
     """Egy heading a fában (H1–H6) a szakaszával: az entitásai, a legerősebb kapcsolat a fő
     entitáshoz (`no_entity`: nincs benne entitás), a szakasz saját és teljes szószáma, az üres
-    szakasz és a kihagyott szint jelzése, a sablon-heading jelzése (`template`: több
+    szakasz (`empty`: a DOM-ban sincs alatta szöveg és tartalmi elem), a szöveg nélküli, de
+    tartalmi elemet (kép, űrlap, táblázat) tartalmazó szakasz (`media_only`) és a kihagyott
+    szint jelzése, a sablon-heading jelzése (`template`: több
     oldalcsoportban ismétlődő heading, nem lehet megállapítás tárgya), és az alárendelt
     headingek."""
 
@@ -544,6 +546,7 @@ class HeadingView(Contract):
     words: int = 0
     total_words: int = 0
     empty: bool = False
+    media_only: bool = False
     skipped_level: bool = False
     template: bool = False
     children: list[HeadingView] = Field(default_factory=list)
