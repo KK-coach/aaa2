@@ -7,6 +7,7 @@ import math
 import pytest
 
 from aaa2.entities.rules import run_rules
+from aaa2.functions.findings import build_findings, export_views, site_views
 from aaa2.functions.graph import (
     Candidate,
     build_graph,
@@ -485,3 +486,99 @@ def test_wikidata_is_a_rules():
     for generic in ("Q35120", "Q151885", "Q1799072", "Q3249551", "Q1914636", "Q11016",
                     "Q2267705"):
         assert is_a_reason("tech", "tech", "P279", generic) == "általános osztály"
+
+
+def article_pair():
+    """Egy cikk két nyelven (hreflang-pár), nyelvenként más nevű témával."""
+    blog = ld({"@type": "BlogPosting", "headline": "Cikk"})
+    con = site({
+        "/": html("Pelda", "<main><h1>Pelda</h1><p>Üdv.</p></main>"),
+        "/blog/ai-search/": html("Clicks fell · Pelda", "<main><article><h1>Clicks fell</h1>"
+                                 "<p>AI search changed how clicks behave in Search Console. "
+                                 "Search Console shows it. Search Console again.</p></article>"
+                                 "</main>", head=blog, lang="en"),
+        "/hu/blog/ai-kereses/": html("Kevesebb kattintás · Pelda", "<main><article>"
+                                     "<h1>Kevesebb kattintás</h1><p>Az AI-keresés átírta a "
+                                     "kattintásokat. A Search Console mutatja.</p></article>"
+                                     "</main>", head=blog),
+    }, languages=("hu", "en"))
+    pair = ["en|https://pelda.hu/blog/ai-search/", "hu|https://pelda.hu/hu/blog/ai-kereses/"]
+    con.execute("UPDATE pages SET hreflang = ? WHERE url LIKE '%/blog/%'", [pair])
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    llm_entity(con, "https://pelda.hu/blog/ai-search/", "AI search", "AI search", "concept")
+    llm_entity(con, "https://pelda.hu/blog/ai-search/", "Search Console", "Search Console",
+               "tech")
+    llm_entity(con, "https://pelda.hu/hu/blog/ai-kereses/", "AI-keresés", "AI-keresés",
+               "concept")
+    llm_entity(con, "https://pelda.hu/hu/blog/ai-kereses/", "Search Console", "Search Console",
+               "tech")
+    return con
+
+
+def mains(con):
+    return {url: name for url, name, role, *_ in chosen(con) if role == "main"}
+
+
+def signals(con):
+    return {url: json.loads(decision).get("signals") for url, decision in con.execute(
+        "SELECT url, decision FROM page_nodes").fetchall() if "/blog/" in url}
+
+
+EN, HU = "https://pelda.hu/blog/ai-search/", "https://pelda.hu/hu/blog/ai-kereses/"
+
+
+def test_a_language_pair_shares_the_primary_entities_of_its_members():
+    # az egyik tag kinyerése nem nevezett meg fő témát: a pár másik tagjának listája dönt
+    con = article_pair()
+    primary(con, EN, [])
+    primary(con, HU, ["AI-keresés", "Search Console"])
+    build_graph(con)
+    assert mains(con) | {} == {**mains(con), EN: "AI-keresés", HU: "AI-keresés"}
+    evidence = {url: json.loads(e) for url, e in con.execute(
+        "SELECT n.url, m.evidence FROM page_main_entity m JOIN page_nodes n USING (page_id) "
+        "WHERE m.role = 'main' AND n.url LIKE '%/blog/%'").fetchall()}
+    assert evidence[EN]["group_primary"] == {"index": 0, "name": "AI-keresés", "page": HU}
+    assert "primary" in evidence[HU] and "group_primary" not in evidence[HU]
+    assert signals(con) == {EN: {"primary_empty": True}, HU: None}
+
+
+def test_a_language_pair_gets_one_main_entity_even_if_each_member_names_its_own():
+    con = article_pair()
+    primary(con, EN, ["AI search", "Search Console"])
+    primary(con, HU, ["AI-keresés"])
+    build_graph(con)
+    # azonos sorszám, egy-egy tag nevezi meg: az elsődleges nyelvű (hu) tagé nyer mindkét oldalon
+    assert (mains(con)[EN], mains(con)[HU]) == ("AI-keresés", "AI-keresés")
+    assert signals(con) == {EN: None, HU: None}
+    # amit mindkét tag megnevez, megelőzi azt, amit csak az egyik (azonos sorszámnál)
+    con.execute("DELETE FROM entity_run_pages")
+    primary(con, EN, ["Search Console", "AI search"])
+    primary(con, HU, ["AI-keresés", "Search Console"])
+    build_graph(con)
+    assert (mains(con)[EN], mains(con)[HU]) == ("Search Console", "Search Console")
+
+
+def test_a_pair_without_any_primary_entities_is_flagged_when_its_main_entities_differ(tmp_path):
+    con = article_pair()
+    primary(con, EN, [])
+    primary(con, HU, [])
+    build_graph(con)
+    got = mains(con)
+    assert got[EN] != got[HU]                  # oldalanként a title, a H1, az említésszám dönt
+    found = signals(con)
+    assert found[EN]["primary_empty"] is True and found[HU]["primary_empty"] is True
+    assert [(o["url"], o["entity"]) for o in found[EN]["pair_differs"]] == [(HU, got[HU])]
+    assert [(o["url"], o["entity"]) for o in found[HU]["pair_differs"]] == [(EN, got[EN])]
+    # a jelzés a nézetben és a szerződésben
+    build_findings(con)
+    views = site_views(con, "pelda", "pelda.hu")
+    notes = {page.url: page.notes for page in views.pages}
+    assert notes[EN] == ["a kinyerés nem nevezett meg fő témát",
+                         f"a nyelvi pár fő entitása eltér: {HU} → {got[HU]}"]
+    paths = export_views(con, tmp_path, "pelda")
+    assert "a nyelvi pár fő entitása eltér" in paths["pages"].read_text(encoding="utf-8-sig")
+    assert "jelzések" in paths["html"].read_text(encoding="utf-8")
+    # a fül- és lekérdezés-változat (azonos nyelv) nem nyelvi pár
+    graph = con.execute("SELECT count(*) FROM page_nodes WHERE url LIKE '%/blog/%'").fetchone()
+    assert graph == (2,)

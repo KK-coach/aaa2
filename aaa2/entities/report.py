@@ -96,6 +96,16 @@ def write_entity_table(con: duckdb.DuckDBPyConnection, path: Path) -> int:
 # ---------------------------------------------------------------------------
 
 
+def primary_empty_pages(con: duckdb.DuckDBPyConnection) -> list[int]:
+    """Az oldalak, amelyeknek a legutóbbi kész LLM-rekordja nem nevez meg fő témát (üres
+    `primary_entities`), oldal szerint."""
+    found: dict[int, bool] = {}
+    for page_id, value in store.entity_runs_for_primary_empty_pages(con):
+        if page_id not in found and value is not None:
+            found[page_id] = not json.loads(value)
+    return sorted(page_id for page_id, empty in found.items() if empty)
+
+
 def _latest(con: duckdb.DuckDBPyConnection, method: str) -> tuple | None:
     return store.entity_runs_for_latest(con, method)
 
@@ -154,6 +164,10 @@ def run_report(con: duckdb.DuckDBPyConnection, label: str,
                 continue
             url = page_urls[page_id]
             lines.append(f"  - {url}: {status}" + (f" ({error[:160]})" if error else ""))
+        empty = sorted(page_urls[page_id] for page_id in primary_empty_pages(con)
+                       if page_id in page_urls)
+        lines.append(f"- a kinyerés nem nevezett meg fő témát: {len(empty)} oldal"
+                     + (": " + "; ".join(empty) if empty else ""))
         lines.append("")
     lines += _entities_section(con)
     lines += _site_section(con)

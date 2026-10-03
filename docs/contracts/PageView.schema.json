@@ -24,7 +24,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.4",
+          "default": "1.5",
           "title": "Schema Version",
           "type": "string"
         }
@@ -42,7 +42,7 @@
       "description": "Egy H1 a fő tartalmon kívül: `cookie` (cookie- vagy consent-elem), `dialog` (popup,\nmodális ablak), `chrome` (fejléc, menü, lábléc, oldalsáv).",
       "properties": {
         "schema_version": {
-          "default": "1.4",
+          "default": "1.5",
           "title": "Schema Version",
           "type": "string"
         },
@@ -111,7 +111,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.4",
+          "default": "1.5",
           "title": "Schema Version",
           "type": "string"
         },
@@ -161,7 +161,7 @@
           "type": "integer"
         },
         "schema_version": {
-          "default": "1.4",
+          "default": "1.5",
           "title": "Schema Version",
           "type": "string"
         },
@@ -180,7 +180,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a\nmásodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a további említett\nentitások, az oldal megállapításai, és a heading-fa (a sablon- és chrome-headingek nélkül;\n`h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél).",
+  "description": "Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a\nmásodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a további említett\nentitások, az oldal megállapításai, a jelzések (`notes`: a kinyerés nem nevezett meg fő\ntémát; a nyelvi pár fő entitása eltér), és a heading-fa (a sablon- és chrome-headingek nélkül;\n`h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél).",
   "properties": {
     "canonical_issue": {
       "anyOf": [
@@ -356,6 +356,13 @@
       "default": null,
       "title": "Main Entity Type"
     },
+    "notes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+    },
     "other_mentions": {
       "items": {
         "$ref": "#/$defs/PageMention"
@@ -372,7 +379,7 @@
       "type": "string"
     },
     "schema_version": {
-      "default": "1.4",
+      "default": "1.5",
       "title": "Schema Version",
       "type": "string"
     },
@@ -420,5 +427,5 @@
   "title": "PageView",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.4"
+  "x-schema-version": "1.5"
 }

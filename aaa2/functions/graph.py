@@ -30,15 +30,22 @@ kimenetéből. Minden futás újraépíti a `page_nodes`, `edges`, `page_main_en
      `schema_about`); cikkoldalon a site másik oldalához kötött saját ajánlatra mutató `about`
      / `mainEntity` nem bizonyíték (a cikk fő entitása a témája marad), helyette `supports` él; a profiloldalon a legtöbbet említett személy (`profile`; a profiloldal
      fő entitása ő, ha van);
-  3. a kinyerés `primary_entities` listája (a sorszámmal; `primary`);
+  3. a kinyerés `primary_entities` listája (a sorszámmal; `primary`); a nyelvi pár (az
+     oldalcsoport más nyelvű tagjai) listái is számítanak (`group_primary`, a tag sorszámával):
+     a jelölt sorszáma a pár listáin a legkisebb;
   4. a title, a H1 és a headingek nem sablon-említései (`title`, `h1`, `heading`); a már
      bizonyítékkal bíró jelöltnél a neve vagy aliasa a H1 és a title szövegében is (`occurs`);
   5. az oldal legtöbbet említett entitása, ha legalább `TOP_MIN_MENTIONS` említése van és
      egyértelműen az első (`top_mentions`; a sablon-említések nélkül);
   6. a más oldalcsoportokról érkező anchorok szövege (`inbound_anchor`) és az URL utolsó
      szakasza (`url`).
-  A jelöltek sorrendje: a legerősebb bizonyíték, a `primary` sorszáma, a bizonyítékfajták
-  száma, az említésszám. Jelölt nem lehet a demó- és a navigációs jelölésű entitás; a site
+  A jelöltek sorrendje: a legerősebb bizonyíték, a `primary` sorszáma (a nyelvi pár listáin
+  a legkisebb), a pár hány tagja nevezi meg, az elsődleges nyelvű tag megnevezi-e
+  (`pages.representative`, a `canonical_language` szerint), a bizonyítékfajták száma, az
+  említésszám. A pár tagjai így ugyanazt a fő entitást kapják, ha bármelyikük kinyerése megnevez
+  fő témát; az oldalankénti bizonyíték (title, H1, említésszám) csak ezután dönt. Jelzés a
+  döntésben (`signals`): `primary_empty` (a kinyerés nem nevezett meg fő témát),
+  `pair_differs` (a pár egy tagjának mégis más a fő entitása). Jelölt nem lehet a demó- és a navigációs jelölésű entitás; a site
   entitása csak a kezdőoldalon, ha oldalhoz kötött vagy JSON-LD bizonyítéka van, vagy ha a
   `primary_entities` első eleme. Megbízhatóság (`confidence`): erős, ha oldalhoz kötött,
   kezdőoldali vagy JSON-LD, vagy `primary` és title / H1; közepes, ha a `primary` első eleme,
@@ -92,11 +99,21 @@ from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import alias_key
 from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.names import normal_key
-from aaa2.resolver.pages import PageInfo, home_urls, page_roles, page_types, page_url, support_url
+from aaa2.resolver.overrides import canonical_language
+from aaa2.resolver.pages import (
+    PageInfo,
+    home_urls,
+    page_roles,
+    page_types,
+    page_url,
+    representative,
+    support_url,
+)
 from aaa2.resolver.pages import schema_nodes as page_schema_nodes
 
 CONFIG_FILE = Path(__file__).parent / "config" / "graph.toml"
 EVIDENCE_RANK = {"anchored": 1, "home": 1, "schema_about": 2, "profile": 2, "primary": 3,
+                 "group_primary": 3,
                  "h1": 4, "title": 4, "heading": 4, "top_mentions": 5, "inbound_anchor": 6,
                  "url": 6}
 STRONG = frozenset({"anchored", "home", "schema_about", "profile"})
@@ -180,19 +197,23 @@ class Candidate:
     entity_id: int
     evidence: dict = field(default_factory=dict)          # fajta → részlet
     mentions: int = 0
-    primary_index: int | None = None
+    primary_index: int | None = None       # a legkisebb sorszám a nyelvi pár tagjainak listáin
+    group_votes: int = 0                    # a pár hány tagjának `primary` listáján áll
+    group_first: bool = False               # a pár elsődleges nyelvű tagja megnevezi-e
 
     def key(self) -> tuple:
         best = min(EVIDENCE_RANK[kind] for kind in self.evidence)
         return (best, 99 if self.primary_index is None else self.primary_index,
+                -self.group_votes, not self.group_first,
                 -len(self.evidence), -self.mentions, self.entity_id)
 
     def confidence(self) -> str:
         kinds = set(self.evidence)
         headline = kinds & {"title", "h1"}
-        if kinds & STRONG or ("primary" in kinds and headline):
+        named = kinds & {"primary", "group_primary"}
+        if kinds & STRONG or (named and headline):
             return "strong"
-        if self.primary_index == 0 or ("primary" in kinds and kinds & {"heading", "top_mentions"}) \
+        if self.primary_index == 0 or (named and kinds & {"heading", "top_mentions"}) \
                 or (headline and len(kinds - headline) >= 1):
             return "medium"
         return "weak"
@@ -225,6 +246,7 @@ def build_graph(con: duckdb.DuckDBPyConnection, config: GraphConfig | None = Non
                  if page_id not in graph.canonical}
     for page_id, original in sorted(graph.canonical.items()):
         decisions[page_id] = graph.duplicate(decisions[original], original)
+    graph.signals(decisions)
     for page_id, info in sorted(graph.roles.items()):
         decision = decisions[page_id]
         run.pages += 1
@@ -286,6 +308,7 @@ class _Graph:
         self.nodes = page_schema_nodes(con)
         self.id_names = self._schema_ids()
         self.primary = self._primary()
+        self.site_lang = canonical_language(con)
         self.inbound: dict[int, list[tuple[int, str, bool]]] = defaultdict(list)
         self.outbound: dict[int, list[tuple[int, str]]] = defaultdict(list)
         for from_id, to_id, anchor, position in sorted(
@@ -466,6 +489,39 @@ class _Graph:
                 names.add(name)
         return decision
 
+    def pair(self, info: PageInfo) -> list[int]:
+        """Az oldal és a nyelvi párjának tagjai (az oldalcsoport más nyelvű, nem canonical-
+        duplikátum oldalai); az oldal maga az első. A fül- és lekérdezés-változatok (azonos
+        nyelv) nem tagjai."""
+        others = sorted(p for p in self.groups[info.group]
+                        if p != info.page_id and p not in self.canonical
+                        and self.roles[p].lang and info.lang and self.roles[p].lang != info.lang)
+        return [info.page_id, *others]
+
+    def signals(self, decisions: dict[int, dict]) -> None:
+        """Jelzések a döntéseken (`signals`): `primary_empty` (a kinyerés kész, de nem nevezett
+        meg fő témát), `pair_differs` (a nyelvi pár más tagjának más a fő entitása: a tag URL-je
+        és fő entitása)."""
+        for page_id, info in self.roles.items():
+            decision = decisions[page_id]
+            if decision.get("canonical") is not None:
+                continue
+            found: dict = {}
+            if page_id in self.primary and not self.primary[page_id]:
+                found["primary_empty"] = True
+            main = decision["main"].entity_id if decision.get("main") else None
+            differs = []
+            for member in self.pair(info)[1:]:
+                other = decisions[member]["main"].entity_id if decisions[member].get("main") \
+                    else None
+                if main is not None and other is not None and other != main:
+                    differs.append({"url": self.urls[member], "entity_id": other,
+                                    "entity": self.entities[other][1]})
+            if differs:
+                found["pair_differs"] = differs
+            if found:
+                decision["signals"] = found
+
     def duplicate(self, original: dict, original_id: int) -> dict:
         """A canonical-duplikátum döntése: az eredetié (szerep, fő és másodlagos entitások,
         csoport); a cikk `about`-éle az eredetiről jön."""
@@ -510,11 +566,25 @@ class _Graph:
                              "page": self.urls.get(target) if target in self.urls else None}
                             if name or target else None)
         self.supports[page_id] = supports
-        for index, name in enumerate(self.primary.get(page_id, [])):
-            entity_id = self.resolve(name, page_id)
-            add(entity_id, "primary", {"index": index, "name": name})
-            if entity_id in found and found[entity_id].primary_index is None:
-                found[entity_id].primary_index = index
+        pair = self.pair(info)
+        first = representative([self.roles[p] for p in pair], self.site_lang).page_id
+        for member in pair:                                   # az oldal maga az első
+            named: set[int] = set()
+            for index, name in enumerate(self.primary.get(member, [])):
+                entity_id = self.resolve(name, member)
+                if member == page_id:
+                    add(entity_id, "primary", {"index": index, "name": name})
+                else:
+                    add(entity_id, "group_primary",
+                        {"index": index, "name": name, "page": self.urls.get(member)})
+                if entity_id not in found or entity_id in named:
+                    continue
+                named.add(entity_id)
+                item = found[entity_id]
+                item.primary_index = index if item.primary_index is None \
+                    else min(item.primary_index, index)
+                item.group_votes += 1
+                item.group_first = item.group_first or member == first
         content = Counter()
         for entity_id, position, skip, _ in self.mentions.get(page_id, []):
             if skip:
@@ -602,6 +672,8 @@ def _store_page(con: duckdb.DuckDBPyConnection, graph: _Graph, info: PageInfo,
               "canonical": graph.urls[decision["canonical"]] if decision["canonical"] else None,
               "canonical_issue": decision["canonical_issue"],
               "candidates": [c.as_dict() for c in decision["candidates"]]}
+    if decision.get("signals"):
+        record["signals"] = decision["signals"]
     issue = decision["canonical_issue"]
     con.execute(
         "INSERT INTO page_nodes (page_id, url, role, support_kind, title, h1, lang, group_key, "
@@ -890,6 +962,8 @@ def evidence_text(evidence: Mapping) -> str:
         detail = evidence[kind]
         if kind == "primary":
             parts.append(f"primary#{detail['index']}")
+        elif kind == "group_primary":
+            parts.append(f"group_primary#{detail['index']}")
         elif kind in ("top_mentions", "inbound_anchor"):
             parts.append(f"{kind}:{detail}")
         else:

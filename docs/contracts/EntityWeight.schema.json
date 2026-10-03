@@ -35,7 +35,7 @@
       "type": "integer"
     },
     "schema_version": {
-      "default": "1.4",
+      "default": "1.5",
       "title": "Schema Version",
       "type": "string"
     },
@@ -70,5 +70,5 @@
   "title": "EntityWeight",
   "type": "object",
   "x-module": "graph",
-  "x-schema-version": "1.4"
+  "x-schema-version": "1.5"
 }

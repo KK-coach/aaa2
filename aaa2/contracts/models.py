@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.4"
+SCHEMA_VERSION = "1.5"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -555,7 +555,8 @@ class HeadingView(Contract):
 class PageView(Contract):
     """Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a
     másodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a további említett
-    entitások, az oldal megállapításai, és a heading-fa (a sablon- és chrome-headingek nélkül;
+    entitások, az oldal megállapításai, a jelzések (`notes`: a kinyerés nem nevezett meg fő
+    témát; a nyelvi pár fő entitása eltér), és a heading-fa (a sablon- és chrome-headingek nélkül;
     `h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél)."""
 
     module: ClassVar[str] = "findings"
@@ -579,6 +580,7 @@ class PageView(Contract):
     in_title: bool | None = None
     other_mentions: list[PageMention] = Field(default_factory=list)
     findings: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
     headings: list[HeadingView] = Field(default_factory=list)
     h1_outside: list[HeadingOutside] = Field(default_factory=list)
     h1_justified: bool | None = None

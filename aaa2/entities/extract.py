@@ -468,7 +468,8 @@ def _page_llm(worker: Worker, site: str, page_id: int, lang: str | None, blocks:
     if not prior.get("reused"):                # az újrahasznált kinyerés hívásai a régi futáséi
         log.call_ids = list(dict.fromkeys([*log.call_ids, *extraction["call_ids"]]))
     log.chunks = extraction["chunks"]
-    log.reasons.update(extraction["reasons"])
+    log.reasons.update({reason: count for reason, count in extraction["reasons"].items()
+                        if not (prior.get("reused") and reason == "primary_retried")})
     if extraction["entities"] is None:
         log.extraction = None
         return log, "failed"
@@ -507,11 +508,29 @@ def _extract(client: LLMClient, site: str, blocks: Sequence[dict], page_id: int,
     """A kinyerés rekordja: `entities` (None: minden darab hibás),
     `primary_entities`, `call_id` (az első sikeres kinyerő hívás), `call_ids`, `chunks`,
     `reasons` (a kimaradás okai), és ha van hibás darab a sikeresek mellett, `failed_chunks`
-    (a hibás darabok sorszáma). `partial`: egy korábbi részleges rekord; csak a hibás darabjai
+    (a hibás darabok sorszáma). Ha a hibátlan kinyerés `primary_entities` listája üres, az
+    oldal egyszer újra megy (`primary_retried`); ha a második válasz hibátlan és megnevez fő
+    témát, az lép az első helyére, különben az első marad, és a rekord okai között
+    `primary_empty` áll (a hívások mindkét körből számítanak).
+    `partial`: egy korábbi részleges rekord; csak a hibás darabjai
     kapnak új hívást, az eredmény a korábbi sikeres darabokkal összefésülve, dokumentum-
     sorrendben. A hívó csak azonos bemenetű (`input_hash`) részleges rekordot ad át."""
     only = None if partial is None else list(partial["failed_chunks"])
     page = extract_page(client, site, blocks, page_id, only)
+    retried, empty = False, False
+    if partial is None and not page.failures and not page.primary_entities:
+        # a kinyerés nem adott fő témát: egyszer újra megy az egész oldal
+        retried = True
+        try:
+            again = extract_page(client, site, blocks, page_id)
+        except BudgetExceeded:
+            again = None
+        all_calls = list(page.call_ids)
+        if again is not None:
+            all_calls += again.call_ids
+            if not again.failures and again.primary_entities:
+                page = again
+        empty = not page.primary_entities
     failed = {call_id for _, call_id in page.failures}
     record = {"entities": None, "primary_entities": page.primary_entities, "call_id": None,
               "call_ids": list(page.call_ids), "chunks": page.chunks, "reasons": {}}
@@ -532,6 +551,11 @@ def _extract(client: LLMClient, site: str, blocks: Sequence[dict], page_id: int,
         record["call_ids"] = list(dict.fromkeys([*partial["call_ids"], *page.call_ids]))
         call_id = partial.get("call_id") if partial.get("call_id") is not None else call_id
     record.update(entities=entities, call_id=call_id)
+    if retried:
+        record["call_ids"] = list(dict.fromkeys(all_calls))
+        reasons["primary_retried"] += 1
+    if empty:
+        reasons["primary_empty"] += 1
     record["reasons"] = dict(reasons)
     if page.failed_chunks:
         record["failed_chunks"] = list(page.failed_chunks)

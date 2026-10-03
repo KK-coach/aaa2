@@ -50,7 +50,7 @@
       "type": "string"
     },
     "schema_version": {
-      "default": "1.4",
+      "default": "1.5",
       "title": "Schema Version",
       "type": "string"
     },
@@ -70,5 +70,5 @@
   "title": "Block",
   "type": "object",
   "x-module": "extract",
-  "x-schema-version": "1.4"
+  "x-schema-version": "1.5"
 }
