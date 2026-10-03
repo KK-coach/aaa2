@@ -18,7 +18,7 @@ Sitewide SEO/GEO elemzőmotor. A mag: oldalak × entitások × belső linkek gr�
 
 Első függőleges szelet, ebben a sorrendben, mindegyik tesztekkel:
 
-1. `aaa2/engine/normalize.py` — URL-normalizálás az M1 spec 7 szabálya szerint. Táblás unit tesztek (`tests/test_normalize.py`), ez az első PR.
+1. `aaa2/engine/normalize.py` — URL-normalizálás az M1 spec 7 szabálya szerint. Táblás unit tesztek (`tests/test_normalize.py`), ez az első PR. A query kódolása is egységes (2026-10-03, a vak próba hibája nyomán): a nem-ASCII és a szóköz UTF-8 %XX-kódolva, nagybetűs hexával, így a nyers ékezetes és a százalékkódolt URL ugyanaz; a látható ASCII (a `+`, a `[`, a kódolt fenntartott karakter) formája marad.
 2. `aaa2/engine/frontier.py` — seed + sitemap → `crawl_queue`; prioritás sitemap < nav < body < footer; `--resume`.
 3. `aaa2/engine/render.py` — Playwright: perzisztens böngésző, N context, route-abort a `config/route_abort_domains.txt` alapján, consent a `config/consent_texts.txt`-ből, stabilizálás (a `legacy/renderer.py` HALT-26Y blokkjának logikája), sosem dob kivételt.
 4. `aaa2/engine/parse.py` — renderelt DOM → `pages`, `links` (pozícióval), `headings`, `schema_blocks`. Main content: `legacy/crawler.py` readability-scoring.

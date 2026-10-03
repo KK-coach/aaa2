@@ -13,10 +13,14 @@ Normalizálási szabályok, ebben a sorrendben (a 8. a path-on a 6. előtt fut):
 8. a path kódolása egységes: a nem fenntartott ASCII (betű, szám, `-._~`) nyersen, a nem-ASCII
    és a path-ban nem megengedett karakter UTF-8 %XX-kódolva, a hex nagybetűvel. A fenntartott
    karakter (`/`, `:`, `@`, `+`, ...) abban a formában marad, ahogy jött: a kódolt `%2F` nem
-   válik szegmenshatárrá, a nyers `+` nem válik `%2B`-vé.
+   válik szegmenshatárrá, a nyers `+` nem válik `%2B`-vé;
+9. a query kódolása egységes: a nem-ASCII karakter, a szóköz és a vezérlőkarakter UTF-8
+   %XX-kódolva, a hex nagybetűvel; a nem fenntartott ASCII kódolt alakja (`%41`) nyersen. Így a
+   nyers ékezetes és a százalékkódolt alak ugyanaz az URL (`?q=sérült haj` =
+   `?q=s%C3%A9r%C3%BClt%20haj`). Minden más látható ASCII karakter (a `+`, a `[`, a `%2B`, a
+   `%26`, ...) abban a formában marad, ahogy jött, mert a jelentése a szerveren múlik.
 
 Ezen felül csak szintaktikai azonosság: üres path helyett `/`, az alapértelmezett port eldobva.
-A query kódolása érintetlen marad.
 
 Belső az az URL, amelynek a registrable domainje a seedé, nem kizárt aldomainen van, és nem a
 CDN saját útvonala (`/cdn-cgi/`): az a proxy infrastruktúrája, nem a site tartalma.
@@ -47,6 +51,10 @@ _FILE_EXTENSIONS = frozenset({
 _UNRESERVED = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
 # Egy érvényes %XX-escape, vagy egy karakter, ami nyersen nem állhat a path-ban.
 _PATH_TOKEN = re.compile(r"%[0-9A-Fa-f]{2}|[^A-Za-z0-9\-._~!$&'()*+,;=:@/]")
+
+# Egy érvényes %XX-escape, vagy egy karakter, ami a queryben csak kódolva állhat: nem-ASCII,
+# szóköz, vezérlőkarakter.
+_QUERY_TOKEN = re.compile(r"%[0-9A-Fa-f]{2}|[^\x21-\x7E]")
 
 # A csomagba épített PSL-pillanatkép, hálózat és lemez-cache nélkül; a privát utótagok
 # (github.io, ...) külön site-ot jelentenek.
@@ -161,6 +169,12 @@ def normalize_path_encoding(path: str) -> str:
     return _PATH_TOKEN.sub(_normalize_path_token, path)
 
 
+def normalize_query_encoding(query: str) -> str:
+    """A 9. szabály egy queryre: a nem-ASCII és a szóköz UTF-8 %XX-kódolva, nagybetűs hexával;
+    a látható ASCII formája marad, a nem fenntartott karakter kódolt alakja nyersre vált."""
+    return _QUERY_TOKEN.sub(_normalize_path_token, query)
+
+
 def decide_trailing_slash(
     urls: Iterable[str], sample: int = TRAILING_SLASH_SAMPLE
 ) -> bool | None:
@@ -207,7 +221,7 @@ def _clean_query(query: str) -> str:
         name = key.lower()
         if name.startswith(_TRACKING_PREFIXES) or name in _TRACKING_NAMES:
             continue
-        kept.append((key, piece))
+        kept.append((key, normalize_query_encoding(piece)))
     kept.sort(key=lambda pair: pair[0])
     return "&".join(piece for _, piece in kept)
 

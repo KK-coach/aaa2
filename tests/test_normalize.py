@@ -90,8 +90,20 @@ CASES = [
      "https://kk.coach/a:b@c+d,e;f=g"),
     ("kódolt fenntartott marad kódolt", BARE, "https://kk.coach/a%3Ab%2Bc", "https://kk.coach/a%3Ab%2Bc"),
     ("nem UTF-8 escape érintetlen", BARE, "https://kk.coach/k%f6nyv", "https://kk.coach/k%F6nyv"),
-    ("query kódolása érintetlen", BARE, "https://kk.coach/k%c3%b6nyv?q=k%c3%b6nyv&x=könyv",
-     "https://kk.coach/k%C3%B6nyv?q=k%c3%b6nyv&x=könyv"),
+    # 9. a query kódolása egységes
+    ("query: nem-ASCII és kis hexa egységesen", BARE,
+     "https://kk.coach/k%c3%b6nyv?q=k%c3%b6nyv&x=könyv",
+     "https://kk.coach/k%C3%B6nyv?q=k%C3%B6nyv&x=k%C3%B6nyv"),
+    ("query: szóköz kódolva", BARE, "https://kk.coach/?keyword=sérült haj",
+     "https://kk.coach/?keyword=s%C3%A9r%C3%BClt%20haj"),
+    ("query: a kódolt alak marad", BARE, "https://kk.coach/?keyword=s%C3%A9r%C3%BClt%20haj",
+     "https://kk.coach/?keyword=s%C3%A9r%C3%BClt%20haj"),
+    ("query: kódolt nem fenntartott nyersre", BARE, "https://kk.coach/?%61b=%7Ex%2Dy",
+     "https://kk.coach/?ab=~x-y"),
+    ("query: a + és a kódolt fenntartott marad", BARE, "https://kk.coach/?q=a+b%2Bc%26d%3de&f[0]=1",
+     "https://kk.coach/?f[0]=1&q=a+b%2Bc%26d%3De"),
+    ("query: nem UTF-8 escape érintetlen", BARE, "https://kk.coach/?q=k%f6nyv",
+     "https://kk.coach/?q=k%F6nyv"),
     ("dekódolt pont után fájl, 8. a 6. előtt", SLASH, "https://kk.coach/doc%2Epdf",
      "https://kk.coach/doc.pdf"),
     ("kódolás és slash együtt", SLASH, "https://kk.coach/k%c3%b6nyv", "https://kk.coach/k%C3%B6nyv/"),
@@ -152,6 +164,19 @@ def test_encoding_variants_dedup_to_one_url():
         "https://kk.coach/k%C3%b6nyv",
     ]
     assert {normalize(v, SLASH) for v in variants} == {"https://kk.coach/k%C3%B6nyv/"}
+
+
+def test_query_encoding_variants_dedup_to_one_url():
+    variants = [
+        "https://kk.coach/index.php?keyword=sérült haj&route=product/list",
+        "https://kk.coach/index.php?keyword=s%C3%A9r%C3%BClt%20haj&route=product/list",
+        "https://kk.coach/index.php?route=product/list&keyword=s%c3%a9r%c3%bclt%20haj",
+        "https://kk.coach/index.php?keyword=sérült%20haj&route=product/list",
+    ]
+    assert {normalize(v, BARE) for v in variants} == {
+        "https://kk.coach/index.php?keyword=s%C3%A9r%C3%BClt%20haj&route=product/list"}
+    # a `+` és a `%20` nem ugyanaz: a `+` jelentése a szerveren múlik
+    assert normalize("https://kk.coach/?q=a+b", BARE) != normalize("https://kk.coach/?q=a%20b", BARE)
 
 
 SCOPE = [
