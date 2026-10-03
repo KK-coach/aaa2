@@ -3,7 +3,8 @@
 
 - Modulonként: `llm` → `LLMCall`; `crawl` → `Site`, `CrawlRun`, `Page`, `Link`, `PageMeta`, `StructuredData`; `extract` → `Block`,
   `Mention`, `Candidate`; `resolve` → `Entity`, `Alias`, `Relation`, `MergeRecord`, `KbLink`;
-  `graph` → `PageNode`, `Edge`, `MainEntity`, `EntityWeight`; `findings` → `Finding`.
+  `graph` → `PageNode`, `Edge`, `MainEntity`, `EntityWeight`; `findings` → `Finding`, és a
+  riport bemenete: `SiteViews` (`FindingView`, `EntityView`, `PageView`).
 - Minden modell `schema_version` mezőt hordoz (`SCHEMA_VERSION`); a szerződés változása
   verzióemelés.
 - `from_row`: a modell egy mai adatbázissorból (oszlopnév → érték) épül fel; a sor többi oszlopa
@@ -21,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.1"
+SCHEMA_VERSION = "1.2"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -448,6 +449,108 @@ class Finding(Contract):
     recommendation: str | None = None
 
 
+# --- nézetek (a riport bemenete) -----------------------------------------------------------
+
+class FindingView(Contract):
+    """Egy megállapítás a megjelenítéshez: a tárolt mezők mellett a típus címkéje, az entitás
+    neve és az érintett oldalak. A `recommendation` (javaslat) ma nem keletkezik."""
+
+    module: ClassVar[str] = "findings"
+    finding_id: int
+    type: str
+    label: str
+    severity: Severity
+    entity_id: int | None = None
+    entity: str | None = None
+    pages: list[str] = Field(default_factory=list)
+    summary: str
+    evidence: Any = None
+    recommendation: str | None = None
+
+
+class EntityRelation(Contract):
+    """Egy entitás egy kapcsolata a nézetben: az él típusa, iránya (`→` kifelé, `←` befelé) és
+    a másik entitás."""
+
+    module: ClassVar[str] = "findings"
+    type: str
+    direction: Literal["→", "←"]
+    entity_id: int
+    entity: str
+
+
+class EntityView(Contract):
+    """Egy entitás a site-áttekintőben: rang és súly, a kapcsolatai, a fő oldalai és a csak
+    említő oldalak."""
+
+    module: ClassVar[str] = "findings"
+    entity_id: int
+    name: str
+    type: str
+    subtype: str | None = None
+    rank: int
+    weight: float
+    pages: int
+    mentions: int
+    relations: list[EntityRelation] = Field(default_factory=list)
+    main_pages: list[str] = Field(default_factory=list)
+    mention_only_pages: list[str] = Field(default_factory=list)
+
+
+class PageMention(Contract):
+    """Egy oldalon említett további entitás a súlyával."""
+
+    module: ClassVar[str] = "findings"
+    entity_id: int
+    entity: str
+    weight: float
+
+
+class PageView(Contract):
+    """Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a
+    másodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a további említett
+    entitások és az oldal megállapításai."""
+
+    module: ClassVar[str] = "findings"
+    page_id: int
+    url: str
+    role: str
+    support_kind: str | None = None
+    lang: str | None = None
+    duplicate_of: str | None = None
+    canonical_issue: str | None = None
+    main_entity_id: int | None = None
+    main_entity: str | None = None
+    main_entity_type: str | None = None
+    confidence: Confidence | None = None
+    evidence: Any = None
+    evidence_text: str | None = None
+    secondary: list[str] = Field(default_factory=list)
+    h1: str | None = None
+    in_h1: bool | None = None
+    title: str | None = None
+    in_title: bool | None = None
+    other_mentions: list[PageMention] = Field(default_factory=list)
+    findings: list[str] = Field(default_factory=list)
+
+
+class SiteViews(Contract):
+    """A riport bemenete egy site-ra: a megállapítások, az entitások és az oldalak nézete,
+    verziózva (`schema_version`)."""
+
+    module: ClassVar[str] = "findings"
+    site: str
+    domain: str | None = None
+    findings: list[FindingView] = Field(default_factory=list)
+    entities: list[EntityView] = Field(default_factory=list)
+    pages: list[PageView] = Field(default_factory=list)
+
+
+# a több táblából összeállított szerződések (nincs egyetlen forrástáblájuk)
+DERIVED: tuple[type[Contract], ...] = (
+    FindingView, EntityRelation, EntityView, PageMention, PageView, SiteViews)
+
 CONTRACTS: tuple[type[Contract], ...] = (
     LLMCall, Site, CrawlRun, Page, Link, PageMeta, StructuredData, Block, Mention, MentionSource, Candidate, Entity, Alias,
-    Relation, MergeRecord, KbLink, PageNode, Edge, MainEntity, EntityWeight, Finding)
+    Relation, MergeRecord, KbLink, PageNode, Edge, MainEntity, EntityWeight, Finding,
+    *DERIVED)

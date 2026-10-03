@@ -1,5 +1,7 @@
 """Az API homlokzat (aaa2/api): a lépések és a szerződést adó lekérdezések szintetikus site-on,
 és a docstringekből generált referencia naprakészsége. Hálózat és LLM nélkül."""
+import csv
+import json
 from pathlib import Path
 
 import pytest
@@ -87,3 +89,47 @@ def test_the_generated_reference_is_current_and_covers_the_public_names():
         assert f"### `{name}`" in text, name
     for step in ("crawl", "extract", "resolve", "build_graph", "find"):
         assert callable(getattr(api, step))
+
+
+def test_views_are_a_versioned_contract_consistent_with_the_csv_views(tmp_path):
+    opened = business()
+    api.extract(opened, llm=False)
+    api.resolve(opened, knowledge=False)
+    api.build_graph(opened, wikidata=False)
+    paths = api.find(opened, out=tmp_path).paths
+    views = api.views(opened)
+    assert isinstance(views, contracts.SiteViews)
+    assert (views.site, views.domain, views.schema_version) == (
+        "pelda", "pelda.hu", contracts.SCHEMA_VERSION)
+    # ugyanaz az adat, mint a CSV-nézetekben és a megállapítások CSV-jében
+    def rows(key):
+        with paths[key].open(encoding="utf-8-sig", newline="") as handle:
+            return list(csv.DictReader(handle))
+
+    page_rows, entity_rows, finding_rows = rows("pages"), rows("entities"), rows("findings")
+    assert len(views.pages) == len(page_rows) == 3
+    assert len(views.entities) == len(entity_rows) >= 1                    # nem üres zöld
+    assert len(views.findings) == len(finding_rows) == len(api.findings(opened))
+    for page, row in zip(views.pages, page_rows, strict=True):
+        assert (page.url, page.role, page.main_entity or "", page.h1 or "") == (
+            row["url"], row["szerep"], row["fő entitás"], row["H1"])
+        assert " || ".join(page.findings) == row["megállapítások"]
+        assert {True: "igen", False: "nem", None: ""}[page.in_h1] == row["a H1-ben"]
+    for entity, row in zip(views.entities, entity_rows, strict=True):
+        assert (entity.name, str(entity.rank), " | ".join(entity.main_pages)) == (
+            row["entitás"], row["rang"], row["fő oldalak"])
+        assert "; ".join(f"{r.type} {r.direction} {r.entity}" for r in entity.relations) \
+            == row["élek"]
+    for finding, row in zip(views.findings, finding_rows, strict=True):
+        assert (str(finding.finding_id), finding.label, finding.severity,
+                " | ".join(finding.pages), finding.summary, finding.entity or "") == (
+            row["azonosító"], row["típus"], row["súlyosság"], row["oldalak"],
+            row["összefoglaló"], row["entitás"])
+        assert finding.recommendation is None
+    # a JSON stabil, visszaolvasható, és a fájl ugyanaz
+    text = api.views_json(opened)
+    assert text == api.views_json(opened)
+    assert contracts.SiteViews.model_validate(json.loads(text)) == views
+    assert json.loads(text)["schema_version"] == contracts.SCHEMA_VERSION
+    written = api.export_views_json(opened, tmp_path)
+    assert written.name == "pelda-views.json" and written.read_text(encoding="utf-8") == text

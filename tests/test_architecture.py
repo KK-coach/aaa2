@@ -4,7 +4,7 @@ vagy idegen táblahozzáférés jelenik meg, vagy ha az entitástár tábláihoz
 Azt is ellenőrzi, hogy az elemzés teljes (minden fájlnak van modulja, minden táblának gazdája)."""
 import tomllib
 
-from aaa2.contracts import CONTRACTS
+from aaa2.contracts import CONTRACTS, DERIVED
 from aaa2.db.connect import connect
 from tests import architecture
 from tests.architecture import ORDER, TABLES_FILE, summary, table_owners
@@ -28,7 +28,8 @@ def test_every_table_has_an_owner_and_known_contracts():
     for entry in entries.values():
         assert set(entry["contracts"]) <= names
         covered |= set(entry["contracts"])
-    assert covered == names                         # minden szerződésnek van forrástáblája
+    # minden szerződésnek van forrástáblája, kivéve a több táblából összeállítottakat
+    assert covered == names - {model.__name__ for model in DERIVED}
 
 
 def test_the_report_counts_imports_and_table_accesses(capsys):

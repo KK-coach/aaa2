@@ -7,7 +7,8 @@ riport, a HTTP API) csak ezt használja.
 
 Egy site megnyitása: `open_site(domain, db=None)` → `Site`. A lépések site-onként hívhatók
 (`crawl`, `extract`, `resolve`, `build_graph`, `find`), a lekérdezések szerződést adnak vissza
-(`aaa2/contracts`: `pages`, `entities`, `edges`, `main_entities`, `weights`, `findings`, …).
+(`aaa2/contracts`: `pages`, `entities`, `edges`, `main_entities`, `weights`, `findings`, …);
+a riport bemenete a `views` (verziózott JSON: `views_json`, `export_views_json`).
 
     from aaa2 import api
 
@@ -318,6 +319,36 @@ llm_calls_of(site: 'Site') -> 'list[LLMCall]'
 ```
 
 A site-adatbázisban könyvelt LLM-hívások.
+
+## A riport bemenete
+
+### `views`
+
+```python
+views(site: 'Site') -> 'SiteViews'
+```
+
+A riport bemenete: a megállapítások (típuscímkével, az entitás nevével, az érintett
+oldalakkal), az entitások nézete (rang, súly, kapcsolatok, fő és csak említő oldalak) és
+az oldalak nézete (szerep, fő entitás a bizonyítékokkal, a H1 és a title megnevezése,
+további említések, az oldal megállapításai), egy verziózott szerződésben. A `find` után
+hívható.
+
+### `views_json`
+
+```python
+views_json(site: 'Site') -> 'str'
+```
+
+A `views` JSON-szövegként: rendezett kulcsokkal, UTF-8-ban, a `schema_version`-nel.
+
+### `export_views_json`
+
+```python
+export_views_json(site: 'Site', out: 'Path') -> 'Path'
+```
+
+A `views_json` fájlba: `<out>/<név>-views.json`.
 
 ## Állapot és költség
 
