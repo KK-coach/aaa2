@@ -4,6 +4,7 @@ megállapítások aránya (M3 spec, 8. pont: cél ≥ 90%).
     python -m tests.acceptance.m3_findings template --site kk-coach=data/m3/kk-coach.duckdb ...
     python -m tests.acceptance.m3_findings report --site kk-coach=data/m3/kk-coach.duckdb ...
     python -m tests.acceptance.m3_findings variants --site ... [--out data/m3/out/x.csv]
+    python -m tests.acceptance.m3_findings prune --site kk-coach=data/m3/kk-coach.duckdb ...
 
 - `template`: a site-ok megállapításai kulccsal (típus | entitás | oldal, csoport vagy nyelv) a
   verdiktfájlba (`tests/acceptance/m3/findings_verdicts.json`); a meglévő verdikt megmarad, az
@@ -11,6 +12,8 @@ megállapítások aránya (M3 spec, 8. pont: cél ≥ 90%).
 - `report`: site-onként és típusonként a valós (`valid`) megállapítások aránya; a verdikt
   nélküli és a már nem létező tételek külön sorban. Verdikt: `valid` (valós probléma) vagy
   `invalid` (nem az), rövid indoklással.
+- `prune`: a megadott site-ok már nem létező megállapításainak verdiktje törlődik a
+  verdiktfájlból (a szabály változása után megszűnt tételek).
 - `variants`: a lefedetlen téma és a hiányzó oldal jelöltjei négy szabályváltozat szerint,
   verdikt nélkül (döntés-előkészítés): `régi` (kontextus: az indexelhető oldalak legalább
   60%-án szerepel, vagy a neve a site nevének része; kiemelés legalább 3 oldalcsoportban), `kontextus` (az élő szabály: az
@@ -76,6 +79,20 @@ def template(sites: dict[str, Path], path: Path) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return added
+
+
+def prune(sites: dict[str, Path], path: Path) -> dict[str, int]:
+    """A megadott site-ok már nem létező megállapításainak verdiktje törölve: site → darab."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    removed = {}
+    for site, db in sites.items():
+        known, keys = data["sites"].get(site, {}), finding_keys(db)
+        gone = [key for key in known if key not in keys]
+        for key in gone:
+            del known[key]
+        removed[site] = len(gone)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    return removed
 
 
 def report(sites: dict[str, Path], path: Path) -> list[str]:
@@ -165,7 +182,7 @@ def variants(sites: dict[str, Path], out: Path) -> list[str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("command", choices=["template", "report", "variants"])
+    parser.add_argument("command", choices=["template", "report", "variants", "prune"])
     parser.add_argument("--out", type=Path, default=Path("data/m3/out/uncovered-variants.csv"))
     parser.add_argument("--site", action="append", default=[], help="név=adatbázis")
     parser.add_argument("--verdicts", type=Path, default=VERDICTS_FILE)
@@ -175,6 +192,8 @@ def main() -> None:
         raise SystemExit("--site név=adatbázis kell")
     if args.command == "variants":
         print("\n".join(variants(sites, args.out)))
+    elif args.command == "prune":
+        print(f"{args.verdicts}: törölve {prune(sites, args.verdicts)}")
     elif args.command == "template":
         print(f"{args.verdicts}: {template(sites, args.verdicts)} új tétel")
     else:

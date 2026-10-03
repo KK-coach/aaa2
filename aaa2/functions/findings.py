@@ -114,6 +114,7 @@ RELATION_LABELS = {"main": "fő entitás", "related": "kapcsolódik", "unrelated
                    "no_main": "az oldalnak nincs fő entitása"}
 ROLE_LABELS = {"offer": "ajánlatoldal", "article": "cikkoldal", "product": "termékoldal",
                "component": "komponensoldal", "category": "kategóriaoldal",
+               "listing": "listaoldal",
                "profile": "profiloldal", "home": "kezdőoldal", "support": "egyéb oldal"}
 ACTIONS = {"missing_page": "családoldal a termékcsaládnak",
            "uncovered_topic": "cikk, how-to vagy szakasz egy meglévő oldalon (topical "
