@@ -94,10 +94,12 @@ PAGE_REPLY = reply(
 class Knowledge:
     """A `KnowledgeBase` kérője hálózat nélkül: névre Wikidata-találat (`wikidata`: név → QID,
     vagy (QID, label / alias) párok listája, vagy a nevek halmaza, akkor Q1), az elem osztályai és leírása (`classes`: QID → (osztály-
-    címkék, leírás)), Wikipedia-cím (`wikipedia`); a `failing` nevekre hibás válasz."""
+    címkék, leírás)), Wikipedia-cím (`wikipedia`; szótárként cím → a szócikk Wikidata-eleme); a
+    `failing` nevekre hibás válasz."""
 
     def __init__(self, wikidata=(), wikipedia=(), failing=(), classes=None):
         self.wikidata = wikidata if isinstance(wikidata, dict) else dict.fromkeys(wikidata, "Q1")
+        self.items = dict(wikipedia) if isinstance(wikipedia, dict) else {}
         self.wikipedia, self.failing = set(wikipedia), set(failing)
         self.classes = classes or {}
         self.requests = []
@@ -119,6 +121,8 @@ class Knowledge:
             return "k", {"search": hits}
         pages = [{"title": name}] if name in self.wikipedia else [{"title": name,
                                                                    "missing": True}]
+        if name in self.items:
+            pages = [{"title": name, "pageprops": {"wikibase_item": self.items[name]}}]
         return "k", {"query": {"pages": pages}}
 
     def _entities(self, args):

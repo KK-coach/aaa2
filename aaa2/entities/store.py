@@ -488,6 +488,14 @@ def entities_for_link_entities(con: duckdb.DuckDBPyConnection) -> list[tuple]:
         "page_entities) ORDER BY entity_id").fetchall()
 
 
+def entity_alias_lists(con: duckdb.DuckDBPyConnection) -> list[tuple]:
+    """Lekérdezés: entities. Hívja: resolver/knowledge.py: _LongForms. (entitás, az `aliases`
+    oszlop listája) a nem üres listákra."""
+    return con.execute(
+        "SELECT entity_id, aliases FROM entities WHERE aliases IS NOT NULL AND len(aliases) > 0 "
+        "ORDER BY entity_id").fetchall()
+
+
 def entities_for_merge_confident(con: duckdb.DuckDBPyConnection) -> list[tuple]:
     """Lekérdezés: entities. Hívja: resolver/knowledge.py: merge_confident."""
     return con.execute(
