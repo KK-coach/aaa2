@@ -135,6 +135,20 @@ def wikidata_hit(body: Mapping | None, name: str, lang: str) -> dict | None:
     alias-egyezés, a `rivals` azoknak a további elemeknek a QID-je, amelyeknek a név a címkéje
     (a név elsődleges jelentése lehet ott, pl. „forgalom”: a bevétel aliasa, a közlekedési
     forgalom címkéje)."""
+    found = wikidata_hits(body, name, lang)
+    if not found:
+        return None
+    first = found[0]
+    rivals = [hit["id"] for hit in found[1:] if hit["match"] == "label"]
+    if first["match"] == "alias" and rivals:
+        return {**first, "rivals": rivals}
+    return first
+
+
+def wikidata_hits(body: Mapping | None, name: str, lang: str) -> list[dict]:
+    """Minden találat (`id`, `match`: label / alias, `text`) a keresés sorrendjében, amelynek a
+    címkéje vagy aliasa (`lang` nyelven) a kulcs szerint egyezik a névvel, és nem
+    egyértelműsítő lap."""
     key = alias_key(name)
     found = []
     for hit in (body or {}).get("search") or []:
@@ -146,13 +160,7 @@ def wikidata_hit(body: Mapping | None, name: str, lang: str) -> dict | None:
         if any(word in (hit.get("description") or "").lower() for word in DISAMBIGUATION):
             continue
         found.append({"id": hit.get("id"), "match": match["type"], "text": match.get("text")})
-    if not found:
-        return None
-    first = found[0]
-    rivals = [hit["id"] for hit in found[1:] if hit["match"] == "label"]
-    if first["match"] == "alias" and rivals:
-        return {**first, "rivals": rivals}
-    return first
+    return found
 
 
 def wikipedia_page(body: Mapping | None) -> dict | None:
@@ -195,6 +203,29 @@ class KnowledgeBase:
             ("action", "wbsearchentities"), ("format", "json"), ("search", name),
             ("language", code), ("strictlanguage", "1"), ("type", "item"), ("limit", "10")])
         return wikidata_hit(body, name, code)
+
+    def wikidata_all(self, name: str, code: str) -> list[dict] | None:
+        """A név minden pontos címke- vagy alias-találata a keresés sorrendjében (ugyanaz a
+        kérés, mint a `wikidata`-é, így a gyorsítótárból jön); None, ha a kérés hibás."""
+        body = self._get("wikidata", WIKIDATA_API, [
+            ("action", "wbsearchentities"), ("format", "json"), ("search", name),
+            ("language", code), ("strictlanguage", "1"), ("type", "item"), ("limit", "10")])
+        return None if body is None else wikidata_hits(body, name, code)
+
+    def wikipedia_item(self, name: str, code: str) -> str | None:
+        """A név szerinti Wikipedia-szócikk (pontos cím vagy átirányítás, nem egyértelműsítő
+        lap) Wikidata-eleme (QID); None, ha nincs ilyen szócikk vagy a kérés hibás."""
+        body = self._get("wikipedia", WIKI_API.format(lang=code), [
+            ("action", "query"), ("format", "json"), ("formatversion", "2"),
+            ("titles", "|".join(title_variants(name))), ("redirects", "1"),
+            ("prop", "pageprops"), ("ppprop", "disambiguation|wikibase_item"), ("maxlag", "5")])
+        for page in ((body or {}).get("query") or {}).get("pages") or []:
+            props = page.get("pageprops") or {}
+            if page.get("missing") or page.get("invalid") or "disambiguation" in props:
+                continue
+            if props.get("wikibase_item"):
+                return props["wikibase_item"]
+        return None
 
     def classes(self, qid: str) -> tuple[list[str], str] | None:
         """A Wikidata-elem „instance of” (P31) osztályainak angol címkéi és az angol leírása;

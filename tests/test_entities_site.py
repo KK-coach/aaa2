@@ -450,6 +450,85 @@ def test_confident_wikidata_merges_language_pairs_and_excluded_entities_get_no_l
     assert status_of("tech", ["type of object"], "") == "probable"
 
 
+def test_type_check_matches_whole_words_and_the_head_of_the_class_label():
+    from aaa2.resolver.knowledge import acronym_expansions, incompatible_label, status_of
+    # egész szó: a „gene” nem illeszkedik a „generative”-re
+    assert status_of("tech", ["generative artificial intelligence chatbot", "online service"],
+                     "chatbot developed by OpenAI") == "confident"
+    assert status_of("concept", ["protein-coding gene"], "") == "none"
+    assert status_of("concept", ["films"], "") == "none"                 # többes szám is
+    assert not incompatible_label("concept", "electricity")              # nem „city”
+    # a szervezet-szó csak a címke fő szavaként zár ki
+    assert status_of("concept", ["type of business or company", "automation"], "") == "confident"
+    assert status_of("concept", ["type of economic interaction", "business model"], "") \
+        == "confident"
+    assert status_of("concept", ["public company"], "") == "none"
+    assert status_of("concept", ["free software"], "") == "none"
+    # tech: a cég csak technológiai jel nélkül zár ki (a cégnevű platform kapcsolódik)
+    assert status_of("tech", ["enterprise", "public company", "business"],
+                     "Canadian e-commerce company") == "confident"
+    assert status_of("tech", ["business", "enterprise", "oil company"],
+                     "Italian petrol company") == "none"
+    assert status_of("tech", ["SKOS generic mapping relation"], "") == "none"
+    assert status_of("tech", ["technology company", "online service"], "") == "confident"
+    assert status_of("tech", ["business model", "web application"], "") == "confident"
+    assert status_of("org", ["software"], "") == "none"
+    assert status_of("tech", ["constellation", "zodiacal constellation"], "") == "none"
+    # mozaikszó feloldása a szövegből, gyakoriság szerint; a kezdőbetűknek egyezniük kell
+    texts = ["A Generative Engine Optimization (GEO) lényege.",
+             "GEO (Generative Engine Optimization) és SEO.", "A Good Enough Outcome (GEO) más.",
+             "geo (x y z)", "A Search Engine Optimization (GEO) elírás."]
+    assert acronym_expansions("GEO", texts) == ["Generative Engine Optimization",
+                                                "Good Enough Outcome"]
+    assert acronym_expansions("Astro", ["Valami (Astro)"]) == []
+    assert acronym_expansions("CRO", ["konverzióoptimalizálás (CRO)"]) == []
+
+
+def test_fallback_search_after_an_incompatible_first_hit():
+    from aaa2.entities.gate import KnowledgeBase
+    from aaa2.resolver.knowledge import link_entities
+    from tests.test_entities_pipeline import Knowledge
+    con = business_site()
+    run_rules(con)
+    article = "https://pelda.hu/blog/cikk/"
+    geo = llm_entity(con, article, "méréshez", "GEO", "concept")
+    gemini = llm_entity(con, article, "A rendszer", "Gemini", "tech")
+    astro = llm_entity(con, article, "alapja", "Astro", "tech")
+    audit = llm_entity(con, article, "Bevezető", "Audit", "concept")
+    excel = llm_entity(con, article, "Beszéljünk", "Excel", "tech")
+    plain = llm_entity(con, article, "Hogyan", "Ismeretlen fogalom", "concept")
+    con.execute("UPDATE entities SET aliases = ['Generative Engine Optimization'] "
+                "WHERE entity_id = ?", [geo])
+    con.execute("UPDATE entities SET aliases = ['Hosszabb ismeretlen fogalom'] "
+                "WHERE entity_id = ?", [plain])
+    run_site(con, clock=lambda: NOON)
+    source = Knowledge(
+        wikidata={"GEO": [("Qorg", "alias"), ("Qmag", "label")],
+                  "Generative Engine Optimization": "Qgeo",
+                  "Gemini": [("Qsky", "label"), ("Qproto", "label"), ("Qchat", "label")],
+                  "Astro": [("Qname", "label"), ("Qfw", "label"), ("Qfilm", "label")],
+                  "Audit": [("Qfamily", "label"), ("Qprocess", "label")], "Excel": "Qfamily"},
+        wikipedia={"Audit": "Qaudit", "Excel": "Qexcel"},
+        classes={"Qorg": (["organization"], ""), "Qmag": (["magazine"], ""),
+                 "Qgeo": ([], "practice of improving visibility in AI answers"),
+                 "Qsky": (["constellation"], ""), "Qproto": (["internet protocol"], ""),
+                 "Qchat": (["chatbot"], ""), "Qname": (["male given name"], ""),
+                 "Qfw": (["web framework"], ""), "Qfilm": (["film"], ""),
+                 "Qfamily": (["family name"], ""), "Qaudit": (["process"], ""),
+                 "Qprocess": (["process"], ""), "Qexcel": (["spreadsheet software"], "")})
+    link_entities(con, KnowledgeBase(source), lambda: NOON, "hu")
+    rows = {entity_id: (qid, status) for entity_id, qid, status in con.execute(
+        "SELECT entity_id, wikidata_id, wikidata_status FROM entities").fetchall()}
+    assert rows[geo] == ("Qgeo", "confident")       # a hosszabb alak (alias) pontos találata
+    assert rows[gemini] == (None, "none")           # két nem összeférhetetlen jelölt: kétértelmű
+    assert rows[astro] == ("Qfw", "probable")       # egyetlen kompatibilis további találat
+    assert rows[excel] == ("Qexcel", "probable")    # a Wikipedia-szócikk eleme
+    assert rows[audit] == (None, "none")            # köznévi fogalomnál nincs név szerinti út
+    assert rows[plain] == (None, "none")
+    # tartalék keresés csak összeférhetetlen első találat után: találat nélkül nincs alias-keresés
+    assert "Hosszabb ismeretlen fogalom" not in {name for _, name in source.requests}
+
+
 def test_an_expanded_abbreviation_merges_into_the_long_form():
     body = ("<main><h1>Blog</h1><p>A GEO (Generative Engine Optimization) fontos. A GEO más, "
             "mint a SEO.</p><p>A CTA (Call to Action) és a CTA (Click Through Action) két "
