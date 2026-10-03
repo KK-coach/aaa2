@@ -42,6 +42,12 @@ determinisztikus kör entitásaival összevonva.
   lépés utáni rekord. Folytatás (`resume`): a modell legutóbbi futása megy tovább, a kész
   oldal kimarad, a meglévő rekord nem hív újra. A keret-őr leállítása és a költséghatár
   (`max_usd`, a futás hívásainak összege) a hátralévő oldalakat `stopped` állapotba teszi.
+- Költséghatár (`max_usd`, `_CostCap`): egy oldal csak akkor indul, ha a futás lekönyvelt
+  költsége, a folyamatban lévő oldalak lefoglalt költsége és az új oldal foglalása együtt a
+  határ alatt marad. A foglalás az oldal becsült költsége (`page_estimate`: a kinyerés
+  darabonként, és az ellenőrzés), de legalább a futás eddigi legdrágább oldalának valós
+  költsége. Ha a foglalás nem fér be, de van folyamatban lévő oldal, a futás megvárja (a kész
+  oldal foglalása felszabadul, a valós költsége könyvelődik); ha nincs, megáll.
 - Párhuzamosság (`workers`, `fork`): az oldalak LLM-lépései (kinyerés, ellenőrzés)
   szálanként saját kurzorral és klienssel futnak, egyszerre legfeljebb `2 × workers` oldal van
   folyamatban; a mentés és a napló a fő szálon, oldalsorrendben. A keret-őr a még futó
@@ -76,6 +82,8 @@ from aaa2.entities.llm import site_line
 from aaa2.entities.rules import ATTACH_ORDER, SOURCE_STRENGTH, alias_key
 from aaa2.entities.v3 import (
     ESTIMATE_CHARS_PER_TOKEN,
+    VERIFY_OUTPUT_BASE,
+    VERIFY_OUTPUT_PER_ITEM,
     page_context,
     store_soft_checks,
     verify_usage,
@@ -209,6 +217,57 @@ class _PageLog:
     input_hash: str | None = None
 
 
+class _CostCap:
+    """A futás költséghatára foglalással: a lekönyvelt költség (`booked`), a folyamatban lévő
+    oldalak foglalása (`reserved`) és a futás legdrágább oldala (`largest`)."""
+
+    def __init__(self, cap: float, booked: float) -> None:
+        self.cap, self.booked, self.largest = cap, booked, 0.0
+        self.reserved: dict[int, float] = {}
+
+    def admit(self, page_id: int, estimate: float) -> bool:
+        """Lefoglalja az oldal költségét, ha a lekönyvelttel és a többi foglalással együtt a
+        határ alatt marad; különben False (nincs foglalás). A hívás nélküli oldal (nulla
+        becslés: újrahasznált vagy kész rekord) mindig indulhat."""
+        amount = max(estimate, self.largest) if estimate > 0 else 0.0
+        if self.booked + sum(self.reserved.values()) + amount > self.cap:
+            return False
+        self.reserved[page_id] = amount
+        return True
+
+    def settle(self, page_id: int, actual: float) -> None:
+        """A kész oldal foglalása felszabadul, a valós költsége könyvelődik."""
+        self.reserved.pop(page_id, None)
+        self.booked += actual
+        self.largest = max(self.largest, actual)
+
+
+def page_estimate(client: LLMClient, refine: Refine | None, site: str, blocks: Sequence[Mapping],
+                  prior: Mapping, day: date) -> float:
+    """Az oldal LLM-lépéseinek becsült költsége (USD), ahogy az `estimate_llm` számol: a
+    kinyerés a hívást igénylő darabokra (kész kinyerésnél nulla, részlegesnél a hibás darabok),
+    és az ellenőrzés, ha a lépésnek van ellenőrző modellje és nincs érvényes tárolt eredménye
+    (bemenete a kinyerésével azonos méretűnek véve, kimenete `v3.VERIFY_OUTPUT_BASE` és tíz
+    tétel)."""
+    extraction = prior.get("extraction")
+    retried = set((extraction or {}).get("failed_chunks") or [])
+    tokens_in, usd = 0, 0.0
+    for index, chunk in enumerate(chunk_blocks(blocks)):
+        tokens = round((len(BLOCK_PROMPT) + len(block_input(site, chunk)))
+                       / ESTIMATE_CHARS_PER_TOKEN)
+        tokens_in += tokens
+        if extraction is None or index in retried:
+            usd += client.config.cost_usd(
+                client.model, Usage(input=tokens, output=round(tokens * EXTRACT_OUTPUT_RATIO)),
+                day)
+    verifier = getattr(refine, "verifier", None)
+    if verifier is not None and (prior.get("refined") is None or extraction is None or retried):
+        usd += verifier.config.cost_usd(
+            verifier.model,
+            Usage(input=tokens_in, output=VERIFY_OUTPUT_BASE + 10 * VERIFY_OUTPUT_PER_ITEM), day)
+    return usd
+
+
 @dataclass(frozen=True)
 class Worker:
     """Egy szál LLM-lépései: a kinyerő kliens és a kinyerés utáni lépés, a szál saját
@@ -227,8 +286,9 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
             monotonic: Callable[[], float] | None = None) -> LLMRun:
     """`page_ids`: csak ezek közül az alkalmas oldalak; `limit`: legfeljebb ennyi oldal;
     `refine`: a kinyerés utáni lépés (`v3.V3Step`; None: nincs); `save`: mentés az említés- és entitástáblába;
-    `resume`: a modell legutóbbi futásának folytatása; `max_usd`: a futás költséghatára (ha a
-    futás hívásai elérik, a többi oldal kimarad). `workers`: ennyi oldal LLM-lépései futnak
+    `resume`: a modell legutóbbi futásának folytatása; `max_usd`: a futás költséghatára
+    foglalással (`_CostCap`: új oldal csak akkor indul, ha a lekönyvelt és a lefoglalt költség
+    az oldaléval együtt a határ alatt marad; különben a többi oldal kimarad). `workers`: ennyi oldal LLM-lépései futnak
     egyszerre, a `fork`-kal szálanként épített klienssel (a kapcsolat kurzorán); a mentés a fő
     szálon, oldalsorrendben, így az eredmény a párhuzamosságtól független. `workers = 1` vagy
     `fork` nélkül sorban, a megadott kliensekkel. `reuse`: a változatlan oldal (azonos
@@ -270,6 +330,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
             pool.put(worker)
 
     executor = ThreadPoolExecutor(max_workers=workers) if parallel else None
+    cap = _CostCap(max_usd, _run_cost(con, run_id)) if max_usd is not None else None
     pending: deque = deque()
     stop_reason: str | None = None
     waiting = list(pages)
@@ -282,12 +343,9 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                 if prior.get("status") in FINAL:
                     waiting.pop(0)
                     continue
-                if max_usd is not None and _run_cost(con, run_id) >= max_usd:
-                    stop_reason = "cost_cap_stopped_pages"
-                    break
-                waiting.pop(0)
                 blocks = page_blocks(con, page_id, region="content")
                 if not blocks:
+                    waiting.pop(0)
                     _log(con, run_id, page_id,
                          _PageLog("skipped", Counter(no_content_blocks=1)), 0.0, clock)
                     continue
@@ -296,6 +354,12 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                 if not prior.get("extraction") and stored and stored[0] == hashes[page_id]:
                     prior = {"extraction": stored[1], "refined": stored[2], "call_ids": [],
                              "reused": True}
+                if cap is not None and not cap.admit(page_id, page_estimate(
+                        client, refine, site, blocks, prior, started.date())):
+                    if not pending:
+                        stop_reason = "cost_cap_stopped_pages"
+                    break                      # megvárja a folyamatban lévő oldalakat
+                waiting.pop(0)
                 args = (page_id, lang, blocks, prior)
                 pending.append((page_id, lang, blocks,
                                 executor.submit(work, *args) if executor else work(*args)))
@@ -304,6 +368,10 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
             page_id, lang, blocks, outcome = pending.popleft()
             log, status, seconds = outcome.result() if executor else outcome
             log.raw_html_hash, log.input_hash = raw_hashes.get(page_id), hashes.get(page_id)
+            if cap is not None:
+                before = set((previous.get(page_id) or {}).get("call_ids") or [])
+                cap.settle(page_id, llm_calls.total_cost(
+                    con, [i for i in log.call_ids if i not in before]))
             if status in ("budget_extract", "budget_refine"):
                 stop_reason = "budget_stopped_pages"
                 if status == "budget_refine":

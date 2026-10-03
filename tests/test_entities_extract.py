@@ -20,6 +20,7 @@ from aaa2.entities.extract import (
     Worker,
     estimate_llm,
     input_models,
+    page_estimate,
     reusable_pages,
     run_llm,
     surface_offsets,
@@ -579,6 +580,45 @@ def test_parallel_extraction_matches_the_sequential_one(tmp_path):
     assert serial_rows == parallel_rows and len(parallel_rows) == 6
     assert (parallel.pages, parallel.llm_calls, parallel.rows) == (6, 6, 6)
     assert serial_adapter.peak == 1 and parallel_adapter.peak >= 2
+
+
+def test_the_cost_cap_reserves_the_pages_in_flight_and_is_never_exceeded(tmp_path):
+    """Négy szálon, szimulált hívásokkal: a futás lekönyvelt költsége nem lépi túl a határt,
+    mert az új oldal csak akkor indul, ha a lekönyvelt és a lefoglalt költség vele együtt a
+    határ alatt marad; a többi oldal `stopped`."""
+    con = site({f"/{i}/": html(f"P{i}", f"<p>A Termék{i} a legjobb választás.</p>")
+                for i in range(12)})
+    class Estimated(PageAdapter):
+        """A hívás annyi tokent számláz, amennyit a becslés vár (bemenet / 3, a kimenet a
+        kétszerese)."""
+
+        def call(self, model, schema, prompt, input):
+            answer = super().call(model, schema, prompt, input)
+            tokens = round((len(prompt) + len(input)) / 3.0)
+            return Reply(text=answer.text, usage=Usage(input=tokens, output=2 * tokens))
+
+    adapter = Estimated()
+    client = LLMClient(con, adapter, CONFIG, tmp_path / "ledger.jsonl", lambda: NOON,
+                       Retry(sleep=lambda _: None))
+    build_blocks(con)
+    estimates = [page_estimate(client, None, site_line(con) or "",
+                               page_blocks(con, page_id, region="content"), {}, NOON.date())
+                 for page_id in range(1, 13)]
+    estimate, actual = max(estimates), min(estimates)
+    assert 0 < actual <= estimate < 1.1 * actual   # az oldalak közel egyformák
+    cap = 3.5 * estimate                           # egyszerre legfeljebb három oldal fér be
+    run = run_llm(con, client, workers=4, max_usd=cap,
+                  fork=lambda cursor: Worker(client.bind(cursor)), clock=lambda: NOON)
+    (booked,) = con.execute("SELECT coalesce(sum(cost_usd), 0) FROM llm_calls").fetchone()
+    assert 0 < booked <= cap and run.cost_usd == pytest.approx(booked)
+    assert 2 <= adapter.peak <= 3                  # párhuzamosan fut, de a foglalás korlátoz
+    statuses = dict(con.execute("SELECT status, count(*) FROM entity_run_pages GROUP BY status"
+                                ).fetchall())
+    assert statuses["done"] == len(adapter.calls) >= 3 and statuses["stopped"] >= 1
+    assert statuses["done"] + statuses["stopped"] == 12
+    assert run.skipped == {"cost_cap_stopped_pages": statuses["stopped"]}
+    # a határ nélküli futás mind a 12 oldalt feldolgozza: a megállást a határ okozta
+    assert booked + estimate > cap - estimate
 
 
 def test_budget_guard_counts_the_calls_in_flight(tmp_path):
