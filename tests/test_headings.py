@@ -220,7 +220,7 @@ def test_heading_views_in_the_csv_the_html_and_the_contract(tmp_path):
     page = paths["html"].read_text(encoding="utf-8")
     assert "heading-fa" in page and "Kihagyott heading-szint" in page and "Hiányzó H1" in page
     views = site_views(con, "pelda", "pelda.hu")
-    assert views.schema_version == contracts.SCHEMA_VERSION == "1.3"
+    assert views.schema_version == contracts.SCHEMA_VERSION == "1.4"
     by_url = {p.url: p for p in views.pages}
     tree = by_url[f"{BASE}/jo/"].headings
     assert isinstance(tree[0], contracts.HeadingView)
@@ -231,3 +231,88 @@ def test_heading_views_in_the_csv_the_html_and_the_contract(tmp_path):
     assert by_url[f"{BASE}/ket-tema/"].h1_justified is True
     restored = contracts.SiteViews.model_validate(json.loads(views.model_dump_json()))
     assert restored == views
+
+
+def section_site():
+    """Üres és csak szöveg nélküli elemet tartalmazó szakaszok, és azonos mintájú oldalak."""
+    def empty(mark):                       # oldalanként más szöveg: nem sablon-heading
+        return f"<h2>Első {mark}</h2><h2>Második {mark}</h2><p>Szöveg.</p>"
+
+    jump = "<h2>Kettes</h2><h4>Négyes</h4><p>x</p>"
+    return site({
+        "/": html("Pelda", "<main><h1>Pelda</h1><p>Üdv.</p></main>"),
+        "/kep/": article("Kép", "<h1>Kép</h1><h2>Galéria</h2><img src='/a.png' alt=''>"
+                                "<h2>Kártya <b>egy</b>, kettő</h2><a href='/x/'><img src='/b.png' alt=''></a>"
+                                "<h2>Űrlap</h2><form><input name='q'></form>"
+                                "<h2>Vége</h2><p>Szöveg.</p>"),
+        "/rejtett/": article("Rejtett", "<h1>Rejtett</h1><h2>Első lépés</h2>"
+                                        "<div hidden><p>Lenyíló szöveg a lépésről.</p></div>"
+                                        "<h2>Második lépés</h2>"
+                                        "<div style='display: none'><p>Másik szöveg.</p></div>"
+                                        "<h2>Vége</h2><p>Szöveg.</p>"),
+        "/ures-a/": article("Üres A", f"<h1>Üres A</h1>{empty('A')}"),
+        "/ures-b/": article("Üres B", f"<h1>Üres B</h1>{empty('B')}<h3>Alcím</h3><h3>Másik</h3>"
+                                    "<p>x</p>"),
+        "/ures-c/": article("Üres C", f"<h1>Üres C</h1>{empty('C')}"),
+        "/ugras-a/": article("Ugrás A", f"<h1>Ugrás A</h1>{jump}"),
+        "/ugras-b/": article("Ugrás B", f"<h1>Ugrás B</h1>{jump}"),
+        "/utolso/": article("Utolsó", "<h1>Utolsó</h1><p>Szöveg.</p><h2>Záró heading</h2>"),
+    })
+
+
+def test_empty_sections_follow_the_dom_and_patterns_merge_by_role(tmp_path):
+    con = section_site()
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    build_graph(con)
+    build_findings(con)
+    found = structure(con)
+    kinds = {(kind, where.removeprefix(BASE)) for kind, where in found}
+    # csak kép, linkbe ágyazott kép, űrlap vagy rejtett szöveg: nem megállapítás; az utolsó
+    # heading nem vizsgált
+    assert not any(path in where for _, where in kinds
+                   for path in ("/kep/", "/rejtett/", "/utolso/"))
+    role = _Site(con).pages[1]["role"]
+    by_kind = {kind: (where, *found[(kind, where)]) for kind, where in found}
+    # az azonos szerepű és szintmintájú oldalak egy tétel; az /ures-b/ mintája más (H2, H3)
+    where, severity, summary, data = by_kind["skipped_level"]
+    assert where == f"skipped_level | {data['role']} | H2→H4" and severity == "low"
+    assert [page["url"].removeprefix(BASE) for page in data["pages"]] == ["/ugras-a/",
+                                                                          "/ugras-b/"]
+    assert data["pattern"] == ["H2→H4"] and data["pages"][0]["headings"] == ["H4: Négyes"]
+    assert summary.startswith("kihagyott heading-szint (H2→H4): 2 ")
+    empty = {where: found[(kind, where)] for kind, where in found if kind == "empty_section"}
+    merged = next(data for where, (_, _, data) in empty.items() if "pages" in data)
+    assert merged["pattern"] == ["H2"] and [
+        page["url"].removeprefix(BASE) for page in merged["pages"]] == ["/ures-a/", "/ures-c/"]
+    single = empty[f"{BASE}/ures-b/"][2]
+    assert single["pattern"] == ["H2", "H3"] and single["headings"] == ["H2: Első B", "H3: Alcím"]
+    assert len(empty) == 2 and role
+    # a nézetben: megjegyzés a szöveg nélküli elemre, a rejtett szövegre nincs
+    paths = export_views(con, tmp_path, "pelda")
+    with paths["headings"].open(encoding="utf-8-sig", newline="") as handle:
+        notes = {(r["url"].removeprefix(BASE), r["heading"]): r["megjegyzés"]
+                 for r in csv.DictReader(handle)}
+    # a soron belüli elem körüli szóköz eltérhet a blokk és a DOM szövegében
+    notes[("/kep/", "Kártya")] = next(note for (path, heading), note in notes.items()
+                                      if path == "/kep/" and heading.startswith("Kártya"))
+    assert [notes[("/kep/", name)] for name in ("Galéria", "Kártya", "Űrlap", "Vége")] == [
+        "csak kép / űrlap", "csak kép / űrlap", "csak kép / űrlap", ""]
+    assert notes[("/rejtett/", "Első lépés")] == notes[("/rejtett/", "Második lépés")] == ""
+    assert notes[("/ures-a/", "Első A")] == "üres szakasz"
+    assert notes[("/utolso/", "Záró heading")] == ""
+    assert "csak kép / űrlap" in paths["html"].read_text(encoding="utf-8")
+    views = site_views(con, "pelda", "pelda.hu")
+    gallery = next(p for p in views.pages if p.url == f"{BASE}/kep/").headings[0].children[0]
+    assert (gallery.text, gallery.media_only, gallery.empty) == ("Galéria", True, False)
+
+
+def test_heading_gaps_read_text_and_content_elements_from_the_dom():
+    from aaa2.entities.dom import heading_gaps
+    assert heading_gaps(
+        "<body><main><h1>A <a href='#a'>#</a></h1><h2>B</h2><img src='x'><h2>C</h2>"
+        "<div hidden><p>rejtett szó</p></div><h2>D</h2><a href='/x'><img src='y'></a>"
+        "<h2>E</h2><table><tr><td>1</td></tr></table><h2>F</h2><script>var x</script>"
+        "<input type='hidden'><a href='/y'></a><h2>G</h2></main></body>") == [
+        (1, "A #", 0, ()), (2, "B", 0, ("img",)), (2, "C", 2, ()), (2, "D", 0, ("a", "img")),
+        (2, "E", 1, ("table",)), (2, "F", 0, ()), (2, "G", 0, ())]

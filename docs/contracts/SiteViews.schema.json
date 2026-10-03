@@ -21,7 +21,7 @@
           "type": "integer"
         },
         "schema_version": {
-          "default": "1.3",
+          "default": "1.4",
           "title": "Schema Version",
           "type": "string"
         },
@@ -85,7 +85,7 @@
           "type": "array"
         },
         "schema_version": {
-          "default": "1.3",
+          "default": "1.4",
           "title": "Schema Version",
           "type": "string"
         },
@@ -182,7 +182,7 @@
           "title": "Recommendation"
         },
         "schema_version": {
-          "default": "1.3",
+          "default": "1.4",
           "title": "Schema Version",
           "type": "string"
         },
@@ -238,7 +238,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.3",
+          "default": "1.4",
           "title": "Schema Version",
           "type": "string"
         }
@@ -256,7 +256,7 @@
       "description": "Egy H1 a fő tartalmon kívül: `cookie` (cookie- vagy consent-elem), `dialog` (popup,\nmodális ablak), `chrome` (fejléc, menü, lábléc, oldalsáv).",
       "properties": {
         "schema_version": {
-          "default": "1.3",
+          "default": "1.4",
           "title": "Schema Version",
           "type": "string"
         },
@@ -283,7 +283,7 @@
     },
     "HeadingView": {
       "additionalProperties": false,
-      "description": "Egy heading a fában (H1–H6) a szakaszával: az entitásai, a legerősebb kapcsolat a fő\nentitáshoz (`no_entity`: nincs benne entitás), a szakasz saját és teljes szószáma, az üres\nszakasz és a kihagyott szint jelzése, a sablon-heading jelzése (`template`: több\noldalcsoportban ismétlődő heading, nem lehet megállapítás tárgya), és az alárendelt\nheadingek.",
+      "description": "Egy heading a fában (H1–H6) a szakaszával: az entitásai, a legerősebb kapcsolat a fő\nentitáshoz (`no_entity`: nincs benne entitás), a szakasz saját és teljes szószáma, az üres\nszakasz (`empty`: a DOM-ban sincs alatta szöveg és tartalmi elem), a szöveg nélküli, de\ntartalmi elemet (kép, űrlap, táblázat) tartalmazó szakasz (`media_only`) és a kihagyott\nszint jelzése, a sablon-heading jelzése (`template`: több\noldalcsoportban ismétlődő heading, nem lehet megállapítás tárgya), és az alárendelt\nheadingek.",
       "properties": {
         "children": {
           "items": {
@@ -308,6 +308,11 @@
           "title": "Level",
           "type": "integer"
         },
+        "media_only": {
+          "default": false,
+          "title": "Media Only",
+          "type": "boolean"
+        },
         "relation": {
           "enum": [
             "main",
@@ -320,7 +325,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.3",
+          "default": "1.4",
           "title": "Schema Version",
           "type": "string"
         },
@@ -370,7 +375,7 @@
           "type": "integer"
         },
         "schema_version": {
-          "default": "1.3",
+          "default": "1.4",
           "title": "Schema Version",
           "type": "string"
         },
@@ -581,7 +586,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.3",
+          "default": "1.4",
           "title": "Schema Version",
           "type": "string"
         },
@@ -667,7 +672,7 @@
       "type": "array"
     },
     "schema_version": {
-      "default": "1.3",
+      "default": "1.4",
       "title": "Schema Version",
       "type": "string"
     },
@@ -682,5 +687,5 @@
   "title": "SiteViews",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.3"
+  "x-schema-version": "1.4"
 }

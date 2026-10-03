@@ -86,6 +86,11 @@ GRID_BLOCKERS = "h1, h2, h3, h4, h5, h6, ul, ol, table, pre"
 KIND_OF = {**{f"h{i}": "heading" for i in range(1, 7)}, "p": "paragraph", "li": "list_item",
            "dt": "list_item", "dd": "list_item"}
 COOKIE = re.compile(r"cookie|consent|gdpr")
+HEADING_TAGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
+# Szöveg nélküli tartalom két heading között (`heading_gaps`).
+GAP_ELEMENTS = frozenset({"img", "picture", "svg", "video", "audio", "canvas", "object", "embed",
+                          "iframe", "form", "input", "select", "textarea", "button", "table"})
+GAP_NO_TEXT = frozenset({"script", "style", "noscript", "template", "iframe"})
 WHITESPACE = re.compile(r"\s+")
 # Soron belüli elem, amelynek a teljes szövege technikai azonosító (számcsoportok „|”-vel,
 # pl. a menü AJAX-paramétere: `316001|709257`); a stíluslap rejti, nem látható szöveg.
@@ -177,6 +182,51 @@ def heading_scan(html: str) -> tuple[list[tuple[str, str]], set[int]]:
         if level == 1 and where is not None:
             found.append((where, text))
     return found, levels
+
+
+def heading_gaps(html: str) -> list[tuple[int, str, int, tuple[str, ...]]]:
+    """A renderelt DOM minden nem üres headingje a dokumentum sorrendjében, azzal, ami utána a
+    következő headingig áll: (szint, szöveg, a szöveg szavainak száma, a tartalmi elemek
+    címkéi rendezve). A szövegbe a rejtett elem szövege is beleszámít (lenyíló panel, fül: a
+    DOM-ban ott a tartalom); kimarad a `script`, `style`, `noscript`, `template` és az `iframe`
+    belseje. Tartalmi elem (`GAP_ELEMENTS`): kép, videó, beágyazás, űrlap és űrlapelem,
+    táblázat, valamint a link, amelyben elem áll (`a`: linkbe ágyazott kép, kártya)."""
+    tree = HTMLParser(html or "")
+    found: list[list] = []
+    if tree.body is None:
+        return []
+    inside: Node | None = None                 # a heading, amelynek a részfájában járunk
+    for node in tree.body.traverse(include_text=True):
+        if inside is not None:
+            probe = node.parent
+            while probe is not None and probe.mem_id != inside.mem_id:
+                probe = probe.parent
+            if probe is not None:
+                continue
+            inside = None
+        if node.tag in HEADING_TAGS:
+            text = collapse(node.text(deep=True) or "")
+            if text:
+                found.append([int(node.tag[1]), text, 0, set()])
+                inside = node
+            continue
+        if not found:
+            continue
+        if node.tag == "-text":
+            probe = node.parent
+            while probe is not None and probe.tag not in GAP_NO_TEXT:
+                probe = probe.parent
+            if probe is None:
+                found[-1][2] += len((node.text(deep=False) or "").split())
+        elif node.tag in GAP_ELEMENTS:
+            if node.tag == "input" and (node.attributes.get("type") or "").lower() == "hidden":
+                continue
+            found[-1][3].add(node.tag)
+        elif node.tag == "a" and any(child.tag not in ("-text", "-comment", "br")
+                                     for child in node.iter(include_text=False)):
+            found[-1][3].add("a")
+    return [(level, text, words, tuple(sorted(elements)))
+            for level, text, words, elements in found]
 
 
 def outside_h1(html: str) -> list[tuple[str, str]]:

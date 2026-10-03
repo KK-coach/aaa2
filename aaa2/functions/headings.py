@@ -36,9 +36,21 @@ kapcsolatukkal az oldal fő entitásához, és a szerkezeti megállapítások (A
     vagy másodlagos entitása, vagy valamelyik H1-szakasz üres. Az indokolt eset nem
     megállapítás, csak a nézetben látszik (`h1_justified`);
   - `empty_section` (low): a heading után rögtön azonos vagy magasabb szintű heading jön,
-    tartalom és alcím nélkül (H1-nél ez a „H1 után H1”);
+    alcím nélkül (H1-nél ez a „H1 után H1”), és a renderelt DOM-ban a kettő között nincs szöveg
+    (a rejtett szöveg is tartalom: lenyíló panel, fül) és nincs tartalmi elem sem (kép, videó,
+    beágyazás, űrlap, űrlapelem, táblázat, linkbe ágyazott elem; `dom.heading_gaps`). Ha csak
+    szöveg nélküli tartalmi elem áll ott, a szakasz nem üres: a nézetben megjegyzést kap
+    (`media_only`: „csak kép / űrlap”), megállapítás nincs. Az oldal utolsó headingje nem
+    vizsgált. Ha a heading a DOM-ban nem található (a szövege nem illeszthető), a blokkok
+    szerinti eredmény marad;
   - `skipped_level` (low): a heading szintje több mint eggyel mélyebb a szülőjénél (H2 után H4;
     egy szakaszban mélyebb szint jön előbb, mint a közvetlen alárendelt);
+  Az `empty_section` és a `skipped_level` megállapításai oldalszerep és szintminta szerint egy
+  tételbe kerülnek, az oldalak listájával (ahogy a H1/title-eltérésnél). Szintminta: üres
+  szakasznál az érintett szintek („H2, H3”), kihagyott szintnél a szülő → gyerek ugrások
+  („H2→H4”). A minta oldalcsoportonként (hreflang-pár, fül nélküli URL) az oldalak mintáinak
+  uniója, így a pár egy tételben marad; a csoport szerepe az első (URL szerint) érintett
+  oldaláé. A többi típus oldalcsoportonként egy tétel.
   - `missing_h2` (low): a content-régió szövege `LONG_CONTENT_WORDS` szó fölött van, és nincs
     H2 (a blokkokban és a DOM fő tartalmában sem).
   A H2–H6 szintű „nincs benne entitás” csak a nézetben látszik.
@@ -53,7 +65,7 @@ import duckdb
 from aaa2.engine import queries as crawl
 from aaa2.entities import queries as extract_queries
 from aaa2.entities import store
-from aaa2.entities.dom import heading_scan
+from aaa2.entities.dom import heading_gaps, heading_scan
 from aaa2.entities.rules import alias_key
 from aaa2.functions import graph_queries
 from aaa2.resolver.flags import TEMPLATE_MIN_GROUPS, TEMPLATE_MIN_SHARE
@@ -64,6 +76,8 @@ LONG_CONTENT_WORDS = 600                # e fölött a H2 hiánya megállapítá
 # legrövidebbje site-onként 34–74 szó; a küszöb a kettő között áll.
 SUBSTANTIVE_WORDS = 40
 RELATION_ORDER = ("main", "related", "unrelated")
+PATTERN_TYPES = ("empty_section", "skipped_level")     # szerep és szintminta szerint összevonva
+TYPE_SUMMARY = {"empty_section": "üres szakasz", "skipped_level": "kihagyott heading-szint"}
 STRUCTURE_TYPES = ("missing_h1", "h1_outside_content", "multiple_h1", "empty_section",
                    "skipped_level", "missing_h2")
 SEVERITY = {"missing_h1": "high", "h1_outside_content": "medium", "multiple_h1": "low",
@@ -80,7 +94,9 @@ def page_headings(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping],
     entitásokra; `names`: entitás → név. Az oldal eredménye: `tree` (a gyökér-headingek, alattuk
     a `children`), `h1` (a fő tartalom H1-ei), `outside_h1` ((hol, szöveg) párok),
     `content_words`, `has_h2`, `template` (a kihagyott sablon-headingek száma), és a több H1
-    megítélése (`h1_justified`: True / False, vagy None, ha legfeljebb egy H1 van; `h1_reasons`)."""
+    megítélése (`h1_justified`: True / False, vagy None, ha legfeljebb egy H1 van; `h1_reasons`).
+    A fa elemein: `empty` (üres szakasz), `media_only` (szöveg nélküli, de tartalmi elem áll
+    benne), `skipped_level` és `parent_level` (a szülő szintje; None a gyökérnél)."""
     groups = {page_id: page["group"] for page_id, page in pages.items()}
     blocks: dict[int, list] = defaultdict(list)
     unit_groups: dict[tuple[int, str], set[str]] = defaultdict(set)
@@ -152,11 +168,13 @@ def page_headings(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping],
                     "relation": next((r for r in (*RELATION_ORDER, "no_main") if r in relations),
                                      "no_entity"),
                     "words": 0, "total_words": 0, "children": [], "empty": False,
-                    "skipped_level": False, "template": is_template,
+                    "skipped_level": False, "template": is_template, "media_only": False,
+                    "parent_level": None,
                     "own": [e["entity_id"] for e in entities if e["entity_id"] in own]}
             while stack and stack[-1]["level"] >= node["level"]:
                 stack.pop()
             if stack:
+                node["parent_level"] = stack[-1]["level"]
                 node["skipped_level"] = (not is_template
                                          and node["level"] > stack[-1]["level"] + 1)
                 stack[-1]["children"].append(node)
@@ -168,6 +186,8 @@ def page_headings(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping],
             follower = sequence[index + 1]
             node["empty"] = (not node["template"] and node["words"] == 0
                              and not node["children"] and follower["level"] <= node["level"])
+        if rendered is not None and any(node["empty"] for node in sequence):
+            _dom_sections(sequence, heading_gaps(rendered))
         for node in reversed(sequence):
             node["total_words"] = node["words"] + sum(c["total_words"] for c in node["children"])
         h1 = [node for node in sequence if node["level"] == 1]
@@ -180,6 +200,41 @@ def page_headings(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping],
                           "template": skipped_template, "h1_justified": justified,
                           "h1_reasons": reasons, "sequence": sequence}
     return found
+
+
+def _dom_sections(sequence: list[dict], gaps: list[tuple]) -> None:
+    """A blokkok szerint üres szakaszok ellenőrzése a DOM-ból (`dom.heading_gaps`): a fa
+    headingjei sorrendben a DOM headingjeihez rendelve (azonos szint, azonos vagy egymást
+    tartalmazó, szóköz nélküli szövegkulcs; a fa a DOM headingjeinek részsorozata). Ha a heading és a fában
+    utána álló heading között a DOM-ban szöveg vagy további heading áll, a szakasz nem üres;
+    ha csak tartalmi elem, `media_only`; ha a heading nem található, marad a blokkok szerinti
+    eredmény."""
+    def squeezed(text: str) -> str:       # a soron belüli elemek körüli szóköz ne számítson
+        return alias_key(text).replace(" ", "")
+
+    keys = [(level, squeezed(text)) for level, text, _, _ in gaps]
+    matched: list[int | None] = []
+    after = 0
+    for node in sequence:
+        key = squeezed(node["text"])
+        hit = next((index for index in range(after, len(keys))
+                    if keys[index][0] == node["level"] and (
+                        keys[index][1] == key
+                        or (key and keys[index][1] and (key in keys[index][1]
+                                                        or keys[index][1] in key)))), None)
+        matched.append(hit)
+        if hit is not None:
+            after = hit + 1
+    for index, node in enumerate(sequence[:-1]):
+        start = matched[index]
+        if not node["empty"] or start is None:
+            continue
+        stop = matched[index + 1] if matched[index + 1] is not None else start + 1
+        between = gaps[start:stop]
+        if len(between) > 1 or between[0][2] > 0:      # közbeeső heading vagy szöveg
+            node["empty"] = False
+        elif between[0][3]:
+            node["empty"], node["media_only"] = False, True
 
 
 def _multiple_h1(h1: list[dict]) -> tuple[bool | None, list[str]]:
@@ -201,11 +256,13 @@ def _multiple_h1(h1: list[dict]) -> tuple[bool | None, list[str]]:
     return not reasons, reasons
 
 
-def structure_findings(pages: Mapping[int, Mapping], headings: Mapping[int, Mapping]
-                       ) -> list[tuple]:
+def structure_findings(pages: Mapping[int, Mapping], headings: Mapping[int, Mapping],
+                       role_labels: Mapping[str, str] | None = None) -> list[tuple]:
     """A szerkezeti megállapítások (típus, súlyosság, oldal, entitás, összefoglaló, bizonyíték)
     a canonical-duplikátum nélküli oldalakra; az azonos típusú megállapítás oldalcsoportonként
-    egy tétel (egy oldalas csoportnál az oldalhoz kötve, különben az oldalak listájával)."""
+    egy tétel (egy oldalas csoportnál az oldalhoz kötve, különben az oldalak listájával). Az
+    üres szakasz és a kihagyott szint oldalszerep és szintminta szerint egy tétel
+    (`PATTERN_TYPES`; `role_labels`: a szerepek megnevezése az összefoglalóhoz)."""
     records: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for page_id, page in sorted(pages.items(), key=lambda item: item[1]["url"]):
         if page.get("canonical") is not None or page_id not in headings:
@@ -225,17 +282,43 @@ def structure_findings(pages: Mapping[int, Mapping], headings: Mapping[int, Mapp
         if data["h1_justified"] is False:
             add("multiple_h1", {"h1": [node["text"] for node in data["h1"]],
                                 "reasons": data["h1_reasons"]})
-        empty = [f"H{node['level']}: {node['text']}" for node in data["sequence"] if node["empty"]]
+        empty = [node for node in data["sequence"] if node["empty"]]
         if empty:
-            add("empty_section", {"headings": empty})
-        skipped = [f"H{node['level']}: {node['text']}" for node in data["sequence"]
-                   if node["skipped_level"]]
+            add("empty_section", {
+                "headings": [f"H{node['level']}: {node['text']}" for node in empty],
+                "pattern": sorted({f"H{node['level']}" for node in empty}),
+                "role": page["role"]})
+        skipped = [node for node in data["sequence"] if node["skipped_level"]]
         if skipped:
-            add("skipped_level", {"headings": skipped})
+            add("skipped_level", {
+                "headings": [f"H{node['level']}: {node['text']}" for node in skipped],
+                "pattern": sorted({f"H{node['parent_level']}→H{node['level']}"
+                                   for node in skipped}),
+                "role": page["role"]})
         if data["content_words"] > LONG_CONTENT_WORDS and not data["has_h2"]:
             add("missing_h2", {"words": data["content_words"]})
     found = []
+    merged: dict[tuple[str, str, tuple[str, ...]], list[dict]] = defaultdict(list)
+    for (kind, _), members in sorted(records.items()):
+        if kind in PATTERN_TYPES:
+            pattern = tuple(sorted({item for member in members for item in member["pattern"]}))
+            merged[(kind, members[0]["role"], pattern)] += members
+    for (kind, role, pattern), members in sorted(merged.items()):
+        shown = [{key: value for key, value in member.items()
+                  if key in ("url", "headings")} for member in members]
+        levels = ", ".join(pattern)
+        if len(members) == 1:
+            found.append((kind, SEVERITY[kind], members[0]["page_id"], None,
+                          _summary(kind, members), {**shown[0], "pattern": list(pattern)}))
+        else:
+            label = (role_labels or {}).get(role, role)
+            found.append((kind, SEVERITY[kind], None, None,
+                          f"{TYPE_SUMMARY[kind]} ({levels}): {len(members)} {label}",
+                          {"group": f"{kind} | {role} | {levels}", "role": role,
+                           "pattern": list(pattern), "pages": shown}))
     for (kind, group), members in sorted(records.items()):
+        if kind in PATTERN_TYPES:
+            continue
         first = members[0]
         summary = _summary(kind, members)
         if len(members) == 1:
@@ -271,7 +354,7 @@ def tree_rows(node: Mapping, depth: int = 0) -> list[dict]:
     """A fa sorai mélységi bejárásban (a CSV-nézethez)."""
     rows = [{"depth": depth, **{key: node[key] for key in (
         "level", "text", "entities", "relation", "words", "total_words", "empty",
-        "skipped_level", "template")}}]
+        "media_only", "skipped_level", "template")}}]
     for child in node["children"]:
         rows += tree_rows(child, depth + 1)
     return rows

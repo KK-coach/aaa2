@@ -114,6 +114,7 @@ RELATION_LABELS = {"main": "fő entitás", "related": "kapcsolódik", "unrelated
                    "no_main": "az oldalnak nincs fő entitása"}
 ROLE_LABELS = {"offer": "ajánlatoldal", "article": "cikkoldal", "product": "termékoldal",
                "component": "komponensoldal", "category": "kategóriaoldal",
+               "listing": "listaoldal",
                "profile": "profiloldal", "home": "kezdőoldal", "support": "egyéb oldal"}
 ACTIONS = {"missing_page": "családoldal a termékcsaládnak",
            "uncovered_topic": "cikk, how-to vagy szakasz egy meglévő oldalon (topical "
@@ -171,7 +172,7 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
     run = FindingsRun()
     rows = [*_mismatches(site), *_shared_topics(site), *_uncovered(site, run),
             *_unclear_topics(site),
-            *heading_tree.structure_findings(site.pages, site.headings)]
+            *heading_tree.structure_findings(site.pages, site.headings, ROLE_LABELS)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -790,6 +791,7 @@ def _heading_view(data: dict | None) -> dict:
                 "entities": [dict(entity) for entity in node["entities"]],
                 "relation": node["relation"], "words": node["words"],
                 "total_words": node["total_words"], "empty": node["empty"],
+                "media_only": node["media_only"],
                 "skipped_level": node["skipped_level"], "template": node["template"],
                 "children": [node_view(child) for child in node["children"]]}
 
@@ -812,6 +814,7 @@ def heading_rows(pages: list[dict]) -> list[dict]:
             for row in heading_tree.tree_rows(root):
                 notes = [text for flag, text in (
                     (row["empty"], "üres szakasz"),
+                    (row["media_only"], "csak kép / űrlap"),
                     (row["skipped_level"], "kihagyott szint"),
                     (row["template"], "sablon-heading"),
                     (row["level"] == 1 and page["h1_justified"] is True, "indokolt több H1"),
@@ -1054,7 +1057,8 @@ def _tree_html(nodes: list[dict]) -> str:
         entities = "; ".join(f"{e['entity']} ({RELATION_LABELS[e['relation']]})"
                              for e in node["entities"]) or RELATION_LABELS[node["relation"]]
         notes = "".join(f" <b>[{text}]</b>" for flag, text in (
-            (node["empty"], "üres szakasz"), (node["skipped_level"], "kihagyott szint"),
+            (node["empty"], "üres szakasz"), (node["media_only"], "csak kép / űrlap"),
+            (node["skipped_level"], "kihagyott szint"),
             (node["template"], "sablon")) if flag)
         label = (f"H{node['level']} {_e(node['text'])} <span>— {_e(entities)}; "
                  f"{node['total_words']} szó</span>{notes}")
