@@ -133,6 +133,10 @@ A Wikidata-kapcsolás javítása (AAAV2-65, 2026-10-03; `aaa2/resolver/knowledge
 
 Vélemények (Krisztián döntése, 2026-10-03): a `Review` típusú csomópont és minden, ami alatta áll (szerző, `Person`, `Rating`), kimarad a szabálykör schema-forrásából, JSON-LD-ben és microdatában is (`rules.SCHEMA_SKIPPED_TYPES`). A termék összesített értékelése (`aggregateRating`) a termék attribútuma: `rating_average` és `rating_count` (`shop._schema_rating`).
 
+### Működési javítások (2026-10-03, független review nyomán)
+
+- **Részleges kinyerés** (`aaa2/entities/extract.py`): ha egy oldal darabjai közül legalább egy minden újrapróbálkozás után hibás, de van sikeres darab, az oldal állapota `partial` (023-as migráció), nem `done`; a sikeres darabok említései mentődnek, a rekord `failed_chunks` mezője a hibás darabok sorszáma. A `--resume` csak a hibás darabokat kéri újra (ha a darabolás megváltozott, az egész oldalt), és a kinyerés utáni lépés újra lefut; az újrahasználó futás a részleges rekordot nem veszi át, az oldal teljes kinyerést kap. A futásjelentés az állapotok között és az okok között (`partial_pages`) mutatja a számukat.
+
 ### Nyitott pontok
 
 - M3 riportréteg: a megjelenítési nyelv riportonként választható legyen, a nyelvvel jelölt aliasokból (a kanonikus név nyelvétől függetlenül). Nincs megcsinálva.

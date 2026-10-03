@@ -31,6 +31,13 @@ determinisztikus kör entitásaival összevonva.
 - Újrafuttatható: a feldolgozott oldal korábbi llm-forrásai ugyanattól a kinyerő modelltől
   törlődnek, a forrás nélkül maradt említés is; az említés nélküli llm-entitás a futás előtt és
   után törlődik (az összevonás nem köt új említést korábbi, említés nélküli entitáshoz).
+- Részleges kinyerés: ha egy oldal darabjai közül legalább egy minden újrapróbálkozás után
+  hibás, de van sikeres darab, az oldal állapota `partial` (nem `done`): a sikeres darabok
+  említései mentődnek, a rekord `failed_chunks` mezője a hibás darabok sorszáma (0-tól), a
+  futás okai között `partial_pages` számolja. A `partial` oldal nem végleges: a folytatás
+  (`resume`) a hibás darabokat kéri újra (ha a darabolás közben megváltozott, az egész oldalt),
+  utána a kinyerés utáni lépés is újra lefut; az újrahasználat (`reuse`) a részleges rekordot
+  nem veszi át, az oldal teljes kinyerést kap.
 - Oldalnapló (`entity_run_pages`): állapot, okok, hívások, időtartam, a kinyerés rekordja és a
   lépés utáni rekord. Folytatás (`resume`): a modell legutóbbi futása megy tovább, a kész
   oldal kimarad, a meglévő rekord nem hív újra. A keret-őr leállítása és a költséghatár
@@ -116,27 +123,34 @@ class PageExtraction:
     call_ids: list[int]
     chunks: int
     failures: list[tuple[str, int | None]]
+    failed_chunks: list[int] = field(default_factory=list)      # a hibás darabok sorszáma
 
 
 def extract_page(client: LLMClient, site: str, blocks: Sequence[dict],
-                 page_id: int | None = None) -> PageExtraction:
+                 page_id: int | None = None,
+                 only: Sequence[int] | None = None) -> PageExtraction:
     """A blokkos kinyerés egy oldalra, darabonként egy hívással; a `BudgetExceeded` továbbmegy,
-    a többi hiba a sikertelen darabok közé kerül."""
+    a többi hiba a sikertelen darabok közé kerül (`failures`, `failed_chunks`). `only`: csak
+    ezek a darabok (sorszám, 0-tól) kapnak hívást; a `chunks` így is az oldal összes darabja."""
     result = PageExtraction([], [], [], 0, [])
     seen: set[str] = set()
-    for chunk in chunk_blocks(blocks):
+    for index, chunk in enumerate(chunk_blocks(blocks)):
         result.chunks += 1
+        if only is not None and index not in only:
+            continue
         try:
             reply = client.extract(BlockExtraction, BLOCK_PROMPT, block_input(site, chunk),
                                    domain="entity", page_id=page_id)
         except SchemaMismatch as exc:
             result.call_ids.append(exc.call_id)
             result.failures.append(("schema_mismatch", exc.call_id))
+            result.failed_chunks.append(index)
             continue
         except BudgetExceeded:
             raise
         except LLMError:
             result.failures.append(("call_error", None))
+            result.failed_chunks.append(index)
             continue
         result.call_ids.append(reply.call_id)
         result.entities += [entity.model_dump() for entity in reply.parsed.entities]
@@ -150,7 +164,7 @@ def extract_page(client: LLMClient, site: str, blocks: Sequence[dict],
 Refine = Callable[[Mapping, int, Sequence[Mapping], str | None], dict]
 
 FINAL = ("done", "skipped")                              # a folytatás ezeket kihagyja
-ATTEMPTED = ("done", "extracted", "failed", "verify_error")
+ATTEMPTED = ("done", "extracted", "partial", "failed", "verify_error")
 
 
 def select_pages(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None = None,
@@ -301,7 +315,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                 _log(con, run_id, page_id, log, seconds, clock)
                 continue
             record = log.refined or log.extraction
-            log.status = "done" if save else "extracted"
+            log.status = "partial" if status == "partial" else "done" if save else "extracted"
             store_began = monotonic()
             con.begin()
             try:
@@ -354,13 +368,22 @@ def reusable_pages(con: duckdb.DuckDBPyConnection,
 def _page_llm(worker: Worker, site: str, page_id: int, lang: str | None, blocks: list,
               prior: Mapping) -> tuple[_PageLog, str]:
     """Egy oldal LLM-lépései (kinyerés, a kinyerés utáni lépés), adatbázis-írás
-    nélkül a `site`-táblákba: (napló, kimenet). Kimenet: ok, failed (minden darab hibás),
-    verify_error, budget_extract / budget_refine (a keret-őr megállította)."""
+    nélkül a `site`-táblákba: (napló, kimenet). Kimenet: ok, partial (van hibás darab, de
+    van sikeres is), failed (minden darab hibás), verify_error, budget_extract / budget_refine
+    (a keret-őr megállította). A korábbi részleges kinyerésnél a hibás darabok kapnak új
+    hívást, és a kinyerés utáni lépés újra lefut."""
     log = _PageLog("failed", call_ids=list(prior.get("call_ids") or []),
                    extraction=prior.get("extraction"), refined=prior.get("refined"))
     if prior.get("reused"):
         log.reasons["reused_extraction"] += 1
-    if log.extraction is None:
+    if log.extraction is not None and log.extraction.get("failed_chunks"):
+        try:
+            log.extraction = _extract(worker.client, site, blocks, page_id, log.extraction)
+        except BudgetExceeded:
+            return log, "budget_extract"
+        log.refined = None
+        log.reasons["partial_retried"] += 1
+    elif log.extraction is None:
         try:
             log.extraction = _extract(worker.client, site, blocks, page_id)
         except BudgetExceeded:
@@ -397,24 +420,48 @@ def _page_llm(worker: Worker, site: str, page_id: int, lang: str | None, blocks:
             log.reasons["verify_error"] += 1
             return log, "verify_error"
         log.refined = record
+    if extraction.get("failed_chunks"):
+        log.reasons["partial_pages"] += 1
+        return log, "partial"
     return log, "ok"
 
 
-def _extract(client: LLMClient, site: str, blocks: Sequence[dict], page_id: int) -> dict:
+def _extract(client: LLMClient, site: str, blocks: Sequence[dict], page_id: int,
+             partial: Mapping | None = None) -> dict:
     """A kinyerés rekordja: `entities` (None: minden darab hibás),
     `primary_entities`, `call_id` (az első sikeres kinyerő hívás), `call_ids`, `chunks`,
-    `reasons` (a kimaradás okai)."""
-    page = extract_page(client, site, blocks, page_id)
+    `reasons` (a kimaradás okai), és ha van hibás darab a sikeresek mellett, `failed_chunks`
+    (a hibás darabok sorszáma). `partial`: egy korábbi részleges rekord; csak a hibás darabjai
+    kapnak új hívást, az eredmény a korábbi sikeres darabokkal összefésülve, dokumentum-
+    sorrendben. Ha a darabolás azóta más (a blokkok változtak), az egész oldal újra kinyerődik."""
+    chunks = len(list(chunk_blocks(blocks)))
+    if partial is not None and partial.get("chunks") != chunks:
+        partial = None
+    only = None if partial is None else list(partial["failed_chunks"])
+    page = extract_page(client, site, blocks, page_id, only)
     failed = {call_id for _, call_id in page.failures}
     record = {"entities": None, "primary_entities": page.primary_entities, "call_id": None,
               "call_ids": list(page.call_ids), "chunks": page.chunks, "reasons": {}}
-    if len(page.failures) == page.chunks:
+    if partial is None and len(page.failures) == page.chunks:
         record["reasons"] = {page.failures[0][0]: 1}
         return record
     reasons: Counter[str] = Counter(f"chunk_{reason}" for reason, _ in page.failures)
-    record.update(entities=page.entities,
-                  call_id=next(i for i in page.call_ids if i not in failed))
+    entities, call_id = page.entities, next(
+        (i for i in page.call_ids if i not in failed), None)
+    if partial is not None:
+        order = {block["id"]: index for index, block in enumerate(blocks)}
+        entities = sorted([*partial["entities"], *page.entities],
+                          key=lambda entity: order.get(entity.get("block_id"), len(order)))
+        known = {alias_key(name) for name in partial["primary_entities"]}
+        record["primary_entities"] = [*partial["primary_entities"],
+                                      *(n for n in page.primary_entities
+                                        if alias_key(n) not in known)]
+        record["call_ids"] = list(dict.fromkeys([*partial["call_ids"], *page.call_ids]))
+        call_id = partial.get("call_id") if partial.get("call_id") is not None else call_id
+    record.update(entities=entities, call_id=call_id)
     record["reasons"] = dict(reasons)
+    if page.failed_chunks:
+        record["failed_chunks"] = list(page.failed_chunks)
     return record
 
 
@@ -580,17 +627,20 @@ def estimate_llm(con: duckdb.DuckDBPyConnection, config: LLMConfig, model: str,
             continue
         count += 1
         extraction = prior.get("extraction")
-        if extraction is None:
-            for chunk in chunk_blocks(blocks):
+        retried = set((extraction or {}).get("failed_chunks") or [])
+        if extraction is None or retried:
+            for index, chunk in enumerate(chunk_blocks(blocks)):
+                if retried and index not in retried:
+                    continue
                 chunks += 1
                 tokens = round((len(BLOCK_PROMPT) + len(block_input(site, chunk)))
                                / ESTIMATE_CHARS_PER_TOKEN)
                 tokens_in += tokens
                 usage = Usage(input=tokens, output=round(tokens * EXTRACT_OUTPUT_RATIO))
                 extract_usd += config.cost_usd(model, usage, day)
-        if not verify_model or prior.get("refined") is not None:
+        if not verify_model or (prior.get("refined") is not None and not retried):
             continue
-        if extraction is None:
+        if extraction is None or retried:
             verify_pending += 1
         elif usage := verify_usage(extraction, page_context(con, page_id, blocks, lang)):
             verify_pages += 1
