@@ -3,12 +3,13 @@
 - URL: https://kk.coach/privacy-policy/
 - nyelv: en-US
 - site: This page belongs to the website kk.coach, whose home page is titled “SEO & AI-Driven Organic Growth Consultant | Kk.coach”.
-- blokkok (content régió): 40
+- blokkok (content régió): 41
 
 Blokkonként: azonosító, típus, heading-útvonal, szöveg (táblázatsornál a cellák az oszlopfejléccel).
 
 - **b0** `title`: Privacy Policy - KK
 - **b1** `other`: Skip to content
+- **b14** `heading`: Privacy Policy
 - **b15** `heading`: Who we are
 - **b16** `paragraph` (Privacy Policy › Who we are): This website is operated by Krisztian Kiss , trading as kk.coach — an independent organic growth consultancy. Our website address is: https://kk.coach .
 - **b17** `paragraph` (Privacy Policy › Who we are): For any privacy-related questions, contact: info@kk.coach

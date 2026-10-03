@@ -259,3 +259,76 @@ def test_webshop_menu_ids_overlay_panels_and_tab_separated_tables():
     assert rows[1].cells == [{"header": "Tulajdonság", "value": "Kivitel"},
                              {"header": "Adat", "value": "Oldalfali klíma"}]
     assert "Cold Plasma ionizátor Wi-fi Turbo funkció" in [b.text for b in parsed]
+
+
+def occurrences(parsed, text):
+    return sum(block.text.count(text) for block in parsed)
+
+
+def test_a_heading_inside_a_link_gets_a_heading_block_and_its_text_is_not_duplicated():
+    parsed = parse_blocks(
+        "<html><body><main><h1>Lista</h1><ul>"
+        "<li>Újdonság: <a href='/a'><h2>Termék A</h2><p>12 000 Ft</p></a> raktáron</li>"
+        "<li><a href='/b'><span><h2>Termék B</h2></span></a></li>"
+        "<li><a href='/c'>Sima link</a> szöveggel</li></ul></main></body></html>")
+    assert [(b.kind, b.level, b.text) for b in parsed] == [
+        ("heading", 1, "Lista"), ("list_item", None, "Újdonság:"),
+        ("heading", 2, "Termék A"), ("paragraph", None, "12 000 Ft"),
+        ("list_item", None, "raktáron"), ("heading", 2, "Termék B"),
+        ("list_item", None, "Sima link szöveggel")]
+    assert occurrences(parsed, "Termék A") == occurrences(parsed, "Termék B") == 1
+    # a link anchor-szövege a burkoló heading-blokkjáé (a kártya címéé), akkor is, ha a
+    # burkolóban a heading előtt más blokk áll
+    numbered = parse_blocks(
+        "<html><body><main><h1>Lista</h1><div>"
+        "<a href='/a'><span>01</span><h3>SEO</h3><p>Leírás egy.</p></a>"
+        "<a href='/b'><span>02</span><h3>Mérés</h3><p>Leírás kettő.</p></a>"
+        "</div></main></body></html>")
+    assert [(b.kind, b.text, b.anchors) for b in numbered[1:]] == [
+        ("other", "01", []), ("heading", "SEO", ["01 SEO Leírás egy."]),
+        ("paragraph", "Leírás egy.", []), ("other", "02", []),
+        ("heading", "Mérés", ["02 Mérés Leírás kettő."]), ("paragraph", "Leírás kettő.", [])]
+    assert parsed[2].anchors == ["Termék A 12 000 Ft"] and parsed[5].anchors == ["Termék B"]
+    assert parsed[6].anchors == ["Sima link"]
+    assert parsed[3].heading_path == ["Lista", "Termék A"]
+
+
+def test_a_heading_inside_a_span_gets_a_heading_block_and_its_text_is_not_duplicated():
+    parsed = parse_blocks(
+        "<html><body><main><h1>Szappan</h1><div>Leírás <span><h4>Miből készül?</h4></span>"
+        " Olívaolajból.</div><p>Egy <span>sima</span> bekezdés.</p>"
+        "<div><span hidden><h3>Rejtett cím</h3></span>marad</div></main></body></html>")
+    assert [(b.kind, b.level, b.text) for b in parsed] == [
+        ("heading", 1, "Szappan"), ("other", None, "Leírás"),
+        ("heading", 4, "Miből készül?"), ("other", None, "Olívaolajból."),
+        ("paragraph", None, "Egy sima bekezdés."), ("other", None, "marad")]
+    assert occurrences(parsed, "Miből készül?") == 1
+
+
+def test_a_heading_inside_a_table_cell_gets_a_heading_block_and_leaves_the_row():
+    parsed = parse_blocks(
+        "<html><body><main><table>"
+        "<tr><td><h2>Akció</h2>4 db szappan</td><td>30% kedvezmény</td></tr>"
+        "<tr><td><a href='/x'><h3>Csak cím</h3></a></td></tr>"
+        "<tr><td>Sima</td><td>sor</td></tr></table></main></body></html>")
+    assert [(b.kind, b.level, b.text) for b in parsed] == [
+        ("heading", 2, "Akció"), ("table_row", None, "4 db szappan | 30% kedvezmény"),
+        ("heading", 3, "Csak cím"), ("table_row", None, "Sima | sor")]
+    assert parsed[1].cells == [{"header": None, "value": "4 db szappan"},
+                               {"header": None, "value": "30% kedvezmény"}]
+    assert occurrences(parsed, "Akció") == occurrences(parsed, "Csak cím") == 1
+
+
+def test_the_own_header_of_the_main_content_is_content_and_its_footer_stays_chrome():
+    parsed = parse_blocks(
+        "<html><body><header><p>Site fejléc</p></header><main><article>"
+        "<header><h1>Cikk címe</h1><p>Bevezető.</p><nav><a href='/'>Morzsa</a></nav></header>"
+        "<p>Törzs.</p><footer><p>Cikk lábléce</p></footer>"
+        "<header class='site-header'><p>Jelölt fejléc</p></header>"
+        "<aside><header><p>Oldalsáv fejléce</p></header></aside>"
+        "</article></main><div role='main'><header><p>Szerep szerinti</p></header></div>"
+        "</body></html>")
+    assert {b.text: b.region for b in parsed} == {
+        "Site fejléc": "chrome", "Cikk címe": "content", "Bevezető.": "content",
+        "Morzsa": "chrome", "Törzs.": "content", "Cikk lábléce": "chrome",
+        "Jelölt fejléc": "chrome", "Oldalsáv fejléce": "chrome", "Szerep szerinti": "content"}
