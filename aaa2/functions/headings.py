@@ -205,15 +205,18 @@ def page_headings(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping],
 def _dom_sections(sequence: list[dict], gaps: list[tuple]) -> None:
     """A blokkok szerint üres szakaszok ellenőrzése a DOM-ból (`dom.heading_gaps`): a fa
     headingjei sorrendben a DOM headingjeihez rendelve (azonos szint, azonos vagy egymást
-    tartalmazó szövegkulcs; a fa a DOM headingjeinek részsorozata). Ha a heading és a fában
+    tartalmazó, szóköz nélküli szövegkulcs; a fa a DOM headingjeinek részsorozata). Ha a heading és a fában
     utána álló heading között a DOM-ban szöveg vagy további heading áll, a szakasz nem üres;
     ha csak tartalmi elem, `media_only`; ha a heading nem található, marad a blokkok szerinti
     eredmény."""
-    keys = [(level, alias_key(text)) for level, text, _, _ in gaps]
+    def squeezed(text: str) -> str:       # a soron belüli elemek körüli szóköz ne számítson
+        return alias_key(text).replace(" ", "")
+
+    keys = [(level, squeezed(text)) for level, text, _, _ in gaps]
     matched: list[int | None] = []
     after = 0
     for node in sequence:
-        key = alias_key(node["text"])
+        key = squeezed(node["text"])
         hit = next((index for index in range(after, len(keys))
                     if keys[index][0] == node["level"] and (
                         keys[index][1] == key
