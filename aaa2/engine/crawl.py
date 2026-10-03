@@ -26,7 +26,10 @@ Hash-alapú skip: ha az URL-nek van `pages` sora 7 napnál frissebb `fetched_at`
 GET válaszának stabil hash-e (`stable_hash`: sha256 a kérésenként változó tokenek nélkül)
 egyezik a tárolt `raw_html_hash`-sel, a render kimarad és a sor érintetlen; a tárolt linkjei
 kerülnek a sorba. A seedre is: ha változatlan, a trailing-slash döntés a tárolt DOM linkjeiből
-jön, render nélkül.
+jön, render nélkül. JS-től függő site-on nincs skip: ha az előző crawl site-profilja
+JavaScript-keretrendszer DOM-jelét rögzítette (`tech_signals` `dom:` kezdetű eleme:
+`ng-version`, `__NEXT_DATA__`, `__NUXT__`, `data-reactroot`, `astro-island`), a tartalom a nyers
+HTML változása nélkül is változhat, ezért minden oldal újra renderelődik.
 
 Átirányítás: a render követi. Ha a `final_url` normalizált alakja egy másik belső URL, a kért
 URL sora átirányítás-sor (az első lépés státusza, `final_url`, tartalom nélkül), a tartalom a
@@ -175,6 +178,7 @@ class _Run:
         self.frontier: Frontier | None = None
         self.run_id = 0
         self.done = self.failed = self.skipped = self.bytes_stored = 0
+        self._js_site: bool | None = None
         self.expected_pages: int | None = None
         self.expected_seconds: float | None = None
         self.stopped: str | None = None
@@ -214,7 +218,7 @@ class _Run:
         if seed is None:
             raise ValueError(f"nem normalizálható seed URL: {seed_url!r}")
         candidates = [url for url in (seed, slash_alternate(seed)) if url]
-        stored = self._fresh_row(candidates)
+        stored = None if self._js_dependent() else self._fresh_row(candidates)
         if stored is not None and stored[3] is not None and await self._unchanged(seed, stored[1]):
             await self._start_from_stored(seed_url, discovery, provisional, stored, started)
             return
@@ -326,7 +330,18 @@ class _Run:
         error = await self._normalization_404(item.url, result)
         self._store(item, result, error)
 
+    def _js_dependent(self) -> bool:
+        """Az előző crawl site-profilja szerint a site JavaScript-keretrendszerrel épül (a
+        `tech_signals` `dom:` kezdetű eleme): a hash-alapú skip ilyenkor nem él."""
+        if self._js_site is None:
+            row = self.con.execute("SELECT tech_signals FROM site LIMIT 1").fetchone()
+            signals = (row[0] if row else None) or []
+            self._js_site = any(signal.startswith("dom:") for signal in signals)
+        return self._js_site
+
     async def _try_skip(self, item: QueueItem) -> bool:
+        if self._js_dependent():
+            return False
         stored = self._fresh_row([item.url])
         if stored is None or not await self._unchanged(item.url, stored[1]):
             return False
