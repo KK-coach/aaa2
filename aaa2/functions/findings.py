@@ -20,8 +20,9 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   számít (a H1-be nem kell a márkanév). Ha a H1 megnevezi a fő entitást, és a title a H1
   szövegét tartalmazza, a title is megnevezi. A fülek (pl. `?tab=api`) nem ismétlik. Az
   azonos okú (ugyanazok a hibák) és azonos szerepű oldalak egy megállapítást adnak, az
-  érintett oldalak listájával (pl. a H1 nélküli esettanulmányok). Súlyosság: high, ha a
-  title-ből hiányzik, vagy nincs H1; medium, ha csak a H1-ből.
+  érintett oldalak listájával. A H1 nélküli oldal itt csak a title miatt szerepelhet: a H1
+  hiánya a `missing_h1` megállapítás. Súlyosság: high, ha a title-ből hiányzik; medium, ha
+  csak a H1-ből.
 - `cannibalization` és `shared_topic`: ugyanaz az erős megbízhatóságú fő entitás legalább két
   oldalcsoportban, egy nyelven belül. Egy csoport a hreflang-pár és a fül nélküli URL
   (`page_nodes.group_key`). Nem számít: a canonical-duplikátum, a lapozó oldal (`PAGINATION`),
@@ -61,12 +62,17 @@ a canonical-duplikátum oldal egyikben sem szerepel:
 - `unclear_topic`: az oldal fő entitása gyenge megbízhatóságú (medium), kivéve, ha a H1 és a
   title is megnevezi (ott a téma egyértelmű, csak más bizonyíték nincs); vagy az oldalnak
   egyetlen jelöltje sincs (high).
+- A heading-fa szerkezeti megállapításai (`headings.structure_findings`): `missing_h1`,
+  `h1_outside_content`, `multiple_h1`, `empty_section`, `skipped_level`, `missing_h2`; a
+  szabályaik a `functions/headings.py` leírásában.
 
 Nézetek (`export_views`), ellenőrzéshez: site-áttekintő (a legfontosabb entitások típus szerint,
 a szülővel, a kategóriával és a fő oldalaikkal), entitás környezete (az entitás élei egy
 lépésnyire, a fő és a csak említő oldalai), oldalnézet (a fő entitás a bizonyítékaival, a H1 és a
-title összevetése, a további említett entitások, az oldal megállapításai); CSV-ben és egy
-lenyitható HTML-oldalon (`<név>-views.html`).
+title összevetése, a további említett entitások, az oldal megállapításai, a heading-fa),
+heading-fa (oldalanként a headingek a szintjükkel, az entitásaikkal, a fő entitáshoz fűződő
+kapcsolatukkal és a szakaszuk szószámával); CSV-ben és egy lenyitható HTML-oldalon
+(`<név>-views.html`).
 """
 from __future__ import annotations
 
@@ -90,15 +96,22 @@ from aaa2.entities import store
 from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
 from aaa2.functions import graph_queries
+from aaa2.functions import headings as heading_tree
 from aaa2.functions.graph import evidence_text
 from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.names import normal_key
 
 TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
-         "uncovered_topic", "unclear_topic")
+         "uncovered_topic", "unclear_topic", *heading_tree.STRUCTURE_TYPES)
 TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés", "cannibalization": "Kannibalizáció",
                "shared_topic": "Közös téma", "missing_page": "Hiányzó oldal",
-               "uncovered_topic": "Lefedetlen téma", "unclear_topic": "Nem egyértelmű téma"}
+               "uncovered_topic": "Lefedetlen téma", "unclear_topic": "Nem egyértelmű téma",
+               "missing_h1": "Hiányzó H1", "h1_outside_content": "H1 a fő tartalmon kívül",
+               "multiple_h1": "Több H1", "empty_section": "Üres szakasz",
+               "skipped_level": "Kihagyott heading-szint", "missing_h2": "Hiányzó H2"}
+RELATION_LABELS = {"main": "fő entitás", "related": "kapcsolódik", "unrelated": "független",
+                   "no_entity": "nincs benne entitás",
+                   "no_main": "az oldalnak nincs fő entitása"}
 ROLE_LABELS = {"offer": "ajánlatoldal", "article": "cikkoldal", "product": "termékoldal",
                "component": "komponensoldal", "category": "kategóriaoldal",
                "profile": "profiloldal", "home": "kezdőoldal", "support": "egyéb oldal"}
@@ -157,7 +170,8 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
     site = _Site(con)
     run = FindingsRun()
     rows = [*_mismatches(site), *_shared_topics(site), *_uncovered(site, run),
-            *_unclear_topics(site)]
+            *_unclear_topics(site),
+            *heading_tree.structure_findings(site.pages, site.headings)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -208,6 +222,16 @@ class _Site:
                                           e.to_id)):
             self.mention_edges[edge.from_id].append(
                 (edge.to_id, edge.weight or 0.0, edge.evidence))
+        self._headings: dict[int, dict] | None = None
+
+    @property
+    def headings(self) -> dict[int, dict]:
+        """Oldalanként a heading-fa és a szerkezeti tények (`headings.page_headings`)."""
+        if self._headings is None:
+            self._headings = heading_tree.page_headings(
+                self.con, self.pages, self.chosen,
+                {entity_id: entity["name"] for entity_id, entity in self.entities.items()})
+        return self._headings
 
     def name(self, entity_id: int) -> str:
         return self.entities[entity_id]["name"]
@@ -322,12 +346,13 @@ def _mismatches(site: _Site) -> list[tuple]:
         others = sorted({site.name(e) for e, _, counts in site.mention_edges[page["page_id"]]
                          if e != entity_id and counts.get("h1")})
         problems = [text for flag, text in (
-            (not page["h1"] and not home, "nincs H1"),
             (bool(page["h1"]) and h1_missing and not others,
              "a H1 általános: nincs benne entitás"),
             (bool(page["h1"]) and h1_missing and bool(others), "a fő entitás nincs a H1-ben"),
             (not in_title, "a fő entitás nincs a title-ben")) if flag]
-        severity = "high" if not in_title or (not page["h1"] and not home) else "medium"
+        if not problems:                       # a H1 hiánya a `missing_h1` megállapítás
+            continue
+        severity = "high" if not in_title else "medium"
         records.append((severity, page, entity_id,
                         {"url": page["url"], "main_entity": site.name(entity_id),
                          "confidence": main[2], "h1": page["h1"], "title": page["title"],
@@ -749,8 +774,59 @@ def view_data(site: _Site) -> tuple[list[dict], list[dict]]:
             "other_mentions": [{"entity_id": e, "entity": site.name(e), "weight": w}
                                for e, w, _ in site.mention_edges[page["page_id"]]
                                if e not in picked and w > 0][:PAGE_MENTIONS],
-            "findings": [] if duplicate else list(by_url[page["url"]])})
+            "findings": [] if duplicate else list(by_url[page["url"]]),
+            **_heading_view(site.headings.get(page["page_id"]))})
     return entities, pages
+
+
+def _heading_view(data: dict | None) -> dict:
+    """Az oldal heading-fája a nézethez: a fa (`headings`), a fő tartalmon kívüli H1-ek
+    (`h1_outside`) és a több H1 megítélése (`h1_justified`)."""
+    if data is None:
+        return {"headings": [], "h1_outside": [], "h1_justified": None}
+
+    def node_view(node: dict) -> dict:
+        return {"level": node["level"], "text": node["text"],
+                "entities": [dict(entity) for entity in node["entities"]],
+                "relation": node["relation"], "words": node["words"],
+                "total_words": node["total_words"], "empty": node["empty"],
+                "skipped_level": node["skipped_level"], "template": node["template"],
+                "children": [node_view(child) for child in node["children"]]}
+
+    return {"headings": [node_view(node) for node in data["tree"]],
+            "h1_outside": [{"where": where, "text": text} for where, text in data["outside_h1"]],
+            "h1_justified": data["h1_justified"]}
+
+
+def heading_rows(pages: list[dict]) -> list[dict]:
+    """A heading-fa CSV-sorai: oldalanként a headingek mélységi bejárásban."""
+    rows = []
+    for page in pages:
+        for where in page["h1_outside"]:
+            rows.append({"url": page["url"], "mélység": "", "szint": "H1",
+                         "heading": where["text"], "entitások": "",
+                         "kapcsolat a fő entitáshoz": "", "szavak": "", "szavak összesen": "",
+                         "megjegyzés": "a fő tartalmon kívül: "
+                                       + heading_tree.OUTSIDE_LABELS[where["where"]]})
+        for root in page["headings"]:
+            for row in heading_tree.tree_rows(root):
+                notes = [text for flag, text in (
+                    (row["empty"], "üres szakasz"),
+                    (row["skipped_level"], "kihagyott szint"),
+                    (row["template"], "sablon-heading"),
+                    (row["level"] == 1 and page["h1_justified"] is True, "indokolt több H1"),
+                    (row["level"] == 1 and page["h1_justified"] is False,
+                     "indokolatlan több H1")) if flag]
+                rows.append({
+                    "url": page["url"], "mélység": row["depth"], "szint": f"H{row['level']}",
+                    "heading": row["text"],
+                    "entitások": "; ".join(
+                        f"{e['entity']} ({RELATION_LABELS[e['relation']]})"
+                        for e in row["entities"]),
+                    "kapcsolat a fő entitáshoz": RELATION_LABELS[row["relation"]],
+                    "szavak": row["words"], "szavak összesen": row["total_words"],
+                    "megjegyzés": "; ".join(notes)})
+    return rows
 
 
 def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
@@ -820,16 +896,29 @@ def site_views(con: duckdb.DuckDBPyConnection, name: str, domain: str | None = N
         pages=[PageView(**page) for page in pages])
 
 
+def _page_tree_html(page: dict | None) -> str:
+    if page is None:
+        return ""
+    outside = "".join(
+        f"<div>H1 a fő tartalmon kívül ({_e(heading_tree.OUTSIDE_LABELS[o['where']])}): "
+        f"{_e(o['text'])}</div>" for o in page["h1_outside"])
+    justified = {True: "<div>több H1: indokolt</div>",
+                 False: "<div>több H1: indokolatlan</div>"}.get(page["h1_justified"], "")
+    return outside + justified + (_tree_html(page["headings"]) or "<span>nincs heading</span>")
+
+
 def _yes(main: object | None, named: bool) -> str:
     return "" if main is None else "igen" if named else "nem"
 
 
 def export_views(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str, Path]:
-    """A három nézet CSV-ben (`<név>-view-site.csv`, `-view-entities.csv`, `-view-pages.csv`) és
-    egy lenyitható HTML-oldalon (`<név>-views.html`) a megállapításokkal együtt."""
+    """A négy nézet CSV-ben (`<név>-view-site.csv`, `-view-entities.csv`, `-view-pages.csv`,
+    `-view-headings.csv`) és egy lenyitható HTML-oldalon (`<név>-views.html`) a
+    megállapításokkal együtt."""
     out.mkdir(parents=True, exist_ok=True)
     site = _Site(con)
     overview, neighbourhood, pages = _views(site)
+    trees = {page["url"]: page for page in view_data(site)[1]}
     paths = {
         "site": _write(out / f"{name}-view-site.csv", overview, [
             "típus", "altípus", "entitás", "rang", "súly", "szülő", "kategória", "márka",
@@ -840,10 +929,15 @@ def export_views(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[s
         "pages": _write(out / f"{name}-view-pages.csv", pages, [
             "url", "szerep", "segédoldal", "nyelv", "canonical", "fő entitás", "típus",
             "megbízhatóság", "bizonyítékok", "másodlagos", "H1", "a H1-ben", "title",
-            "a title-ben", "további említett entitások", "megállapítások"])}
+            "a title-ben", "további említett entitások", "megállapítások"]),
+        "headings": _write(out / f"{name}-view-headings.csv",
+                           heading_rows(list(trees.values())), [
+            "url", "mélység", "szint", "heading", "entitások", "kapcsolat a fő entitáshoz",
+            "szavak", "szavak összesen", "megjegyzés"])}
     paths["html"] = out / f"{name}-views.html"
-    paths["html"].write_text(_html(name, _findings(con), site, overview, neighbourhood, pages),
-                             encoding="utf-8")
+    paths["html"].write_text(
+        _html(name, _findings(con), site, overview, neighbourhood, pages, trees),
+        encoding="utf-8")
     return paths
 
 
@@ -921,6 +1015,9 @@ def _finding_html(finding: dict) -> str:
                  ("a legtöbbet említő oldalak", "<br>".join(
                      f"{_link(p['url'])} ({p['mention_weight']:g})"
                      for p in evidence["top_pages"]))]
+    elif finding["type"] in heading_tree.STRUCTURE_TYPES:
+        pairs = [("oldal", _link(page["url"]) + "<br>" + _e(_structure_detail(page)))
+                 for page in evidence.get("pages") or [evidence]]
     else:
         pairs = [("oldal", _link(evidence["url"])), ("H1", _e(evidence["h1"])),
                  ("title", _e(evidence["title"])),
@@ -930,8 +1027,45 @@ def _finding_html(finding: dict) -> str:
             f'</span> {_e(finding["summary"])}</summary>{_table(pairs)}</details>')
 
 
+def _structure_detail(page: dict) -> str:
+    """Egy szerkezeti megállapítás oldalának részletei egy sorban."""
+    parts = []
+    if "outside" in page:
+        parts.append("; ".join(f"{heading_tree.OUTSIDE_LABELS[o['where']]}: „{o['text']}”"
+                               for o in page["outside"]))
+        if page.get("content_h1"):
+            parts.append("H1 a fő tartalomban: " + "; ".join(page["content_h1"]))
+    if "h1" in page:
+        parts.append("H1-ek: " + "; ".join(page["h1"]))
+        parts.append("; ".join(page["reasons"]))
+    if isinstance(page.get("headings"), list):
+        parts.append("; ".join(page["headings"]))
+    if "words" in page:
+        parts.append(f"{page['words']} szó a fő tartalomban, H2 nélkül")
+    return " — ".join(part for part in parts if part)
+
+
+def _tree_html(nodes: list[dict]) -> str:
+    """A heading-fa lenyitható listaként."""
+    if not nodes:
+        return ""
+    items = []
+    for node in nodes:
+        entities = "; ".join(f"{e['entity']} ({RELATION_LABELS[e['relation']]})"
+                             for e in node["entities"]) or RELATION_LABELS[node["relation"]]
+        notes = "".join(f" <b>[{text}]</b>" for flag, text in (
+            (node["empty"], "üres szakasz"), (node["skipped_level"], "kihagyott szint"),
+            (node["template"], "sablon")) if flag)
+        label = (f"H{node['level']} {_e(node['text'])} <span>— {_e(entities)}; "
+                 f"{node['total_words']} szó</span>{notes}")
+        items.append(f"<li><details><summary>{label}</summary>{_tree_html(node['children'])}"
+                     f"</details></li>" if node["children"] else f"<li>{label}</li>")
+    return f"<ul>{''.join(items)}</ul>"
+
+
 def _html(name: str, findings: list[dict], site: _Site, overview: list[dict],
-          neighbourhood: list[dict], pages: list[dict]) -> str:
+          neighbourhood: list[dict], pages: list[dict],
+          trees: dict[str, dict] | None = None) -> str:
     parts = [(f'<!doctype html><html lang="hu"><head><meta charset="utf-8">'
               f'<meta name="viewport" content="width=device-width,initial-scale=1">'
               f"<title>{_e(name)} — entitásgráf-nézetek</title><style>{STYLE}</style></head>"
@@ -989,7 +1123,8 @@ def _html(name: str, findings: list[dict], site: _Site, overview: list[dict],
                           f"{row['a title-ben']}</span>" if row["fő entitás"]
                  else _e(row["title"])),
                 ("amit még említ", _e(row["további említett entitások"])),
-                ("megállapítások", _e(row["megállapítások"]).replace(" || ", "<br>"))])
+                ("megállapítások", _e(row["megállapítások"]).replace(" || ", "<br>")),
+                ("heading-fa", _page_tree_html((trees or {}).get(row["url"])))])
             + "</details>")
     parts.append("</body></html>")
     return "".join(parts)

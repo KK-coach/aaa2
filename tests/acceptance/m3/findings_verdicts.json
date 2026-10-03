@@ -1,5 +1,5 @@
 {
- "status": "Claude verdiktje, 2026-10-01 (hetedik kör); Krisztián jóváhagyására",
+ "status": "Claude verdiktje, 2026-10-03 (nyolcadik kör: a heading-fa szerkezeti megállapításai független DOM-ellenőrzéssel); Krisztián jóváhagyására",
  "sites": {
   "kk-coach": {
    "h1_title_mismatch | Kiss Krisztián | https://kk.coach/about/": {
@@ -61,14 +61,39 @@
     "summary": "Artificial intelligence (concept/discipline): 22 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
     "note": "22 oldalon, 8 oldalcsoport headingjében, saját cikk vagy szakasz nélkül"
+   },
+   "empty_section | https://kk.coach/hu/": {
+    "summary": "üres szakasz: H2: — Bizonyítékok",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | empty_section | hreflang:https://kk.coach/hu/megoldasok/seo https://kk.coach/solutions/seo": {
+    "summary": "üres szakasz: H3: 01 Problémafelismerés; H3: 02 Megoldásválasztás; H3: 03 Szolgáltató értékelés (2 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "skipped_level | skipped_level | hreflang:https://kk.coach/hu/megoldasok/meres https://kk.coach/solutions/measurement-data-architecture": {
+    "summary": "kihagyott heading-szint: H4: A konverziók nem a megfelelő csatornákhoz vannak kötve.; H4: Szerver oldali jelek elvesznek; H4: A dashboardok vitát szülnek (2 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | hreflang:https://kk.coach/hu/megoldasok/seo https://kk.coach/solutions/seo": {
+    "summary": "kihagyott heading-szint: H4: Az audit, ami sehova sem vezet; H4: Forgalom üzleti eredmény nélkül; H4: Tartalom keresési szándék nélkül (2 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://kk.coach/solutions/geo-ai-visibility/": {
+    "summary": "kihagyott heading-szint: H4: Invisible to AI-referred buyers; H4: Fragmented entity definition; H4: Authority without structure",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://kk.coach/about/": {
+    "summary": "kihagyott heading-szint: H4: Measurement foundation; H4: Diagnostic — finding the real bottleneck; H4: Priority roadmap",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
    }
   },
   "marketinglens": {
-   "h1_title_mismatch | nincs H1 | article": {
-    "summary": "nincs H1: 9 cikkoldal",
-    "verdict": "valid",
-    "note": "kilenc esettanulmány-oldalon nincs <h1> (a renderelt HTML-ben sem)"
-   },
    "h1_title_mismatch | Law Firm Digital Marketing Services | https://marketinglens.com/law-firm-digital-marketing-services/": {
     "summary": "Law Firm Digital Marketing Services: a H1 általános: nincs benne entitás",
     "verdict": "valid",
@@ -98,6 +123,346 @@
     "summary": "Grow Online and Offline Sales: 2 oldal közös témája, átfedés nélkül (en)",
     "verdict": "invalid",
     "note": "az írországi oldal fő entitása a kinyerés „PPC Management” neve, amely az ajánlat aliasa; a két oldal nem ugyanarról szól (alias-feloldás)"
+   },
+   "missing_h1 | https://marketinglens.com/app-marketing/global-expansion-strategy-leveraging-google-ads-for-mobile-app-market-penetration/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/app-marketing/mobile-app-marketing-agency/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/banking-and-insurance/digital-transformation-at-otp-bank-group/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/banking-and-insurance/revolutionizing-digital-marketing-analytics-at-leading-central-european-bank/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/banking-and-insurance/transforming-customer-experience-in-a-western-european-bank/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/business-to-business/google-ads-optimization-for-enhanced-performance-tradewind-finance/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/business-to-business/maximizing-b2b-online-store-roi-integrating-ads-to-sales-data-for-strategic-insights/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/category/app-marketing/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/category/drones/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/category/e-commerce/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/category/gaming/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/drones/google-campaign-management-case-study-dronedeploy/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/e-commerce/e-commerce-marketing-for-extreme-digital/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/e-commerce/optimizing-e-commerce-strategy-balancing-organic-and-paid-search/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/gaming/competitive-analysis-and-benchmarking-for-raketech/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "missing_h1 | https://marketinglens.com/privacy-centre/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "multiple_h1 | https://marketinglens.com/digital-marketing-strategy-services/": {
+    "summary": "2 H1 a fő tartalomban: a H1-ek ugyanarra az entitásra mutatnak; valamelyik H1-szakasz üres vagy nincs alatta érdemi tartalom",
+    "verdict": "valid",
+    "note": "A fő tartalomban két H1 áll; az első csak a cím megismétlése a címsávban, alatta nincs érdemi tartalom."
+   },
+   "empty_section | https://marketinglens.com/digital-marketing-clients/": {
+    "summary": "üres szakasz: H2: Client Success Stories",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | https://marketinglens.com/law-firm-digital-marketing-services/": {
+    "summary": "üres szakasz: H2: Digital Marketing Strategy",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | https://marketinglens.com/digital-marketing-strategy-services/": {
+    "summary": "üres szakasz: H2: Four Digital Marketing Strategy Areas We Cover",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | https://marketinglens.com/app-marketing-agency/": {
+    "summary": "üres szakasz: H2: Our App Marketing Success Stories",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | https://marketinglens.com/business-to-business/dubai-digital-marketing-agency/": {
+    "summary": "üres szakasz: H2: Our Digital Marketing Services in Dubai",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | https://marketinglens.com/digital-marketing-services/": {
+    "summary": "üres szakasz: H2: Services Designed for Measurable Growth",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | https://marketinglens.com/data-driven-decisions/": {
+    "summary": "üres szakasz: H2: Three Core Data Services We Offer",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | https://marketinglens.com/strategic-consulting-services/": {
+    "summary": "üres szakasz: H2: What Our Strategic Consulting Services Cover",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | https://marketinglens.com/digital-marketing-career/": {
+    "summary": "üres szakasz: H3: Current Open Roles",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | https://marketinglens.com/digital-marketing-agency-contact/": {
+    "summary": "üres szakasz: H3: MARKETINGLENS LEADERSHIP; H4: CEO & Head of Digital; H4: Head of Marketing Science",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | https://marketinglens.com/digital-marketing-agency/": {
+    "summary": "üres szakasz: H3: We are MarketingLens; H2: Client Success Stories",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | https://marketinglens.com/about-us/": {
+    "summary": "üres szakasz: H3: Where data expertise meets marketing impact.; H3: MARKETINGLENS LEADERSHIP; H3: DIGITAL EXPERTS",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "skipped_level | https://marketinglens.com/applied-marketing-data-science/": {
+    "summary": "kihagyott heading-szint: H3: Advanced analytics that make marketing decisions easier.; H5: Conversion modelling and lead scoring; H5: Attribution, incrementality, and marketing mix modelling",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/custom-bi-and-data-solutions/": {
+    "summary": "kihagyott heading-szint: H3: Bring together what you know. Make better decisions. Improve marketing performance.; H5: Advanced marketing insight; H5: Audience segmentation that drives value",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/grow-online-and-offline-sales/": {
+    "summary": "kihagyott heading-szint: H3: Build campaigns that drive action and prove ROI.; H5: Brand protection through segmented keyword strategy; H5: Tiered product keyword planning",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/digital-marketing-agency/": {
+    "summary": "kihagyott heading-szint: H3: Digital Marketing Agency; H4: BERTI B.; H4: BALAZS V. PH.D",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/new-market-expansion/": {
+    "summary": "kihagyott heading-szint: H3: Enter new markets with insight, structure, and measurable impact.; H5: Research; H5: Strategy",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/app-and-mobile-growth-strategy/": {
+    "summary": "kihagyott heading-szint: H3: From startup to scale, we help you grow smarter, not just faster.; H5: User acquisition that finds quality users; H5: Paid channel mix that matches your stage",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/eprivacy-and-gdpr-diagnostics/": {
+    "summary": "kihagyott heading-szint: H3: Identify risks, fix issues, and meet privacy standards with confidence.; H5: Initial audit and scorecard; H5: Guidelines and best practice explanations",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/awareness-and-brand-consideration/": {
+    "summary": "kihagyott heading-szint: H3: Marketing starts before your customer is ready to act.; H5: Audience-first planning; H5: Channel mix that matches the message",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/purchase-consideration/": {
+    "summary": "kihagyott heading-szint: H3: Marketing that moves people from research to readiness.; H5: Audience-first targeting; H5: Keyword and content strategy that reflects research mode",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/digital-marketing-agency-contact/": {
+    "summary": "kihagyott heading-szint: H3: Performance Marketing Experts in Digital Advertising, Data, and Strategy; H3: Book a Free Strategy Call",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/digital-marketing-blogs/": {
+    "summary": "kihagyott heading-szint: H3: Real-world strategies. Platform updates. Lessons from active campaigns.",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/digital-marketing-services/": {
+    "summary": "kihagyott heading-szint: H3: Strategy, execution, and measurement. Built for real business results.; H5: Tracking and Measurement; H5: Custom BI and Data Solutions",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/competitor-analysis-and-benchmarking/": {
+    "summary": "kihagyott heading-szint: H3: Understand your competitive landscape, find the gaps, and act on them.; H5: Market research and benchmarking; H5: Brand visibility analysis",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/senior-performance-marketing-specialist-job-hungary-remote-santa/": {
+    "summary": "kihagyott heading-szint: H3: Whaaaat, you haven’t heard of MarketingLens before?; H4: BERTI B.; H4: BALAZS V. PH.D",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/digital-marketing-case-studies/": {
+    "summary": "kihagyott heading-szint: H3: What we’ve helped real businesses achieve and how we did it.",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/about-us/": {
+    "summary": "kihagyott heading-szint: H3: Where data expertise meets marketing impact.",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/digital-marketing-career/": {
+    "summary": "kihagyott heading-szint: H3: Work with people who love solving complex problems, and keep things human.; H3: Core values; H3: Current Open Roles",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/medior-performance-marketing-specialist-job-hungary-remote-spring/": {
+    "summary": "kihagyott heading-szint: H3: 👥 Welcome to MarketingLens & Overlapp Digital.; H4: BERTI B.; H4: BALAZS V. PH.D",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/senior-performance-marketing-specialist-job-hungary-remote-burnout/": {
+    "summary": "kihagyott heading-szint: H3: 👥 Welcome to MarketingLens.; H4: BERTI B.; H4: BALAZS V. PH.D",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/app-marketing-agency/": {
+    "summary": "kihagyott heading-szint: H4: BERTI B.; H4: BALAZS V. PH.D; H4: ELY L.",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/app-marketing-services/": {
+    "summary": "kihagyott heading-szint: H4: BERTI B.; H4: BALAZS V. PH.D; H4: ELY L.",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/medior-performance-marketing-specialist-job/": {
+    "summary": "kihagyott heading-szint: H4: BERTI B.; H4: BALAZS V. PH.D; H4: ELY L.",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/performance-marketing-specialist-job-hungary/": {
+    "summary": "kihagyott heading-szint: H4: BERTI B.; H4: BALAZS V. PH.D; H4: ELY L.",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/senior-performance-marketing-specialist-job-hungary-remote/": {
+    "summary": "kihagyott heading-szint: H4: BERTI B.; H4: BALAZS V. PH.D; H4: ELY L.",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/consent-management/how-to-choose-a-consent-management-platform-in-2026/": {
+    "summary": "kihagyott heading-szint: H4: Comprehensive Privacy Audits; H4: Turnkey CMP Implementation; H4: Ongoing Monitoring and Adaptation",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/business-to-business/dubai-digital-marketing-agency/": {
+    "summary": "kihagyott heading-szint: H4: PETER MAEREVOET; H4: BERTI BARI; H4: BALAZS VAJNA PHD",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/our-services/digital-marketing-agency-in-ireland/": {
+    "summary": "kihagyott heading-szint: H4: Poor Conversion Tracking; H4: Declining ROAS; H4: Complex Data, No Insight",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/category/app-marketing/": {
+    "summary": "kihagyott heading-szint: H4: Recent Posts; H4: Recent Comments",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/category/drones/": {
+    "summary": "kihagyott heading-szint: H4: Recent Posts; H4: Recent Comments",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/category/e-commerce/": {
+    "summary": "kihagyott heading-szint: H4: Recent Posts; H4: Recent Comments",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/category/gaming/": {
+    "summary": "kihagyott heading-szint: H4: Recent Posts; H4: Recent Comments",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/": {
+    "summary": "kihagyott heading-szint: H4: Smarter Campaigns; H4: Deeper Insights; H4: Reliable Data",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/chatgpt-ads/chatgpt-ads-guide-2026/": {
+    "summary": "kihagyott heading-szint: H4: What are ChatGPT Ads?; H4: How much do ChatGPT Ads cost?; H4: Which countries currently allow ChatGPT Ads?",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/data-driven-decisions/": {
+    "summary": "kihagyott heading-szint: H5: We measure what matters.; H5: We build systems that talk to each other.; H5: We turn reporting into decision-making.",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/digital-marketing-strategy-services/": {
+    "summary": "kihagyott heading-szint: H5: We start with the right questions.; H5: We ground strategy in performance.; H5: We use data to drive action.",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/strategic-consulting-services/": {
+    "summary": "kihagyott heading-szint: H5: We turn information into direction.; H5: We help you focus your efforts.; H5: We work with your team, not above it.",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | https://marketinglens.com/tracking-and-measurement/": {
+    "summary": "kihagyott heading-szint: H5: Web measurement; H5: App measurement; H5: BigQuery and data lakes",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "missing_h2 | https://marketinglens.com/marketing-data-science/marketing-mix-modeling-through-google-meridian/": {
+    "summary": "1156 szó H2 nélkül",
+    "verdict": "valid",
+    "note": "A DOM fő tartalmában nincs H2, a tartalom 600 szó fölött van."
+   },
+   "missing_h2 | https://marketinglens.com/digital-transformation-examples/digital-transformation-in-manufacturing-industry/": {
+    "summary": "818 szó H2 nélkül",
+    "verdict": "valid",
+    "note": "A DOM fő tartalmában nincs H2, a tartalom 600 szó fölött van."
    }
   },
   "duex": {
@@ -120,6 +485,21 @@
     "summary": "Fujitsu Waterstage Comfort (product/line): 8 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
     "note": "termékcsalád több termékkel, saját családoldal nélkül"
+   },
+   "missing_h1 | https://shop.duexhungary.hu/": {
+    "summary": "nincs H1",
+    "verdict": "valid",
+    "note": "A renderelt DOM-ban sehol nincs H1 (független DOM-ellenőrzés)."
+   },
+   "multiple_h1 | https://shop.duexhungary.hu/spg/140634/Epuletgepeszeti-tervezes": {
+    "summary": "2 H1 a fő tartalomban: a H1-ek ugyanarra az entitásra mutatnak; valamelyik H1-szakasz üres vagy nincs alatta érdemi tartalom",
+    "verdict": "valid",
+    "note": "A fő tartalomban két H1 áll; az első csak a cím megismétlése a címsávban, alatta nincs érdemi tartalom."
+   },
+   "multiple_h1 | https://shop.duexhungary.hu/spg/725776/Katalogusok": {
+    "summary": "2 H1 a fő tartalomban: valamelyik H1-ben nincs entitás; valamelyik H1-szakasz üres vagy nincs alatta érdemi tartalom",
+    "verdict": "valid",
+    "note": "A fő tartalomban két H1 áll; az első csak a cím megismétlése a címsávban, alatta nincs érdemi tartalom."
    }
   },
   "ngx-bootstrap": {
@@ -137,6 +517,111 @@
     "summary": "Adaptive position (concept/other): 8 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "invalid",
     "note": "a komponensek egy közös beállítása (négy komponens headingje), nem önálló téma"
+   },
+   "empty_section | empty_section | https://valor-software.com/ngx-bootstrap/components/accordion": {
+    "summary": "üres szakasz: H3: AccordionPanelComponent (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | empty_section | https://valor-software.com/ngx-bootstrap/components/datepicker": {
+    "summary": "üres szakasz: H3: Inline; H3: Adaptive position; H3: Min-max (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | empty_section | https://valor-software.com/ngx-bootstrap/components/carousel": {
+    "summary": "üres szakasz: H4: Slide 3; H4: Slide 4; H4: Slide 0 (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "empty_section | empty_section | https://valor-software.com/ngx-bootstrap/components/typeahead": {
+    "summary": "üres szakasz: H6: Source - array of string . Order direction - descending; H6: Source - array of string . Order direction - ascending; H6: Source - array of objects . Order direction - ascending , sort by city , group by state (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/typeahead": {
+    "summary": "kihagyott heading-szint: H3: Basic array; H3: Adaptive position; H3: Item template (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/rating": {
+    "summary": "kihagyott heading-szint: H3: Basic rating; H3: Dynamic rating; H3: Custom icons (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/buttons": {
+    "summary": "kihagyott heading-szint: H3: Checkbox; H3: Custom checkbox value; H3: Checkbox with Reactive Forms (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/sortable": {
+    "summary": "kihagyott heading-szint: H3: Complex data model; H3: Custom item template (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/popover": {
+    "summary": "kihagyott heading-szint: H3: Corner placement; H3: Disable adaptive position; H3: Adaptive position with overflow boundary (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/tooltip": {
+    "summary": "kihagyott heading-szint: H3: Disable adaptive position; H3: Dismiss on next click; H3: Custom content template (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/collapse": {
+    "summary": "kihagyott heading-szint: H3: Events; H3: Manual toggle; H3: Inline display (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/timepicker": {
+    "summary": "kihagyott heading-szint: H3: Form; H3: Meridian; H3: Custom meridian (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/accordion": {
+    "summary": "kihagyott heading-szint: H3: Group opening event; H3: Custom HTML; H3: Initially opened (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/datepicker": {
+    "summary": "kihagyott heading-szint: H3: Inline; H3: Adaptive position; H3: Initial state (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/alerts": {
+    "summary": "kihagyott heading-szint: H3: Link color; H3: Additional content; H3: Dismissing (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/tabs": {
+    "summary": "kihagyott heading-szint: H3: Manual selection; H3: Disabled tabs; H3: Dynamic tabs (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/pagination": {
+    "summary": "kihagyott heading-szint: H3: Manual switching page; H3: Page changed event; H3: Pages count changed event (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/carousel": {
+    "summary": "kihagyott heading-szint: H3: Optional captions; H3: First slide label; H3: First slide label (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/modals": {
+    "summary": "kihagyott heading-szint: H3: Service examples; H3: Template; H3: Component (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/progressbar": {
+    "summary": "kihagyott heading-szint: H3: Static; H3: Dynamic; H3: Stacked (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | https://valor-software.com/ngx-bootstrap/components/dropdowns": {
+    "summary": "kihagyott heading-szint: H3: Trigger by tag <a>; H3: Split button dropdowns; H3: Disabled menu (4 oldal)",
+    "verdict": "valid",
+    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
    }
   }
  }
