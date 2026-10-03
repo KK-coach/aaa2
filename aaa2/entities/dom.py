@@ -119,6 +119,8 @@ TAB_TABLE_MIN_LINES = 2
 # fejléce content-régiós, a beágyazott heading heading-blokk.
 BLOCKS_VERSION = 2
 MAIN_TAGS = frozenset({"main", "article"})
+# A verziós összevetésben nem számít: minden whitespace és a nulla szélességű karakterek.
+BLANK = re.compile("[\\s\u200b\u200c\u200d\u2060\ufeff]+")
 
 
 @dataclass
@@ -716,9 +718,13 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
     tartalom-hash nélküli (024 előtti) sor a jelenlegit kapja, újraépítés nélkül.
 
     A blokképítő változása (`BLOCKS_VERSION`, `blocks_built.builder_version`): a régebbi
-    verzióval épült oldal blokkjai memóriában újraépülnek, és összevetődnek a tároltakkal. Ha
-    azonosak, csak a verzió frissül (az említések és a tárolt kinyerés megmarad); ha eltérnek,
-    az oldal a megváltozott oldal útján épül újra."""
+    verzióval épült oldal blokkjai memóriában újraépülnek, és összevetődnek a tároltakkal
+    (`same_blocks`: a szöveg és a heading-útvonal whitespace és nulla szélességű karakter
+    nélkül; a blokkok száma, sorrendje, fajtája, régiója, szintje és cellái pontosan). Ha így
+    azonosak, csak a verzió frissül, a tárolt blokkok érintetlenek (az említések és a tárolt
+    kinyerés megmarad); ha eltérnek, az oldal a megváltozott oldal útján épül újra. A tárolt
+    blokkok szövege ezért egy régebbi építőtől szóközben eltérhet a mostani építőétől; ez
+    ismert és szándékos (a szóköznyi eltérés nem ér újrakinyerést)."""
     wanted = None if page_ids is None else set(page_ids)
     crawled = crawl.pages(con)
     hashes = {page.page_id: page.raw_html_hash for page in crawled}
@@ -760,7 +766,7 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
             (b.ordinal, b.kind, b.region, b.level, b.heading_path, b.text, b.cells)
             for b in parse_blocks(decompressor.decompress(blob).decode("utf-8", "replace"),
                                   title)]
-        if blob is None or built == stored:
+        if blob is None or same_blocks(stored, built):
             con.execute("UPDATE blocks_built SET builder_version = ? WHERE page_id = ?",
                         [BLOCKS_VERSION, page_id])
         else:
@@ -791,6 +797,20 @@ def content_hash(title: str | None, h1: str | None, main_content: str | None) ->
     renderelt DOM-ból kinyerte)."""
     text = "\x1f".join(part or "" for part in (title, h1, main_content))
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def same_blocks(stored: Sequence[tuple], built: Sequence[tuple]) -> bool:
+    """Azonos-e két blokksor a verziós összevetés szerint. Elemei: (sorszám, fajta, régió,
+    szint, heading-útvonal, szöveg, cellák). A szövegből és a heading-útvonalból minden
+    whitespace és nulla szélességű karakter kimarad; a többi mező, a blokkok száma és sorrendje
+    pontosan egyezik."""
+    def plain(block: tuple) -> tuple:
+        ordinal, kind, region, level, path, text, cells = block
+        return (ordinal, kind, region, level, [BLANK.sub("", part) for part in path or []],
+                BLANK.sub("", text or ""), cells)
+
+    return len(stored) == len(built) and all(
+        plain(a) == plain(b) for a, b in zip(stored, built, strict=True))
 
 
 def drop_page_blocks(con: duckdb.DuckDBPyConnection, page_id: int) -> None:

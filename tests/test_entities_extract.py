@@ -805,6 +805,46 @@ def test_an_older_builder_version_rebuilds_only_the_pages_whose_blocks_differ(tm
     assert mentions(con) == before
 
 
+def test_the_version_check_ignores_whitespace_and_zero_width_characters():
+    from aaa2.entities.dom import BLOCKS_VERSION, same_blocks
+    con = hashed_product_site()
+    build_blocks(con)
+    pages = [page_id for (page_id,) in con.execute(
+        "SELECT page_id FROM pages ORDER BY page_id").fetchall()]
+    spaced, zero_width, letter = pages[:3]
+
+    def last(page_id):
+        return con.execute("SELECT block_id, text FROM blocks WHERE page_id = ? ORDER BY "
+                           "ordinal DESC LIMIT 1", [page_id]).fetchone()
+
+    # egy régebbi építő blokkjai: szóközben, nulla szélességű szóközben, illetve egy betűben
+    # térnek el a mostaniaktól
+    old = {page_id: last(page_id) for page_id in (spaced, zero_width, letter)}
+    changes = {spaced: old[spaced][1].replace(" ", "  ", 1).replace(".", " .") + " ",
+               zero_width: old[zero_width][1].replace(" ", " \u200b ", 1) + "\ufeff",
+               letter: old[letter][1] + "x"}
+    for page_id, text in changes.items():
+        assert text != old[page_id][1]
+        con.execute("UPDATE blocks SET text = ? WHERE block_id = ?", [text, old[page_id][0]])
+    con.execute("UPDATE blocks_built SET builder_version = NULL")
+    assert build_blocks(con) == 1                              # csak a betűnyi eltérés épül újra
+    assert last(spaced) == (old[spaced][0], changes[spaced])   # a tárolt blokk érintetlen
+    assert last(zero_width) == (old[zero_width][0], changes[zero_width])
+    assert last(letter)[1] == old[letter][1] and last(letter)[0] != old[letter][0]
+    assert con.execute("SELECT count(*), min(builder_version) FROM blocks_built").fetchone() \
+        == (6, BLOCKS_VERSION)
+    block = (1, "paragraph", "content", None, ["A  cím"], "szöveg , vége", None)
+    assert same_blocks([block], [(1, "paragraph", "content", None, ["A cím"], "szöveg, vége",
+                                  None)])
+    assert not same_blocks([block], [(1, "paragraph", "chrome", None, ["A cím"],
+                                      "szöveg, vége", None)])
+    assert not same_blocks([block], [block, block])
+    assert not same_blocks([(1, "table_row", "content", None, [], "a | b",
+                             [{"header": None, "value": "a"}])],
+                           [(1, "table_row", "content", None, [], "a | b",
+                             [{"header": None, "value": "a "}])])
+
+
 def test_legacy_blocks_are_adopted_without_rebuilding():
     con = hashed_product_site()
     build_blocks(con)
