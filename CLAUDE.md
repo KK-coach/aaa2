@@ -123,6 +123,8 @@ A pontok a fejlesztés sorrendjét követik; a később megszűnt eszközöket �
 ### Nyitott pontok
 
 - M3 riportréteg: a megjelenítési nyelv riportonként választható legyen, a nyelvvel jelölt aliasokból (a kanonikus név nyelvétől függetlenül). Nincs megcsinálva.
+- Teljesítményhiba: a marketinglens készlet (109 oldal) pipeline-futása a hash-ellenőrzésben 643 mp, lassabb a 372 oldalas duexnél (410 mp) és az ngx-bootstrapnél (307 mp). Meg kell nézni, melyik lépés viszi az időt. Nincs megvizsgálva.
+- Az `aaa entities` a közös adatbázist (`data/shared.duckdb`) kétszer nyitja meg egymás után (az `api.extract`, majd az `api.resolve` hívásában), nem egyszer. Egyszerre továbbra is egy folyamat tartja; összevonni az `api` lépéseinek közös kapcsolatával lehet. Nincs megcsinálva.
 
 ## M3 — az M3/1 és az M3/2 kész (2026-10-01); az M3/3 és az M3b nyitva
 
@@ -164,9 +166,22 @@ Determinizmus (az architektúra 2. lépése előtt, Krisztián döntése 2026-10
 - Mérés: `python -m tests.acceptance.determinism [--hashes tests/acceptance/output_hashes.json] [--write] [--keep MAPPA] <domain>=<adatbázis> …` (a munkamásolaton kétszer fut a site-lépés LLM nélkül, a gráf, a megállapítások és az entitásjelentés; a futásjelentésben a futás sorszáma és időpontja nem számít). A hat adatbázis (régi kk.coach, ngx, Materia, marketinglens, duex, kk-coach-2026-10; `data/m3/`) kimeneteinek rögzített sha256-a: `tests/acceptance/output_hashes.json`; ez az alap a következő lépések „bájtra azonos” elfogadásához. Két kimeneti mappa sorrendtől független összevetése: `python -m tests.acceptance.content_equal <régi> <új>`. A tesztsorban: `tests/test_determinism.py` (szintetikus site).
 - A rendezés bevezetésekor a tartalom nem változott, egy kivétellel: a H1/title-eltérés bizonyítékában az „elfogadott megnevezések” az első 8 megnevezést mutatja (`forms[:8]`), és ez a 8 a régi kk.coach két megállapításában más lett (korábban futásonként változott, most a név szerinti első 8).
 
+## Időkeretek
+
+Krisztián döntése (2026-10-02): a hosszú futásokat kerülni kell; a tesztek száma maradhat, a futási idejük nem.
+
+- **Gyors sor, munka közben**: `pytest -m "not slow" -n auto`. Cél 3 perc alatt; mérve 67 mp (1064 teszt, 16 worker).
+- **Teljes sor, csak merge előtt, egyszer**: `pytest -n auto`. Cél 10 perc alatt; mérve 5 perc 55 mp meleg gyorsítótárral, 10 perc 0 mp gyorsítótár nélkül (1085 teszt). Az alsó határt az ngx-bootstrap készlet szabályköre adja (egy teszt, kb. 5,5 perc).
+- **A teljes sort és a hash-ellenőrzést egymás után futtasd, ne egyszerre**: együtt a gép túlterhelődik, a visszajátszás időtúllépéssel elveszít egy oldalt, és az időzítésre érzékeny render-tesztek elbuknak (2026-10-03: 3 hamis hiba).
+- **Hat adatbázisos hash-ellenőrzés, csak merge előtt, egyszer**: `python -m tests.acceptance.determinism --hashes tests/acceptance/output_hashes.json <domain>=data/m3/<név>.duckdb …`; a site-ok egyszerre futnak (`--jobs`, alapból mind). Mérve 10 perc 43 mp (sorban 25–27 perc volt); a leglassabb site adja (marketinglens, 643 mp). A 10 perces célt nem éri el; Krisztián így elfogadta (2026-10-03), a marketinglens lassúsága a nyitott pontok között áll.
+- **Jelölések** (`tests/conftest.py`): `slow` a felvételt visszajátszó, több adatbázisos vagy 10 mp fölötti teszt. A `reference_crawl` fixture használói maguktól megkapják; a többi a `conftest.py` `SLOW` listájában áll, fájl és tesztnév szerint (nem létező név a listában hiba). A `live` teszteket a `conftest.py` hagyja ki, ha a `-m` kifejezés nem nevezi meg őket, ezért a `-m "not slow"` sem futtat élő tesztet. Új teszt, ha 10 mp fölötti vagy felvételt játszik vissza, kerüljön a listába.
+- **Párhuzamosítás** (`pytest-xdist`, `--dist loadgroup`): egy rögzített készlet tesztjei egy workeren, a gyűjtés sorrendjében futnak (xdist-csoport készletenként), mert a visszajátszott crawl kapcsolatán osztoznak.
+- **A visszajátszás gyorsítótára**: a `reference_crawl` a visszajátszott crawlt a `tests/fixtures/.replay-cache/` alá menti; a kulcs a felvétel indexe, a motor (`aaa2/engine`, `aaa2/db`) forrása és a crawl-beállítás. Ha bármelyik változik, a készlet újra visszajátszódik. Időtúllépéses visszajátszás (terhelt gép) nem kerül a tárba. `AAA2_REPLAY_CACHE=0` kikapcsolja. A gyorsítótár marad (Krisztián döntése, 2026-10-03). A motor visszajátszását gyorsítótár nélkül a `test_replay_materia_crawl` ellenőrzi.
+- A korábbi idők (egy szálon, 2026-10-02): teljes sor 23 perc 8 mp, ebből a három legnagyobb készlet első tesztje (visszajátszás és szabálykör) 12 perc 26 mp; hash-ellenőrzés 25–27 perc.
+
 ## Stack
 
-Python 3.12, asyncio, Playwright (Chromium), selectolax, DuckDB, Typer, pydantic, zstandard, pytest; az LLM-hez anthropic, openai, google-genai, python-dotenv. `pip install -e ".[dev]"`, `playwright install chromium`, `pytest`, `aaa --help`.
+Python 3.12, asyncio, Playwright (Chromium), selectolax, DuckDB, Typer, pydantic, zstandard, pytest (pytest-asyncio, pytest-xdist); az LLM-hez anthropic, openai, google-genai, python-dotenv. `pip install -e ".[dev]"`, `playwright install chromium`, `pytest`, `aaa --help`.
 
 ## Amit ne csinálj
 
