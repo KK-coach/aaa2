@@ -114,6 +114,11 @@ TECHNICAL_ID = re.compile(r"\s*\d+(?:\|\d+)+\s*")
 OVERLAY_CLASS = re.compile(r"__dropdown|dropdown--|dropdown[-_]content|(?:^|[-_])hamburger|"
                            r"(?:^|[-_])off-?canvas|^responsive[-_]menu")
 TAB_TABLE_MIN_LINES = 2
+# A blokképítő verziója (`blocks_built.builder_version`); emelni kell, ha a `parse_blocks`
+# ugyanarra a DOM-ra más blokkokat adhat. 1: a verziózás előtti építő; 2: a fő tartalom saját
+# fejléce content-régiós, a beágyazott heading heading-blokk.
+BLOCKS_VERSION = 2
+MAIN_TAGS = frozenset({"main", "article"})
 
 
 @dataclass
@@ -431,12 +436,14 @@ def grid_containers(tree: HTMLParser) -> dict[int, int]:
     return grids
 
 
-def _inline(node: Node, parts: list[str], anchors: list[str]) -> None:
+def _inline(node: Node, parts: list[str], anchors: list[str],
+            lifted: frozenset[int] = frozenset()) -> None:
     """A csomópont szövege soron belüliként (minden leszármazott), a rejtett elemek nélkül. A
     szövegdarabok a saját whitespace-ükkel kerülnek a listába; soron belüli elem (`INLINE_TAGS`,
     pl. `<strong>`, `<wbr>`) határán nincs elválasztó (a szó közepén kezdődő kiemelés nem
     töri a szót), más elem és a `<br>` előtt és után szóköz; két közvetlenül egymást követő
-    link két címke, köztük szóköz. A darabok `"".join`-nal fűzendők (`inline_text`)."""
+    link két címke, köztük szóköz. A darabok `"".join`-nal fűzendők (`inline_text`).
+    `lifted`: a külön blokkba kiemelt elemek (`mem_id`), ezek szövege kimarad."""
     child = node.child
     after_link = False
     while child is not None:
@@ -446,13 +453,15 @@ def _inline(node: Node, parts: list[str], anchors: list[str]) -> None:
             after_link = False
         elif name in SKIP or name == "-comment" or _hidden(child):
             pass
+        elif child.mem_id in lifted:
+            parts.append(" ")
         else:
             if name == "a" and "href" in child.attributes and (text := anchor_text(child)):
                 anchors.append(text)
             inline = name in INLINE_TAGS and not (name == "a" and after_link)
             if not inline:
                 parts.append(" ")
-            _inline(child, parts, anchors)
+            _inline(child, parts, anchors, lifted)
             if not inline:
                 parts.append(" ")
             after_link = name == "a"
@@ -462,6 +471,27 @@ def _inline(node: Node, parts: list[str], anchors: list[str]) -> None:
 def inline_text(parts: list[str]) -> str:
     """Az `_inline` darabjai egy szöveggé, a whitespace összevonva."""
     return collapse("".join(parts))
+
+
+def _main(node: Node) -> bool:
+    return node.tag in MAIN_TAGS or (node.attributes.get("role") or "").lower() == "main"
+
+
+def _nested_headings(node: Node) -> list[Node]:
+    """A csomópont alatti látható, nem üres headingek (a rejtett részfák nélkül)."""
+    found = []
+    for heading in node.css("h1, h2, h3, h4, h5, h6"):
+        if not collapse(heading.text(deep=True) or ""):
+            continue
+        probe, visible = heading, True
+        while probe is not None and probe.mem_id != node.mem_id:
+            if probe.tag in SKIP or _hidden(probe):
+                visible = False
+                break
+            probe = probe.parent
+        if visible and probe is not None:
+            found.append(heading)
+    return found
 
 
 def _table(node: Node) -> Node | None:
@@ -500,12 +530,16 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
     headers: dict[int, list[str]] = {}
     ordinal = 0
     pane: int | None = None
+    lead: list[str] = []                   # a tárolóként bejárt link anchor-szövege
 
     def emit(kind: str, region: str, text: str, anchors: list[str], level: int | None = None,
              cells: list[dict] | None = None) -> None:
         nonlocal ordinal
         if not text:
             return
+        if lead:
+            anchors = [*lead, *anchors]
+            lead.clear()
         if kind == "heading":
             while stack and stack[-1][0] >= (level or 6):
                 stack.pop()
@@ -520,8 +554,14 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
         child = tr.child
         while child is not None:
             if child.tag in CELLS and not _hidden(child):
+                nested = _nested_headings(child)
+                for heading in nested:         # a cella headingje heading-blokk a sor előtt
+                    own: list[str] = []
+                    own_anchors: list[str] = []
+                    _inline(heading, own, own_anchors)
+                    emit("heading", region, inline_text(own), own_anchors, int(heading.tag[1]))
                 parts: list[str] = []
-                _inline(child, parts, anchors)
+                _inline(child, parts, anchors, frozenset(h.mem_id for h in nested))
                 values.append((child.tag, inline_text(parts)))
             child = child.next
         table = _table(tr)
@@ -571,8 +611,10 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
             text = (pre.text(deep=True) or "").strip("\n").rstrip()
         emit("code", region, text, [])
 
-    def walk(node: Node, kind: str, region: str, in_card: bool, level: int | None) -> None:
+    def walk(node: Node, kind: str, region: str, in_card: bool, level: int | None,
+             in_main: bool = False) -> None:
         nonlocal pane
+        in_main = in_main or _main(node)
         if tab_rows := _tab_rows(node):
             names = tab_rows[0]
             emit("table_row", region, " | ".join(n for n in names if n), [],
@@ -601,7 +643,7 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
                 after_link = False
             elif name in SKIP or name == "-comment" or _hidden(child):
                 pass
-            elif name in INLINE:
+            elif name in INLINE and (kind == "heading" or not _nested_headings(child)):
                 if name == "a" and "href" in child.attributes and (text := anchor_text(child)):
                     anchors.append(text)
                 if chips:
@@ -621,8 +663,15 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
                 pass
             else:
                 flush()
-                child_region = "chrome" if region == "chrome" or _chrome(child) else "content"
+                own_header = (name == "header" and in_main and region == "content"
+                              and not _chrome_marked(child))
+                child_region = "chrome" if region == "chrome" or (
+                    _chrome(child) and not own_header) else "content"
                 child_card = in_card or child.mem_id in cards
+                wrapper = name in INLINE           # soron belüli burkoló, benne heading
+                if wrapper and name == "a" and "href" in child.attributes \
+                        and (text := anchor_text(child)):
+                    lead.append(text)
                 if name == "tr":
                     row(child, child_region)
                 elif child.mem_id in grids:
@@ -630,15 +679,19 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
                 elif name == "pre":
                     code(child, child_region)
                 else:
-                    child_kind = KIND_OF.get(name, "other")
+                    # a burkoló maradék szövege a szülő blokkjának fajtáját viszi tovább
+                    child_kind = kind if wrapper else KIND_OF.get(name, "other")
                     if child_card and child_kind != "heading":
                         child_kind = "card"
                     child_level = int(name[1]) if child_kind == "heading" else None
                     outer = pane
                     if pane is None and _inactive_tab(child):
                         pane = child.mem_id
-                    walk(child, child_kind, child_region, child_card, child_level)
+                    walk(child, child_kind, child_region, child_card, child_level, in_main)
                     pane = outer
+                if wrapper:
+                    lead.clear()
+                    after_link = name == "a"
             child = child.next
         flush()
 
@@ -660,7 +713,12 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
     a H1 és a fő tartalom; a JavaScripttel betöltött tartalom a nyers hash változása nélkül is
     változhat). Ilyenkor az oldal említései, bizonyítékai és blokkjai törlődnek, és a blokkok
     újraépülnek. A `blocks_built` előtti blokkok a jelenlegi hash-ekkel kerülnek a táblába; a
-    tartalom-hash nélküli (024 előtti) sor a jelenlegit kapja, újraépítés nélkül."""
+    tartalom-hash nélküli (024 előtti) sor a jelenlegit kapja, újraépítés nélkül.
+
+    A blokképítő változása (`BLOCKS_VERSION`, `blocks_built.builder_version`): a régebbi
+    verzióval épült oldal blokkjai memóriában újraépülnek, és összevetődnek a tároltakkal. Ha
+    azonosak, csak a verzió frissül (az említések és a tárolt kinyerés megmarad); ha eltérnek,
+    az oldal a megváltozott oldal útján épül újra."""
     wanted = None if page_ids is None else set(page_ids)
     crawled = crawl.pages(con)
     hashes = {page.page_id: page.raw_html_hash for page in crawled}
@@ -670,8 +728,10 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
         "SELECT DISTINCT page_id FROM blocks WHERE page_id NOT IN (SELECT page_id FROM "
         "blocks_built) ORDER BY page_id").fetchall() if page_id in hashes]
     if unrecorded:
-        con.executemany("INSERT INTO blocks_built VALUES (?, ?, current_timestamp, ?)",
-                        [(page_id, hashes[page_id], contents[page_id]) for page_id in unrecorded])
+        con.executemany(
+            "INSERT INTO blocks_built (page_id, raw_html_hash, built_at, content_hash) VALUES "
+            "(?, ?, current_timestamp, ?)",
+            [(page_id, hashes[page_id], contents[page_id]) for page_id in unrecorded])
     legacy = [(contents[page_id], page_id) for (page_id,) in con.execute(
         "SELECT page_id FROM blocks_built WHERE content_hash IS NULL ORDER BY page_id"
     ).fetchall() if page_id in contents]
@@ -684,12 +744,32 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
             or (page_id in contents and built_content != contents[page_id])
         if changed and (wanted is None or page_id in wanted):
             drop_page_blocks(con, page_id)
+    decompressor = zstandard.ZstdDecompressor()
+    for (page_id,) in con.execute(
+            "SELECT page_id FROM blocks_built WHERE coalesce(builder_version, 1) < ? "
+            "ORDER BY page_id", [BLOCKS_VERSION]).fetchall():
+        if wanted is not None and page_id not in wanted:
+            continue
+        title, blob = crawl.rendered(con, page_id)
+        stored = [(ordinal, kind, region, level, list(path or []), text,
+                   json.loads(cells) if cells is not None else None)
+                  for ordinal, kind, region, level, path, text, cells in con.execute(
+                      "SELECT ordinal, kind, region, level, heading_path, text, cells FROM "
+                      "blocks WHERE page_id = ? ORDER BY ordinal", [page_id]).fetchall()]
+        built = [] if blob is None else [
+            (b.ordinal, b.kind, b.region, b.level, b.heading_path, b.text, b.cells)
+            for b in parse_blocks(decompressor.decompress(blob).decode("utf-8", "replace"),
+                                  title)]
+        if blob is None or built == stored:
+            con.execute("UPDATE blocks_built SET builder_version = ? WHERE page_id = ?",
+                        [BLOCKS_VERSION, page_id])
+        else:
+            drop_page_blocks(con, page_id)
     with_blocks = {page_id for (page_id,) in con.execute(
         "SELECT DISTINCT page_id FROM blocks").fetchall()}
     pages = [(page.page_id, *crawl.rendered(con, page.page_id)) for page in crawled
              if page.renderable and page.page_id not in with_blocks
              and (wanted is None or page.page_id in wanted)]
-    decompressor = zstandard.ZstdDecompressor()
     for page_id, title, blob in pages:
         html = decompressor.decompress(blob).decode("utf-8", "replace")
         rows = [[page_id, b.ordinal, b.kind, b.region, b.level, b.heading_path, b.text,
@@ -699,8 +779,10 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
             con.executemany(
                 "INSERT INTO blocks (page_id, ordinal, kind, region, level, heading_path, text, "
                 "cells) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", rows)
-        con.execute("INSERT OR REPLACE INTO blocks_built VALUES (?, ?, current_timestamp, ?)",
-                    [page_id, hashes[page_id], contents[page_id]])
+        con.execute(
+            "INSERT OR REPLACE INTO blocks_built (page_id, raw_html_hash, built_at, "
+            "content_hash, builder_version) VALUES (?, ?, current_timestamp, ?, ?)",
+            [page_id, hashes[page_id], contents[page_id], BLOCKS_VERSION])
     return len(pages)
 
 

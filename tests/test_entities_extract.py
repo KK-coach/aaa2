@@ -770,6 +770,41 @@ def test_blocks_without_a_content_hash_are_adopted_without_rebuilding():
                        ).fetchone() == (6,)
 
 
+def test_an_older_builder_version_rebuilds_only_the_pages_whose_blocks_differ(tmp_path):
+    from aaa2.entities.dom import BLOCKS_VERSION
+    con = hashed_product_site()
+    adapter = PageAdapter(delay=0)
+    incremental_run(con, adapter, tmp_path)
+    assert con.execute("SELECT DISTINCT builder_version FROM blocks_built").fetchall() == [
+        (BLOCKS_VERSION,)]
+    before = mentions(con)
+    (page_id,) = con.execute("SELECT page_id FROM pages WHERE url LIKE '%/2/'").fetchone()
+    # egy régebbi építő blokkjai: öt oldalon a mostanival azonosak, egy oldalon mások
+    con.execute("UPDATE blocks_built SET builder_version = NULL")
+    con.execute("UPDATE blocks SET text = text || ' (régi építő)' WHERE page_id = ? AND "
+                "ordinal = (SELECT max(ordinal) FROM blocks WHERE page_id = ?)",
+                [page_id, page_id])
+    unchanged = con.execute("SELECT block_id FROM blocks WHERE page_id <> ? ORDER BY block_id",
+                            [page_id]).fetchall()
+    assert build_blocks(con) == 1                              # csak az eltérő oldal épül újra
+    assert con.execute("SELECT block_id FROM blocks WHERE page_id <> ? ORDER BY block_id",
+                       [page_id]).fetchall() == unchanged
+    assert con.execute("SELECT count(*) FROM blocks WHERE text LIKE '%régi építő%'"
+                       ).fetchone() == (0,)
+    assert con.execute("SELECT count(*), min(builder_version) FROM blocks_built").fetchone() \
+        == (6, BLOCKS_VERSION)
+    # az azonos blokkú oldalak említései megmaradnak, az újraépítetté törlődnek
+    assert con.execute("SELECT count(*) FROM page_entities WHERE page_id = ?",
+                       [page_id]).fetchone() == (0,)
+    assert [m for m in mentions(con)] == [m for m in before if "Termék2" not in m[0]]
+    assert build_blocks(con) == 0
+    # az újraépített oldal blokkjai itt a kinyeréskoriakkal azonosak (a bemenet-hash egyezik):
+    # a tárolt kinyerése hívás nélkül visszakerül
+    run = incremental_run(con, adapter, tmp_path)
+    assert run.llm_calls == 0 and run.skipped == {"reused_extraction": 6}
+    assert mentions(con) == before
+
+
 def test_legacy_blocks_are_adopted_without_rebuilding():
     con = hashed_product_site()
     build_blocks(con)
