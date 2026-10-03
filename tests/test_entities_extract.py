@@ -504,6 +504,37 @@ def test_a_page_with_a_failed_chunk_is_partial_and_resume_retries_only_that_chun
     assert set(reusable_pages(con, client.model)) == {1}         # most már újrahasználható
 
 
+def test_a_partial_page_with_changed_blocks_is_extracted_whole_on_resume(tmp_path):
+    con = long_page()
+    client, adapter = client_for(con, [
+        reply(mention("b3", "Kávé Kft.", "Kávé Kft.", "org")),
+        reply(mention("b40", "X", "X", "software")),
+    ], tmp_path)
+    run = run_llm(con, client)
+    stored = con.execute("SELECT status, input_hash FROM entity_run_pages").fetchone()
+    assert stored[0] == "partial"
+    # a tartalom változik, a blokkok és a darabok száma nem (két darab, 33 és 63 blokk)
+    body = "<h1>Hosszú</h1>" + "".join(
+        f"<h2>Szakasz {s}</h2>" + "".join(f"<p>Bekezdés {s}-{i} a Tea Bt. termékéről</p>"
+                                            for i in range(30)) for s in range(3))
+    con.execute("UPDATE pages SET rendered_html = ?, main_content = ?",
+                [zstandard.ZstdCompressor().compress(html("Hosszú oldal", body).encode()),
+                 "a Tea Bt. termékéről"])
+    assert build_blocks(con) == 1
+    adapter.replies = [reply(mention("b3", "Tea Bt.", "Tea Bt.", "org")),
+                       reply(mention("b40", "Tea Bt.", "Tea Bt.", "org"))]
+    adapter.calls.clear()
+    again = run_llm(con, client, resume=True)
+    assert again.run_id == run.run_id
+    assert [text.count("\n[b") for _, text in adapter.calls] == [33, 63]    # mindkét darab
+    status, extraction, _ = page_log(con, run.run_id)
+    assert status == "done" and extraction["chunks"] == 2
+    assert [e["canonical_name"] for e in extraction["entities"]] == ["Tea Bt.", "Tea Bt."]
+    assert con.execute("SELECT input_hash FROM entity_run_pages").fetchone()[0] != stored[1]
+    assert [row[1] for row in mentions(con)] == [3, 40]
+    assert again.skipped == {"partial_input_changed": 1}
+
+
 def test_a_still_failing_chunk_stays_partial_and_a_new_run_extracts_the_whole_page(tmp_path):
     con = long_page()
     bad = reply(mention("b40", "X", "X", "software"))
