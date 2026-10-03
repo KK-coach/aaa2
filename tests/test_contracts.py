@@ -114,7 +114,9 @@ def test_the_exported_json_schemas_are_current(tmp_path):
     assert set(schemas) == {model.__name__ for model in CONTRACTS}
     for name, schema in schemas.items():
         assert schema["x-schema-version"] == SCHEMA_VERSION
-        assert "schema_version" in schema["properties"]
+        # a rekurzív szerződés (heading-fa) sémája hivatkozás a saját definíciójára
+        body = schema["$defs"][schema["$ref"].rsplit("/", 1)[-1]] if "$ref" in schema else schema
+        assert "schema_version" in body["properties"]
         assert (SCHEMA_DIR / f"{name}.schema.json").read_text(encoding="utf-8") \
             == schema_text(schema), f"elavult: futtasd `python -m aaa2.contracts.export {SCHEMA_DIR.name}`"
     assert sorted(p.name for p in SCHEMA_DIR.glob("*.schema.json")) \

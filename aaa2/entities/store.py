@@ -497,6 +497,16 @@ def entities_for_link_entities(con: duckdb.DuckDBPyConnection) -> list[tuple]:
         "page_entities) ORDER BY entity_id").fetchall()
 
 
+def heading_mentions(con: duckdb.DuckDBPyConnection) -> list[tuple]:
+    """Lekérdezés: blocks, page_entities. Hívja: functions/headings.py: page_headings. A
+    heading-blokkokban álló említések: (oldal, blokk, entitás), az oldal, a blokk és az említés
+    helye szerint."""
+    return con.execute(
+        "SELECT pe.page_id, pe.block_id, pe.entity_id FROM page_entities pe JOIN blocks b "
+        "USING (block_id) WHERE b.kind = 'heading' ORDER BY pe.page_id, pe.block_id, "
+        "pe.char_start, pe.entity_id").fetchall()
+
+
 def entity_alias_lists(con: duckdb.DuckDBPyConnection) -> list[tuple]:
     """Lekérdezés: entities. Hívja: resolver/knowledge.py: _LongForms. (entitás, az `aliases`
     oszlop listája) a nem üres listákra."""

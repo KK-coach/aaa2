@@ -126,6 +126,65 @@ def content_tree(html: str) -> HTMLParser:
     return tree
 
 
+def heading_scan(html: str) -> tuple[list[tuple[str, str]], set[int]]:
+    """A renderelt DOM headingjei közvetlenül a DOM-ból (a blokkmodelltől függetlenül, amely a
+    soron belüli elembe, pl. linkbe ágyazott headinget nem adja ki): (a H1-ek (hol, szöveg)
+    párjai a DOM sorrendjében, a fő tartalom látható headingjeinek szintjei).
+
+    Hol: `content` (a fő tartalomban), `cookie` (cookie-, consent- vagy gdpr-jelölésű elemben,
+    ahogy a zajszűrés felismeri), `dialog` (popup vagy modális ablak: `<dialog>`,
+    `role="dialog"` / `alertdialog`, `aria-modal="true"`), `chrome` (fejléc, menü, lábléc,
+    oldalsáv: a blokkok chrome-régiója, kivéve a fő tartalom saját fejlécét és láblécét: a
+    `main`, `article` vagy `role="main"` elemen belüli `header` / `footer` a tartalom része,
+    pl. a cikk címsora). A cookie- és a dialógus-elem H1-e akkor is számít, ha az elem épp
+    rejtett (a DOM-ban ott van); az egyéb okból rejtett és az üres heading nem."""
+    tree = HTMLParser(html or "")
+    for node in tree.css(NOISE_SELECTOR):
+        node.decompose()
+    found: list[tuple[str, str]] = []
+    levels: set[int] = set()
+    for heading in tree.css("h1, h2, h3, h4, h5, h6"):
+        text = collapse(heading.text(deep=True) or "")
+        if not text:
+            continue
+        cookie = dialog = chrome = invisible = own_header = False
+        node = heading
+        while node is not None and node.tag not in ("html", "-undef"):
+            attrs = node.attributes
+            marks = f"{attrs.get('class') or ''} {attrs.get('id') or ''}".lower()
+            style = (attrs.get("style") or "").lower().replace(" ", "")
+            cookie = cookie or bool(COOKIE.search(marks))
+            dialog = dialog or node.tag == "dialog" \
+                or (attrs.get("role") or "").lower() in ("dialog", "alertdialog") \
+                or (attrs.get("aria-modal") or "").lower() == "true"
+            if node.tag in ("header", "footer") and not _chrome_marked(node):
+                own_header = True              # a fő tartalmon belül nem chrome (lásd lent)
+            elif _chrome(node):
+                chrome = True
+            if own_header and (node.tag in ("main", "article")
+                               or (attrs.get("role") or "").lower() == "main"):
+                own_header = False
+            invisible = invisible or "hidden" in attrs \
+                or (attrs.get("aria-hidden") or "").lower() == "true" \
+                or "display:none" in style or "visibility:hidden" in style
+            node = node.parent
+        chrome = chrome or own_header          # a `main` / `article` nélküli header az oldalé
+        where = "cookie" if cookie else "dialog" if dialog else None if invisible \
+            else "chrome" if chrome else "content"
+        level = int(heading.tag[1])
+        if where == "content":
+            levels.add(level)
+        if level == 1 and where is not None:
+            found.append((where, text))
+    return found, levels
+
+
+def outside_h1(html: str) -> list[tuple[str, str]]:
+    """A renderelt DOM H1-ei, amelyek nem a fő tartalomban állnak: (hol, szöveg) párok a DOM
+    sorrendjében (`heading_scan`; hol: `cookie`, `dialog` vagy `chrome`)."""
+    return [(where, text) for where, text in heading_scan(html)[0] if where != "content"]
+
+
 def collapse(text: str) -> str:
     """A whitespace egy szóközzé, a lágy kötőjel (U+00AD) és a nulla szélességű szóköz
     törölve."""
@@ -180,6 +239,14 @@ def _chrome(node: Node) -> bool:
     role = (node.attributes.get("role") or "").lower()
     classes = set((node.attributes.get("class") or "").split())
     return (node.tag in CHROME or role in CHROME_ROLES or bool(classes & CHROME_CLASSES)
+            or any(OVERLAY_CLASS.search(c.lower()) for c in classes))
+
+
+def _chrome_marked(node: Node) -> bool:
+    """Chrome a szerepe vagy az osztálya szerint (nem csak a címkéje miatt)."""
+    role = (node.attributes.get("role") or "").lower()
+    classes = set((node.attributes.get("class") or "").split())
+    return (role in CHROME_ROLES or bool(classes & CHROME_CLASSES)
             or any(OVERLAY_CLASS.search(c.lower()) for c in classes))
 
 

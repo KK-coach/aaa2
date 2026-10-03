@@ -466,7 +466,7 @@ Egy tábla minden sora (a BLOB-oszlopok nélkül) az oszlopnevekkel; `table` az
 
 ### `FINDING_TYPE_LABELS`
 
-`{'h1_title_mismatch': 'H1/title-eltérés', 'cannibalization': 'Kannibalizáció', 'shared_topic': 'Közös téma', 'missing_page': 'Hiányzó oldal', 'uncovered_topic': 'Lefedetlen téma', 'unclear_topic': 'Nem egyértelmű téma'}`
+`{'h1_title_mismatch': 'H1/title-eltérés', 'cannibalization': 'Kannibalizáció', 'shared_topic': 'Közös téma', 'missing_page': 'Hiányzó oldal', 'uncovered_topic': 'Lefedetlen téma', 'unclear_topic': 'Nem egyértelmű téma', 'missing_h1': 'Hiányzó H1', 'h1_outside_content': 'H1 a fő tartalmon kívül', 'multiple_h1': 'Több H1', 'empty_section': 'Üres szakasz', 'skipped_level': 'Kihagyott heading-szint', 'missing_h2': 'Hiányzó H2'}`
 
 ### `KG_DAILY_QUOTA`
 

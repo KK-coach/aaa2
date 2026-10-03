@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.2"
+SCHEMA_VERSION = "1.3"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -506,10 +506,54 @@ class PageMention(Contract):
     weight: float
 
 
+HeadingRelation = Literal["main", "related", "unrelated", "no_entity", "no_main"]
+
+
+class HeadingEntity(Contract):
+    """Egy headingben álló entitás és a kapcsolata az oldal fő entitásához: `main` (maga a fő
+    entitás), `related` (él vagy közös szülő a gráfban), `unrelated`, `no_main` (az oldalnak
+    nincs fő entitása)."""
+
+    module: ClassVar[str] = "findings"
+    entity_id: int
+    entity: str
+    relation: HeadingRelation
+
+
+class HeadingOutside(Contract):
+    """Egy H1 a fő tartalmon kívül: `cookie` (cookie- vagy consent-elem), `dialog` (popup,
+    modális ablak), `chrome` (fejléc, menü, lábléc, oldalsáv)."""
+
+    module: ClassVar[str] = "findings"
+    where: Literal["cookie", "dialog", "chrome"]
+    text: str
+
+
+class HeadingView(Contract):
+    """Egy heading a fában (H1–H6) a szakaszával: az entitásai, a legerősebb kapcsolat a fő
+    entitáshoz (`no_entity`: nincs benne entitás), a szakasz saját és teljes szószáma, az üres
+    szakasz és a kihagyott szint jelzése, a sablon-heading jelzése (`template`: több
+    oldalcsoportban ismétlődő heading, nem lehet megállapítás tárgya), és az alárendelt
+    headingek."""
+
+    module: ClassVar[str] = "findings"
+    level: int
+    text: str
+    entities: list[HeadingEntity] = Field(default_factory=list)
+    relation: HeadingRelation
+    words: int = 0
+    total_words: int = 0
+    empty: bool = False
+    skipped_level: bool = False
+    template: bool = False
+    children: list[HeadingView] = Field(default_factory=list)
+
+
 class PageView(Contract):
     """Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a
     másodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a további említett
-    entitások és az oldal megállapításai."""
+    entitások, az oldal megállapításai, és a heading-fa (a sablon- és chrome-headingek nélkül;
+    `h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél)."""
 
     module: ClassVar[str] = "findings"
     page_id: int
@@ -532,6 +576,9 @@ class PageView(Contract):
     in_title: bool | None = None
     other_mentions: list[PageMention] = Field(default_factory=list)
     findings: list[str] = Field(default_factory=list)
+    headings: list[HeadingView] = Field(default_factory=list)
+    h1_outside: list[HeadingOutside] = Field(default_factory=list)
+    h1_justified: bool | None = None
 
 
 class SiteViews(Contract):
@@ -548,7 +595,8 @@ class SiteViews(Contract):
 
 # a több táblából összeállított szerződések (nincs egyetlen forrástáblájuk)
 DERIVED: tuple[type[Contract], ...] = (
-    FindingView, EntityRelation, EntityView, PageMention, PageView, SiteViews)
+    FindingView, EntityRelation, EntityView, PageMention, HeadingEntity, HeadingOutside,
+    HeadingView, PageView, SiteViews)
 
 CONTRACTS: tuple[type[Contract], ...] = (
     LLMCall, Site, CrawlRun, Page, Link, PageMeta, StructuredData, Block, Mention, MentionSource, Candidate, Entity, Alias,
