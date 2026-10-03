@@ -35,7 +35,20 @@ heading-útvonallal; a `blocks` tábla forrása (M2 spec A2). A forrás közvetl
   oszlopnévvel; egy cella több bekezdése „ · ”-vel.
 - Régió: chrome, ha header, nav, footer, aside vagy sidebar elem, navigation, banner,
   contentinfo, complementary ARIA-szerepű elem, vagy `site-header`, `site-footer`, `sidebar`
-  osztályú elem alatt áll; egyébként content.
+  osztályú elem alatt áll; egyébként content. Kivétel a fő tartalom saját fejléce: a `main`,
+  `article` vagy `role="main"` elemen belüli `header` (ha a szerepe vagy az osztálya nem jelöli
+  chrome-nak) content, pl. a cikk címsora és bevezetője; a benne álló `nav` chrome marad, és a
+  `footer` a fő tartalmon belül is chrome.
+- Beágyazott heading: a soron belüli elembe (link, span …) vagy táblázatcellába ágyazott
+  heading is heading-blokkot ad, és a szövege csak ott szerepel.
+  - Soron belüli burkoló (`<a><h2>…</h2><p>…</p></a>`, `<span><h3>…</h3></span>`): ha a
+    burkolóban látható, nem üres heading áll, a burkoló nem olvad a szülő blokk szövegébe,
+    hanem tárolóként járjuk be: a heading heading-blokk, a burkoló többi szövege a saját
+    blokkja(i) a dokumentum sorrendjében. A link anchor-szövege a burkolóból elsőként kiadott
+    blokké.
+  - Táblázatcella (`<td><h2>…</h2>…</td>`): a cella headingje heading-blokk a sor blokkja
+    előtt, a cella értékéből a heading szövege kimarad (a sor a maradék cellaszöveggel jön;
+    üresen nem ad blokkot).
 - heading-útvonal: a blokk előtti headingek szintjük szerinti lánca; a headingé a saját
   szövegével együtt.
 - anchor: a blokkban álló linkek szövege (`engine.parse.anchor_text`), a determinisztikus kör
