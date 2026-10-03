@@ -1,5 +1,5 @@
 {
- "status": "Claude verdiktje, 2026-10-03 (nyolcadik kör: a heading-fa szerkezeti megállapításai független DOM-ellenőrzéssel); Krisztián jóváhagyására",
+ "status": "Claude verdiktje, 2026-10-03 (kilencedik kör: az üres szakasz a DOM szerint, az üres szakasz és a kihagyott szint szerep és szintminta szerint összevonva; független DOM-ellenőrzéssel); Krisztián jóváhagyására",
  "sites": {
   "kk-coach": {
    "h1_title_mismatch | Kiss Krisztián | https://kk.coach/about/": {
@@ -91,6 +91,16 @@
     "summary": "kihagyott heading-szint: H4: Measurement foundation; H4: Diagnostic — finding the real bottleneck; H4: Priority roadmap",
     "verdict": "valid",
     "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "skipped_level | skipped_level | offer | H1→H4, H2→H4": {
+    "summary": "kihagyott heading-szint (H1→H4, H2→H4): 2 ajánlatoldal",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
+   },
+   "skipped_level | skipped_level | offer | H2→H4": {
+    "summary": "kihagyott heading-szint (H2→H4): 3 ajánlatoldal",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
    }
   },
   "marketinglens": {
@@ -255,17 +265,17 @@
     "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
    },
    "empty_section | https://marketinglens.com/digital-marketing-agency-contact/": {
-    "summary": "üres szakasz: H3: MARKETINGLENS LEADERSHIP; H4: CEO & Head of Digital; H4: Head of Marketing Science",
+    "summary": "üres szakasz: H4: Operations Manager",
     "verdict": "valid",
     "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
    },
    "empty_section | https://marketinglens.com/digital-marketing-agency/": {
-    "summary": "üres szakasz: H3: We are MarketingLens; H2: Client Success Stories",
+    "summary": "üres szakasz: H3: We are MarketingLens",
     "verdict": "valid",
     "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
    },
    "empty_section | https://marketinglens.com/about-us/": {
-    "summary": "üres szakasz: H3: Where data expertise meets marketing impact.; H3: MARKETINGLENS LEADERSHIP; H3: DIGITAL EXPERTS",
+    "summary": "üres szakasz: H3: Where data expertise meets marketing impact.; H4: Digital marketing specialist",
     "verdict": "valid",
     "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
    },
@@ -463,6 +473,46 @@
     "summary": "818 szó H2 nélkül",
     "verdict": "valid",
     "note": "A DOM fő tartalmában nincs H2, a tartalom 600 szó fölött van."
+   },
+   "empty_section | empty_section | offer | H2": {
+    "summary": "üres szakasz (H2): 4 ajánlatoldal",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
+   },
+   "skipped_level | skipped_level | article | H1→H3": {
+    "summary": "kihagyott heading-szint (H1→H3): 2 cikkoldal",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
+   },
+   "skipped_level | skipped_level | listing | H1→H3": {
+    "summary": "kihagyott heading-szint (H1→H3): 2 listing",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
+   },
+   "skipped_level | skipped_level | article | H1→H3, H2→H4": {
+    "summary": "kihagyott heading-szint (H1→H3, H2→H4): 3 cikkoldal",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
+   },
+   "skipped_level | skipped_level | offer | H1→H3, H2→H5": {
+    "summary": "kihagyott heading-szint (H1→H3, H2→H5): 9 ajánlatoldal",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
+   },
+   "skipped_level | skipped_level | listing | H2→H4": {
+    "summary": "kihagyott heading-szint (H2→H4): 4 listing",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
+   },
+   "skipped_level | skipped_level | article | H2→H4": {
+    "summary": "kihagyott heading-szint (H2→H4): 9 cikkoldal",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
+   },
+   "skipped_level | skipped_level | offer | H2→H5": {
+    "summary": "kihagyott heading-szint (H2→H5): 3 ajánlatoldal",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
    }
   },
   "duex": {
@@ -622,6 +672,21 @@
     "summary": "kihagyott heading-szint: H3: Trigger by tag <a>; H3: Split button dropdowns; H3: Disabled menu (4 oldal)",
     "verdict": "valid",
     "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
+   },
+   "empty_section | empty_section | component | H3": {
+    "summary": "üres szakasz (H3): 4 komponensoldal",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
+   },
+   "skipped_level | skipped_level | component | H1→H3": {
+    "summary": "kihagyott heading-szint (H1→H3): 64 komponensoldal",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
+   },
+   "skipped_level | skipped_level | component | H1→H3, H3→H6": {
+    "summary": "kihagyott heading-szint (H1→H3, H3→H6): 4 komponensoldal",
+    "verdict": "valid",
+    "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
    }
   }
  }
