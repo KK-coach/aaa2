@@ -28,6 +28,9 @@ class Recording:
         self.responses: dict[str, dict] = {}
         self.measured: dict = {}
         self.misses: list[str] = []
+        # a felvételből hiányzó kérések fajtája: URL → a böngésző erőforrástípusa (document,
+        # script, stylesheet, image, font, xhr, fetch, …), a httpx-kéréseknél "httpx"
+        self.miss_kinds: dict[str, str] = {}
         if self.index_path.exists():
             data = json.loads(self.index_path.read_text(encoding="utf-8"))
             self.responses = data["responses"]
@@ -65,6 +68,7 @@ class Recording:
         entry = self._load(_key(request))
         if entry is None:
             self.misses.append(request.url)
+            self.miss_kinds[request.url] = request.resource_type
             await route.abort("internetdisconnected")
             return
         status, headers, body = entry
@@ -118,6 +122,7 @@ class _ReplayTransport(httpx.AsyncBaseTransport):
         entry = self.recording._load(_http_key(request))
         if entry is None:
             self.recording.misses.append(str(request.url))
+            self.recording.miss_kinds[str(request.url)] = "httpx"
             raise httpx.ConnectError("nincs felvéve", request=request)
         status, headers, body = entry
         return httpx.Response(status, headers=headers, content=body, request=request)

@@ -9,6 +9,10 @@ include = '^https?://www\.napviragszappan\.hu/'
 exclude = [
     'route=(?!information/|product/list)',
     '[?&](sort|order|limit|filter)[=\[]',
+    # a linkeket követő crawl többlete (2026-10-02): belső keresőoldalak, lapozás, PDF
+    '[?&]keyword=',
+    '[?&]page=\d',
+    '\.pdf(\?|$)',
 ]
 concurrency = 2
 render_timeout = 30

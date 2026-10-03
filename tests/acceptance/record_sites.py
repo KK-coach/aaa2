@@ -24,12 +24,14 @@ import argparse
 import asyncio
 import random
 import time
+from collections import Counter
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import duckdb
 
 from aaa2.db.connect import DATA_DIR
-from aaa2.engine.normalize import UrlPolicy
+from aaa2.engine.normalize import UrlPolicy, registrable_domain
 from aaa2.engine.parse import parse_page
 from aaa2.resolver.overrides import load_site_config
 from aaa2.resolver.pages import PAGE_TYPES, page_types
@@ -166,6 +168,24 @@ def replay(name: str) -> None:
         "FROM pages").fetchone()
     print(f"{name}: visszajátszva {pages} oldal (sikeres {ok}), a felvételből hiányzó kérés "
           f"{len(set(recording.misses))}, {time.monotonic() - started:.0f} mp → {path}")
+    for line in missing_requests(recording, seed):
+        print(f"   {line}")
+
+
+def missing_requests(recording, seed: str) -> list[str]:
+    """A felvételből hiányzó kérések bontása: erőforrástípus szerint (a site saját hostja és
+    idegen host külön), és a leggyakoribb hostok."""
+    own = registrable_domain(urlsplit(seed).hostname or "")
+    kinds, hosts = Counter(), Counter()
+    for url, kind in recording.miss_kinds.items():
+        host = urlsplit(url).hostname or ""
+        where = "saját" if registrable_domain(host) == own else "idegen"
+        kinds[(kind, where)] += 1
+        hosts[host] += 1
+    lines = [f"{kind} ({where}): {count}" for (kind, where), count in sorted(
+        kinds.items(), key=lambda item: (-item[1], item[0]))]
+    lines.append("hostok: " + ", ".join(f"{host} {count}" for host, count in hosts.most_common(8)))
+    return lines
 
 
 def report(names: list[str]) -> str:
