@@ -102,14 +102,16 @@ def dom_sequence(html: str) -> tuple[list[list], int]:
             continue
         if not items:
             continue
+        probe, in_listed = node.parent, False
+        while probe is not None and probe.tag not in ("html", "-undef"):
+            if probe.mem_id in listed:
+                in_listed = True
+                break
+            probe = probe.parent
+        if in_listed:                          # a heading saját tartalma (link, ikon) nem számít
+            continue
         if node.tag == "-text":
-            probe, in_listed = node.parent, False
-            while probe is not None and probe.tag not in ("html", "-undef"):
-                if probe.mem_id in listed:
-                    in_listed = True
-                    break
-                probe = probe.parent
-            if in_listed or under(node.parent, NO_TEXT):
+            if under(node.parent, NO_TEXT):
                 continue
             items[-1][2] += len((node.text(deep=False) or "").split())
         elif node.tag in ELEMENTS:
