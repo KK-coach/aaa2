@@ -8,6 +8,8 @@ előfordulás: blokk és karakterpozíció a blokk szövegében (a schema-említ
 - schema: a JSON-LD blokkok és a microdata-elemek (`crawl.schema_items`) minden `@type`-os
   csomópontja, a beágyazottak is (az attribútum-
   tulajdonságok, `SCHEMA_ATTRIBUTES` alatt nem: jobTitle, areaServed, knowsAbout, description),
+  és a vélemények (`SCHEMA_SKIPPED_TYPES`: `Review`) alatt sem: a vélemény szerzője, értékelése
+  nem a site entitása),
   ha a típusa a `config/schema_types.toml` leképezésében szerepel és van szöveges `name`-je →
   entitás a leképezett típussal; oldalanként és entitásonként egy említés, blokk nélkül: position = schema,
   surface_form = a `name` értéke, context = a csomópont JSON-ja, source = schema, count = a
@@ -76,6 +78,8 @@ from aaa2.llm.schemas import ENTITY_TYPES
 SCHEMA_TYPES_FILE = Path(__file__).parent / "config" / "schema_types.toml"
 # Tulajdonságok, amelyek értéke az entitás attribútuma, nem külön entitás (M2/6, 10. pont).
 SCHEMA_ATTRIBUTES = ("jobTitle", "areaServed", "knowsAbout", "description")
+# Az ilyen típusú csomópont és minden, ami alatta áll, kimarad a schema-forrásból.
+SCHEMA_SKIPPED_TYPES = ("Review",)
 MIN_ANCHOR_PAGES = 3
 MIN_TITLE_PAGES = 3
 MIN_TITLE_SHARE = 0.25
@@ -425,7 +429,7 @@ def _schema(con, page_ids, dom, mapping, candidates, skipped) -> None:
         page_id, block = item.page_id, item.data
         if page_id not in wanted:
             continue
-        for node in _typed_nodes(block, SCHEMA_ATTRIBUTES):
+        for node in _typed_nodes(block, SCHEMA_ATTRIBUTES, SCHEMA_SKIPPED_TYPES):
             types = [_short_type(t) for t in _as_list(node.get("@type"))]
             kind = next((mapping[t] for t in types if t in mapping), None)
             if kind is None:
@@ -669,17 +673,22 @@ def _page_dom(html: str, title: str | None) -> _PageDom:
     return _PageDom(site_names, parse_blocks(html, title))
 
 
-def _typed_nodes(value: object, skip: tuple[str, ...] = ()) -> Iterator[dict]:
-    """A típusos csomópontok, a beágyazottak is; a `skip` tulajdonságok alá nem lép."""
+def _typed_nodes(value: object, skip: tuple[str, ...] = (),
+                 skip_types: tuple[str, ...] = ()) -> Iterator[dict]:
+    """A típusos csomópontok, a beágyazottak is; a `skip` tulajdonságok alá nem lép, a
+    `skip_types` típusú csomópontot és ami alatta áll, kihagyja."""
     if isinstance(value, dict):
         if "@type" in value:
+            if skip_types and any(_short_type(t) in skip_types
+                                  for t in _as_list(value["@type"])):
+                return
             yield value
         for key, child in value.items():
             if key not in skip:
-                yield from _typed_nodes(child, skip)
+                yield from _typed_nodes(child, skip, skip_types)
     elif isinstance(value, list):
         for child in value:
-            yield from _typed_nodes(child, skip)
+            yield from _typed_nodes(child, skip, skip_types)
 
 
 def _short_type(value: object) -> str:

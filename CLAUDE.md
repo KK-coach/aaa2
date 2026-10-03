@@ -122,12 +122,13 @@ A pontok a fejlesztés sorrendjét követik; a később megszűnt eszközöket �
 
 A microdata felhasználása (AAAV2-68, 2026-10-03): a szabálykör schema-forrása, az oldaltípus és az oldalszerep, a morzsamenü, az oldalhoz kötött entitások és a webshop-logika (márka) a JSON-LD mellett a microdatát is olvassa, egy közös forrásból (`crawl.schema_items`: a JSON-LD blokkok, utánuk a microdata-elemek ugyanabban az alakban). A microdata-elemben a relatív `@id`, `url` és `item` az oldal URL-jéhez képest feloldva; az oldal egyetlen legfelső szintű `Product` eleme, ha nincs `url`-je és `@id`-je, az oldalra vonatkozik (így ad terméket az oldaltípus). Az RDFa és az Open Graph nem része. Microdata nélküli site-on a kimenet változatlan.
 
+Vélemények (Krisztián döntése, 2026-10-03): a `Review` típusú csomópont és minden, ami alatta áll (szerző, `Person`, `Rating`), kimarad a szabálykör schema-forrásából, JSON-LD-ben és microdatában is (`rules.SCHEMA_SKIPPED_TYPES`). A termék összesített értékelése (`aggregateRating`) a termék attribútuma: `rating_average` és `rating_count` (`shop._schema_rating`).
+
 ### Nyitott pontok
 
 - M3 riportréteg: a megjelenítési nyelv riportonként választható legyen, a nyelvvel jelölt aliasokból (a kanonikus név nyelvétől függetlenül). Nincs megcsinálva.
 - Teljesítményhiba: a marketinglens készlet (109 oldal) pipeline-futása a hash-ellenőrzésben 643 mp, lassabb a 372 oldalas duexnél (410 mp) és az ngx-bootstrapnél (307 mp). Meg kell nézni, melyik lépés viszi az időt. Nincs megvizsgálva.
 - Az `aaa entities` a közös adatbázist (`data/shared.duckdb`) kétszer nyitja meg egymás után (az `api.extract`, majd az `api.resolve` hívásában), nem egyszer. Egyszerre továbbra is egy folyamat tartja; összevonni az `api` lépéseinek közös kapcsolatával lehet. Nincs megcsinálva.
-- A vélemények szerzői (`Review.author`, `Person`) a szabálykörben person entitások lesznek, JSON-LD-ből és microdatából egyaránt (a schema-forrás minden beágyazott típusos csomópontot olvas). Webshopon ez vásárlónevek százait jelentheti (a serafim felvételében 985 `Review`). Döntés kell: kimaradjanak-e a `review` alatti csomópontok. Nincs megcsinálva.
 
 ## M3 — az M3/1 és az M3/2 kész (2026-10-01); az M3/3 és az M3b nyitva
 

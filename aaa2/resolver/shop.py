@@ -17,6 +17,8 @@
 - Termék (az oldalhoz kötött product-entitás, `site._page_entities`): altípus `variant`,
   tulajdonságai (`attributes`) a terméknévből (`name_attributes`: teljesítmény, fázisszám,
   energiaosztály); `in_category` a morzsamenü legmélyebb kategóriaoldalához.
+  A termék összesített értékelése (a saját `Product` csomópont `aggregateRating`-je) is attribútum:
+  `rating_average`, `rating_count`.
 - Termékcsalád (product / line), márkánként (`families`): a terméknév (H1, a név eleji márka
   nélkül) az első tulajdonság- vagy típuskód-token előtt (`FAMILY_STOP`); család, ha a márka
   legalább két terméke osztozik rajta (kis-nagybetű nélkül). A többi terméknél: a leghosszabb
@@ -268,6 +270,7 @@ def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
     # termékek, márkájukkal és kategóriájukkal
     brand_pages = {page_url(info.url): info for info in pages_of["brand_category"]}
     products: list[Product] = []
+    ratings: dict[int, dict] = {}
     for info in sorted(pages_of["product"], key=lambda i: i.page_id):
         group = [m.page_id for m in ctx.groups.get(info.group, [info])]
         row = store.entities_for_run_shop(ctx.con, group)
@@ -275,6 +278,7 @@ def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
             continue
         trail = trails.get(info.page_id, [])
         brand = _schema_brand(ctx, info)
+        ratings.setdefault(row[0], _schema_rating(ctx, info))
         if brand is None and trail and trail[-1][1] and page_url(trail[-1][1]) in brand_pages:
             listing = brand_pages[page_url(trail[-1][1])]
             brand = (listing.h1 or trail[-1][0]).strip()
@@ -316,7 +320,7 @@ def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
 
     # termék-tulajdonságok, kategória
     for product in products:
-        attributes = name_attributes(product.name)
+        attributes = {**name_attributes(product.name), **ratings.get(product.entity_id, {})}
         store.update_entities_in_run_shop(ctx.con, dumps(attributes, ensure_ascii=False) if attributes else None, product.entity_id)
         run.with_attributes += bool(attributes)
         if product.category is not None:
@@ -636,6 +640,43 @@ def _relate(ctx: _Context, from_id: int, to_id: int, kind: str, evidence: dict) 
         "INSERT INTO entity_relations (from_id, to_id, type, source, evidence) "
         "VALUES (?, ?, ?, 'shop', ?) ON CONFLICT DO NOTHING",
         [from_id, to_id, kind, dumps(evidence, ensure_ascii=False)])
+
+
+def _schema_rating(ctx: _Context, info: PageInfo) -> dict:
+    """A termékoldal saját `Product` csomópontjának összesített értékelése (`aggregateRating`):
+    `rating_average` (a `ratingValue`, számként) és `rating_count` (a `reviewCount`, ennek híján
+    a `ratingCount`, egészként); ami nincs vagy nem szám, kimarad."""
+    from aaa2.resolver.offers import _self_nodes
+
+    for node in _self_nodes(ctx.con, [info]).get(info.page_id, []):
+        rating = node.get("aggregateRating")
+        if isinstance(rating, list):
+            rating = rating[0] if rating else None
+        if not isinstance(rating, dict):
+            continue
+        found: dict = {}
+        average = _number(rating.get("ratingValue"))
+        count = _number(rating.get("reviewCount"))
+        if count is None:
+            count = _number(rating.get("ratingCount"))
+        if average is not None:
+            found["rating_average"] = average
+        if count is not None and count == int(count):
+            found["rating_count"] = int(count)
+        if found:
+            return found
+    return {}
+
+
+def _number(value: object) -> float | None:
+    if isinstance(value, dict):
+        value = value.get("@value")
+    if isinstance(value, bool) or value is None:
+        return None
+    try:
+        return float(str(value).strip().replace(",", "."))
+    except ValueError:
+        return None
 
 
 def _schema_brand(ctx: _Context, info: PageInfo) -> str | None:

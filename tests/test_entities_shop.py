@@ -285,6 +285,57 @@ def test_microdata_shop_gives_the_same_levels_as_the_json_ld_shop(shop_config):
     ).fetchone() == (1,)
 
 
+REVIEWED = {
+    "@type": "Product", "name": "Levendula szappan", "url": f"{SHOP}/spd/l",
+    "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4,8", "reviewCount": "12"},
+    "review": [{"@type": "Review", "name": "Nagyon jó",
+                "author": {"@type": "Person", "name": "Kovács Béla"},
+                "reviewRating": {"@type": "Rating", "ratingValue": "5"},
+                "publisher": {"@type": "Organization", "name": "Véleménygyűjtő Kft."}}],
+    "offers": {"@type": "Offer", "price": "1990"}}
+REVIEWED_MICRODATA = (
+    '<main itemscope itemtype="http://schema.org/Product"><h1 itemprop="name">Rózsa szappan</h1>'
+    '<div itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating">'
+    '<meta itemprop="ratingValue" content="4.5"><meta itemprop="ratingCount" content="7"></div>'
+    '<div itemprop="review" itemscope itemtype="http://schema.org/Review">'
+    '<span itemprop="author" itemscope itemtype="http://schema.org/Person">'
+    '<span itemprop="name">Szabó Anna</span></span>'
+    '<span itemprop="reviewRating" itemscope itemtype="http://schema.org/Rating">'
+    '<meta itemprop="ratingValue" content="4"></span></div></main>')
+
+
+def test_review_nodes_are_not_entities_and_the_aggregate_rating_is_a_product_attribute():
+    con = site({
+        "/": html("Pelda", "<main><h1>Pelda</h1></main>",
+                  head=ld({"@type": "Organization", "name": "Pelda", "url": f"{SHOP}/"})),
+        "/spd/l": html("Levendula szappan", "<main><h1>Levendula szappan</h1></main>",
+                       head=ld(REVIEWED)),
+        "/spd/r": html("Rózsa szappan", REVIEWED_MICRODATA),
+        # önálló (nem termék alatti) vélemény is kimarad
+        "/velemenyek": html("Vélemények", "<main><h1>Vélemények</h1></main>", head=ld(
+            {"@type": "Review", "author": {"@type": "Person", "name": "Tóth Géza"},
+             "itemReviewed": {"@type": "Organization", "name": "Pelda"}})),
+    })
+    run_rules(con)
+    run_site(con)
+    entities = set(con.execute("SELECT type, name FROM entities").fetchall())
+    assert ("product", "Levendula szappan") in entities
+    assert ("product", "Rózsa szappan") in entities
+    names = {name for _, name in entities}
+    assert not names & {"Kovács Béla", "Szabó Anna", "Tóth Géza", "Véleménygyűjtő Kft.",
+                        "Nagyon jó"}
+    assert not {kind for kind, _ in entities} & {"person"}
+    skipped = json.loads(con.execute(
+        "SELECT skipped FROM entity_runs WHERE method = 'rules' ORDER BY run_id DESC LIMIT 1"
+    ).fetchone()[0])
+    assert "Review" not in skipped.get("unmapped_schema_types", {})     # be sem járja
+    assert "Rating" not in skipped.get("unmapped_schema_types", {})
+    attributes = {name: json.loads(value) for name, value in con.execute(
+        "SELECT name, attributes FROM entities WHERE type = 'product'").fetchall()}
+    assert attributes["Levendula szappan"] == {"rating_average": 4.8, "rating_count": 12}
+    assert attributes["Rózsa szappan"] == {"rating_average": 4.5, "rating_count": 7}
+
+
 def test_schema_items_resolve_microdata_urls_and_leave_listing_products_alone():
     from aaa2.engine import queries
 
