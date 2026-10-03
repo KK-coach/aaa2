@@ -275,7 +275,7 @@
     "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
    },
    "skipped_level | skipped_level | listing | H1→H3": {
-    "summary": "kihagyott heading-szint (H1→H3): 2 listing",
+    "summary": "kihagyott heading-szint (H1→H3): 2 listaoldal",
     "verdict": "valid",
     "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
    },
@@ -290,7 +290,7 @@
     "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
    },
    "skipped_level | skipped_level | listing | H2→H4": {
-    "summary": "kihagyott heading-szint (H2→H4): 4 listing",
+    "summary": "kihagyott heading-szint (H2→H4): 4 listaoldal",
     "verdict": "valid",
     "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
    },
