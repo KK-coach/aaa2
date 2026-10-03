@@ -194,6 +194,12 @@ def test_the_real_site_files_hold_the_agreed_settings():
                      "infinite_scroll", "ajax=1", r"shop_pic\.php"):
         assert excluded in duex.crawl.exclude
     assert duex.page_types == {"category": ("/sct/",), "brand_category": ("/spl/",)}
+    # keretek: a duex felvétele nagyobb az alap oldalkorlátnál; a vak próba boltjai
+    # sitemap-módban
+    assert (duex.crawl.max_pages, duex.crawl.sitemap_only) == (5000, False)
+    for domain in ("serafimszappan.hu", "napviragszappan.hu"):
+        config = load_site_config(domain).crawl
+        assert (config.sitemap_only, config.max_pages, config.concurrency) == (True, None, 2)
     lens = load_site_config("marketinglens.com")
     assert (lens.crawl.seed, lens.crawl.concurrency) == ("https://marketinglens.com/", 4)
     assert overrides.SITES_DIR.name == "sites" and overrides.SITES_DIR.is_dir()

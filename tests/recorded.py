@@ -28,6 +28,9 @@ class Recording:
         self.responses: dict[str, dict] = {}
         self.measured: dict = {}
         self.misses: list[str] = []
+        # a felvételből hiányzó kérések fajtája: URL → a böngésző erőforrástípusa (document,
+        # script, stylesheet, image, font, xhr, fetch, …), a httpx-kéréseknél "httpx"
+        self.miss_kinds: dict[str, str] = {}
         if self.index_path.exists():
             data = json.loads(self.index_path.read_text(encoding="utf-8"))
             self.responses = data["responses"]
@@ -65,6 +68,7 @@ class Recording:
         entry = self._load(_key(request))
         if entry is None:
             self.misses.append(request.url)
+            self.miss_kinds[request.url] = request.resource_type
             await route.abort("internetdisconnected")
             return
         status, headers, body = entry
@@ -118,6 +122,7 @@ class _ReplayTransport(httpx.AsyncBaseTransport):
         entry = self.recording._load(_http_key(request))
         if entry is None:
             self.recording.misses.append(str(request.url))
+            self.recording.miss_kinds[str(request.url)] = "httpx"
             raise httpx.ConnectError("nincs felvéve", request=request)
         status, headers, body = entry
         return httpx.Response(status, headers=headers, content=body, request=request)
@@ -156,7 +161,9 @@ def load_page(name: str) -> dict | None:
 async def record_crawl(name: str, seed: str, options, retries: int = 0):
     """Élő crawl, közben minden válasz felvéve; (Recording, kapcsolat, összesítő). `retries`:
     ennyiszer kerülnek újra sorra a válasz nélkül maradt (időtúllépés, hálózati hiba) URL-ek, a
-    crawl folytatásával ugyanabba a felvételbe; az összesítő az utolsó köré."""
+    crawl folytatásával ugyanabba a felvételbe; az összesítő az utolsó köré. A felvétel megáll,
+    ha a crawl a sitemap alapján várt oldalszám vagy idő `OVERRUN_FACTOR`-szorosa fölé megy
+    (`CrawlSummary.stopped`); ilyenkor nincs újrapróbálás."""
     from dataclasses import replace
 
     from aaa2.db.connect import connect
@@ -172,8 +179,9 @@ async def record_crawl(name: str, seed: str, options, retries: int = 0):
                 headers={"User-Agent": renderer.user_agent, **NAVIGATION_HEADERS},
             ) as client:
         con = connect(":memory:")
-        summary = await crawl(con, seed, options, client=client, renderer=renderer)
-        for _ in range(retries):
+        summary = await crawl(con, seed, replace(options, overrun_factor=OVERRUN_FACTOR),
+                              client=client, renderer=renderer)
+        for _ in range(0 if summary.stopped else retries):
             failed = con.execute("UPDATE crawl_queue SET status = 'queued', error = NULL "
                                  "WHERE status = 'failed' RETURNING url").fetchall()
             if not failed:
@@ -208,14 +216,41 @@ def site_set(domain: str) -> tuple[str, object]:
     crawl = load_site_config(domain).crawl
     return crawl.seed, CrawlOptions(concurrency=crawl.concurrency or 4, include=crawl.include,
                                     exclude=crawl.exclude_pattern,
-                                    render_timeout=crawl.render_timeout or RENDER_TIMEOUT)
+                                    render_timeout=crawl.render_timeout or RENDER_TIMEOUT,
+                                    max_pages=crawl.max_pages or TEST_MAX_PAGES,
+                                    sitemap_only=crawl.sitemap_only)
+
+
+# A teszt-site-ok keretei: a sor méretének korlátja, ha a site-fájl `[crawl] max_pages` nem ad
+# mást; a felvétel megáll a sitemap alapján várt oldalszám vagy idő ennyiszerese fölött; az
+# ellenőrző visszajátszás ennyi oldalt vesz mintának.
+TEST_MAX_PAGES = 200
+OVERRUN_FACTOR = 2.0
+VERIFY_SAMPLE = 50
 
 
 # Az idegen site-ok (M2/7 B): felvétel neve → a site-fájl domainje.
-SITE_SETS = {"marketinglens-crawl": "marketinglens.com", "duex-crawl": "duexhungary.hu"}
+SITE_SETS = {"marketinglens-crawl": "marketinglens.com", "duex-crawl": "duexhungary.hu",
+             # a vak próba két webshopja (microdata; 2026-10-02)
+             "serafim-crawl": "serafimszappan.hu", "napvirag-crawl": "napviragszappan.hu"}
 
 # A referencia-készletek: felvétel neve → (seed, crawl-beállítás).
 REFERENCE_SETS = _reference_sets()
+
+
+async def replay_pages(name: str, urls: list[str], options) -> list | None:
+    """A megadott URL-ek renderelése a felvételből, hálózat nélkül: `RenderResult`-ok az URL-ek
+    sorrendjében, vagy None, ha nincs felvétel."""
+    import asyncio
+
+    from aaa2.engine.render import Renderer
+
+    recording = Recording(name)
+    if not recording.exists:
+        return None
+    async with Renderer(concurrency=options.concurrency, render_timeout=options.render_timeout,
+                        upstream=recording.replay) as renderer:
+        return list(await asyncio.gather(*(renderer.render(url) for url in urls)))
 
 
 async def replay_crawl(name: str, seed: str, options):

@@ -226,6 +226,69 @@ async def test_fresh_crawl_of_mini_site(site, tools):
     assert (finished, done, failed, skipped) == (True, 9, 3, 0)
     assert rate > 0 and stored > 0
     assert (summary.pages_done, summary.pages_failed, summary.bytes_stored) == (9, 3, stored)
+    # keret nélkül a crawl végigfut; a sitemap alapján várt oldalszám így is megvan
+    assert (summary.expected_pages, summary.expected_seconds, summary.stopped) == (4, None, None)
+
+
+# ---------------------------------------------------------------------------
+# keretek: sitemap-mód, várt oldalszám és idő, megállás a túllépésnél
+# ---------------------------------------------------------------------------
+
+SITEMAP_PAGES = {"/", "/a/", "/b/", "/regi/"}
+
+
+async def test_sitemap_only_crawls_the_seed_and_the_sitemap_urls(site, tools):
+    con = connect(":memory:")
+    summary = await run(con, site, tools, sitemap_only=True)
+    assert set(pages(con)) == {site.url(path) for path in SITEMAP_PAGES}
+    assert set(queue(con)) == {site.url(path) for path in SITEMAP_PAGES}
+    assert set(queue(con).values()) == {"done"}
+    # a linkek tárolása változatlan: az /a/ linkje az /f/-re megvan, de az /f/ nem került sorra
+    targets = {row[0] for row in con.execute(
+        "SELECT l.to_url FROM links l JOIN pages p ON p.page_id = l.from_page_id WHERE p.url = ?",
+        [site.url("/a/")]).fetchall()}
+    assert site.url("/f/") in targets and "/f/" not in site.hits
+    assert (summary.expected_pages, summary.stopped) == (4, None)
+    assert summary.pages_done + summary.pages_failed == 4
+
+
+async def test_crawl_stops_above_twice_the_expected_page_count(site, tools):
+    con = connect(":memory:")
+    summary = await run(con, site, tools, concurrency=1, overrun_factor=2.0)
+    # a sitemap 4 oldalt ígér, a linkeket követő crawl 12-t adna: 8 fölött megáll (egy
+    # átirányítás a céljával együtt két sort ír, ezért 9 vagy 10 oldalnál)
+    assert summary.expected_pages == 4
+    handled = summary.pages_done + summary.pages_failed
+    assert 8 < handled <= 10 < len(EXPECTED_PAGES)
+    assert summary.stopped == (f"oldalszám: {handled} feldolgozva, a sitemap alapján várt 4 "
+                               "2-szerese fölött")
+    assert "queued" in queue(con).values()
+    (notes, finished) = con.execute("SELECT notes, finished_at IS NOT NULL FROM crawl_runs"
+                                    ).fetchone()
+    assert "(megállt: oldalszám" in notes and finished
+
+
+async def test_crawl_stops_above_twice_the_expected_time(tools):
+    renderer, client = tools
+    run_ = crawl_module._Run(connect(":memory:"), client, renderer,
+                             CrawlOptions(overrun_factor=2.0), None)
+    now = asyncio.get_running_loop().time()
+    run_.expected_pages, run_.done = 100, crawl_module.CALIBRATION_PAGES - 1
+    run_._clock = now - 90
+    assert not run_._overrun() and run_.expected_seconds is None      # még nincs becslés
+    run_.done, run_._clock = 10, now - 100
+    assert not run_._overrun()
+    assert run_.expected_seconds == pytest.approx(1000, rel=0.01)     # 10 mp/oldal × 100 oldal
+    run_.done, run_._clock = 50, now - 1999
+    assert not run_._overrun()
+    run_._clock = now - 2001
+    assert run_._overrun()
+    assert run_.stopped.startswith("idő: 2001 mp, a várt 1000 mp 2-szerese fölött (50 oldal")
+    # várt oldalszám (sitemap) nélkül nincs megállás
+    free = crawl_module._Run(connect(":memory:"), client, renderer,
+                             CrawlOptions(overrun_factor=2.0), None)
+    free.done, free._clock = 5000, now - 10**6
+    assert not free._overrun()
 
 
 async def test_redirect_target_is_one_page(site, tools):
