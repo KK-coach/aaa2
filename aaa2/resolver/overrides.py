@@ -42,6 +42,8 @@ class CrawlConfig:
     exclude: tuple[str, ...] = ()
     concurrency: int | None = None
     render_timeout: float | None = None
+    max_pages: int | None = None
+    sitemap_only: bool = False
 
     @property
     def exclude_pattern(self) -> str | None:
@@ -93,7 +95,8 @@ def load_site_config(domain: str | None, directory: Path | None = None) -> SiteC
         except re.error as exc:
             raise ValueError(f"{path.name}: hibás regex {pattern!r}: {exc}") from exc
     crawl = CrawlConfig(section.get("seed"), section.get("include"), tuple(exclude),
-                        section.get("concurrency"), section.get("render_timeout"))
+                        section.get("concurrency"), section.get("render_timeout"),
+                        section.get("max_pages"), bool(section.get("sitemap_only", False)))
     return SiteConfig(raw.get("canonical_lang"), tuple(offers), crawl, kinds)
 
 
