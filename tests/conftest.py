@@ -32,6 +32,7 @@ SLOW = {
         "test_cli_crawl_status_export",                                         # 24 mp
         "test_changed_seed_is_rendered_and_volatile_token_is_not_a_change",     # 21 mp
         "test_hash_skip_leaves_unchanged_rows",                                 # 16 mp
+        "test_a_js_dependent_site_is_rendered_again_despite_unchanged_raw_hashes",  # 2 crawl
         "test_page_transaction_is_all_or_nothing_and_resume_completes",         # 16 mp
         "test_resume_after_interrupt_with_db_reopen",                           # 13 mp
     },

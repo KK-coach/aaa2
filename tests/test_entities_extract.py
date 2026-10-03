@@ -702,6 +702,43 @@ def test_a_changed_page_gets_new_blocks_and_only_it_is_extracted_again(tmp_path)
     assert "Termék2" not in {name for name, *_ in mentions(con)}
 
 
+def test_a_changed_rendered_content_rebuilds_the_blocks_without_a_raw_hash_change(tmp_path):
+    """A JavaScripttel betöltött tartalom a nyers HTML hash-ének változása nélkül változik: a
+    blokkok a renderelt tartalom hash-e alapján épülnek újra, és csak ez az oldal megy újra."""
+    con = hashed_product_site()
+    adapter = PageAdapter(delay=0)
+    incremental_run(con, adapter, tmp_path)
+    (page_id, raw_hash) = con.execute(
+        "SELECT page_id, raw_html_hash FROM pages WHERE url LIKE '%/2/'").fetchone()
+    assert build_blocks(con) == 0                              # változatlan: nincs újraépítés
+    changed = html("P2", "<p>A Termék9 az új választás.</p>")
+    con.execute("UPDATE pages SET rendered_html = ?, main_content = ? WHERE page_id = ?",
+                [zstandard.ZstdCompressor().compress(changed.encode()),
+                 "A Termék9 az új választás.", page_id])
+    assert con.execute("SELECT raw_html_hash FROM pages WHERE page_id = ?",
+                       [page_id]).fetchone() == (raw_hash,)    # a nyers hash ugyanaz
+    assert build_blocks(con) == 1
+    assert con.execute("SELECT count(*) FROM page_entities WHERE page_id = ?",
+                       [page_id]).fetchone() == (0,)
+    assert "Termék9" in con.execute(
+        "SELECT string_agg(text, ' ') FROM blocks WHERE page_id = ?", [page_id]).fetchone()[0]
+    run = incremental_run(con, adapter, tmp_path)
+    assert run.llm_calls == 1 and len(adapter.calls) == 7
+    assert "Termék2" not in {name for name, *_ in mentions(con)}
+    assert build_blocks(con) == 0
+
+
+def test_blocks_without_a_content_hash_are_adopted_without_rebuilding():
+    con = hashed_product_site()
+    build_blocks(con)
+    con.execute("UPDATE blocks_built SET content_hash = NULL")   # a 024 előtti adatbázis
+    before = con.execute("SELECT block_id FROM blocks ORDER BY block_id").fetchall()
+    assert build_blocks(con) == 0
+    assert con.execute("SELECT block_id FROM blocks ORDER BY block_id").fetchall() == before
+    assert con.execute("SELECT count(*) FROM blocks_built WHERE content_hash IS NOT NULL"
+                       ).fetchone() == (6,)
+
+
 def test_legacy_blocks_are_adopted_without_rebuilding():
     con = hashed_product_site()
     build_blocks(con)

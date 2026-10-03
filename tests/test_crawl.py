@@ -401,6 +401,18 @@ async def test_hash_skip_leaves_unchanged_rows(site, tools):
     assert b_headings == [("B",)]
 
 
+async def test_a_js_dependent_site_is_rendered_again_despite_unchanged_raw_hashes(site, tools):
+    """Ha az előző crawl site-profilja JavaScript-keretrendszert jelzett, a hash-alapú skip nem
+    él: minden oldal újra renderelődik (a tartalom a nyers HTML változása nélkül is változhat)."""
+    con = connect(":memory:")
+    await run(con, site, tools)
+    con.execute("UPDATE site SET tech_signals = ['dom:ng-version=17.0.0', 'script:x.hu']")
+    summary = await run(con, site, tools)
+    assert summary.pages_skipped == 0
+    assert summary.pages_done + summary.pages_failed == len(EXPECTED_PAGES)
+    assert {row[5] for row in pages(con).values()} == {2}       # minden sor a második futásé
+
+
 async def test_changed_seed_is_rendered_and_volatile_token_is_not_a_change(site, tools):
     con = connect(":memory:")
     home = site.pages["/"]

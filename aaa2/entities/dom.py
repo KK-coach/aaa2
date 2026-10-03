@@ -43,6 +43,7 @@ heading-útvonallal; a `blocks` tábla forrása (M2 spec A2). A forrás közvetl
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from collections.abc import Sequence
@@ -524,22 +525,34 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
     """A `blocks` sorai azoknak a sikeres (2xx, hiba nélküli, renderelt DOM-mal bíró) oldalaknak,
     amelyeknek még nincs blokkjuk; `page_ids`: csak ezek közül. Visszaad: a feldolgozott oldalak
     száma. A meglévő blokkok nem változnak (az említések a `block_id`-jükre hivatkoznak), kivéve
-    ha az oldal M1-es stabil hash-e azóta más (`blocks_built`, a crawl újra lekérte és
-    megváltozott): akkor az oldal említései, bizonyítékai és blokkjai törlődnek, és a blokkok
-    újraépülnek. A `blocks_built` előtti blokkok a jelenlegi hash-sel kerülnek a táblába."""
+    ha az oldal azóta megváltozott (`blocks_built`): az M1-es stabil hash-e más (a crawl újra
+    lekérte, és a nyers HTML változott), vagy a renderelt tartalma más (`content_hash`: a title,
+    a H1 és a fő tartalom; a JavaScripttel betöltött tartalom a nyers hash változása nélkül is
+    változhat). Ilyenkor az oldal említései, bizonyítékai és blokkjai törlődnek, és a blokkok
+    újraépülnek. A `blocks_built` előtti blokkok a jelenlegi hash-ekkel kerülnek a táblába; a
+    tartalom-hash nélküli (024 előtti) sor a jelenlegit kapja, újraépítés nélkül."""
     wanted = None if page_ids is None else set(page_ids)
     crawled = crawl.pages(con)
     hashes = {page.page_id: page.raw_html_hash for page in crawled}
+    contents = {page.page_id: content_hash(page.title, page.h1, page.main_content)
+                for page in crawled}
     unrecorded = [page_id for (page_id,) in con.execute(
         "SELECT DISTINCT page_id FROM blocks WHERE page_id NOT IN (SELECT page_id FROM "
         "blocks_built) ORDER BY page_id").fetchall() if page_id in hashes]
     if unrecorded:
-        con.executemany("INSERT INTO blocks_built VALUES (?, ?, current_timestamp)",
-                        [(page_id, hashes[page_id]) for page_id in unrecorded])
-    for page_id, built_hash in con.execute(
-            "SELECT page_id, raw_html_hash FROM blocks_built ORDER BY page_id").fetchall():
-        if hashes.get(page_id) is not None and built_hash != hashes[page_id] \
-                and (wanted is None or page_id in wanted):
+        con.executemany("INSERT INTO blocks_built VALUES (?, ?, current_timestamp, ?)",
+                        [(page_id, hashes[page_id], contents[page_id]) for page_id in unrecorded])
+    legacy = [(contents[page_id], page_id) for (page_id,) in con.execute(
+        "SELECT page_id FROM blocks_built WHERE content_hash IS NULL ORDER BY page_id"
+    ).fetchall() if page_id in contents]
+    if legacy:
+        con.executemany("UPDATE blocks_built SET content_hash = ? WHERE page_id = ?", legacy)
+    for page_id, built_hash, built_content in con.execute(
+            "SELECT page_id, raw_html_hash, content_hash FROM blocks_built ORDER BY page_id"
+    ).fetchall():
+        changed = (hashes.get(page_id) is not None and built_hash != hashes[page_id]) \
+            or (page_id in contents and built_content != contents[page_id])
+        if changed and (wanted is None or page_id in wanted):
             drop_page_blocks(con, page_id)
     with_blocks = {page_id for (page_id,) in con.execute(
         "SELECT DISTINCT page_id FROM blocks").fetchall()}
@@ -556,9 +569,16 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
             con.executemany(
                 "INSERT INTO blocks (page_id, ordinal, kind, region, level, heading_path, text, "
                 "cells) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", rows)
-        con.execute("INSERT OR REPLACE INTO blocks_built VALUES (?, ?, current_timestamp)",
-                    [page_id, hashes[page_id]])
+        con.execute("INSERT OR REPLACE INTO blocks_built VALUES (?, ?, current_timestamp, ?)",
+                    [page_id, hashes[page_id], contents[page_id]])
     return len(pages)
+
+
+def content_hash(title: str | None, h1: str | None, main_content: str | None) -> str:
+    """Az oldal renderelt tartalmának hash-e: a title, a H1 és a fő tartalom (ahogy a crawl a
+    renderelt DOM-ból kinyerte)."""
+    text = "\x1f".join(part or "" for part in (title, h1, main_content))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def drop_page_blocks(con: duckdb.DuckDBPyConnection, page_id: int) -> None:
