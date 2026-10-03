@@ -61,6 +61,34 @@ def test_the_steps_run_in_order_and_the_queries_return_contracts():
     assert sum(count for _, count, _ in api.entity_type_counts(opened)) >= 2
 
 
+def test_only_confident_wikidata_links_count_in_the_report_and_the_api(tmp_path):
+    opened = business()
+    api.extract(opened, llm=False)
+    api.resolve(opened, knowledge=False)
+    ids = [row[0] for row in opened.con.execute(
+        "SELECT entity_id FROM entities WHERE entity_id IN (SELECT entity_id FROM "
+        "page_entities) ORDER BY entity_id LIMIT 2").fetchall()]
+    assert len(ids) == 2
+    sure, likely = ids
+    opened.con.execute("UPDATE entities SET wikidata_id = 'Q1', wikipedia = 'hu:Biztos', "
+                       "wikidata_status = 'confident' WHERE entity_id = ?", [sure])
+    opened.con.execute("UPDATE entities SET wikidata_id = 'Q2', wikipedia = 'hu:Talan', "
+                       "wikidata_status = 'probable' WHERE entity_id = ?", [likely])
+    links = {link.entity_id: link for link in api.kb_links(opened)}
+    assert (links[sure].wikidata_id, links[sure].wikipedia) == ("Q1", "hu:Biztos")
+    assert (links[likely].wikidata_id, links[likely].wikipedia) == (None, None)
+    assert links[likely].wikidata_status == "probable"          # a státusz látszik
+    stored = {link.entity_id: link for link in api.kb_links(opened, confident_only=False)}
+    assert (stored[likely].wikidata_id, stored[likely].wikipedia) == ("Q2", "hu:Talan")
+    # a futásjelentés a biztosakat számolja, a valószínűek száma külön áll
+    paths = api.entity_report(opened, out=tmp_path)
+    report = next(Path(p) for p in paths if str(p).endswith("-run.md")).read_text(
+        encoding="utf-8")
+    total = next(line for line in report.splitlines() if line.startswith("| **összesen**"))
+    assert total.split("|")[-3:-1] == [" 1 ", " 1 "]
+    assert "valószínű Wikidata-kapcsolás (csak tárolva, a riport nem számol vele): 1" in report
+
+
 def test_estimate_without_llm_only_reports():
     opened = business()
     messages = []

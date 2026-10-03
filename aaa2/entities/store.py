@@ -196,9 +196,18 @@ def entities_for_entities_section(con: duckdb.DuckDBPyConnection) -> list[tuple]
     return con.execute(
         "SELECT e.type, count(DISTINCT e.entity_id), count(*), count(DISTINCT "
         "pe.page_id), count(DISTINCT e.entity_id) FILTER (WHERE e.wikidata_id IS NOT "
-        "NULL), count(DISTINCT e.entity_id) FILTER (WHERE e.wikipedia IS NOT NULL) "
+        "NULL AND e.wikidata_status = 'confident'), count(DISTINCT e.entity_id) FILTER "
+        "(WHERE e.wikipedia IS NOT NULL AND e.wikidata_status = 'confident') "
         "FROM entities e JOIN page_entities pe USING (entity_id) GROUP BY e.type ORDER "
         "BY count(DISTINCT e.entity_id) DESC, e.type").fetchall()
+
+
+def probable_link_count(con: duckdb.DuckDBPyConnection) -> int:
+    """Lekérdezés: entities, page_entities. Hívja: entities/report.py: entities_section. Az
+    említéssel bíró entitások száma, amelyek Wikidata-kapcsolása csak valószínű."""
+    return con.execute(
+        "SELECT count(*) FROM entities WHERE wikidata_status = 'probable' AND wikidata_id IS "
+        "NOT NULL AND entity_id IN (SELECT entity_id FROM page_entities)").fetchone()[0]
 
 
 def entities_for_entities_section_2(con: duckdb.DuckDBPyConnection) -> list[tuple]:

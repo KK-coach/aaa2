@@ -81,9 +81,18 @@ def entities(site: Site) -> list[Entity]:
     return [Entity.from_row(row) for row in store.entity_rows(site.con)]
 
 
-def kb_links(site: Site) -> list[KbLink]:
-    """Az entitások tudásbázis-kapcsolatai (Wikidata, Wikipedia, Knowledge Graph)."""
-    return [KbLink.from_row(row) for row in store.entity_rows(site.con)]
+def kb_links(site: Site, *, confident_only: bool = True) -> list[KbLink]:
+    """Az entitások tudásbázis-kapcsolatai (Wikidata, Wikipedia, Knowledge Graph). Alapból csak
+    a biztos (`wikidata_status = confident`) Wikidata- és Wikipedia-kapcsolás látszik: a riport
+    és minden javaslat (sameAs, tudásbázis-lehetőség, `is_a`, nyelvi összevonás) csak ezzel
+    számol; a valószínű kapcsolás csak tárolva van, a mezői itt üresek. `confident_only=False`:
+    a tárolt állapot, a valószínűvel együtt (ellenőrzéshez)."""
+    links = [KbLink.from_row(row) for row in store.entity_rows(site.con)]
+    if not confident_only:
+        return links
+    return [link if link.wikidata_status == "confident"
+            else link.model_copy(update={"wikidata_id": None, "wikipedia": None})
+            for link in links]
 
 
 # --- gráf ----------------------------------------------------------------------------------
