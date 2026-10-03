@@ -44,8 +44,10 @@ heading-útvonallal; a `blocks` tábla forrása (M2 spec A2). A forrás közvetl
   - Soron belüli burkoló (`<a><h2>…</h2><p>…</p></a>`, `<span><h3>…</h3></span>`): ha a
     burkolóban látható, nem üres heading áll, a burkoló nem olvad a szülő blokk szövegébe,
     hanem tárolóként járjuk be: a heading heading-blokk, a burkoló többi szövege a saját
-    blokkja(i) a dokumentum sorrendjében. A link anchor-szövege a burkolóból elsőként kiadott
-    blokké.
+    blokkja(i) a dokumentum sorrendjében. A link anchor-szövege a burkoló első heading-blokkjáé
+    (a kártya címéé), nem a burkolóból elsőként kiadott blokké: a kártyacím-keresés
+    (`resolver.offers._card_headings`) az anchor blokkja előtti headinget keresi, és a
+    következő kártya linkjéhez különben az előző kártya headingjét rendelné.
   - Táblázatcella (`<td><h2>…</h2>…</td>`): a cella headingje heading-blokk a sor blokkja
     előtt, a cella értékéből a heading szövege kimarad (a sor a maradék cellaszöveggel jön;
     üresen nem ad blokkot).
@@ -532,14 +534,15 @@ def _parse(tree: HTMLParser, title: str | None, skip_panes: frozenset[int]
     headers: dict[int, list[str]] = {}
     ordinal = 0
     pane: int | None = None
-    lead: list[str] = []                   # a tárolóként bejárt link anchor-szövege
+    lead: list[str] = []                   # a tárolóként bejárt link anchor-szövege: a
+                                           # burkoló első heading-blokkjáé (a kártya címe)
 
     def emit(kind: str, region: str, text: str, anchors: list[str], level: int | None = None,
              cells: list[dict] | None = None) -> None:
         nonlocal ordinal
         if not text:
             return
-        if lead:
+        if lead and kind == "heading":
             anchors = [*lead, *anchors]
             lead.clear()
         if kind == "heading":

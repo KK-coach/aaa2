@@ -277,7 +277,17 @@ def test_a_heading_inside_a_link_gets_a_heading_block_and_its_text_is_not_duplic
         ("list_item", None, "raktáron"), ("heading", 2, "Termék B"),
         ("list_item", None, "Sima link szöveggel")]
     assert occurrences(parsed, "Termék A") == occurrences(parsed, "Termék B") == 1
-    # a link anchor-szövege a burkolóból elsőként kiadott blokké (a headingé)
+    # a link anchor-szövege a burkoló heading-blokkjáé (a kártya címéé), akkor is, ha a
+    # burkolóban a heading előtt más blokk áll
+    numbered = parse_blocks(
+        "<html><body><main><h1>Lista</h1><div>"
+        "<a href='/a'><span>01</span><h3>SEO</h3><p>Leírás egy.</p></a>"
+        "<a href='/b'><span>02</span><h3>Mérés</h3><p>Leírás kettő.</p></a>"
+        "</div></main></body></html>")
+    assert [(b.kind, b.text, b.anchors) for b in numbered[1:]] == [
+        ("other", "01", []), ("heading", "SEO", ["01 SEO Leírás egy."]),
+        ("paragraph", "Leírás egy.", []), ("other", "02", []),
+        ("heading", "Mérés", ["02 Mérés Leírás kettő."]), ("paragraph", "Leírás kettő.", [])]
     assert parsed[2].anchors == ["Termék A 12 000 Ft"] and parsed[5].anchors == ["Termék B"]
     assert parsed[6].anchors == ["Sima link"]
     assert parsed[3].heading_path == ["Lista", "Termék A"]
