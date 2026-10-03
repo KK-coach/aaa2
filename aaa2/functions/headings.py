@@ -49,7 +49,6 @@ from collections import defaultdict
 from collections.abc import Mapping
 
 import duckdb
-import zstandard
 
 from aaa2.engine import queries as crawl
 from aaa2.entities import queries as extract_queries
@@ -104,7 +103,6 @@ def page_headings(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping],
             linked[edge.from_id].add(edge.to_id)
             linked[edge.to_id].add(edge.from_id)
             parents[edge.from_id].add(edge.to_id)
-    decompressor = zstandard.ZstdDecompressor()
     found: dict[int, dict] = {}
     for page_id in sorted(pages):
         picked = chosen.get(page_id, [])
@@ -122,10 +120,9 @@ def page_headings(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping],
 
         dom_h1: list[tuple[str, str]] = []
         dom_levels: set[int] = set()
-        rendered = crawl.rendered(con, page_id)
-        if rendered is not None and rendered[1] is not None:
-            dom_h1, dom_levels = heading_scan(
-                decompressor.decompress(rendered[1]).decode("utf-8", "replace"))
+        rendered = crawl.rendered_dom(con, page_id)
+        if rendered is not None:
+            dom_h1, dom_levels = heading_scan(rendered)
         outside = [(where, text) for where, text in dom_h1 if where != "content"]
         outside_keys = {alias_key(text) for _, text in outside}
         roots: list[dict] = []

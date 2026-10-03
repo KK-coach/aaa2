@@ -1,7 +1,8 @@
 """A crawl modul lekérdező függvényei: a crawl tábláit (`site`, `pages`, `links`,
 `schema_blocks`, `structured_data`, `crawl_runs`, `crawl_queue`) más modul ezeken keresztül
 olvassa, közvetlen SQL nélkül. A visszaadott érték szerződés (`aaa2/contracts`); kivétel a tárolt
-renderelt DOM (tömörített bájtok), amely nem része a `Page` szerződésnek.
+renderelt DOM (`rendered_html`: tömörített bájtok, `rendered_dom`: szöveg), amely nem része a
+`Page` szerződésnek.
 
 A sorrend mindenhol rögzített (az elsődleges kulcs, illetve az oldal és a sorszám szerint)."""
 from __future__ import annotations
@@ -11,6 +12,7 @@ from collections import Counter
 from urllib.parse import urljoin
 
 import duckdb
+import zstandard
 
 from aaa2.contracts import CrawlRun, Link, Page, PageMeta, Site, StructuredData
 
@@ -50,6 +52,15 @@ def rendered_html(con: duckdb.DuckDBPyConnection, page_id: int) -> bytes | None:
     """Az oldal tárolt renderelt DOM-ja tömörítve (zstd); None, ha nincs."""
     row = con.execute("SELECT rendered_html FROM pages WHERE page_id = ?", [page_id]).fetchone()
     return row[0] if row else None
+
+
+def rendered_dom(con: duckdb.DuckDBPyConnection, page_id: int) -> str | None:
+    """Az oldal tárolt renderelt DOM-ja szövegként (`rendered_html` kicsomagolva); None, ha
+    nincs."""
+    blob = rendered_html(con, page_id)
+    if blob is None:
+        return None
+    return zstandard.ZstdDecompressor().decompress(blob).decode("utf-8", "replace")
 
 
 def rendered(con: duckdb.DuckDBPyConnection, page_id: int) -> tuple[str | None, bytes | None]:

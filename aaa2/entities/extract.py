@@ -35,9 +35,10 @@ determinisztikus kör entitásaival összevonva.
   hibás, de van sikeres darab, az oldal állapota `partial` (nem `done`): a sikeres darabok
   említései mentődnek, a rekord `failed_chunks` mezője a hibás darabok sorszáma (0-tól), a
   futás okai között `partial_pages` számolja. A `partial` oldal nem végleges: a folytatás
-  (`resume`) a hibás darabokat kéri újra (ha a darabolás közben megváltozott, az egész oldalt),
-  utána a kinyerés utáni lépés is újra lefut; az újrahasználat (`reuse`) a részleges rekordot
-  nem veszi át, az oldal teljes kinyerést kap.
+  (`resume`) a hibás darabokat kéri újra, ha a rekord tárolt bemenet-hash-e (`input_hash`)
+  egyezik a jelenlegivel; ha eltér (a blokkok, a prompt vagy a modellek változtak), az egész
+  oldal újra kinyerődik (`partial_input_changed`). Utána a kinyerés utáni lépés is újra lefut;
+  az újrahasználat (`reuse`) a részleges rekordot nem veszi át, az oldal teljes kinyerést kap.
 - Oldalnapló (`entity_run_pages`): állapot, okok, hívások, időtartam, a kinyerés rekordja és a
   lépés utáni rekord. Folytatás (`resume`): a modell legutóbbi futása megy tovább, a kész
   oldal kimarad, a meglévő rekord nem hív újra. A keret-őr leállítása és a költséghatár
@@ -194,13 +195,14 @@ def run_pages(con: duckdb.DuckDBPyConnection, run_id: int | None) -> dict[int, d
     if run_id is None:
         return {}
     rows = con.execute(
-        "SELECT page_id, status, reasons, call_ids, extraction, refined FROM entity_run_pages "
-        "WHERE run_id = ? ORDER BY ALL", [run_id]).fetchall()
+        "SELECT page_id, status, reasons, call_ids, extraction, refined, input_hash "
+        "FROM entity_run_pages WHERE run_id = ? ORDER BY ALL", [run_id]).fetchall()
     return {page_id: {"status": status, "reasons": json.loads(reasons or "{}"),
                       "call_ids": list(call_ids or []),
                       "extraction": json.loads(extraction) if extraction else None,
-                      "refined": json.loads(refined) if refined else None}
-            for page_id, status, reasons, call_ids, extraction, refined in rows}
+                      "refined": json.loads(refined) if refined else None,
+                      "input_hash": input_hash}
+            for page_id, status, reasons, call_ids, extraction, refined, input_hash in rows}
 
 
 @dataclass
@@ -350,6 +352,10 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                          _PageLog("skipped", Counter(no_content_blocks=1)), 0.0, clock)
                     continue
                 hashes[page_id] = input_fingerprint(site, blocks, models)
+                if ((prior.get("extraction") or {}).get("failed_chunks")
+                        and prior.get("input_hash") != hashes[page_id]):
+                    # a részleges rekord más bemenetből készült: az egész oldal újra megy
+                    prior = {**prior, "extraction": None, "refined": None, "restarted": True}
                 stored = reusable.get(page_id)
                 if not prior.get("extraction") and stored and stored[0] == hashes[page_id]:
                     prior = {"extraction": stored[1], "refined": stored[2], "call_ids": [],
@@ -444,6 +450,8 @@ def _page_llm(worker: Worker, site: str, page_id: int, lang: str | None, blocks:
                    extraction=prior.get("extraction"), refined=prior.get("refined"))
     if prior.get("reused"):
         log.reasons["reused_extraction"] += 1
+    if prior.get("restarted"):
+        log.reasons["partial_input_changed"] += 1
     if log.extraction is not None and log.extraction.get("failed_chunks"):
         try:
             log.extraction = _extract(worker.client, site, blocks, page_id, log.extraction)
@@ -501,10 +509,7 @@ def _extract(client: LLMClient, site: str, blocks: Sequence[dict], page_id: int,
     `reasons` (a kimaradás okai), és ha van hibás darab a sikeresek mellett, `failed_chunks`
     (a hibás darabok sorszáma). `partial`: egy korábbi részleges rekord; csak a hibás darabjai
     kapnak új hívást, az eredmény a korábbi sikeres darabokkal összefésülve, dokumentum-
-    sorrendben. Ha a darabolás azóta más (a blokkok változtak), az egész oldal újra kinyerődik."""
-    chunks = len(list(chunk_blocks(blocks)))
-    if partial is not None and partial.get("chunks") != chunks:
-        partial = None
+    sorrendben. A hívó csak azonos bemenetű (`input_hash`) részleges rekordot ad át."""
     only = None if partial is None else list(partial["failed_chunks"])
     page = extract_page(client, site, blocks, page_id, only)
     failed = {call_id for _, call_id in page.failures}
