@@ -839,10 +839,18 @@ def test_the_version_check_ignores_whitespace_and_zero_width_characters():
     assert not same_blocks([block], [(1, "paragraph", "chrome", None, ["A cím"],
                                       "szöveg, vége", None)])
     assert not same_blocks([block], [block, block])
-    assert not same_blocks([(1, "table_row", "content", None, [], "a | b",
-                             [{"header": None, "value": "a"}])],
-                           [(1, "table_row", "content", None, [], "a | b",
-                             [{"header": None, "value": "a "}])])
+    # a cellák értéke is szóköz-független; a számuk, a sorrendjük és a fejlécük pontos
+
+    def table_row(*cells):
+        return [(1, "table_row", "content", None, [], "a | b",
+                 [{"header": header, "value": value} for header, value in cells])]
+
+    old_row = table_row(("Név", "If true , then"), (None, "b\u200b"))
+    assert same_blocks(old_row, table_row(("Név", "If true, then"), (None, "b")))
+    assert not same_blocks(old_row, table_row(("Név", "If true, than"), (None, "b")))
+    assert not same_blocks(old_row, table_row(("Név ", "If true, then"), (None, "b")))
+    assert not same_blocks(old_row, table_row((None, "b"), ("Név", "If true, then")))
+    assert not same_blocks(old_row, table_row(("Név", "If true, then")))
 
 
 def test_legacy_blocks_are_adopted_without_rebuilding():

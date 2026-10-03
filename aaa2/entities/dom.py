@@ -719,8 +719,9 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
 
     A blokképítő változása (`BLOCKS_VERSION`, `blocks_built.builder_version`): a régebbi
     verzióval épült oldal blokkjai memóriában újraépülnek, és összevetődnek a tároltakkal
-    (`same_blocks`: a szöveg és a heading-útvonal whitespace és nulla szélességű karakter
-    nélkül; a blokkok száma, sorrendje, fajtája, régiója, szintje és cellái pontosan). Ha így
+    (`same_blocks`: a szöveg, a heading-útvonal és a cellák értéke whitespace és nulla
+    szélességű karakter nélkül; a blokkok és a cellák száma, sorrendje, a fajta, a régió, a
+    szint és a cellák fejléce pontosan). Ha így
     azonosak, csak a verzió frissül, a tárolt blokkok érintetlenek (az említések és a tárolt
     kinyerés megmarad); ha eltérnek, az oldal a megváltozott oldal útján épül újra. A tárolt
     blokkok szövege ezért egy régebbi építőtől szóközben eltérhet a mostani építőétől; ez
@@ -801,11 +802,14 @@ def content_hash(title: str | None, h1: str | None, main_content: str | None) ->
 
 def same_blocks(stored: Sequence[tuple], built: Sequence[tuple]) -> bool:
     """Azonos-e két blokksor a verziós összevetés szerint. Elemei: (sorszám, fajta, régió,
-    szint, heading-útvonal, szöveg, cellák). A szövegből és a heading-útvonalból minden
-    whitespace és nulla szélességű karakter kimarad; a többi mező, a blokkok száma és sorrendje
-    pontosan egyezik."""
+    szint, heading-útvonal, szöveg, cellák). A szövegből, a heading-útvonalból és a cellák
+    értékéből minden whitespace és nulla szélességű karakter kimarad; a többi mező, a blokkok
+    és a cellák száma és sorrendje, és a cellák fejléce pontosan egyezik."""
     def plain(block: tuple) -> tuple:
         ordinal, kind, region, level, path, text, cells = block
+        if isinstance(cells, list):
+            cells = [{**cell, "value": BLANK.sub("", cell.get("value") or "")}
+                     if isinstance(cell, dict) else cell for cell in cells]
         return (ordinal, kind, region, level, [BLANK.sub("", part) for part in path or []],
                 BLANK.sub("", text or ""), cells)
 
