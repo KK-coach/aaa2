@@ -9,7 +9,7 @@ import httpx
 import pytest
 from typer.testing import CliRunner
 
-import aaa2.cli.main as cli
+import aaa2.api.steps as cli
 import aaa2.db.connect as connect_module
 from aaa2.cli.main import app
 from aaa2.db.connect import connect, db_path

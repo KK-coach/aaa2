@@ -1117,3 +1117,11 @@ def entity_and_mention_counts_by_type(con: duckdb.DuckDBPyConnection) -> list[tu
     return con.execute(
         "SELECT e.type, count(DISTINCT e.entity_id), count(*) FROM entities e "
         "JOIN page_entities pe USING (entity_id) GROUP BY e.type ORDER BY e.type").fetchall()
+
+
+def entity_rows(con: duckdb.DuckDBPyConnection) -> list[dict]:
+    """Az entitások minden oszlopa oszlopnév → érték sorokként, `entity_id` szerint (az API ebből
+    építi az `Entity` és a `KbLink` szerződést)."""
+    cursor = con.execute("SELECT * FROM entities ORDER BY entity_id")
+    names = [column[0] for column in cursor.description]
+    return [dict(zip(names, row, strict=True)) for row in cursor.fetchall()]
