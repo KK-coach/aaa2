@@ -174,6 +174,196 @@ def test_shop_levels_brand_family_variant_and_category(shop_config):
                        "AND position = 'h1'", [family]).fetchone() == (3,)
 
 
+# ---------------------------------------------------------------------------
+# ugyanaz a bolt microdatával (JSON-LD nélkül)
+# ---------------------------------------------------------------------------
+
+
+def md_trail(*items):
+    """Morzsamenü microdatával, relatív linkekkel (ahogy a webshop-motorok adják)."""
+    rows = "".join(
+        f'<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">'
+        f'<a itemprop="item" href="{path}"><span itemprop="name">{name}</span></a>'
+        f'<meta itemprop="position" content="{i + 1}"></li>'
+        for i, (name, path) in enumerate(items))
+    return f'<ol itemscope itemtype="http://schema.org/BreadcrumbList">{rows}</ol>'
+
+
+def md_product_page(name, brand_path=None, brand=None, brand_item=None,
+                    category=("Klíma", "/sct/2/Klima")):
+    """Termékoldal microdata `Product` elemmel: `url` nélkül, beágyazott `Offer`-rel és
+    `Review`-val; a márka a morzsamenüből vagy a beágyazott `Brand` elemből."""
+    items = [("Főoldal", "/"), ("Termékek", "/sct/1/Termekek"), category]
+    if brand_path:
+        items.append((brand, brand_path))
+    brand_html = (f'<span itemprop="brand" itemscope itemtype="http://schema.org/Brand">'
+                  f'<meta itemprop="name" content="{brand_item}"></span>') if brand_item else ""
+    return html(
+        f"{name} - Pel",
+        f'{md_trail(*items)}<main itemscope itemtype="http://schema.org/Product">'
+        f'<h1 itemprop="name">{name}</h1><p>Leírás.</p>{brand_html}'
+        f'<div itemprop="offers" itemscope itemtype="http://schema.org/Offer">'
+        f'<meta itemprop="price" content="199000"><meta itemprop="priceCurrency" content="HUF">'
+        f'</div><div itemprop="aggregateRating" itemscope '
+        f'itemtype="http://schema.org/AggregateRating"><meta itemprop="ratingValue" content="5">'
+        f'</div></main>')
+
+
+def md_listing(h1, *items):
+    return html(f"{h1} - Pelda Webshop",
+                f"{md_trail(*items)}<main><h1>{h1}</h1><p>Lista.</p></main>")
+
+
+def md_shop_site():
+    brand = ("ACME", "/spl/3/ACME")
+    pages = {
+        "/": html("Pelda Webshop", "<main><h1>Pelda Webshop</h1></main>",
+                  head=ld({"@type": "Organization", "name": "Pelda Webshop",
+                           "url": f"{SHOP}/"})),
+        "/sct/1/Termekek": md_listing("Termékek", ("Főoldal", "/"),
+                                      ("Termékek", "/sct/1/Termekek")),
+        "/sct/2/Klima": md_listing("Klíma", ("Főoldal", "/"), ("Termékek", "/sct/1/Termekek"),
+                                   ("Klíma", "/sct/2/Klima")),
+        "/spl/3/ACME": md_listing("ACME", ("Főoldal", "/"), ("Termékek", "/sct/1/Termekek"),
+                                  ("Klíma", "/sct/2/Klima"), brand),
+    }
+    for path, name in [("/spd/a", "Acme Nordic 2,6 kW oldalfali klíma"),
+                       ("/spd/b", "Acme Nordic 3,5 kW oldalfali klíma"),
+                       ("/spd/c", "Acme Solo 5,1 kW A+++")]:
+        pages[path] = md_product_page(name, brand[1], brand[0])
+    pages["/spd/d"] = md_product_page("Acme Nordic 5,1 kW oldalfali klíma")
+    pages["/spd/e"] = md_product_page("Egyedi Termék 1 Fázis")
+    # márkaoldal nélkül: a márka a beágyazott `Brand` elemből
+    pages["/spd/f"] = md_product_page("Borealis X 2,6 kW", brand_item="Borealis")
+    return site(pages)
+
+
+def test_microdata_gives_page_types_and_breadcrumbs_like_json_ld(shop_config):
+    con = md_shop_site()
+    assert con.execute("SELECT count(*) FROM schema_blocks").fetchone() == (1,)   # csak a kezdőlap
+    urls = dict(con.execute("SELECT page_id, url FROM pages").fetchall())
+    kinds = {urls[p]: k for p, k in page_types(con, load_site_config("pelda.hu").page_types)
+             .items()}
+    assert kinds[f"{SHOP}/sct/2/Klima"] == "category"
+    assert kinds[f"{SHOP}/spl/3/ACME"] == "brand_category"
+    assert kinds[f"{SHOP}/"] == "other"
+    for path in "abcdef":
+        assert kinds[f"{SHOP}/spd/{path}"] == "product"       # a microdata `Product` alapján
+    # site-fájl nélkül is: a microdata `Product` önmagában termékoldalt ad
+    assert {urls[p] for p, k in page_types(con).items() if k == "product"} == {
+        f"{SHOP}/spd/{path}" for path in "abcdef"}
+    trails = {urls[p]: t for p, t in breadcrumbs(con).items()}
+    assert trails[f"{SHOP}/spd/a"] == [
+        ("Főoldal", f"{SHOP}/"), ("Termékek", f"{SHOP}/sct/1/Termekek"),
+        ("Klíma", f"{SHOP}/sct/2/Klima"), ("ACME", f"{SHOP}/spl/3/ACME")]   # a relatív link feloldva
+
+
+def test_microdata_shop_gives_the_same_levels_as_the_json_ld_shop(shop_config):
+    con = md_shop_site()
+    run_rules(con)
+    run = run_site(con)
+    assert run.shop["products"] == 6 and run.shop["unbranded"] == ["Egyedi Termék 1 Fázis"]
+    rows = {(name, kind, subtype) for name, kind, subtype in con.execute(
+        "SELECT name, type, subtype FROM entities").fetchall()}
+    assert ("Acme", "brand", None) in rows
+    assert ("Borealis", "brand", None) in rows              # a beágyazott `Brand` elemből
+    assert ("Acme Nordic", "product", "line") in rows
+    assert ("Klíma", "concept", "category") in rows
+    ids = dict(con.execute("SELECT name, entity_id FROM entities").fetchall())
+    relations = set(con.execute("SELECT from_id, to_id, type FROM entity_relations").fetchall())
+    family, brand, category = ids["Acme Nordic"], ids["Acme"], ids["Klíma"]
+    for name in ("Acme Nordic 2,6 kW oldalfali klíma", "Acme Nordic 3,5 kW oldalfali klíma",
+                 "Acme Nordic 5,1 kW oldalfali klíma"):
+        assert (ids[name], family, "part_of") in relations
+        assert (ids[name], category, "in_category") in relations
+    assert (brand, family, "brand_of") in relations
+    assert (ids["Borealis"], ids["Borealis X 2,6 kW"], "brand_of") in relations
+    # a termék schema-említése a microdatából jön
+    assert con.execute(
+        "SELECT count(*) FROM page_entities pe JOIN mention_sources s USING (mention_id) "
+        "WHERE pe.entity_id = ? AND s.source = 'schema'", [ids["Borealis X 2,6 kW"]]
+    ).fetchone() == (1,)
+
+
+REVIEWED = {
+    "@type": "Product", "name": "Levendula szappan", "url": f"{SHOP}/spd/l",
+    "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4,8", "reviewCount": "12"},
+    "review": [{"@type": "Review", "name": "Nagyon jó",
+                "author": {"@type": "Person", "name": "Kovács Béla"},
+                "reviewRating": {"@type": "Rating", "ratingValue": "5"},
+                "publisher": {"@type": "Organization", "name": "Véleménygyűjtő Kft."}}],
+    "offers": {"@type": "Offer", "price": "1990"}}
+REVIEWED_MICRODATA = (
+    '<main itemscope itemtype="http://schema.org/Product"><h1 itemprop="name">Rózsa szappan</h1>'
+    '<div itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating">'
+    '<meta itemprop="ratingValue" content="4.5"><meta itemprop="ratingCount" content="7"></div>'
+    '<div itemprop="review" itemscope itemtype="http://schema.org/Review">'
+    '<span itemprop="author" itemscope itemtype="http://schema.org/Person">'
+    '<span itemprop="name">Szabó Anna</span></span>'
+    '<span itemprop="reviewRating" itemscope itemtype="http://schema.org/Rating">'
+    '<meta itemprop="ratingValue" content="4"></span></div></main>')
+
+
+def test_review_nodes_are_not_entities_and_the_aggregate_rating_is_a_product_attribute():
+    con = site({
+        "/": html("Pelda", "<main><h1>Pelda</h1></main>",
+                  head=ld({"@type": "Organization", "name": "Pelda", "url": f"{SHOP}/"})),
+        "/spd/l": html("Levendula szappan", "<main><h1>Levendula szappan</h1></main>",
+                       head=ld(REVIEWED)),
+        "/spd/r": html("Rózsa szappan", REVIEWED_MICRODATA),
+        # önálló (nem termék alatti) vélemény is kimarad
+        "/velemenyek": html("Vélemények", "<main><h1>Vélemények</h1></main>", head=ld(
+            {"@type": "Review", "author": {"@type": "Person", "name": "Tóth Géza"},
+             "itemReviewed": {"@type": "Organization", "name": "Pelda"}})),
+    })
+    run_rules(con)
+    run_site(con)
+    entities = set(con.execute("SELECT type, name FROM entities").fetchall())
+    assert ("product", "Levendula szappan") in entities
+    assert ("product", "Rózsa szappan") in entities
+    names = {name for _, name in entities}
+    assert not names & {"Kovács Béla", "Szabó Anna", "Tóth Géza", "Véleménygyűjtő Kft.",
+                        "Nagyon jó"}
+    assert not {kind for kind, _ in entities} & {"person"}
+    skipped = json.loads(con.execute(
+        "SELECT skipped FROM entity_runs WHERE method = 'rules' ORDER BY run_id DESC LIMIT 1"
+    ).fetchone()[0])
+    assert "Review" not in skipped.get("unmapped_schema_types", {})     # be sem járja
+    assert "Rating" not in skipped.get("unmapped_schema_types", {})
+    attributes = {name: json.loads(value) for name, value in con.execute(
+        "SELECT name, attributes FROM entities WHERE type = 'product'").fetchall()}
+    assert attributes["Levendula szappan"] == {"rating_average": 4.8, "rating_count": 12}
+    assert attributes["Rózsa szappan"] == {"rating_average": 4.5, "rating_count": 7}
+
+
+def test_schema_items_resolve_microdata_urls_and_leave_listing_products_alone():
+    from aaa2.engine import queries
+
+    card = ('<div itemscope itemtype="http://schema.org/Product"><a itemprop="url" href="/spd/{0}">'
+            '<span itemprop="name">Termék {0}</span></a></div>')
+    con = site({
+        "/lista": html("Lista", "<main><h1>Lista</h1>" + card.format("a") + card.format("b")
+                       + "</main>"),
+        "/spd/a": html("Termék a", '<main itemscope itemtype="http://schema.org/Product">'
+                                   '<h1 itemprop="name">Termék a</h1></main>'),
+        "/spd/b": html("Termék b", "<main><h1>Termék b</h1></main>"),
+    })
+    urls = dict(con.execute("SELECT page_id, url FROM pages").fetchall())
+    found = {(urls[item.page_id], item.data.get("url")) for item in queries.schema_items(con)
+             if item.syntax == "microdata"}
+    assert found == {(f"{SHOP}/lista", f"{SHOP}/spd/a"), (f"{SHOP}/lista", f"{SHOP}/spd/b"),
+                     (f"{SHOP}/spd/a", f"{SHOP}/spd/a")}
+    kinds = {urls[p]: k for p, k in page_types(con).items()}
+    # a listaoldal több terméket jelöl: nem termékoldal; a /spd/b-re a lista terméke mutat
+    assert kinds == {f"{SHOP}/lista": "other", f"{SHOP}/spd/a": "product",
+                     f"{SHOP}/spd/b": "other"}
+    # microdata nélkül a forrás a JSON-LD maga
+    plain = site({"/": html("Kezdő", "<main><h1>Kezdő</h1></main>",
+                            head=ld({"@type": "Organization", "name": "Pelda"}))})
+    assert [(i.syntax, i.data) for i in queries.schema_items(plain)] == [
+        (i.syntax, i.data) for i in queries.json_ld(plain)]
+
+
 def test_a_rerun_keeps_the_relations_consistent(shop_config):
     """Újrafuttatáskor (szabálykör + site-kör) a kapcsolatok száma ugyanaz, és egyik sem mutat
     törölt entitásra."""
