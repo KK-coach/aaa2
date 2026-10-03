@@ -165,7 +165,8 @@ def run_report(con: duckdb.DuckDBPyConnection, label: str,
 def _entities_section(con: duckdb.DuckDBPyConnection) -> list[str]:
     rows = store.entities_for_entities_section(con)
     lines = ["## Entitások típusonként", "",
-             "| típus | entitás | említés | oldal | Wikidata | Wikipedia |", "|---|---|---|---|---|---|"]
+             "| típus | entitás | említés | oldal | Wikidata (biztos) | Wikipedia (biztos) |",
+             "|---|---|---|---|---|---|"]
     lines += [f"| {kind} | {entities} | {mentions} | {pages} | {qid} | {wiki} |"
               for kind, entities, mentions, pages, qid, wiki in rows]
     total = [sum(r[i] for r in rows) for i in (1, 2, 4, 5)]
@@ -173,7 +174,9 @@ def _entities_section(con: duckdb.DuckDBPyConnection) -> list[str]:
     by_source = store.entities_for_entities_section_2(con)
     (unchecked,) = store.entities_for_entities_section_3(con)
     lines += ["", "Forrás szerint: " + (", ".join(f"{s} {n}" for s, n in by_source) or "—")
-              + f"; tudásbázis-ellenőrzés nélkül: {unchecked}", ""]
+              + f"; tudásbázis-ellenőrzés nélkül: {unchecked}"
+              + f"; valószínű Wikidata-kapcsolás (csak tárolva, a riport nem számol vele): "
+                f"{store.probable_link_count(con)}", ""]
     return lines
 
 

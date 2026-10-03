@@ -267,10 +267,14 @@ A site entitásai, `entity_id` szerint.
 ### `kb_links`
 
 ```python
-kb_links(site: 'Site') -> 'list[KbLink]'
+kb_links(site: 'Site', *, confident_only: 'bool' = True) -> 'list[KbLink]'
 ```
 
-Az entitások tudásbázis-kapcsolatai (Wikidata, Wikipedia, Knowledge Graph).
+Az entitások tudásbázis-kapcsolatai (Wikidata, Wikipedia, Knowledge Graph). Alapból csak
+a biztos (`wikidata_status = confident`) Wikidata- és Wikipedia-kapcsolás látszik: a riport
+és minden javaslat (sameAs, tudásbázis-lehetőség, `is_a`, nyelvi összevonás) csak ezzel
+számol; a valószínű kapcsolás csak tárolva van, a mezői itt üresek. `confident_only=False`:
+a tárolt állapot, a valószínűvel együtt (ellenőrzéshez).
 
 ### `page_nodes`
 
