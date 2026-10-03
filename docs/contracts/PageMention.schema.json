@@ -1,0 +1,32 @@
+{
+  "additionalProperties": false,
+  "description": "Egy oldalon említett további entitás a súlyával.",
+  "properties": {
+    "entity": {
+      "title": "Entity",
+      "type": "string"
+    },
+    "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": "1.2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "weight": {
+      "title": "Weight",
+      "type": "number"
+    }
+  },
+  "required": [
+    "entity_id",
+    "entity",
+    "weight"
+  ],
+  "title": "PageMention",
+  "type": "object",
+  "x-module": "findings",
+  "x-schema-version": "1.2"
+}

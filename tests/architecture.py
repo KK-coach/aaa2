@@ -1,5 +1,6 @@
-"""Architektúra-elemzés jelentő módban (architektúra-spec, 3. pont): a tiltott importok és a
-más modul tábláit író vagy közvetlenül olvasó helyek listája. Nem buktat, csak jelent.
+"""Architektúra-elemzés (architektúra-spec, 3. pont): a tiltott importok és a más modul tábláit
+író vagy közvetlenül olvasó helyek listája. Az elemzés csak jelent; a `tests/test_architecture.py`
+bukik, ha bármelyik lista nem üres.
 
 - Modulok: a fájlok mai helyük szerint tartoznak modulhoz (`MODULES`; a spec 2. pontjának
   táblázata, a spec által meg nem nevezett fájlok besorolása a `docs/architecture/tables.toml`

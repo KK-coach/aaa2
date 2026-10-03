@@ -513,8 +513,8 @@ def test_status_of_a_site_adds_its_own_calls(tmp_path, monkeypatch):
 
 
 def test_cli_models_exit_code(api, env, monkeypatch):
-    import aaa2.cli.main as cli
-    monkeypatch.setattr(cli, "check_models", lambda: check_models(
+    import aaa2.api.steps as cli
+    monkeypatch.setattr(cli, "_check_models", lambda: check_models(
         env_file=env, base_urls=dict.fromkeys(PROVIDERS, api.base)))
     result = CliRunner().invoke(app, ["models"])
     assert result.exit_code == 1

@@ -83,6 +83,7 @@ from urllib.parse import urlsplit
 
 import duckdb
 
+from aaa2.contracts import EntityView, Finding, FindingView, PageView, SiteViews
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
 from aaa2.entities import store
@@ -627,6 +628,13 @@ def _findings(con: duckdb.DuckDBPyConnection) -> list[dict]:
         "ORDER BY finding_id").fetchall()]
 
 
+def stored_findings(con: duckdb.DuckDBPyConnection) -> list[Finding]:
+    """A tárolt megállapítások szerződésként, az azonosítójuk szerint."""
+    cursor = con.execute("SELECT * FROM findings ORDER BY finding_id")
+    names = [column[0] for column in cursor.description]
+    return [Finding.from_row(dict(zip(names, row, strict=True))) for row in cursor.fetchall()]
+
+
 def _affected(finding: dict) -> list[str]:
     """A megállapítás érintett oldalai (a lefedetlen témánál a legtöbbet említők)."""
     evidence = finding["evidence"]
@@ -668,7 +676,22 @@ def _overview_ids(site: _Site) -> list[int]:
     return [e for e in ranked if site.rank[e] <= OVERVIEW_TOP or site.weights[e]["main_pages"]]
 
 
-def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
+def finding_items(site: _Site) -> list[dict]:
+    """A megállapítások a megjelenítéshez: a típus címkéje, az entitás neve és az érintett
+    oldalak a tárolt mezők mellett."""
+    return [{**finding, "label": TYPE_LABELS[finding["type"]],
+             "entity": site.name(finding["entity_id"]) if finding["entity_id"] is not None
+             else None,
+             "pages": _affected(finding)} for finding in _findings(site.con)]
+
+
+def view_data(site: _Site) -> tuple[list[dict], list[dict]]:
+    """A nézetek strukturált adata: (entitások, oldalak). Entitásonként (a site-áttekintő
+    entitásai, a rangsor szerint): a kapcsolatok típus és irány szerint, a fő oldalak, a csak
+    említő oldalak; oldalanként (URL szerint): a szerep, a canonical-döntés, a fő entitás a
+    bizonyítékaival, a másodlagos entitások, a H1 és a title megnevezése, a további említett
+    entitások a súlyukkal és az oldal megállapításai. A CSV- és HTML-nézetek és a JSON-szerződés
+    ebből készül."""
     relations = _relations(site)
     main_pages: dict[int, list[str]] = defaultdict(list)
     for page in site.nodes():
@@ -681,39 +704,27 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
             for entity_id, weight, _ in edges:
                 if weight > 0:
                     mention_pages[entity_id].append(site.pages[page_id]["url"])
-    findings = _findings(site.con)
     by_url: dict[str, list[str]] = defaultdict(list)
-    for finding in findings:
+    for finding in _findings(site.con):
         label = f"{TYPE_LABELS[finding['type']]} ({finding['severity']}): {finding['summary']}"
         if finding["type"] not in ("missing_page", "uncovered_topic"):
             for url in _affected(finding):
                 by_url[url].append(label)
-
-    def related(entity_id: int, kind: str, direction: str) -> str:
-        return "; ".join(site.name(o) for k, d, o in relations.get(entity_id, [])
-                         if k == kind and d == direction)
-
-    overview, neighbourhood = [], []
+    entities = []
     for entity_id in _overview_ids(site):
         weight = site.weights[entity_id]
         entity = site.entities[entity_id]
-        overview.append({
-            "típus": entity["type"], "altípus": entity["subtype"] or "",
-            "entitás": entity["name"], "rang": site.rank[entity_id], "súly": weight["weight"],
-            "szülő": related(entity_id, "part_of", "→"),
-            "kategória": related(entity_id, "is_a", "→"),
-            "márka": related(entity_id, "brand_of", "←"),
-            "oldalak": weight["pages"], "említések": weight["mentions"],
-            "fő oldalak": " | ".join(sorted(main_pages[entity_id]))})
-        only = sorted(set(mention_pages[entity_id]) - set(main_pages[entity_id]))
-        neighbourhood.append({
-            "entitás": entity["name"], "típus": site.kind(entity_id),
-            "rang": site.rank[entity_id], "súly": weight["weight"],
-            "élek": "; ".join(f"{k} {d} {site.name(o)}"
-                              for k, d, o in relations.get(entity_id, [])),
-            "fő oldalak": " | ".join(sorted(main_pages[entity_id])),
-            "csak említő oldalak száma": len(only), "csak említő oldalak": " | ".join(only)})
-    overview.sort(key=lambda r: (r["típus"], r["rang"]))
+        entities.append({
+            "entity_id": entity_id, "name": entity["name"], "type": entity["type"],
+            "subtype": entity["subtype"], "rank": site.rank[entity_id],
+            "weight": weight["weight"], "pages": weight["pages"],
+            "mentions": weight["mentions"],
+            "relations": [{"type": kind, "direction": direction, "entity_id": other,
+                           "entity": site.name(other)}
+                          for kind, direction, other in relations.get(entity_id, [])],
+            "main_pages": sorted(main_pages[entity_id]),
+            "mention_only_pages": sorted(set(mention_pages[entity_id])
+                                         - set(main_pages[entity_id]))})
     pages = []
     for page in sorted(site.pages.values(), key=lambda p: p["url"]):
         chosen = site.chosen.get(page["page_id"], [])
@@ -721,26 +732,95 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
         duplicate = page["canonical"] is not None
         in_h1, in_title, _ = site.named(page, main) if main else (False, False, [])
         picked = {c[0] for c in chosen}
-        others = [f"{site.name(e)} ({w:g})" for e, w, _ in site.mention_edges[page["page_id"]]
-                  if e not in picked and w > 0][:PAGE_MENTIONS]
         pages.append({
-            "url": page["url"], "szerep": page["role"], "segédoldal": page["support"] or "",
+            "page_id": page["page_id"], "url": page["url"], "role": page["role"],
+            "support_kind": page["support"], "lang": page["lang"],
+            "duplicate_of": site.pages[page["canonical"]]["url"] if duplicate else None,
+            "canonical_issue": page["issue"],
+            "main_entity_id": main[0] if main else None,
+            "main_entity": site.name(main[0]) if main else None,
+            "main_entity_type": site.kind(main[0]) if main else None,
+            "confidence": main[2] if main else None,
+            "evidence": main[3] if main else None,
+            "evidence_text": evidence_text(main[3]) if main else None,
+            "secondary": [site.name(c[0]) for c in chosen if c[1] == "secondary"],
+            "h1": page["h1"], "in_h1": in_h1 if main else None,
+            "title": page["title"], "in_title": in_title if main else None,
+            "other_mentions": [{"entity_id": e, "entity": site.name(e), "weight": w}
+                               for e, w, _ in site.mention_edges[page["page_id"]]
+                               if e not in picked and w > 0][:PAGE_MENTIONS],
+            "findings": [] if duplicate else list(by_url[page["url"]])})
+    return entities, pages
+
+
+def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
+    """A három CSV-nézet sorai a `view_data` adataiból: site-áttekintő (típus és rang szerint),
+    entitásonkénti szomszédság (rang szerint), oldalak (URL szerint)."""
+    entities, page_rows = view_data(site)
+
+    def related(entity: dict, kind: str, direction: str) -> str:
+        return "; ".join(r["entity"] for r in entity["relations"]
+                         if r["type"] == kind and r["direction"] == direction)
+
+    overview, neighbourhood = [], []
+    for entity in entities:
+        overview.append({
+            "típus": entity["type"], "altípus": entity["subtype"] or "",
+            "entitás": entity["name"], "rang": entity["rank"], "súly": entity["weight"],
+            "szülő": related(entity, "part_of", "→"),
+            "kategória": related(entity, "is_a", "→"),
+            "márka": related(entity, "brand_of", "←"),
+            "oldalak": entity["pages"], "említések": entity["mentions"],
+            "fő oldalak": " | ".join(entity["main_pages"])})
+        only = entity["mention_only_pages"]
+        neighbourhood.append({
+            "entitás": entity["name"],
+            "típus": "/".join(filter(None, (entity["type"], entity["subtype"]))),
+            "rang": entity["rank"], "súly": entity["weight"],
+            "élek": "; ".join(f"{r['type']} {r['direction']} {r['entity']}"
+                              for r in entity["relations"]),
+            "fő oldalak": " | ".join(entity["main_pages"]),
+            "csak említő oldalak száma": len(only), "csak említő oldalak": " | ".join(only)})
+    overview.sort(key=lambda r: (r["típus"], r["rang"]))
+    pages = []
+    for page in page_rows:
+        has_main = page["main_entity_id"] is not None
+        pages.append({
+            "url": page["url"], "szerep": page["role"], "segédoldal": page["support_kind"] or "",
             "nyelv": page["lang"] or "",
-            "canonical": f"duplikátum: {site.pages[page['canonical']]['url']}" if duplicate
-            else page["issue"] or "",
-            "fő entitás": site.name(main[0]) if main else "",
-            "típus": site.kind(main[0]) if main else "",
-            "megbízhatóság": main[2] if main else "",
-            "bizonyítékok": evidence_text(main[3]) if main else "",
-            "másodlagos": "; ".join(site.name(c[0]) for c in chosen if c[1] == "secondary"),
-            "H1": page["h1"] or "", "a H1-ben": _yes(main, in_h1),
-            "title": page["title"] or "", "a title-ben": _yes(main, in_title),
-            "további említett entitások": "; ".join(others),
-            "megállapítások": "" if duplicate else " || ".join(by_url[page["url"]])})
+            "canonical": f"duplikátum: {page['duplicate_of']}" if page["duplicate_of"] is not None
+            else page["canonical_issue"] or "",
+            "fő entitás": page["main_entity"] if has_main else "",
+            "típus": page["main_entity_type"] if has_main else "",
+            "megbízhatóság": page["confidence"] if has_main else "",
+            "bizonyítékok": page["evidence_text"] if has_main else "",
+            "másodlagos": "; ".join(page["secondary"]),
+            "H1": page["h1"] or "", "a H1-ben": _yes(has_main or None, bool(page["in_h1"])),
+            "title": page["title"] or "",
+            "a title-ben": _yes(has_main or None, bool(page["in_title"])),
+            "további említett entitások": "; ".join(
+                f"{m['entity']} ({m['weight']:g})" for m in page["other_mentions"]),
+            "megállapítások": " || ".join(page["findings"])})
     return overview, neighbourhood, pages
 
 
-def _yes(main: tuple | None, named: bool) -> str:
+def site_views(con: duckdb.DuckDBPyConnection, name: str, domain: str | None = None
+               ) -> SiteViews:
+    """A megállapítások és a nézetek szerződésként (a riport bemenete): a megállapítások az
+    azonosítójuk, az entitások a rangjuk, az oldalak az URL-jük szerint."""
+    site = _Site(con)
+    entities, pages = view_data(site)
+    return SiteViews(
+        site=name, domain=domain,
+        findings=[FindingView(
+            finding_id=f["id"], type=f["type"], label=f["label"], severity=f["severity"],
+            entity_id=f["entity_id"], entity=f["entity"], pages=f["pages"],
+            summary=f["summary"], evidence=f["evidence"]) for f in finding_items(site)],
+        entities=[EntityView(**entity) for entity in entities],
+        pages=[PageView(**page) for page in pages])
+
+
+def _yes(main: object | None, named: bool) -> str:
     return "" if main is None else "igen" if named else "nem"
 
 
