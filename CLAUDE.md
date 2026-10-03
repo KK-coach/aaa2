@@ -122,6 +122,13 @@ A pontok a fejlesztés sorrendjét követik; a később megszűnt eszközöket �
 
 A microdata felhasználása (AAAV2-68, 2026-10-03): a szabálykör schema-forrása, az oldaltípus és az oldalszerep, a morzsamenü, az oldalhoz kötött entitások és a webshop-logika (márka) a JSON-LD mellett a microdatát is olvassa, egy közös forrásból (`crawl.schema_items`: a JSON-LD blokkok, utánuk a microdata-elemek ugyanabban az alakban). A microdata-elemben a relatív `@id`, `url` és `item` az oldal URL-jéhez képest feloldva; az oldal egyetlen legfelső szintű `Product` eleme, ha nincs `url`-je és `@id`-je, az oldalra vonatkozik (így ad terméket az oldaltípus). Az RDFa és az Open Graph nem része. Microdata nélküli site-on a kimenet változatlan.
 
+A Wikidata-kapcsolás javítása (AAAV2-65, 2026-10-03; `aaa2/resolver/knowledge.py`):
+
+- Típus-ellenőrzés: az összeférhetetlen kifejezés az osztálycímkében egész szóként illeszkedik (a „gene” nem illeszkedik a „generative”-re, a „river” a „driver”-re); a szervezet-, szoftver- és weboldal-szó csak a címke fő szavaként zár ki (a „business model” és a „type of business or company” nem szervezet). A `tech` típusnál a cég osztálya csak akkor zár ki, ha az elemben nincs technológiai jel (Shopify, Cloudflare kapcsolódik; az „API” nevű olajcég nem).
+- Tartalék keresés, ha az első találat összeférhetetlen: (1) hosszabb alak, vagyis az entitás aliasai és a mozaikszó feloldása a site szövegéből („Generative Engine Optimization (GEO)”); (2) a név további pontos találatai, ha pontosan egy nem összeférhetetlen marad és az kompatibilis; (3) a név Wikipedia-szócikkének eleme. A (2) és a (3) csak `tech` és `org` típusnál él: köznévi fogalomnál a név másik jelentését adná (a mérésben backlog, nurture, coaching, COP).
+- Új összeférhetetlen osztályok: csillagkép, csillagjegy (a „Gemini” nem kapcsolódik a csillagképre), Wikidata-belső leképezési reláció.
+- Mérés a hat készleten (a régi és az új kóddal újrafuttatva): 85 új kapcsolás, 3 megszűnt (a Gemini a három készletben), 6 új összevonás QID szerint (B2B, e-kereskedelem, ASO, CRO, GEO a hosszú alakjával). Mind a 85 átnézve: egy vitatható (a „rendering” / „Renderelés” a 3D-képalkotás elemére mutat, valószínű státusszal). A fő entitás (39/40, 14/14), a megállapítások verdiktje (24/26) és az M2/6 elfogadás nem változott. A hat készlet adatbázisa és alap-hash-e ezzel az állapottal frissült.
+
 Vélemények (Krisztián döntése, 2026-10-03): a `Review` típusú csomópont és minden, ami alatta áll (szerző, `Person`, `Rating`), kimarad a szabálykör schema-forrásából, JSON-LD-ben és microdatában is (`rules.SCHEMA_SKIPPED_TYPES`). A termék összesített értékelése (`aggregateRating`) a termék attribútuma: `rating_average` és `rating_count` (`shop._schema_rating`).
 
 ### Nyitott pontok
