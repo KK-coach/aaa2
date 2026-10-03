@@ -74,3 +74,24 @@ def test_cached_replay_loads_the_stored_crawl_into_memory(tmp_path, monkeypatch)
     con.execute("INSERT INTO pages VALUES ('https://pelda.hu/2')")      # a másolat írható
     again = conftest.cached_replay(name)
     assert again.execute("SELECT count(*) FROM pages").fetchone() == (1,)   # a tár nem változott
+
+
+def test_a_replay_with_a_timeout_is_not_cached(tmp_path, monkeypatch):
+    name = "probakeszlet"
+    monkeypatch.setattr(conftest, "REPLAY_CACHE", tmp_path)
+    monkeypatch.setattr(conftest, "replay_key", lambda _: "0123456789abcdef")
+    monkeypatch.setitem(REFERENCE_SETS, name, ("https://pelda.hu/", None))
+    errors = ["hard_timeout"]
+
+    async def replayed(*_):
+        con = duckdb.connect(":memory:")
+        con.execute("CREATE TABLE pages (url VARCHAR, error VARCHAR)")
+        con.execute("INSERT INTO pages VALUES ('https://pelda.hu/', ?)", [errors[0]])
+        return None, con
+
+    monkeypatch.setattr(conftest, "replay_crawl", replayed)
+    assert conftest.cached_replay(name).execute("SELECT count(*) FROM pages").fetchone() == (1,)
+    assert list(tmp_path.iterdir()) == []                  # a terhelésen múló eredmény nem marad meg
+    errors[0] = None
+    conftest.cached_replay(name)
+    assert [path.name for path in tmp_path.iterdir()] == [f"{name}-0123456789abcdef.duckdb"]

@@ -9,7 +9,8 @@ gyűjtés sorrendjében, ugyanazon a kapcsolaton futnak.
 
 A visszajátszott crawl a lemezen gyorsítótárazódik (`tests/fixtures/.replay-cache/`): a kulcs a
 felvétel indexe, a motor (`aaa2/engine`, `aaa2/db`) forrása és a crawl-beállítás; ha bármelyik
-változik, a készlet újra visszajátszódik. `AAA2_REPLAY_CACHE=0` kikapcsolja.
+változik, a készlet újra visszajátszódik. Olyan visszajátszás, amelyben egy oldal időtúllépéssel
+bukott el (terhelt gép), nem kerül a tárba. `AAA2_REPLAY_CACHE=0` kikapcsolja.
 """
 import asyncio
 import hashlib
@@ -107,7 +108,10 @@ def cached_replay(name: str):
         return con
     seed, options = REFERENCE_SETS[name]
     con = asyncio.run(replay_crawl(name, seed, options))[1]
-    if use_cache:
+    # Időtúllépéses visszajátszás nem kerül a tárba: az a gép terhelésén múlik, nem a felvételen.
+    (timeouts,) = con.execute(
+        "SELECT count(*) FROM pages WHERE error LIKE '%timeout%'").fetchone()
+    if use_cache and not timeouts:
         REPLAY_CACHE.mkdir(parents=True, exist_ok=True)
         for old in REPLAY_CACHE.glob(f"{name}-*.duckdb*"):
             old.unlink(missing_ok=True)
