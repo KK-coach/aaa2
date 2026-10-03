@@ -20,6 +20,7 @@ from aaa2.entities.extract import (
     Worker,
     estimate_llm,
     input_models,
+    reusable_pages,
     run_llm,
     surface_offsets,
 )
@@ -457,7 +458,71 @@ def test_a_failed_chunk_keeps_the_others(tmp_path):
         reply(mention("b40", "X", "X", "software")),
     ], tmp_path)
     run = run_llm(con, client)
-    assert (run.llm_calls, run.rows, run.skipped) == (2, 1, {"chunk_schema_mismatch": 1})
+    assert (run.llm_calls, run.rows, run.skipped) == (
+        2, 1, {"chunk_schema_mismatch": 1, "partial_pages": 1})
+
+
+def page_log(con, run_id):
+    status, extraction, refined = con.execute(
+        "SELECT status, extraction, refined FROM entity_run_pages WHERE run_id = ?",
+        [run_id]).fetchone()
+    return status, json.loads(extraction), json.loads(refined) if refined else None
+
+
+def test_a_page_with_a_failed_chunk_is_partial_and_resume_retries_only_that_chunk(tmp_path):
+    con = long_page()
+    refined = []
+
+    def refine(extraction, page_id, blocks, lang, prior=None):
+        refined.append(len(extraction["entities"]))
+        return {**extraction, "checked": True}
+
+    bad = reply(mention("b40", "X", "X", "software"))
+    client, adapter = client_for(con, [
+        reply(mention("b3", "Kávé Kft.", "Kávé Kft.", "org"), primary=["Kávé Kft."]), bad,
+    ], tmp_path)
+    run = run_llm(con, client, refine=refine)
+    status, extraction, _ = page_log(con, run.run_id)
+    assert status == "partial"                                   # nem done
+    assert (extraction["failed_chunks"], extraction["chunks"]) == ([1], 2)
+    assert run.pages == 1 and run.skipped["partial_pages"] == 1
+    assert [row[1] for row in mentions(con)] == [3]              # a sikeres darab mentve
+    assert reusable_pages(con, client.model) == {}               # nem kész eredmény
+    # a folytatás csak a hibás darabot kéri újra, és a kinyerés utáni lépés újra lefut
+    adapter.replies = [reply(mention("b40", "Kávé Kft.", "Kávé Kft.", "org"))]
+    adapter.calls.clear()
+    again = run_llm(con, client, refine=refine, resume=True)
+    assert again.run_id == run.run_id
+    assert [text.count("\n[b") for _, text in adapter.calls] == [63]
+    status, extraction, record = page_log(con, run.run_id)
+    assert status == "done" and "failed_chunks" not in extraction
+    assert [e["block_id"] for e in extraction["entities"]] == ["b3", "b40"]
+    assert record["checked"] and refined == [1, 2]
+    assert [row[1] for row in mentions(con)] == [3, 40]
+    assert again.skipped == {"partial_retried": 1}
+    assert set(reusable_pages(con, client.model)) == {1}         # most már újrahasználható
+
+
+def test_a_still_failing_chunk_stays_partial_and_a_new_run_extracts_the_whole_page(tmp_path):
+    con = long_page()
+    bad = reply(mention("b40", "X", "X", "software"))
+    client, adapter = client_for(con, [
+        reply(mention("b3", "Kávé Kft.", "Kávé Kft.", "org")), bad, bad,
+    ], tmp_path)
+    run = run_llm(con, client)
+    again = run_llm(con, client, resume=True)
+    status, extraction, _ = page_log(con, run.run_id)
+    assert (status, extraction["failed_chunks"]) == ("partial", [1])
+    assert again.skipped == {"chunk_schema_mismatch": 1, "partial_pages": 1,
+                             "partial_retried": 1}
+    # új futás újrahasználattal: a részleges rekord nem kész eredmény, az egész oldal újra megy
+    adapter.replies = [reply(mention("b3", "Kávé Kft.", "Kávé Kft.", "org")),
+                       reply(mention("b40", "Kávé Kft.", "Kávé Kft.", "org"))]
+    adapter.calls.clear()
+    fresh = run_llm(con, client, reuse=True)
+    assert fresh.run_id != run.run_id and len(adapter.calls) == 2
+    assert page_log(con, fresh.run_id)[0] == "done"
+    assert fresh.skipped == {}
 
 
 
