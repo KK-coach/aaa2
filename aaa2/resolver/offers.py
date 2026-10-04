@@ -99,6 +99,7 @@ def _page_entities(ctx: _Context, merger: Merger, run: SiteRun) -> dict[str, int
                 store.update_entities_in_page_entities_4(ctx.con, named[0], name, named[0], entity_id)
     anchors = _qualified_anchors(ctx)
     cards = _card_headings(ctx)
+    grouped = {m.page_id for members in ctx.groups.values() for m in members}
     anchored: dict[str, int] = {}
     for group, members in ctx.groups.items():
         rep = representative(members, ctx.site_lang)
@@ -108,7 +109,8 @@ def _page_entities(ctx: _Context, merger: Merger, run: SiteRun) -> dict[str, int
         names += [Name(text, "anchor", lang) for _, _, text, lang in cards.get(group, [])]
         canonical = _canonical(role, rep, names)
         keys = {alias_key(n.text) for n in names} - {""}
-        entity_id = _find_page_entity(ctx.con, members, role, keys, merger, canonical)
+        entity_id = _find_page_entity(ctx.con, members, role, keys, merger, canonical,
+                                      grouped - {m.page_id for m in members})
         if entity_id is None:
             (entity_id,) = store.insert_entities_in_page_entities(ctx.con, canonical, rep.lang or ctx.site_lang, kind, subtype, merger.clock())
         forms = sorted({n.text for n in names} - {canonical})
@@ -131,13 +133,19 @@ def _page_entities(ctx: _Context, merger: Merger, run: SiteRun) -> dict[str, int
 
 
 def _find_page_entity(con: duckdb.DuckDBPyConnection, members: list[PageInfo], role: str,
-                      keys: set[str], merger: Merger, canonical: str) -> int | None:
+                      keys: set[str], merger: Merger, canonical: str,
+                      other_pages: set[int] = frozenset()) -> int | None:
     """A csoport meglévő entitásai (korábbi futás oldalkötése vagy kompatibilis típus és azonos
-    kulcsú név vagy alias); egybe olvasztva, a megtartott azonosítója."""
+    kulcsú név vagy alias); egybe olvasztva, a megtartott azonosítója. `other_pages`: a többi
+    oldalcsoport oldalai; az ezek egyikéhez kötött entitás név- vagy alias-egyezésre sem
+    számít ide (két, más-más oldalcsoporthoz kötött entitás nem olvad össze; a hreflang-pár és
+    a fül-változat egy csoport)."""
     page_ids = [m.page_id for m in members]
     found: list[tuple] = []
     for entity_id, name, kind, aliases, source, anchor, mentions in store.page_entities_for_find_page_entity(con, list(COMPATIBLE[role])):
         own = anchor is not None and anchor in page_ids
+        if anchor is not None and anchor in other_pages:
+            continue
         if own or {alias_key(f) for f in [name, *(aliases or [])]} & keys:
             found.append((not own, SOURCE_STRENGTH.get(source, 9), -mentions, entity_id, name))
     if not found:

@@ -64,7 +64,10 @@ def _card_headings(ctx: _Context) -> dict[str, list[tuple[int, int, str, str | N
     """Kártyacímek: ha egy blokk linkje egy entitásoldal-csoportra mutat (a link célja a
     `links` sorrendjéből: az oldal azonos szövegű linkjei a DOM-sorrendben), az előtte álló
     legfeljebb `CARD_LOOKBACK` blokk közül a legközelebbi, legalább 3. szintű, rövid heading
-    (legfeljebb `CARD_TITLE_WORDS` szó) a csoport aliasa, ha közben nincs más link.
+    (legfeljebb `CARD_TITLE_WORDS` szó) a csoport aliasa, ha közben nincs más link, és a
+    heading szakaszában (a következő headingig) minden link ugyanarra az egy oldalcsoportra
+    mutat. Ha a heading alatt több különböző oldalcsoportra mutató link áll, az szakaszcím
+    („Hasonló termékek”), nem kártyacím, és nem ad nevet.
     Csoportonként: (oldal, heading-sorszám, szöveg, az oldal nyelve)."""
     roles = ctx.roles
     queues: dict[int, dict[str, list[int]]] = defaultdict(lambda: defaultdict(list))
@@ -94,7 +97,13 @@ def _card_headings(ctx: _Context) -> dict[str, list[tuple[int, int, str, str | N
                     break
                 prev = blocks[index - back]
                 if prev.kind == "heading":
-                    if (prev.level or 0) >= 3 and 0 < len(prev.text.split()) <= CARD_TITLE_WORDS:
+                    section: set[str] = set()
+                    for later in range(index - back + 1, len(blocks)):
+                        if blocks[later].kind == "heading":
+                            break
+                        section |= targets[later]
+                    if (prev.level or 0) >= 3 and 0 < len(prev.text.split()) <= CARD_TITLE_WORDS \
+                            and len(section) == 1:
                         found[next(iter(groups))].append(
                             (page_id, prev.ordinal, prev.text.strip(), roles[page_id].lang))
                     break
