@@ -1173,6 +1173,15 @@ def _finding_html(finding: dict) -> str:
     elif finding["type"] in heading_tree.STRUCTURE_TYPES:
         pairs = [("oldal", _link(page["url"]) + "<br>" + _e(_structure_detail(page)))
                  for page in evidence.get("pages") or [evidence]]
+    elif finding["type"] == "canonical_issue":
+        pairs = [("oldal", _link(evidence["url"])), ("canonical", _e(evidence["canonical"])),
+                 ("ok", _e(CANONICAL_LABELS.get(evidence["issue"], evidence["issue"])))]
+    elif finding["type"] == "legal_page":
+        pairs = [("fajta", _e(evidence["label"])),
+                 ("oldalak", "<br>".join(_link(page["url"]) for page in evidence["pages"])),
+                 ("más jogi oldalon belül", "<br>".join(
+                     f"{_link(page['url'])}: {_e('; '.join(page['headings']))}"
+                     for page in evidence["inside"]))]
     else:
         pairs = [("oldal", _link(evidence["url"])), ("H1", _e(evidence["h1"])),
                  ("title", _e(evidence["title"])),
