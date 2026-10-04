@@ -222,7 +222,10 @@ def rebuild_entities(
     a site-kör és a tudásbázis-kapcsolás. A gráfot és a megállapításokat utána az `aaa graph`
     és az `aaa findings` építi fel."""
     site = _open(domain, db)
-    result = api.rebuild_entities(site, knowledge=knowledge)
+    try:
+        result = api.rebuild_entities(site, knowledge=knowledge)
+    except api.ApiError as exc:
+        _fail(exc)
     typer.echo(_restored_line(result.restored))
     site_run, linked = result.resolved.site_run, result.resolved.linked
     if site_run is not None:

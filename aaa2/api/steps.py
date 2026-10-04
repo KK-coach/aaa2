@@ -32,6 +32,7 @@ from aaa2.entities.extract import (
     estimate_llm,
     input_models,
     restore_llm,
+    restore_plan,
     run_llm,
 )
 from aaa2.entities.gate import KnowledgeBase
@@ -173,11 +174,7 @@ def extract(site: Site, *, llm: bool | None = None, knowledge: bool | None = Non
             notify("becslés: az LLM-lépések kikapcsolva, nincs hívás")
             result.estimate_only = True
             return result
-        models = load_config().pipeline
-        verify_choice = _step_model(models["verify"]) if steps.services else None
-        fingerprint = (v3_fingerprint(steps, verify_choice)
-                       if steps.services or steps.concepts else None)
-        rules_run, result.restored = _project(con, steps, fingerprint)
+        rules_run, result.restored = _project(con, steps)
         if rules_run is not None:
             result.run_ids.append(rules_run)
         return result
@@ -243,8 +240,7 @@ def extract(site: Site, *, llm: bool | None = None, knowledge: bool | None = Non
         llm_run = run_llm(con, client, refine=refine, save=steps.save, limit=limit,
                           resume=resume, max_usd=cap, workers=count, fork=fork,
                           reuse=not fresh, records_only=True).run_id
-        rules_run, result.restored = _project(
-            con, steps, v3_fingerprint(steps, verify_choice) if refines else None)
+        rules_run, result.restored = _project(con, steps)
         result.run_ids += [run_id for run_id in (rules_run, llm_run) if run_id is not None]
     finally:
         if shared is not None:
@@ -252,14 +248,29 @@ def extract(site: Site, *, llm: bool | None = None, knowledge: bool | None = Non
     return result
 
 
-def _project(con: duckdb.DuckDBPyConnection, steps,
-             fingerprint: str | None) -> tuple[int | None, Restored | None]:
+RESTORE_LOSS_LIMIT = 0.10       # a rekorddal bíró oldalak ekkora hányada maradhat ki
+
+
+def _project(con: duckdb.DuckDBPyConnection, steps) -> tuple[int | None, Restored | None]:
     """Az entitás-táblák levezetése a tárolt kinyerésből: üríti az entitás-, az említés-, a
     bizonyíték-, az alias-, a kapcsolat- és az összevonás-táblákat, a gráfot és a
-    megállapításokat; utána a szabálykör és a tárolt kinyerés visszaírása (`restore_llm`: az az
-    oldal, amelynek a rekordja más bemenetből készült, kimarad). Az `aaa entities` minden
-    futása így végződik, ezért a végállapot nem függ a korábbi futásoktól. Visszaad: (a
-    szabálykör futása, a visszaírás)."""
+    megállapításokat; utána a szabálykör és a tárolt kinyerés visszaírása (`restore_llm`). Az
+    `aaa entities` minden futása így végződik, ezért a végállapot nem függ a korábbi
+    futásoktól.
+
+    Ürítés előtt megszámolja, hány oldal írható vissza (`restore_plan`): ha a tárolt rekorddal
+    bíró oldalak több mint `RESTORE_LOSS_LIMIT` hányada kimaradna (a blokkjaik a kinyerés óta
+    megváltoztak), `ApiError`-ral megáll, és az adatbázishoz nem nyúl. Visszaad: (a szabálykör
+    futása, a visszaírás)."""
+    plan = restore_plan(con)
+    recorded = [status for status, stored, _ in plan.values()
+                if stored is not None and status != "no_content_blocks"]
+    changed = recorded.count("restore_input_changed")
+    if changed > RESTORE_LOSS_LIMIT * len(recorded):
+        raise ApiError(
+            f"a tárolt kinyerés {len(recorded)} oldalából {changed} nem írható vissza (a "
+            "blokkjaik a kinyerés óta megváltoztak); a futás megáll, az entitás-táblák "
+            "érintetlenek. Újrakinyerés kell: aaa entities --llm", code=3)
     con.begin()
     try:
         findings_module.clear_findings(con)
@@ -272,7 +283,7 @@ def _project(con: duckdb.DuckDBPyConnection, steps,
         raise
     rules_run = (run_rules(con, entity_pages=entity_page_ids(page_roles(con))).run_id
                  if steps.rules else None)
-    return rules_run, restore_llm(con, lambda model: input_models(model, fingerprint))
+    return rules_run, restore_llm(con, plan=plan)
 
 
 # --- resolve -------------------------------------------------------------------------------
@@ -323,13 +334,9 @@ def rebuild_entities(site: Site, *, knowledge: bool | None = None) -> RebuildRes
     az `aaa graph` és az `aaa findings` építi fel."""
     con = site.con
     steps = load_pipeline().steps
-    models = load_config().pipeline
-    verify_choice = _step_model(models["verify"]) if steps.services else None
-    fingerprint = (v3_fingerprint(steps, verify_choice)
-                   if steps.services or steps.concepts else None)
     if steps.blocks:
         build_blocks(con)
-    rules_run, restored = _project(con, steps, fingerprint)
+    rules_run, restored = _project(con, steps)
     return RebuildResult(rules_run, restored, resolve(site, knowledge=knowledge))
 
 

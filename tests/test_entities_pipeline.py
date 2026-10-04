@@ -562,13 +562,89 @@ def test_rebuild_entities_restores_the_stored_extraction_without_calls(tmp_path,
     run_rules(con)
     restore_llm(con)
     assert state() == before
-    # más bemenet-hash: az oldal kimarad (a rekord blokk-azonosítói nem a mostani blokkokéi)
+    # megváltozott blokk: az oldal kimarad (a rekord említése nincs a mostani blokkban)
     clear_entities(con)
-    skipped = restore_llm(con, lambda model: (model, None, "más beállítás"))
+    con.execute("UPDATE blocks SET text = 'Egészen más szöveg áll itt' WHERE page_id = 2 "
+                "AND text LIKE '%Coffee Fest%'")
+    skipped = restore_llm(con)
     assert skipped.skipped == {"restore_input_changed": 1, "restore_no_record": 1}
     assert con.execute("SELECT count(*) FROM page_entities ms JOIN mention_sources s USING "
                        "(mention_id) WHERE s.source = 'llm'").fetchone() == (0,)
     assert api.rebuild_entities is not None
+
+
+def _recorded_site(tmp_path):
+    """Két oldal kész rekorddal, a konfiguráltól eltérő modellnevű klienssel kinyerve."""
+    from types import SimpleNamespace
+
+    con = site({"/": html("Példa", "<p>A Budapest Coffee Fest idén is lesz</p>"),
+                "/b/": html("B", "<p>A fesztivált a Példa Egyesület szervezi</p>")})
+    adapter = Scripted([reply(mention("b1", "Budapest Coffee Fest", "Budapest Coffee Fest",
+                                      "event")),
+                        reply(mention("b1", "Példa Egyesület", "Példa Egyesület", "org"))])
+    run = pipeline_run(con, adapter, tmp_path)
+    assert run.model != CONFIG.pipeline["extraction"]
+    opened = SimpleNamespace(con=con, domain="pelda.hu", name="pelda", path=tmp_path / "x")
+    return con, opened, adapter
+
+
+def _llm_state(con):
+    return (sorted(con.execute("SELECT name, type FROM entities WHERE source = 'llm'"
+                               ).fetchall()),
+            con.execute("SELECT count(*) FROM page_entities").fetchone()[0],
+            con.execute("SELECT count(*) FROM mention_sources").fetchone()[0])
+
+
+def test_the_stored_extraction_survives_a_model_change(tmp_path):
+    # a rekordok más kinyerő és ellenőrző modellel készültek, mint ami a konfigurációban áll:
+    # az LLM nélküli futás és az újraépítés ettől még visszaírja őket (a blokkok döntenek)
+    from aaa2 import api
+
+    con, opened, adapter = _recorded_site(tmp_path)
+    before = _llm_state(con)
+    assert [name for name, _ in before[0]] == ["Budapest Coffee Fest", "Példa Egyesület"]
+    result = api.extract(opened, llm=False, knowledge=False)
+    assert (result.restored.pages, result.restored.skipped) == (2, {})
+    assert _llm_state(con) == before
+    assert api.rebuild_entities(opened, knowledge=False).restored.pages == 2
+    assert _llm_state(con) == before and len(adapter.calls) == 2
+
+
+def test_the_derivation_stops_before_clearing_when_the_blocks_changed(tmp_path):
+    # az egyik oldal blokkja megváltozott (a rekord említése nincs benne): a két rekordos
+    # oldalból egy kimaradna (50% > 10%), ezért a futás megáll, és semmit sem ürít
+    from aaa2 import api
+
+    con, opened, _ = _recorded_site(tmp_path)
+    api.resolve(opened, knowledge=False)
+    con.execute("UPDATE blocks SET text = 'Egészen más szöveg áll itt' WHERE text LIKE "
+                "'%Példa Egyesület%'")
+
+    def whole():
+        return [con.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
+                for table in ("entities", "page_entities", "mention_sources", "entity_aliases",
+                              "merge_log", "entity_runs")] + [_llm_state(con)]
+
+    before = whole()
+    for call in (lambda: api.extract(opened, llm=False, knowledge=False),
+                 lambda: api.rebuild_entities(opened, knowledge=False)):
+        with pytest.raises(api.ApiError, match="2 oldalából 1 nem írható vissza"):
+            call()
+        assert whole() == before
+
+
+def test_a_few_changed_pages_are_skipped_without_stopping(tmp_path, monkeypatch):
+    # a határon belül (itt a határ felemelve) a megváltozott oldal kimarad, a többi visszaíródik
+    import aaa2.api.steps as steps_module
+    from aaa2 import api
+
+    con, opened, _ = _recorded_site(tmp_path)
+    con.execute("UPDATE blocks SET text = 'Egészen más szöveg áll itt' WHERE text LIKE "
+                "'%Példa Egyesület%'")
+    monkeypatch.setattr(steps_module, "RESTORE_LOSS_LIMIT", 0.5)
+    result = api.extract(opened, llm=False, knowledge=False)
+    assert (result.restored.pages, result.restored.skipped) == (1, {"restore_input_changed": 1})
+    assert [name for name, _ in _llm_state(con)[0]] == ["Budapest Coffee Fest"]
 
 
 def test_after_a_re_extraction_the_end_state_equals_the_rebuilt_one(tmp_path, monkeypatch):

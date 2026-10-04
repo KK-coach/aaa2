@@ -423,13 +423,14 @@ def stored_records(con: duckdb.DuckDBPyConnection) -> dict[int, dict]:
     """Oldalanként a legutóbbi kész LLM-rekord: a modell, a kinyerés, a kinyerés utáni rekord,
     a darabszám, a rekord bemenet-hash-e és a futása."""
     found: dict[int, dict] = {}
-    for page_id, model, extraction, refined, chunks, input_hash, raw_hash, run_id in \
-            store.entity_run_pages_for_stored_records(con):
+    for page_id, model, extraction, refined, chunks, input_hash, raw_hash, run_id, fabricated \
+            in store.entity_run_pages_for_stored_records(con):
         if page_id not in found:
             found[page_id] = {"model": model, "extraction": json.loads(extraction),
                               "refined": json.loads(refined) if refined else None,
                               "chunks": chunks or 0, "input_hash": input_hash,
-                              "raw_html_hash": raw_hash, "run_id": run_id}
+                              "raw_html_hash": raw_hash, "run_id": run_id,
+                              "fabricated": fabricated or 0}
     return found
 
 
@@ -443,46 +444,72 @@ class Restored:
     run_ids: tuple[int, ...]
 
 
+def _unplaced(record: Mapping, blocks: Sequence[dict]) -> int:
+    """A rekord azon említéseinek száma, amelyek a megadott blokkokban nem találhatók (nincs
+    ilyen azonosítójú blokk, vagy a szövegében nem áll a felszíni alak)."""
+    by_id = {block["id"]: block for block in blocks}
+    missing = 0
+    for raw in record["entities"] or []:
+        block = by_id.get(raw.get("block_id"))
+        if not block or not surface_offsets(raw.get("surface_form", ""), block["text"]):
+            missing += 1
+    return missing
+
+
+def restore_plan(con: duckdb.DuckDBPyConnection) -> dict[int, tuple[str, dict | None, list]]:
+    """Oldalanként, hogy a tárolt kinyerés visszaírható-e: (`restore`, a rekord, a blokkok),
+    vagy a kimaradás oka a rekorddal és a blokkokkal. Az érvényességet a blokkok döntik el: a
+    rekord akkor írható vissza, ha az említései a mostani blokkokban ugyanúgy megtalálhatók,
+    mint a kinyeréskor (a nem található említések száma a rekord tárolt `fabricated` értéke).
+    A modellek és a kinyerés utáni lépés beállítása nem számít: modellváltás után a rekord
+    érvényes marad. Okok: `no_content_blocks`, `restore_no_record`, `restore_input_changed` (a
+    blokkok megváltoztak, a rekord blokk-azonosítói nem a mostani blokkokra mutatnak)."""
+    records = stored_records(con)
+    plan: dict[int, tuple[str, dict | None, list]] = {}
+    for page_id, _ in select_pages(con):
+        blocks = page_blocks(con, page_id, region="content")
+        stored = records.get(page_id)
+        if not blocks:
+            plan[page_id] = ("no_content_blocks", stored, blocks)
+        elif stored is None:
+            plan[page_id] = ("restore_no_record", None, blocks)
+        elif _unplaced(stored["refined"] or stored["extraction"], blocks) != stored["fabricated"]:
+            plan[page_id] = ("restore_input_changed", stored, blocks)
+        else:
+            plan[page_id] = ("restore", stored, blocks)
+    return plan
+
+
 def restore_llm(con: duckdb.DuckDBPyConnection,
-                models_for: Callable[[str], Sequence[str | None]] | None = None,
-                clock: Callable[[], datetime] | None = None) -> Restored | None:
+                clock: Callable[[], datetime] | None = None,
+                plan: Mapping[int, tuple[str, dict | None, list]] | None = None
+                ) -> Restored | None:
     """Az LLM-említések visszaírása a tárolt kinyerésből, hívás nélkül: oldalanként a legutóbbi
     kész rekord (`stored_records`) említései, típus-szavazatai és bizonyítékai kerülnek az
     említés- és entitástáblába, a rekord saját futása alatt. Új futás és új naplósor nem
     készül: a visszaírás az entitás-táblák levezetése a rekordokból, így akárhányszor fut,
     ugyanazt adja. A végén az érintett LLM-futások említés-számai (`entity_runs`) frissülnek.
 
-    `models_for`: a kinyerő modellhez a bemenet-hash modelljei (`input_models`); ha adott, az
-    az oldal, amelynek a tárolt bemenet-hash-e nem egyezik a mostani blokkokéval, kimarad
-    (`restore_input_changed`: a rekord blokk-azonosítói már nem a mostani blokkokra mutatnak).
-    Tárolt rekord nélküli oldal: `restore_no_record`; tartalmi blokk nélküli:
-    `no_content_blocks`. None, ha egy oldalnak sincs rekordja."""
+    `plan`: az előre elkészített `restore_plan` (None: itt készül). Az az oldal, amelynek a
+    blokkjai a kinyerés óta megváltoztak, kimarad (`restore_input_changed`); tárolt rekord
+    nélküli oldal: `restore_no_record`; tartalmi blokk nélküli: `no_content_blocks`. None, ha
+    egy oldalnak sincs rekordja."""
     started = (clock or _now)()
-    records = stored_records(con)
-    if not records:
+    plan = restore_plan(con) if plan is None else plan
+    if not any(stored is not None for _, stored, _ in plan.values()):
         return None
     index = _EntityIndex(con)
-    site = site_line(con) or ""
+    langs = dict(select_pages(con))
     skipped: Counter[str] = Counter()
     runs: set[int] = set()
     pages = 0
-    for page_id, lang in select_pages(con):
-        blocks = page_blocks(con, page_id, region="content")
-        stored = records.get(page_id)
-        if not blocks:
-            skipped["no_content_blocks"] += 1
-            continue
-        if stored is None:
-            skipped["restore_no_record"] += 1
-            continue
-        current = (input_fingerprint(site, blocks, models_for(stored["model"]))
-                   if models_for is not None else stored["input_hash"])
-        if stored["input_hash"] is not None and current != stored["input_hash"]:
-            skipped["restore_input_changed"] += 1
+    for page_id, (status, stored, blocks) in plan.items():
+        if status != "restore":
+            skipped[status] += 1
             continue
         con.begin()
         try:
-            _store(con, stored["run_id"], page_id, lang,
+            _store(con, stored["run_id"], page_id, langs.get(page_id),
                    stored["refined"] or stored["extraction"], blocks, index, started, True,
                    stored["model"])
             con.commit()
