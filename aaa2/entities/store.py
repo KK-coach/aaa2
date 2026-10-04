@@ -53,7 +53,7 @@ def entity_run_pages_for_stored_records(con: duckdb.DuckDBPyConnection) -> list[
     """Lekérdezés: entity_run_pages, entity_runs. Hívja: entities/extract.py: stored_records."""
     return con.execute(
         "SELECT p.page_id, r.model, p.extraction, p.refined, p.chunks, p.input_hash, "
-        "p.raw_html_hash FROM entity_run_pages p JOIN entity_runs r USING (run_id) WHERE "
+        "p.raw_html_hash, p.run_id, p.fabricated FROM entity_run_pages p JOIN entity_runs r USING (run_id) WHERE "
         "r.method = 'llm' AND p.status = 'done' AND p.extraction IS NOT NULL ORDER BY "
         "p.run_id DESC, p.finished_at DESC, p.page_id").fetchall()
 
@@ -72,6 +72,13 @@ def update_entity_runs_in_finish(con: duckdb.DuckDBPyConnection, value, done, pa
         "entities = ?, row_count = ?, llm_calls = ?, cost_usd = ?, fabricated = ?, "
         "by_position = ?, skipped = ?, seconds = coalesce(seconds, 0) + ? WHERE run_id "
         "= ?", [value, done, pages_with, entities, rows, value_2, cost, fabricated, value_3, value_4, seconds, run_id])
+
+
+def update_entity_runs_in_refresh(con: duckdb.DuckDBPyConnection, pages_with, entities, rows, positions, run_id):
+    """Módosítás: entity_runs. Hívja: entities/extract.py: refresh."""
+    con.execute(
+        "UPDATE entity_runs SET pages_with_entities = ?, entities = ?, row_count = ?, "
+        "by_position = ? WHERE run_id = ?", [pages_with, entities, rows, positions, run_id])
 
 
 def delete_mention_sources_in_store(con: duckdb.DuckDBPyConnection, page_id, value):

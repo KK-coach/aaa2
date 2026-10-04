@@ -125,6 +125,14 @@ def status(
     _llm_spend(site)
 
 
+def _restored_line(restored) -> str:
+    if restored is None:
+        return "visszaírás: nincs tárolt kinyerés"
+    return (f"visszaírás: {restored.pages} oldal a tárolt kinyerésből"
+            + ("; kimaradt: " + ", ".join(f"{k} {v}" for k, v in restored.skipped.items())
+               if restored.skipped else ""))
+
+
 @app.command()
 def entities(
     domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
@@ -182,6 +190,7 @@ def entities(
                      if isinstance(value, dict) else ", ".join(value)
                      if isinstance(value, list) else value)
             typer.echo(f"  kimaradt, {reason}: {shown}")
+    typer.echo(_restored_line(extracted.restored))
     site_run, linked = resolved.site_run, resolved.linked
     if site_run is not None:
         typer.echo(
@@ -213,14 +222,11 @@ def rebuild_entities(
     a site-kör és a tudásbázis-kapcsolás. A gráfot és a megállapításokat utána az `aaa graph`
     és az `aaa findings` építi fel."""
     site = _open(domain, db)
-    result = api.rebuild_entities(site, knowledge=knowledge)
-    restored = result.restored
-    if restored is None:
-        typer.echo("visszaírás: nincs tárolt kinyerés")
-    else:
-        typer.echo(f"visszaírás #{restored.run_id}: {restored.pages} oldal, {restored.rows} "
-                   f"említés, {restored.entities} entitás, kitalált {restored.fabricated}; "
-                   + (", ".join(f"{k} {v}" for k, v in restored.skipped.items()) or "—"))
+    try:
+        result = api.rebuild_entities(site, knowledge=knowledge)
+    except api.ApiError as exc:
+        _fail(exc)
+    typer.echo(_restored_line(result.restored))
     site_run, linked = result.resolved.site_run, result.resolved.linked
     if site_run is not None:
         typer.echo(
