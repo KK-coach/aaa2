@@ -166,6 +166,11 @@ class FindingsRun:
 # ---------------------------------------------------------------------------
 
 
+def clear_findings(con: duckdb.DuckDBPyConnection) -> None:
+    """A megállapítások törlése (az entitások újraépítése után az azonosítók mások)."""
+    con.execute("DELETE FROM findings")
+
+
 def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
     """A `findings` tábla újraépítése a gráf tábláiból (lásd a modul leírását)."""
     con.execute("DELETE FROM findings")

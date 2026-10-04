@@ -409,6 +409,86 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
     return _finish(con, run_id, client.model, monotonic() - began, clock)
 
 
+def clear_entities(con: duckdb.DuckDBPyConnection) -> None:
+    """Az entitások és az említések törlése (`entities`, `page_entities`, `mention_sources`,
+    `soft_checks`); a blokkok, a futásnapló és a tárolt kinyerés (`entity_run_pages`) marad."""
+    store.delete_all_in_clear_entities(con)
+
+
+def stored_records(con: duckdb.DuckDBPyConnection) -> dict[int, dict]:
+    """Oldalanként a legutóbbi kész LLM-rekord: a modell, a kinyerés, a kinyerés utáni rekord,
+    a darabszám és a rekord bemenet-hash-e."""
+    found: dict[int, dict] = {}
+    for page_id, model, extraction, refined, chunks, input_hash, raw_hash in \
+            store.entity_run_pages_for_stored_records(con):
+        if page_id not in found:
+            found[page_id] = {"model": model, "extraction": json.loads(extraction),
+                              "refined": json.loads(refined) if refined else None,
+                              "chunks": chunks or 0, "input_hash": input_hash,
+                              "raw_html_hash": raw_hash}
+    return found
+
+
+def restore_llm(con: duckdb.DuckDBPyConnection,
+                models_for: Callable[[str], Sequence[str | None]] | None = None,
+                clock: Callable[[], datetime] | None = None,
+                monotonic: Callable[[], float] | None = None) -> LLMRun | None:
+    """Az LLM-említések visszaírása a tárolt kinyerésből, hívás nélkül: oldalanként a legutóbbi
+    kész rekord (`stored_records`) említései, típus-szavazatai és bizonyítékai kerülnek az
+    említés- és entitástáblába, egy új LLM-futás alatt (0 hívás; az oldal oka `restored`, a
+    rekordja és a bemenet-hash-e átkerül, így a következő futás újrahasználhatja).
+
+    `models_for`: a kinyerő modellhez a bemenet-hash modelljei (`input_models`); ha adott, az
+    az oldal, amelynek a tárolt bemenet-hash-e nem egyezik a mostani blokkokéval, kimarad
+    (`restore_input_changed`: a rekord blokk-azonosítói már nem a mostani blokkokra mutatnak).
+    Tárolt rekord nélküli oldal: `restore_no_record`. None, ha egy oldalnak sincs rekordja."""
+    clock = clock or _now
+    monotonic = monotonic or time.monotonic
+    began = monotonic()
+    started = clock()
+    records = stored_records(con)
+    if not records:
+        return None
+    model = next(iter(sorted({r["model"] for r in records.values()},
+                             key=lambda m: -sum(1 for r in records.values()
+                                                if r["model"] == m))))
+    (run_id,) = store.insert_entity_runs_in_run_llm(con, started, model)
+    index = _EntityIndex(con)
+    site = site_line(con) or ""
+    raw_hashes = {page.page_id: page.raw_html_hash for page in crawl.pages(con)}
+    for page_id, lang in select_pages(con):
+        blocks = page_blocks(con, page_id, region="content")
+        if not blocks:
+            _log(con, run_id, page_id, _PageLog("skipped", Counter(no_content_blocks=1)), 0.0,
+                 clock)
+            continue
+        stored = records.get(page_id)
+        if stored is None:
+            _log(con, run_id, page_id, _PageLog("skipped", Counter(restore_no_record=1)), 0.0,
+                 clock)
+            continue
+        current = (input_fingerprint(site, blocks, models_for(stored["model"]))
+                   if models_for is not None else stored["input_hash"])
+        if stored["input_hash"] is not None and current != stored["input_hash"]:
+            _log(con, run_id, page_id, _PageLog("skipped", Counter(restore_input_changed=1)),
+                 0.0, clock)
+            continue
+        log = _PageLog("done", Counter(restored=1), chunks=stored["chunks"],
+                       extraction=stored["extraction"], refined=stored["refined"])
+        log.raw_html_hash, log.input_hash = raw_hashes.get(page_id), stored["input_hash"]
+        con.begin()
+        try:
+            log.fabricated = _store(con, run_id, page_id, lang,
+                                    stored["refined"] or stored["extraction"], blocks, index,
+                                    started, True, stored["model"])
+            _log(con, run_id, page_id, log, 0.0, clock)
+            con.commit()
+        except Exception:
+            con.rollback()
+            raise
+    return _finish(con, run_id, model, monotonic() - began, clock)
+
+
 def input_models(model: str, refine_fingerprint: str | None) -> tuple[str | None, ...]:
     """A bemenet-hash modelljei: (kinyerés, None, a kinyerés utáni lépés beállítása). A
     középső hely a megszűnt elnevezési lépésé; None marad, hogy a tárolt `input_hash`-ek

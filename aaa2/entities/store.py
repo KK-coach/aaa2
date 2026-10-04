@@ -42,6 +42,22 @@ def delete_soft_checks_in_drop_page_blocks(con: duckdb.DuckDBPyConnection, page_
         "DELETE FROM soft_checks WHERE page_id = ?", [page_id])
 
 
+def delete_all_in_clear_entities(con: duckdb.DuckDBPyConnection):
+    """Törlés: mention_sources, soft_checks, page_entities, entities. Hívja:
+    entities/extract.py: clear_entities."""
+    for table in ("mention_sources", "soft_checks", "page_entities", "entities"):
+        con.execute(f"DELETE FROM {table}")
+
+
+def entity_run_pages_for_stored_records(con: duckdb.DuckDBPyConnection) -> list[tuple]:
+    """Lekérdezés: entity_run_pages, entity_runs. Hívja: entities/extract.py: stored_records."""
+    return con.execute(
+        "SELECT p.page_id, r.model, p.extraction, p.refined, p.chunks, p.input_hash, "
+        "p.raw_html_hash FROM entity_run_pages p JOIN entity_runs r USING (run_id) WHERE "
+        "r.method = 'llm' AND p.status = 'done' AND p.extraction IS NOT NULL ORDER BY "
+        "p.run_id DESC, p.finished_at DESC, p.page_id").fetchall()
+
+
 def delete_entities_in_run_llm(con: duckdb.DuckDBPyConnection):
     """Törlés: entities, page_entities. Hívja: entities/extract.py: run_llm."""
     con.execute(

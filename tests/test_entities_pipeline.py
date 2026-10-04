@@ -520,3 +520,44 @@ def test_cli_rules_only_and_the_report(tmp_path, monkeypatch):
     assert (out / "pelda-run.md").read_text(encoding="utf-8").startswith(
         "# Entitás-pipeline: pelda")
     assert "(1 entitás)" in report.output and (out / "pelda-entities.csv").exists()
+
+
+def test_rebuild_entities_restores_the_stored_extraction_without_calls(tmp_path, monkeypatch):
+    from aaa2 import api
+    from aaa2.entities.extract import clear_entities, restore_llm, stored_records
+
+    con = site({"/": html("Példa Kávézó | Kávé", BODY),
+                "/b/": html("B", "<p>A Budapest Coffee Fest idén is lesz</p>")})
+    answer = reply(mention("b1", "Budapest Coffee Fest", "Budapest Coffee Fest", "event"))
+    adapter = Scripted([PAGE_REPLY, answer], [{"decisions": "nem lista"}] * 2)
+    pipeline_run(con, adapter, tmp_path)
+    calls = len(adapter.calls)
+
+    def state():
+        return (sorted(con.execute("SELECT name, type FROM entities").fetchall()),
+                sorted(con.execute(
+                    "SELECT e.name, pe.page_id, b.ordinal, pe.char_start, pe.surface_form FROM "
+                    "page_entities pe JOIN entities e USING (entity_id) JOIN blocks b USING "
+                    "(block_id)").fetchall()))
+
+    before = state()
+    assert before[0] and before[1]
+    records = stored_records(con)
+    # az 1. oldal ellenőrző hívása hibás volt (nincs kész rekordja), a 2. oldalé kész
+    assert set(records) == {2} and records[2]["input_hash"]
+    # az újraépítés: ürítés, szabálykör, visszaírás a tárolt rekordokból, hívás nélkül
+    clear_entities(con)
+    assert con.execute("SELECT count(*) FROM entities").fetchone() == (0,)
+    run_rules(con)
+    restored = restore_llm(con)
+    assert len(adapter.calls) == calls and restored.llm_calls == 0
+    assert restored.skipped == {"restored": 1, "restore_no_record": 1} and state() == before
+    # az új futás sorai hordozzák a rekordot: a következő futás újrahasználja
+    assert set(stored_records(con)) == {2}
+    # más bemenet-hash: az oldal kimarad (a rekord blokk-azonosítói nem a mostani blokkokéi)
+    clear_entities(con)
+    skipped = restore_llm(con, lambda model: (model, None, "más beállítás"))
+    assert skipped.skipped == {"restore_input_changed": 1, "restore_no_record": 1}
+    assert con.execute("SELECT count(*) FROM page_entities ms JOIN mention_sources s USING "
+                       "(mention_id) WHERE s.source = 'llm'").fetchone() == (0,)
+    assert api.rebuild_entities is not None
