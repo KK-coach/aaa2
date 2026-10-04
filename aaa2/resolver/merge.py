@@ -42,6 +42,13 @@ TIER_ORDER = {"core": 0, "package": 1, "work_mode": 1, None: 2, "step": 3}
 TIER_GROUP = {"work_mode": "package"}
 
 
+def clear_resolution(con: duckdb.DuckDBPyConnection) -> None:
+    """Az aliasok, a kapcsolatok és az összevonási napló törlése (`entity_aliases`,
+    `entity_relations`, `merge_log`); az entitások újraépítése előtt."""
+    for table in ("entity_aliases", "entity_relations", "merge_log"):
+        con.execute(f"DELETE FROM {table}")
+
+
 class Merger:
     """Entitások összevonása a `merge_log`-gal: az említések, a források, a bizonyítékok, a
     kapcsolatok és az aliasok a megtartott entitáshoz kerülnek. Az azonos helyű (oldal, blokk,

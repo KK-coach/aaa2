@@ -53,6 +53,7 @@ from aaa2.api.steps import (
     ExtractResult,
     FindResult,
     GraphResult,
+    RebuildResult,
     ResolveResult,
     build_graph,
     check_models,
@@ -60,6 +61,7 @@ from aaa2.api.steps import (
     entity_report,
     extract,
     find,
+    rebuild_entities,
     resolve,
     validate,
 )
@@ -86,6 +88,7 @@ __all__ = [
     "GraphResult",
     "LLMSpend",
     "ProviderSpend",
+    "RebuildResult",
     "ResolveResult",
     "Site",
     "SiteNotFound",
@@ -116,6 +119,7 @@ __all__ = [
     "page_metas",
     "page_nodes",
     "pages",
+    "rebuild_entities",
     "resolve",
     # lekérdezések (szerződések)
     "site_profile",

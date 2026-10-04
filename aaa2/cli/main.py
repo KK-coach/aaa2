@@ -198,6 +198,43 @@ def entities(
         typer.echo(f"  {kind}: {count} entitás, {rows} sor")
 
 
+@app.command("rebuild-entities")
+def rebuild_entities(
+    domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
+    db: Annotated[Path | None, typer.Option(
+        help="a site-adatbázis útvonala (alapból data/<domain>.duckdb)")] = None,
+    knowledge: Annotated[bool | None, typer.Option(
+        "--knowledge/--no-knowledge",
+        help="tudásbázis-egyezés (alapból a pipeline.toml knowledge)")] = None,
+) -> None:
+    """Az entitások újraépítése a tárolt kinyerésből, LLM-hívás nélkül: üríti az entitás-, az
+    említés-, az alias-, a kapcsolat- és az összevonás-táblákat (a gráfot és a megállapításokat
+    is), majd a szabálykörből és a tárolt kinyerésből (`entity_run_pages`) újraépíti őket; utána
+    a site-kör és a tudásbázis-kapcsolás. A gráfot és a megállapításokat utána az `aaa graph`
+    és az `aaa findings` építi fel."""
+    site = _open(domain, db)
+    result = api.rebuild_entities(site, knowledge=knowledge)
+    restored = result.restored
+    if restored is None:
+        typer.echo("visszaírás: nincs tárolt kinyerés")
+    else:
+        typer.echo(f"visszaírás #{restored.run_id}: {restored.pages} oldal, {restored.rows} "
+                   f"említés, {restored.entities} entitás, kitalált {restored.fabricated}; "
+                   + (", ".join(f"{k} {v}" for k, v in restored.skipped.items()) or "—"))
+    site_run, linked = result.resolved.site_run, result.resolved.linked
+    if site_run is not None:
+        typer.echo(
+            f"site-kör #{site_run.run_id}: {site_run.page_entities} oldalhoz kötött entitás, "
+            f"{site_run.packages} csomag, {site_run.steps} lépés, összevonás "
+            f"{sum(site_run.merges.values())}")
+    if linked is not None:
+        typer.echo(f"tudásbázis: {linked.entities} entitás; Wikidata biztos {linked.confident}, "
+                   f"valószínű {linked.probable}, nincs {linked.none}; összevonás "
+                   f"{linked.merged}; hibás lekérdezés miatt ellenőrizetlen {linked.errors}")
+    for kind, count, rows in api.entity_type_counts(site):
+        typer.echo(f"  {kind}: {count} entitás, {rows} sor")
+
+
 @app.command("entity-report")
 def entity_report(
     domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],

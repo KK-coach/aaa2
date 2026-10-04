@@ -102,6 +102,19 @@ Feloldás LLM nélkül: a site-szintű entitások (oldalhoz kötés, csomagok, l
 összevonás, demó- és sablonjelölés), utána a tudásbázis-kapcsolás (`knowledge`, alapból a
 `pipeline.toml` `knowledge`).
 
+### `rebuild_entities`
+
+```python
+rebuild_entities(site: 'Site', *, knowledge: 'bool | None' = None) -> 'RebuildResult'
+```
+
+Az entitások újraépítése a tárolt kinyerésből, LLM-hívás nélkül. Üríti az entitás-, az
+említés-, a bizonyíték-, az alias-, a kapcsolat- és az összevonás-táblákat, a gráfot és a
+megállapításokat; utána a szabálykör, a tárolt kinyerés visszaírása (`restore_llm`: az az
+oldal, amelynek a rekordja más bemenetből készült, kimarad), a site-kör és a tudásbázis-
+kapcsolás (`resolve`). A blokkok, a futásnapló, a tárolt kinyerés és a hívásnapló marad; a
+gráfot és a megállapításokat utána az `aaa graph` és az `aaa findings` építi fel.
+
 ### `build_graph`
 
 ```python
@@ -184,6 +197,17 @@ Mezők:
 
 - `site_run`: `SiteRun | None`
 - `linked`: `KnowledgeRun | None`
+
+### `RebuildResult`
+
+Az újraépítés eredménye: a szabálykör futása, a visszaírás LLM-futása (None, ha nincs
+tárolt kinyerés) és a feloldás.
+
+Mezők:
+
+- `rules_run`: `int | None`
+- `restored`: `LLMRun | None`
+- `resolved`: `ResolveResult`
 
 ### `GraphResult`
 

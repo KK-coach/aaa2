@@ -25,7 +25,15 @@ from aaa2.engine.frontier import MAX_PAGES
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
 from aaa2.entities.dom import build_blocks
-from aaa2.entities.extract import Worker, estimate_llm, input_models, run_llm
+from aaa2.entities.extract import (
+    LLMRun,
+    Worker,
+    clear_entities,
+    estimate_llm,
+    input_models,
+    restore_llm,
+    run_llm,
+)
 from aaa2.entities.gate import KnowledgeBase
 from aaa2.entities.report import run_report, write_entity_table
 from aaa2.entities.rules import run_rules
@@ -39,6 +47,7 @@ from aaa2.llm.client import ModelCheck, Retry, open_clients
 from aaa2.llm.client import check_models as _check_models
 from aaa2.llm.config import PIPELINE_OFF, load_config, load_site_credentials
 from aaa2.resolver.knowledge import KnowledgeRun, link_entities
+from aaa2.resolver.merge import clear_resolution
 from aaa2.resolver.overrides import load_site_config
 from aaa2.resolver.pages import entity_page_ids, page_roles
 from aaa2.resolver.site import SiteRun, run_site
@@ -259,6 +268,48 @@ def resolve(site: Site, *, knowledge: bool | None = None) -> ResolveResult:
         if shared is not None:
             shared.close()
     return ResolveResult(site_run, linked)
+
+
+@dataclass(frozen=True)
+class RebuildResult:
+    """Az újraépítés eredménye: a szabálykör futása, a visszaírás LLM-futása (None, ha nincs
+    tárolt kinyerés) és a feloldás."""
+
+    rules_run: int | None
+    restored: LLMRun | None
+    resolved: ResolveResult
+
+
+def rebuild_entities(site: Site, *, knowledge: bool | None = None) -> RebuildResult:
+    """Az entitások újraépítése a tárolt kinyerésből, LLM-hívás nélkül. Üríti az entitás-, az
+    említés-, a bizonyíték-, az alias-, a kapcsolat- és az összevonás-táblákat, a gráfot és a
+    megállapításokat; utána a szabálykör, a tárolt kinyerés visszaírása (`restore_llm`: az az
+    oldal, amelynek a rekordja más bemenetből készült, kimarad), a site-kör és a tudásbázis-
+    kapcsolás (`resolve`). A blokkok, a futásnapló, a tárolt kinyerés és a hívásnapló marad; a
+    gráfot és a megállapításokat utána az `aaa graph` és az `aaa findings` építi fel."""
+    con = site.con
+    pipeline = load_pipeline()
+    steps = pipeline.steps
+    models = load_config().pipeline
+    verify_choice = _step_model(models["verify"]) if steps.services else None
+    fingerprint = (v3_fingerprint(steps, verify_choice)
+                   if steps.services or steps.concepts else None)
+    if steps.blocks:
+        build_blocks(con)
+    con.begin()
+    try:
+        findings_module.clear_findings(con)
+        graph_module.clear_graph(con)
+        clear_resolution(con)
+        clear_entities(con)
+        con.commit()
+    except Exception:
+        con.rollback()
+        raise
+    rules_run = (run_rules(con, entity_pages=entity_page_ids(page_roles(con))).run_id
+                 if steps.rules else None)
+    restored = restore_llm(con, lambda model: input_models(model, fingerprint))
+    return RebuildResult(rules_run, restored, resolve(site, knowledge=knowledge))
 
 
 def entity_report(site: Site, out: Path, baseline: Path | None = None) -> tuple[Path, Path, int]:

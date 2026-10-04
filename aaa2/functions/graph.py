@@ -178,6 +178,15 @@ def load_graph_config(path: Path = CONFIG_FILE) -> GraphConfig:
 # ---------------------------------------------------------------------------
 
 
+GRAPH_TABLES = ("page_nodes", "edges", "page_main_entity", "entity_weights")
+
+
+def clear_graph(con: duckdb.DuckDBPyConnection) -> None:
+    """A gráf tábláinak törlése (az entitások újraépítése után az azonosítók mások)."""
+    for table in GRAPH_TABLES:
+        con.execute(f"DELETE FROM {table}")
+
+
 @dataclass
 class GraphRun:
     pages: int = 0
