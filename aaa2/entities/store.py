@@ -388,6 +388,15 @@ def page_entities_for_graph___init__(con: duckdb.DuckDBPyConnection) -> list[tup
         "(block_id) ORDER BY ALL").fetchall()
 
 
+def entity_runs_for_primary_empty_pages(con: duckdb.DuckDBPyConnection) -> list[tuple]:
+    """Lekérdezés: entity_run_pages, entity_runs. Hívja: entities/report.py: primary_empty_pages."""
+    return con.execute(
+        "SELECT p.page_id, json_extract(coalesce(p.refined, p.extraction), "
+        "'$.primary_entities') FROM entity_run_pages p JOIN entity_runs r USING "
+        "(run_id) WHERE r.method = 'llm' AND p.status = 'done' ORDER BY p.run_id DESC, "
+        "p.finished_at DESC, p.page_id").fetchall()
+
+
 def entity_runs_for_graph__primary(con: duckdb.DuckDBPyConnection) -> list[tuple]:
     """Lekérdezés: entity_run_pages, entity_runs. Hívja: functions/graph.py: graph__primary."""
     return con.execute(

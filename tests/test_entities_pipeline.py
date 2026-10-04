@@ -68,8 +68,10 @@ def mention(block, surface, name, kind, subtype=None):
             "subtype": subtype, "description": "leírás"}
 
 
-def reply(*mentions):
-    return {"primary_entities": [], "entities": list(mentions)}
+def reply(*mentions, primary=None):
+    """Egy kinyerő válasz; az első említés a fő téma (az üres lista újrakérést váltana ki)."""
+    names = [m["canonical_name"] for m in mentions[:1]] if primary is None else list(primary)
+    return {"primary_entities": names, "entities": list(mentions)}
 
 
 def decisions(*keeps):
@@ -283,7 +285,7 @@ def test_resume_skips_done_pages_and_totals_cover_the_whole_run(tmp_path):
 
 def test_the_cost_cap_stops_the_remaining_pages(tmp_path):
     con = site({f"/{i}/": html(f"P{i}", "<p>szöveg itt</p>") for i in range(3)})
-    adapter = Scripted([reply()] * 3)
+    adapter = Scripted([reply(primary=["téma"])] * 3)
     cost = (1000 * 0.75 + 200 * 3.75) / 1e6
     # a határ két oldal valós költségét és egy foglalást enged: a harmadik oldal foglalása (a
     # becslés, de legalább az eddigi legdrágább oldal) már nem fér be
@@ -354,7 +356,7 @@ def test_estimate_counts_chunks_and_leaves_verify_until_after_extraction(tmp_pat
     assert (guess.pages, guess.chunks, guess.verify_pages, guess.verify_pending) == (3, 3, 0, 3)
     assert guess.verify_usd == 0 and guess.total_usd == guess.extract_usd > 0
     assert estimate_llm(con, CONFIG, "gpt-6-luna", None, day).verify_pending == 0
-    adapter = Scripted([reply()] * 2)
+    adapter = Scripted([reply(primary=["téma"])] * 2)
     run_llm(con, client_for(con, adapter, tmp_path), limit=2, clock=lambda: NOON)
     rest = estimate_llm(con, CONFIG, "gemini-3.8-flash", None, day, resume=True)
     assert (rest.pages, rest.chunks) == (1, 1)

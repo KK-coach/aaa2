@@ -70,8 +70,11 @@ def mention(block, surface, name, kind, subtype=None, description="leírás"):
             "subtype": subtype, "description": description}
 
 
-def reply(*mentions, primary=()):
-    return {"primary_entities": list(primary), "entities": list(mentions)}
+def reply(*mentions, primary=None):
+    """Egy kinyerő válasz; `primary` nélkül az első említés a fő téma (az üres lista újrakérést
+    váltana ki: `primary=()` adja)."""
+    names = [m["canonical_name"] for m in mentions[:1]] if primary is None else list(primary)
+    return {"primary_entities": names, "entities": list(mentions)}
 
 
 # b0 title, b1 h1, b2 bekezdés, b3 h2, b4 bekezdés
@@ -106,7 +109,7 @@ def test_input_is_the_content_blocks_without_known_entities(tmp_path):
                 "/masik/": html("Másik", "<p>Rejtett Rudolf oldala</p>")})
     run_rules(con)
     assert "Titkos Tivadar" in [n for (n,) in con.execute("SELECT name FROM entities").fetchall()]
-    client, adapter = client_for(con, [reply()] * 2, tmp_path)
+    client, adapter = client_for(con, [reply(primary=["téma"])] * 2, tmp_path)
     run_llm(con, client)
     prompt, text = adapter.calls[0]
     assert prompt == BLOCK_PROMPT
@@ -122,7 +125,7 @@ def test_input_is_the_content_blocks_without_known_entities(tmp_path):
 
 def test_blocks_are_built_once_and_kept(tmp_path):
     con = one_page()
-    client, _ = client_for(con, [reply(), reply()], tmp_path)
+    client, _ = client_for(con, [reply(primary=["téma"]), reply(primary=["téma"])], tmp_path)
     run_llm(con, client)
     first = con.execute("SELECT block_id, ordinal, kind, level, heading_path FROM blocks "
                         "ORDER BY ordinal").fetchall()
@@ -216,7 +219,7 @@ def test_rule_and_llm_finding_the_same_mention_store_it_once(tmp_path):
                             "programját</p>", head=event if i == 0 else "") for i in range(3)}
     con = site({**pages, **stub("/fest/")})
     answer = reply(mention("b1", "Budapest Coffee Fest", "Budapest Coffee Fest", "event"))
-    client, _ = client_for(con, [answer] * 3 + [reply()], tmp_path)
+    client, _ = client_for(con, [answer] * 3 + [reply(primary=["téma"])], tmp_path)
     run_llm(con, client)
     assert con.execute("SELECT source FROM entities").fetchall() == [("llm",)]
     run_rules(con)
@@ -299,7 +302,7 @@ def test_llm_type_is_a_vote_not_a_change(tmp_path):
 def test_votes_accumulate_and_a_tie_keeps_the_current_type(tmp_path):
     con = gadget_site()
     run_rules(con)
-    client, _ = client_for(con, [gadget("tech"), gadget("product"), reply()]
+    client, _ = client_for(con, [gadget("tech"), gadget("product"), reply(primary=["téma"])]
                            + [gadget("tech")] * 3, tmp_path)
     run_llm(con, client)
     assert con.execute("SELECT type_votes, type_suggested FROM entities").fetchone() == (
@@ -351,7 +354,7 @@ def test_errors_are_counted_and_the_run_goes_on(tmp_path):
 
 def test_budget_stop_ends_the_run(tmp_path):
     con = site({f"/{i}/": html(f"P{i}", "<p>szöveg</p>") for i in range(3)})
-    client, adapter = client_for(con, [reply()] * 3, tmp_path)
+    client, adapter = client_for(con, [reply(primary=["téma"])] * 3, tmp_path)
     ledger.append({"model": "gemini-3.8-flash", "cost_usd": 4.5}, tmp_path / "ledger.jsonl")
     run = run_llm(con, client)
     assert (run.pages, run.llm_calls, adapter.calls) == (0, 0, [])
@@ -376,7 +379,7 @@ def test_run_metrics(tmp_path):
 
 def test_limit_and_page_ids_pick_the_pages(tmp_path):
     con = site({f"/{i}/": html(f"P{i}", "<p>szöveg itt</p>") for i in range(4)})
-    client, adapter = client_for(con, [reply()] * 6, tmp_path)
+    client, adapter = client_for(con, [reply(primary=["téma"])] * 6, tmp_path)
     assert run_llm(con, client, limit=2).pages == 2
     ids = [page_id for (page_id,) in con.execute(
         "SELECT page_id FROM pages WHERE url LIKE '%/1/' OR url LIKE '%/3/'").fetchall()]
@@ -429,6 +432,45 @@ def test_live_three_pages_with_the_pipeline_models(reference_crawl):
     for name, surface, text, start, end in rows:
         print(f"  {name}  «{surface}»")
         assert text[start:end] == surface
+
+
+def test_an_empty_primary_list_is_asked_again_once(tmp_path):
+    con = one_page()
+    found = mention("b2", "Példa Kávézó", "Példa Kávézó", "org")
+    other = mention("b4", "Kiss Anna", "Kiss Anna", "person")
+    # az első válasz nem nevez meg fő témát, a második igen: a második lép a helyére
+    client, adapter = client_for(con, [reply(found, primary=()),
+                                       reply(found, other, primary=["Példa Kávézó"])], tmp_path)
+    run = run_llm(con, client)
+    assert len(adapter.calls) == 2 and run.llm_calls == 2
+    assert run.skipped == {"primary_retried": 1}
+    record = json.loads(con.execute("SELECT extraction FROM entity_run_pages").fetchone()[0])
+    assert record["primary_entities"] == ["Példa Kávézó"] and len(record["entities"]) == 2
+    assert len(record["call_ids"]) == 2 and record["call_id"] == record["call_ids"][1]
+    assert sorted(name for name, *_ in mentions(con)) == ["Kiss Anna", "Példa Kávézó"]
+
+
+def test_a_twice_empty_primary_list_is_flagged_and_not_asked_a_third_time(tmp_path):
+    con = one_page()
+    found = mention("b2", "Példa Kávézó", "Példa Kávézó", "org")
+    other = mention("b4", "Kiss Anna", "Kiss Anna", "person")
+    client, adapter = client_for(con, [reply(found, primary=()),
+                                       reply(found, other, primary=())], tmp_path)
+    run = run_llm(con, client)
+    assert len(adapter.calls) == 2                             # nincs harmadik kérés
+    assert run.skipped == {"primary_empty": 1, "primary_retried": 1}
+    status, extraction = con.execute(
+        "SELECT status, extraction FROM entity_run_pages").fetchone()
+    record = json.loads(extraction)
+    # az első válasz marad
+    assert status == "done" and record["primary_entities"] == []
+    assert len(record["entities"]) == 1 and len(record["call_ids"]) == 2
+    assert record["call_id"] == record["call_ids"][0]
+    assert [name for name, *_ in mentions(con)] == ["Példa Kávézó"]
+    # a tárolt rekord újrahasználata nem kér újra
+    again = run_llm(con, client, reuse=True)
+    assert len(adapter.calls) == 2
+    assert again.skipped == {"reused_extraction": 1, "primary_empty": 1}
 
 
 def long_page():
@@ -664,7 +706,7 @@ def test_budget_guard_counts_the_calls_in_flight(tmp_path):
             release.wait(5)
             return super().call(model, schema, prompt, input)
 
-    adapter = Blocking([reply(), reply()])
+    adapter = Blocking([reply(primary=["téma"]), reply(primary=["téma"])])
     ledger_path = tmp_path / "ledger.jsonl"
     client = LLMClient(con, adapter, CONFIG, ledger_path, lambda: NOON,
                        Retry(sleep=lambda _: None))

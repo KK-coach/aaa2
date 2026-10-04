@@ -82,6 +82,7 @@ import json
 import math
 import re
 from collections import Counter, defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from itertools import combinations
 from pathlib import Path
@@ -191,9 +192,11 @@ class _Site:
         noindex = {page.page_id: page.noindex for page in crawl.pages(con)}
         self.pages = {row[0]: dict(zip(
             ("page_id", "url", "role", "support", "title", "h1", "lang", "group", "status",
-             "canonical", "issue", "noindex"), (*row, bool(noindex[row[0]])), strict=True))
+             "canonical", "issue", "signals", "noindex"),
+            (*row, bool(noindex[row[0]])), strict=True))
             for row in [(n.page_id, n.url, n.role, n.support_kind, n.title, n.h1, n.lang,
-                         n.group_key, n.main_status, n.canonical_page, n.canonical_issue)
+                         n.group_key, n.main_status, n.canonical_page, n.canonical_issue,
+                         (n.decision or {}).get("signals") or {})
                         for n in sorted(graph_queries.page_nodes(con), key=lambda n: n.url)]
             if row[0] in noindex}
         self.entities = {row[0]: dict(zip(
@@ -776,8 +779,21 @@ def view_data(site: _Site) -> tuple[list[dict], list[dict]]:
                                for e, w, _ in site.mention_edges[page["page_id"]]
                                if e not in picked and w > 0][:PAGE_MENTIONS],
             "findings": [] if duplicate else list(by_url[page["url"]]),
+            "notes": [] if duplicate else page_notes(page),
             **_heading_view(site.headings.get(page["page_id"]))})
     return entities, pages
+
+
+def page_notes(page: Mapping) -> list[str]:
+    """Az oldal jelzései a gráf döntéséből (`signals`): a kinyerés nem nevezett meg fő témát (a
+    segédoldalon nem jelzés: annak nincs fő entitása), és a nyelvi pár fő entitása eltér."""
+    signals = page.get("signals") or {}
+    notes = []
+    if signals.get("primary_empty") and page["status"] != "support":
+        notes.append("a kinyerés nem nevezett meg fő témát")
+    for other in signals.get("pair_differs") or []:
+        notes.append(f"a nyelvi pár fő entitása eltér: {other['url']} → {other['entity']}")
+    return notes
 
 
 def _heading_view(data: dict | None) -> dict:
@@ -879,7 +895,8 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
             "a title-ben": _yes(has_main or None, bool(page["in_title"])),
             "további említett entitások": "; ".join(
                 f"{m['entity']} ({m['weight']:g})" for m in page["other_mentions"]),
-            "megállapítások": " || ".join(page["findings"])})
+            "megállapítások": " || ".join(page["findings"]),
+            "jelzések": " || ".join(page["notes"])})
     return overview, neighbourhood, pages
 
 
@@ -932,7 +949,7 @@ def export_views(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[s
         "pages": _write(out / f"{name}-view-pages.csv", pages, [
             "url", "szerep", "segédoldal", "nyelv", "canonical", "fő entitás", "típus",
             "megbízhatóság", "bizonyítékok", "másodlagos", "H1", "a H1-ben", "title",
-            "a title-ben", "további említett entitások", "megállapítások"]),
+            "a title-ben", "további említett entitások", "megállapítások", "jelzések"]),
         "headings": _write(out / f"{name}-view-headings.csv",
                            heading_rows(list(trees.values())), [
             "url", "mélység", "szint", "heading", "entitások", "kapcsolat a fő entitáshoz",
@@ -1128,6 +1145,7 @@ def _html(name: str, findings: list[dict], site: _Site, overview: list[dict],
                  else _e(row["title"])),
                 ("amit még említ", _e(row["további említett entitások"])),
                 ("megállapítások", _e(row["megállapítások"]).replace(" || ", "<br>")),
+                ("jelzések", _e(row["jelzések"]).replace(" || ", "<br>")),
                 ("heading-fa", _page_tree_html((trees or {}).get(row["url"])))])
             + "</details>")
     parts.append("</body></html>")

@@ -30,15 +30,24 @@ kimenetéből. Minden futás újraépíti a `page_nodes`, `edges`, `page_main_en
      `schema_about`); cikkoldalon a site másik oldalához kötött saját ajánlatra mutató `about`
      / `mainEntity` nem bizonyíték (a cikk fő entitása a témája marad), helyette `supports` él; a profiloldalon a legtöbbet említett személy (`profile`; a profiloldal
      fő entitása ő, ha van);
-  3. a kinyerés `primary_entities` listája (a sorszámmal; `primary`);
+  3. a kinyerés `primary_entities` listája (a sorszámmal; `primary`); a nyelvi pár (az
+     oldalcsoport más nyelvű tagjai) listái is számítanak (`group_primary`, a tag sorszámával):
+     a jelölt sorszáma a pár listáin a legkisebb;
   4. a title, a H1 és a headingek nem sablon-említései (`title`, `h1`, `heading`); a már
      bizonyítékkal bíró jelöltnél a neve vagy aliasa a H1 és a title szövegében is (`occurs`);
   5. az oldal legtöbbet említett entitása, ha legalább `TOP_MIN_MENTIONS` említése van és
      egyértelműen az első (`top_mentions`; a sablon-említések nélkül);
   6. a más oldalcsoportokról érkező anchorok szövege (`inbound_anchor`) és az URL utolsó
      szakasza (`url`).
-  A jelöltek sorrendje: a legerősebb bizonyíték, a `primary` sorszáma, a bizonyítékfajták
-  száma, az említésszám. Jelölt nem lehet a demó- és a navigációs jelölésű entitás; a site
+  A jelöltek sorrendje: a legerősebb bizonyíték, a `primary` sorszáma (a nyelvi pár listáin
+  a legkisebb), a pár hány tagja nevezi meg, a bizonyítékfajták száma és az említésszám a pár
+  oldalain együtt, az elsődleges nyelvű tag megnevezi-e (`pages.representative`, a
+  `canonical_language` szerint), a páron belül a régebbi entitás, végül az oldal saját
+  bizonyítékfajtái és említésszáma. A pár
+  tagjai így ugyanazt a fő entitást kapják, ha bármelyikük kinyerése megnevez fő témát; pár
+  nélküli oldalon a sorrend a korábbi (bizonyíték, sorszám, fajták száma, említésszám). Jelzés a
+  döntésben (`signals`): `primary_empty` (a kinyerés nem nevezett meg fő témát),
+  `pair_differs` (a pár egy tagjának mégis más a fő entitása). Jelölt nem lehet a demó- és a navigációs jelölésű entitás; a site
   entitása csak a kezdőoldalon, ha oldalhoz kötött vagy JSON-LD bizonyítéka van, vagy ha a
   `primary_entities` első eleme. Megbízhatóság (`confidence`): erős, ha oldalhoz kötött,
   kezdőoldali vagy JSON-LD, vagy `primary` és title / H1; közepes, ha a `primary` első eleme,
@@ -92,11 +101,21 @@ from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import alias_key
 from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.names import normal_key
-from aaa2.resolver.pages import PageInfo, home_urls, page_roles, page_types, page_url, support_url
+from aaa2.resolver.overrides import canonical_language
+from aaa2.resolver.pages import (
+    PageInfo,
+    home_urls,
+    page_roles,
+    page_types,
+    page_url,
+    representative,
+    support_url,
+)
 from aaa2.resolver.pages import schema_nodes as page_schema_nodes
 
 CONFIG_FILE = Path(__file__).parent / "config" / "graph.toml"
 EVIDENCE_RANK = {"anchored": 1, "home": 1, "schema_about": 2, "profile": 2, "primary": 3,
+                 "group_primary": 3,
                  "h1": 4, "title": 4, "heading": 4, "top_mentions": 5, "inbound_anchor": 6,
                  "url": 6}
 STRONG = frozenset({"anchored", "home", "schema_about", "profile"})
@@ -180,19 +199,30 @@ class Candidate:
     entity_id: int
     evidence: dict = field(default_factory=dict)          # fajta → részlet
     mentions: int = 0
-    primary_index: int | None = None
+    primary_index: int | None = None       # a legkisebb sorszám a nyelvi pár tagjainak listáin
+    group_votes: int = 0                    # a pár hány tagjának `primary` listáján áll
+    group_kinds: int | None = None          # bizonyítékfajták a pár oldalain együtt
+    group_mentions: int | None = None       # említések a pár oldalain együtt
+    group_first: bool = False               # a pár elsődleges nyelvű tagja megnevezi-e
 
     def key(self) -> tuple:
         best = min(EVIDENCE_RANK[kind] for kind in self.evidence)
+        kinds = len(self.evidence) if self.group_kinds is None else self.group_kinds
+        mentions = self.mentions if self.group_mentions is None else self.group_mentions
+        # a páron belül a teljes döntetlent az entitás azonosítója dönti el (a régebbi nyer),
+        # még az oldal saját bizonyítéka előtt, hogy a sorrend a pár minden oldalán ugyanaz legyen
+        tie = self.entity_id if self.group_kinds is not None else 0
         return (best, 99 if self.primary_index is None else self.primary_index,
+                -self.group_votes, -kinds, -mentions, not self.group_first, tie,
                 -len(self.evidence), -self.mentions, self.entity_id)
 
     def confidence(self) -> str:
         kinds = set(self.evidence)
         headline = kinds & {"title", "h1"}
-        if kinds & STRONG or ("primary" in kinds and headline):
+        named = kinds & {"primary", "group_primary"}
+        if kinds & STRONG or (named and headline):
             return "strong"
-        if self.primary_index == 0 or ("primary" in kinds and kinds & {"heading", "top_mentions"}) \
+        if self.primary_index == 0 or (named and kinds & {"heading", "top_mentions"}) \
                 or (headline and len(kinds - headline) >= 1):
             return "medium"
         return "weak"
@@ -225,6 +255,7 @@ def build_graph(con: duckdb.DuckDBPyConnection, config: GraphConfig | None = Non
                  if page_id not in graph.canonical}
     for page_id, original in sorted(graph.canonical.items()):
         decisions[page_id] = graph.duplicate(decisions[original], original)
+    graph.signals(decisions)
     for page_id, info in sorted(graph.roles.items()):
         decision = decisions[page_id]
         run.pages += 1
@@ -286,6 +317,7 @@ class _Graph:
         self.nodes = page_schema_nodes(con)
         self.id_names = self._schema_ids()
         self.primary = self._primary()
+        self.site_lang = canonical_language(con)
         self.inbound: dict[int, list[tuple[int, str, bool]]] = defaultdict(list)
         self.outbound: dict[int, list[tuple[int, str]]] = defaultdict(list)
         for from_id, to_id, anchor, position in sorted(
@@ -304,6 +336,7 @@ class _Graph:
         self.articles = {e for e, row in self.entities.items() if row[7] is not None
                          and row[2] == "work" and row[3] == "article"}
         self.supports: dict[int, list[tuple[int, str]]] = {}   # cikkoldal → (ajánlat, tulajd.)
+        self._own: dict[int, dict[int, Candidate]] = {}        # oldal → saját jelöltek
         self.canonical: dict[int, int] = {}          # duplikátum → az eredeti oldal
         self.canonical_issue: dict[int, dict] = {}
         self._canonicals()
@@ -466,6 +499,39 @@ class _Graph:
                 names.add(name)
         return decision
 
+    def pair(self, info: PageInfo) -> list[int]:
+        """Az oldal és a nyelvi párjának tagjai (az oldalcsoport más nyelvű, nem canonical-
+        duplikátum oldalai); az oldal maga az első. A fül- és lekérdezés-változatok (azonos
+        nyelv) nem tagjai."""
+        others = sorted(p for p in self.groups[info.group]
+                        if p != info.page_id and p not in self.canonical
+                        and self.roles[p].lang and info.lang and self.roles[p].lang != info.lang)
+        return [info.page_id, *others]
+
+    def signals(self, decisions: dict[int, dict]) -> None:
+        """Jelzések a döntéseken (`signals`): `primary_empty` (a kinyerés kész, de nem nevezett
+        meg fő témát), `pair_differs` (a nyelvi pár más tagjának más a fő entitása: a tag URL-je
+        és fő entitása)."""
+        for page_id, info in self.roles.items():
+            decision = decisions[page_id]
+            if decision.get("canonical") is not None:
+                continue
+            found: dict = {}
+            if page_id in self.primary and not self.primary[page_id]:
+                found["primary_empty"] = True
+            main = decision["main"].entity_id if decision.get("main") else None
+            differs = []
+            for member in self.pair(info)[1:]:
+                other = decisions[member]["main"].entity_id if decisions[member].get("main") \
+                    else None
+                if main is not None and other is not None and other != main:
+                    differs.append({"url": self.urls[member], "entity_id": other,
+                                    "entity": self.entities[other][1]})
+            if differs:
+                found["pair_differs"] = differs
+            if found:
+                decision["signals"] = found
+
     def duplicate(self, original: dict, original_id: int) -> dict:
         """A canonical-duplikátum döntése: az eredetié (szerep, fő és másodlagos entitások,
         csoport); a cikk `about`-éle az eredetiről jön."""
@@ -474,10 +540,60 @@ class _Graph:
 
     def candidates(self, info: PageInfo, home: bool = False,
                    profile: bool = False) -> dict[int, Candidate]:
-        """Az oldal jelöltjei a bizonyítékaikkal. A site oldalaihoz kötött cikk-entitások nem
-        jelöltek (a cikkoldal fő entitása a téma). `profile`: rólam- vagy szerzői oldal; a
-        legtöbbet említett személy `profile` bizonyítékot kap."""
+        """Az oldal jelöltjei: a saját bizonyítékai (`own_candidates`), és ha nyelvi pár tagja,
+        a pár többi tagjának `primary_entities` listája is (`group_primary`). A páron belül a
+        jelölt sorszáma a tagok listáin a legkisebb; `group_votes`: hány tag nevezi meg;
+        `group_kinds` és `group_mentions`: a jelölt bizonyítékfajtái és említései a pár
+        oldalain együtt; `group_first`: az elsődleges nyelvű tag megnevezi-e. Ezek a pár
+        minden tagján ugyanazok, így a sorrend eleje (`Candidate.key`) oldalfüggetlen."""
+        own = self.own_candidates(info, home, profile)
+        pair = self.pair(info)
+        if len(pair) == 1:
+            return own
+        found = {entity_id: Candidate(entity_id, dict(item.evidence), item.mentions,
+                                      item.primary_index)
+                 for entity_id, item in own.items()}
+        members: dict[int, dict[int, Candidate]] = {info.page_id: own}
+        for member in pair[1:]:
+            role, _ = self.role_of(self.roles[member])
+            members[member] = self.own_candidates(self.roles[member], role == "home",
+                                                  role == "profile")
+        first = representative([self.roles[p] for p in pair], self.site_lang).page_id
+        for member in pair[1:]:
+            for index, name in enumerate(self.primary.get(member, [])):
+                entity_id = self.resolve(name, member)
+                if entity_id is None or entity_id in self.excluded \
+                        or entity_id in self.articles:
+                    continue
+                item = found.setdefault(entity_id, Candidate(entity_id))
+                item.evidence.setdefault(
+                    "group_primary", {"index": index, "name": name,
+                                      "page": self.urls.get(member)})
+        for entity_id, item in found.items():
+            named = {member: sets[entity_id].primary_index for member, sets in members.items()
+                     if entity_id in sets and sets[entity_id].primary_index is not None}
+            if named:
+                item.primary_index = min(named.values())
+            item.group_votes = len(named)
+            item.group_first = first in named
+            kinds: set[str] = set()
+            for sets in members.values():
+                if entity_id in sets:
+                    kinds |= set(sets[entity_id].evidence)
+            item.group_kinds = len(kinds)
+            item.group_mentions = sum(sets[entity_id].mentions for sets in members.values()
+                                      if entity_id in sets)
+        return found
+
+    def own_candidates(self, info: PageInfo, home: bool = False,
+                       profile: bool = False) -> dict[int, Candidate]:
+        """Az oldal jelöltjei a saját bizonyítékaikkal (oldalanként egyszer számolva). A site
+        oldalaihoz kötött cikk-entitások nem jelöltek (a cikkoldal fő entitása a téma).
+        `profile`: rólam- vagy szerzői oldal; a legtöbbet említett személy `profile`
+        bizonyítékot kap."""
         page_id = info.page_id
+        if page_id in self._own:
+            return self._own[page_id]
         found: dict[int, Candidate] = {}
         articles = self.articles
 
@@ -557,6 +673,7 @@ class _Graph:
                     and not set(found[entity_id].evidence) & {"anchored", "schema_about"} \
                     and found[entity_id].primary_index != 0:
                 del found[entity_id]
+        self._own[page_id] = found
         return found
 
     def _own_offer(self, entity_id: int | None, group: set[int]) -> bool:
@@ -602,6 +719,8 @@ def _store_page(con: duckdb.DuckDBPyConnection, graph: _Graph, info: PageInfo,
               "canonical": graph.urls[decision["canonical"]] if decision["canonical"] else None,
               "canonical_issue": decision["canonical_issue"],
               "candidates": [c.as_dict() for c in decision["candidates"]]}
+    if decision.get("signals"):
+        record["signals"] = decision["signals"]
     issue = decision["canonical_issue"]
     con.execute(
         "INSERT INTO page_nodes (page_id, url, role, support_kind, title, h1, lang, group_key, "
@@ -890,6 +1009,8 @@ def evidence_text(evidence: Mapping) -> str:
         detail = evidence[kind]
         if kind == "primary":
             parts.append(f"primary#{detail['index']}")
+        elif kind == "group_primary":
+            parts.append(f"group_primary#{detail['index']}")
         elif kind in ("top_mentions", "inbound_anchor"):
             parts.append(f"{kind}:{detail}")
         else:
