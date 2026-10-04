@@ -19,11 +19,13 @@ from aaa2.resolver.validate import (
     KG_TYPES_FILE,
     WIKI_MIN_INTERVAL,
     KGMatch,
+    _Api,
     canonical_key,
     classify_kg,
     concept_status,
     decide_type,
     load_kg_types,
+    match_key,
     validate_entities,
     wikipedia_match,
 )
@@ -669,3 +671,62 @@ def test_live_smoke_ten_entities(reference_crawl, tmp_path):
                            "ORDER BY entity_id").fetchall():
         print("  ", row)
     assert result.entities == 10 and result.errors == {}
+
+
+
+def counting_api(con, shared, sent):
+    def handler(request):
+        sent.append(str(request.url))
+        return httpx.Response(200, json={"answer": len(sent)})
+    return _Api(con, shared, httpx.Client(transport=httpx.MockTransport(handler)),
+                Retry(sleep=lambda _: None, jitter=0), lambda: NOON, lambda: 0.0)
+
+
+def test_the_cache_answers_a_request_that_differs_only_in_spelling():
+    # a név kis- és nagybetűi, a szóközök és a címváltozatok készlete nem számít; más név igen
+    shared, sent = connect(":memory:"), []
+    api = counting_api(connect(":memory:"), shared, sent)
+
+    def search(name):
+        return api.get("wikidata", "https://www.wikidata.org/w/api.php",
+                       [("action", "wbsearchentities"), ("search", name), ("language", "en")])
+
+    def titles(value):
+        return api.get("wikipedia", "https://en.wikipedia.org/w/api.php",
+                       [("action", "query"), ("titles", value)])[1]
+
+    key, first = search("Site Speed")
+    assert search("site speed")[1] == first and search("SITE  speed")[1] == first
+    assert len(sent) == 1 and api.counts.cache_site == 2
+    assert search("site-speed")[1] != first and len(sent) == 2            # más név: új kérés
+    both = titles("Trust Signals|Trust signals")
+    assert titles("Trust signals") == both and titles("trust signals") == both
+    assert len(sent) == 3
+    # a keresőkulcs a név szerint ugyanaz, a tárolt kulcs a kérésé marad
+    assert match_key(key) == match_key(search("site speed")[0]) and key != search("site speed")[0]
+    # a KG-kérésre nem vonatkozik
+    for query in ("Budapest", "budapest"):
+        api.get("kg", "https://kgsearch.googleapis.com/v1/entities:search", [("query", query)])
+    assert len(sent) == 5
+    # másik site: a közös gyorsítótár más írásmódú válasza is elég
+    api.share("wikidata", key)
+    other = counting_api(connect(":memory:"), shared, sent)
+    assert other.get(
+        "wikidata", "https://www.wikidata.org/w/api.php",
+        [("action", "wbsearchentities"), ("search", "site SPEED"), ("language", "en")])[1] == first
+    assert len(sent) == 5 and other.counts.cache_shared == 1
+
+
+def test_equivalent_spellings_resolve_to_the_first_stored_key():
+    # több tárolt írásmód közül a kulcs szerint első válasza jön, a tárolás sorrendjétől függetlenül
+    answers = []
+    for order in (("b", "B"), ("B", "b")):
+        con = connect(":memory:")
+        for name in order:
+            con.execute("INSERT INTO validation_cache VALUES ('wikidata', ?, ?, ?)", [
+                f"https://www.wikidata.org/w/api.php?search={name}%20x",
+                json.dumps({"from": name}), NOON])
+        api = counting_api(con, None, [])
+        answers.append(api.get("wikidata", "https://www.wikidata.org/w/api.php",
+                               [("search", "b X")])[1])
+    assert answers == [{"from": "B"}, {"from": "B"}]
