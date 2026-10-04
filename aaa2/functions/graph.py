@@ -104,6 +104,7 @@ from aaa2.resolver.names import normal_key, without_legal_form
 from aaa2.resolver.overrides import canonical_language
 from aaa2.resolver.pages import (
     PageInfo,
+    canonical_key,
     home_urls,
     page_roles,
     page_types,
@@ -127,6 +128,7 @@ PROFILE_TYPES = frozenset({"AboutPage", "ProfilePage"})
 PROFILE_URL_WORDS = ("about", "rolam", "rolunk", "author", "szerzo")
 CATEGORY_SEGMENTS = frozenset({"category", "kategoria"})
 CANONICAL_ISSUES = {"not_crawled": "a cél nincs a készletben", "error_status": "a cél hibás",
+                    "other_type": "a cél más típusú oldal",
                     "not_a_node": "a cél nem oldal-csomópont", "loop": "körbeérő lánc"}
 LIST_MIN_SHARE = 0.5                     # a teaser-blokkok aránya ennél nagyobb: lista
 EXCERPT_CHARS = 40                       # a kivonat-teaser legalább ennyi jelnyi eleje
@@ -292,7 +294,7 @@ class _Graph:
                  page_type_patterns: Mapping[str, Sequence[str]]):
         self.con = con
         self.roles: dict[int, PageInfo] = page_roles(con)
-        self.types = page_types(con, page_type_patterns) if page_type_patterns else {}
+        self.types = page_types(con, page_type_patterns)
         self.homes = {page_url(u) for u in home_urls(con)}
         self.placeholder = placeholder_pages(con)
         self.groups: dict[str, list[int]] = defaultdict(list)
@@ -383,6 +385,12 @@ class _Graph:
                 self.canonical_issue[page_id] = {"issue": "loop",
                                                  "canonical": self.urls[declared[page_id]],
                                                  "status": None}
+            elif self.roles[page_id].group != self.roles[target].group:
+                # a duplikátum a cél oldalcsoportjába kerül (`pages.page_roles`); ha nem került,
+                # a két oldal más szerepű: a canonical hibás, az oldal külön marad
+                self.canonical_issue[page_id] = {"issue": "other_type",
+                                                 "canonical": self.urls[declared[page_id]],
+                                                 "status": None}
             else:
                 self.canonical[page_id] = target
 
@@ -446,6 +454,8 @@ class _Graph:
             return "support", "legal"
         if info.role in ("support", "article") and url_has_word(info.url, CONTACT_URL_WORDS):
             return "support", "contact"
+        if kind == "list":                     # segédlista: nincs fő entitása
+            return "listing", "list"
         if info.role in ("support", "article") and CATEGORY_SEGMENTS & set(
                 urlsplit(info.url).path.lower().split("/")):
             return "listing", "list"
@@ -1054,14 +1064,6 @@ def row_label(cells: str | None, end: int | None) -> bool:
     values = json.loads(cells) if cells else []
     return len(values) == 2 and end is not None \
         and end <= len(str(values[0].get("value") or ""))
-
-
-def canonical_key(url: str) -> str:
-    """A canonical-összevetés kulcsa: töredék és záró perjel nélkül, a lekérdezéssel (a
-    `?tab=` változatok külön oldalak)."""
-    parts = urlsplit(url.split("#", 1)[0])
-    return f"{parts.scheme}://{parts.netloc}{parts.path.rstrip('/') or '/'}" \
-        + (f"?{parts.query}" if parts.query else "")
 
 
 def url_has_word(url: str, stems: Sequence[str]) -> bool:

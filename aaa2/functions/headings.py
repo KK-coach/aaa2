@@ -76,12 +76,19 @@ LONG_CONTENT_WORDS = 600                # e fölött a H2 hiánya megállapítá
 # legrövidebbje site-onként 34–74 szó; a küszöb a kettő között áll.
 SUBSTANTIVE_WORDS = 40
 RELATION_ORDER = ("main", "related", "unrelated")
-PATTERN_TYPES = ("empty_section", "skipped_level")     # szerep és szintminta szerint összevonva
-TYPE_SUMMARY = {"empty_section": "üres szakasz", "skipped_level": "kihagyott heading-szint"}
+# szerep és szintminta szerint összevonva (a bekezdés-heading csak szerep szerint)
+PATTERN_TYPES = ("empty_section", "skipped_level", "paragraph_heading")
+TYPE_SUMMARY = {"empty_section": "üres szakasz", "skipped_level": "kihagyott heading-szint",
+                "paragraph_heading": "bekezdés headingként jelölve"}
 STRUCTURE_TYPES = ("missing_h1", "h1_outside_content", "multiple_h1", "empty_section",
-                   "skipped_level", "missing_h2")
+                   "skipped_level", "missing_h2", "paragraph_heading")
 SEVERITY = {"missing_h1": "high", "h1_outside_content": "medium", "multiple_h1": "low",
-            "empty_section": "low", "skipped_level": "low", "missing_h2": "low"}
+            "empty_section": "low", "skipped_level": "low", "missing_h2": "low",
+            "paragraph_heading": "low"}
+PARAGRAPH_WORDS = 12                    # ennél hosszabb üres szakaszú heading: mondatnyi szöveg
+# jogi és kapcsolat-oldalon nincs tartalmi szerkezeti megállapítás
+QUIET_SUPPORT = frozenset({"legal", "contact"})
+QUIET_TYPES = frozenset({"empty_section", "skipped_level", "missing_h2", "paragraph_heading"})
 OUTSIDE_LABELS = {"cookie": "cookie- vagy consent-elem", "dialog": "popup vagy modális ablak",
                   "chrome": "fejléc, menü, lábléc vagy oldalsáv"}
 
@@ -262,7 +269,11 @@ def structure_findings(pages: Mapping[int, Mapping], headings: Mapping[int, Mapp
     a canonical-duplikátum nélküli oldalakra; az azonos típusú megállapítás oldalcsoportonként
     egy tétel (egy oldalas csoportnál az oldalhoz kötve, különben az oldalak listájával). Az
     üres szakasz és a kihagyott szint oldalszerep és szintminta szerint egy tétel
-    (`PATTERN_TYPES`; `role_labels`: a szerepek megnevezése az összefoglalóhoz)."""
+    (`PATTERN_TYPES`; `role_labels`: a szerepek megnevezése az összefoglalóhoz). Az az üres
+    szakaszú heading, amely `PARAGRAPH_WORDS` szónál hosszabb, nem üres szakasz, hanem
+    headingként jelölt bekezdés (`paragraph_heading`, oldalszerep szerint egy tétel). A jogi és
+    a kapcsolat-oldal (`QUIET_SUPPORT`) nem kap tartalmi szerkezeti megállapítást
+    (`QUIET_TYPES`)."""
     records: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for page_id, page in sorted(pages.items(), key=lambda item: item[1]["url"]):
         if page.get("canonical") is not None or page_id not in headings:
@@ -271,6 +282,8 @@ def structure_findings(pages: Mapping[int, Mapping], headings: Mapping[int, Mapp
         base = {"url": page["url"], "page_id": page_id}
 
         def add(kind: str, detail: dict, page: Mapping = page, base: dict = base) -> None:
+            if kind in QUIET_TYPES and page.get("support") in QUIET_SUPPORT:
+                return
             records[(kind, page["group"])].append({**base, **detail})
 
         if not data["has_h1"]:
@@ -283,6 +296,12 @@ def structure_findings(pages: Mapping[int, Mapping], headings: Mapping[int, Mapp
             add("multiple_h1", {"h1": [node["text"] for node in data["h1"]],
                                 "reasons": data["h1_reasons"]})
         empty = [node for node in data["sequence"] if node["empty"]]
+        long = [node for node in empty if len(node["text"].split()) > PARAGRAPH_WORDS]
+        empty = [node for node in empty if len(node["text"].split()) <= PARAGRAPH_WORDS]
+        if long:
+            add("paragraph_heading", {
+                "headings": [f"H{node['level']}: {node['text']}" for node in long],
+                "pattern": [], "role": page["role"]})
         if empty:
             add("empty_section", {
                 "headings": [f"H{node['level']}: {node['text']}" for node in empty],
@@ -313,8 +332,9 @@ def structure_findings(pages: Mapping[int, Mapping], headings: Mapping[int, Mapp
         else:
             label = (role_labels or {}).get(role, role)
             found.append((kind, SEVERITY[kind], None, None,
-                          f"{TYPE_SUMMARY[kind]} ({levels}): {len(members)} {label}",
-                          {"group": f"{kind} | {role} | {levels}", "role": role,
+                          (f"{TYPE_SUMMARY[kind]}{f' ({levels})' if levels else ''}: "
+                           f"{len(members)} {label}"),
+                          {"group": " | ".join(filter(None, (kind, role, levels))), "role": role,
                            "pattern": list(pattern), "pages": shown}))
     for (kind, group), members in sorted(records.items()):
         if kind in PATTERN_TYPES:
@@ -347,6 +367,10 @@ def _summary(kind: str, members: list[dict]) -> str:
         return f"üres szakasz: {'; '.join(first['headings'][:3])}{count}"
     if kind == "skipped_level":
         return f"kihagyott heading-szint: {'; '.join(first['headings'][:3])}{count}"
+    if kind == "paragraph_heading":
+        shown = "; ".join(f"{text[:80]}…" if len(text) > 80 else text
+                          for text in first["headings"][:2])
+        return f"bekezdés headingként jelölve: {shown}{count}"
     return f"{first['words']} szó H2 nélkül{count}"
 
 

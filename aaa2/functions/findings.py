@@ -86,7 +86,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from itertools import combinations
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 import duckdb
 
@@ -101,15 +101,36 @@ from aaa2.functions import headings as heading_tree
 from aaa2.functions.graph import evidence_text
 from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.names import normal_key
+from aaa2.resolver.overrides import load_site_config, site_domain
+from aaa2.resolver.pages import LEGAL_KINDS, canonical_key, legal_kind
 
 TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
-         "uncovered_topic", "unclear_topic", *heading_tree.STRUCTURE_TYPES)
+         "uncovered_topic", "unclear_topic", *heading_tree.STRUCTURE_TYPES,
+         "canonical_issue", "legal_page")
 TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés", "cannibalization": "Kannibalizáció",
                "shared_topic": "Közös téma", "missing_page": "Hiányzó oldal",
                "uncovered_topic": "Lefedetlen téma", "unclear_topic": "Nem egyértelmű téma",
                "missing_h1": "Hiányzó H1", "h1_outside_content": "H1 a fő tartalmon kívül",
                "multiple_h1": "Több H1", "empty_section": "Üres szakasz",
-               "skipped_level": "Kihagyott heading-szint", "missing_h2": "Hiányzó H2"}
+               "skipped_level": "Kihagyott heading-szint", "missing_h2": "Hiányzó H2",
+               "paragraph_heading": "Bekezdés headingként jelölve",
+               "canonical_issue": "Hibás canonical", "legal_page": "Jogi oldal"}
+# a jogi oldalak fajtái a meglét-ellenőrzéshez: megnevezés, és a szavak, amelyekkel egy jogi
+# oldal headingje a fajtát megnevezi (ha nincs külön oldala, de egy jogi oldalon belül megvan)
+LEGAL_LABELS = {"terms": "ÁSZF", "privacy": "adatvédelem", "withdrawal": "elállás",
+                "shipping_payment": "szállítás és fizetés", "warranty": "garancia",
+                "contact": "kapcsolat / impresszum"}
+LEGAL_HEADING_WORDS = {
+    "terms": ("szerzodesi feltetel", "aszf", "terms"),
+    "privacy": ("adatved", "adatkezel", "privacy"),
+    "withdrawal": ("elallas", "withdrawal", "return"),
+    "shipping_payment": ("szallitas", "fizetes", "shipping", "payment", "delivery"),
+    "warranty": ("garancia", "jotallas", "szavatossag", "warranty"),
+    "contact": ("kapcsolat", "elerhetoseg", "contact", "impresszum")}
+CANONICAL_LABELS = {"not_crawled": "a cél nincs a készletben", "error_status": "a cél hibás",
+                    "not_a_node": "a cél nem oldal-csomópont", "loop": "körbeérő lánc",
+                    "other_type": "a cél más típusú oldal"}
+QUANTITY = re.compile(r"\d+(?:[.,]\d+)?(?:[*x]\d+)?\s?(?:kg|ml|dl|cl|db|cm|mm|g|l|m)\b")
 RELATION_LABELS = {"main": "fő entitás", "related": "kapcsolódik", "unrelated": "független",
                    "no_entity": "nincs benne entitás",
                    "no_main": "az oldalnak nincs fő entitása"}
@@ -178,7 +199,8 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
     run = FindingsRun()
     rows = [*_mismatches(site), *_shared_topics(site), *_uncovered(site, run),
             *_unclear_topics(site),
-            *heading_tree.structure_findings(site.pages, site.headings, ROLE_LABELS)]
+            *heading_tree.structure_findings(site.pages, site.headings, ROLE_LABELS),
+            *_canonical_issues(site), *_legal_pages(site)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -197,13 +219,15 @@ class _Site:
         noindex = {page.page_id: page.noindex for page in crawl.pages(con)}
         self.pages = {row[0]: dict(zip(
             ("page_id", "url", "role", "support", "title", "h1", "lang", "group", "status",
-             "canonical", "issue", "signals", "noindex"),
+             "canonical", "issue", "signals", "issue_detail", "noindex"),
             (*row, bool(noindex[row[0]])), strict=True))
             for row in [(n.page_id, n.url, n.role, n.support_kind, n.title, n.h1, n.lang,
                          n.group_key, n.main_status, n.canonical_page, n.canonical_issue,
-                         (n.decision or {}).get("signals") or {})
+                         (n.decision or {}).get("signals") or {},
+                         (n.decision or {}).get("canonical_issue") or {})
                         for n in sorted(graph_queries.page_nodes(con), key=lambda n: n.url)]
             if row[0] in noindex}
+        self.lower_forms = {entity_id for (entity_id,) in store.lowercase_word_entities(con)}
         self.entities = {row[0]: dict(zip(
             ("entity_id", "name", "type", "subtype", "aliases", "anchor", "role", "source"),
             row, strict=True)) for row in store.entities_for_site___init__(con)}
@@ -269,6 +293,8 @@ class _Site:
         in_title = names_in(forms, page["title"], cut=True) \
             or (mentioned and "title" in main[3]) \
             or (in_h1 and bool(page["h1"]) and names_in([page["h1"]], page["title"], cut=True))
+        if not in_title and page["role"] == "product":
+            in_title = product_title(page["h1"] or self.name(main[0]), page["title"])
         return in_h1, in_title, forms
 
     def naming_forms(self, entity_id: int, page: dict) -> list[str]:
@@ -323,6 +349,23 @@ def names_in(forms: list[str], text: str | None, cut: bool = False) -> bool:
             if shared >= CUT_MIN_CHARS and shared >= CUT_MIN_SHARE * len(name):
                 return True
     return False
+
+
+def product_title(name: str | None, title: str | None) -> bool:
+    """Termékoldalon a title megnevezi-e a terméket szó szerinti egyezés nélkül: benne áll a
+    név fejszava (az első szó) és minden kiszerelése (`QUANTITY`: „90g”, „50 ml”, „2*25g”); a
+    kiszerelés nélküli névnél az első két szó. A title gyakran a termék hosszabb, leíró neve
+    („Fürdőgolyó kecsketejes 90g” ↔ „Fürdőgolyó organikus kecsketejjel … 90g”)."""
+    if not name or not title:
+        return False
+    words, title_words = _tokens(name), set(_tokens(title))
+    if not words or words[0] not in title_words:
+        return False
+    sizes = {size.replace(" ", "") for size in QUANTITY.findall(alias_key(name))}
+    title_sizes = {size.replace(" ", "") for size in QUANTITY.findall(alias_key(title))}
+    if sizes:
+        return sizes <= title_sizes
+    return set(words[:2]) <= title_words
 
 
 def _tokens(text: str) -> list[str]:
@@ -466,8 +509,9 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
     (`template_share`: az említések hányad része áll sablon- vagy chrome-helyen;
     `in_site_name`: a név szavai a site nevének szavai; `headline`: az első indexelhető oldal,
     amelynek a H1-e és a title-je is megnevezi, `NAMING_ALONE_ROLES` szerepű oldalon elég az
-    egyik; `common_word`: egyszavas, kisbetűs köznévi
-    fogalom; `page_share`: az indexelhető oldalak hányad részén szerepel)."""
+    egyik; `common_word`: egyszavas köznévi fogalom: a neve kisbetűs, vagy a szövegben
+    kisbetűvel is áll (a név írásmódjától függetlenül: a „Stratégia” is, ha az oldalakon
+    „stratégia” alakban is szerepel; a rövidítés és a tulajdonnév nem); `page_share`: az indexelhető oldalak hányad részén szerepel)."""
     if not site.weights:
         return []
     if min_structural is None:
@@ -542,7 +586,7 @@ def uncovered_candidates(site: _Site, run: FindingsRun | None = None,
                                   names_in(naming, h1), names_in(naming, title, cut=True)))),
                              None),
             "common_word": entity["type"] == "concept" and name.isalpha()
-            and name == name.lower(),
+            and (name == name.lower() or entity_id in site.lower_forms),
             "family": entity["type"] == "product" and (entity["subtype"] == "line"
                                                        or entity_id in parents),
             "page_share": on_pages[entity_id] / len(indexable) if indexable else 0.0,
@@ -647,6 +691,92 @@ def _unclear_topics(site: _Site) -> list[tuple]:
                            f"({evidence_text(main[3])})"),
                           {"url": page["url"], "h1": page["h1"], "title": page["title"],
                            "main_entity": site.name(main[0]), "evidence": main[3]}))
+    return found
+
+
+def _canonical_issues(site: _Site) -> list[tuple]:
+    """Hibás canonical (közepes): a cél hibás státuszú, nem oldal-csomópont, a lánc körbeér,
+    a cél más típusú oldal, vagy a cél nincs a készletben és ez nem a crawl keretéből adódik.
+
+    A készleten kívüli célnál a keret: (1) a site-fájl `include` mintájára nem illeszkedő vagy
+    egy `exclude` mintájára illeszkedő cél, vagy más host: a crawl szándékosan nem járta be,
+    nincs megállapítás; (2) korlátozott crawl (sitemap-mód, vagy az oldalszám elérte a
+    `max_pages` határt): a cél a kereten kívül eshetett, nincs megállapítás, kivéve ha a
+    canonical az oldal saját URL-je a lekérdezés nélkül (a tartalmat kiválasztó lekérdezést
+    dobja el, pl. terméklista → `index.php`); (3) teljes crawl és a kereten belüli cél: a cél
+    a site-on sehol nem érhető el, megállapítás (pl. `/hu/` → `/hu/hu/`)."""
+    crawl_config = load_site_config(site_domain(site.con)).crawl
+    last = crawl.latest_crawl_run(site.con)
+    limited = crawl_config.sitemap_only or (
+        last is not None and last.max_pages is not None
+        and len(site.pages) >= last.max_pages)
+    hosts = {urlsplit(page["url"]).netloc for page in site.pages.values()}
+    found = []
+    for page in sorted(site.pages.values(), key=lambda p: p["url"]):
+        detail = page["issue_detail"]
+        if not page["issue"] or not detail:
+            continue
+        target = urljoin(page["url"], detail.get("canonical") or "")
+        if page["issue"] == "not_crawled":
+            outside = urlsplit(target).netloc not in hosts \
+                or (crawl_config.include and not re.search(crawl_config.include, target)) \
+                or (crawl_config.exclude_pattern
+                    and re.search(crawl_config.exclude_pattern, target))
+            drops_query = "?" in page["url"] and canonical_key(target) == canonical_key(
+                page["url"].split("?", 1)[0])
+            if outside or (limited and not drops_query):
+                continue
+        label = CANONICAL_LABELS.get(page["issue"], page["issue"])
+        found.append(("canonical_issue", "medium", page["page_id"], None,
+                      f"hibás canonical ({label}): {target}",
+                      {"url": page["url"], "canonical": target, "issue": page["issue"],
+                       "status": detail.get("status")}))
+    return found
+
+
+def _legal_pages(site: _Site) -> list[tuple]:
+    """Webshopon (van termékoldal) a jogi oldalak megléte és elérhetősége a láblécből, a
+    `LEGAL_LABELS` fajtáira. Megvan a fajta, ha van ilyen oldal (`pages.legal_kind`), vagy ha
+    egy jogi oldal egy headingje megnevezi (`LEGAL_HEADING_WORDS`: pl. az elállás az ÁSZF-en
+    belül). Megállapítás: a fajta hiányzik (közepes), vagy megvan, de egyik oldalára sem mutat
+    lábléc-link (alacsony). Nem webshopon nem fut: ott a hat fajta nem mind várható."""
+    if not any(page["role"] == "product" for page in site.pages.values()):
+        return []
+    by_kind: dict[str, list[dict]] = defaultdict(list)
+    for page in site.nodes():
+        kind = legal_kind(page["url"])
+        if kind is None and page["support"] == "contact":
+            kind = "contact"
+        if kind is not None:
+            by_kind[kind].append(page)
+    footer = {link.to_page_id for link in crawl.links(site.con) if link.position == "footer"}
+    legal = [page for pages in by_kind.values() for page in pages]
+    found = []
+    for kind in LEGAL_KINDS:
+        label = LEGAL_LABELS[kind]
+        pages = sorted(by_kind.get(kind, []), key=lambda p: p["url"])
+        inside = []
+        if not pages:
+            for page in sorted(legal, key=lambda p: p["url"]):
+                nodes = (site.headings.get(page["page_id"]) or {}).get("sequence") or []
+                named = [node["text"] for node in nodes
+                         if any(word in alias_key(node["text"])
+                                for word in LEGAL_HEADING_WORDS[kind])]
+                if named:
+                    inside.append({"url": page["url"], "headings": named[:3],
+                                   "page_id": page["page_id"]})
+        holders = pages or inside
+        evidence = {"group": f"legal_page | {kind}", "kind": kind, "label": label,
+                    "pages": [{"url": p["url"]} for p in pages],
+                    "inside": [{"url": p["url"], "headings": p["headings"]} for p in inside]}
+        if not holders:
+            found.append(("legal_page", "medium", None, None,
+                          f"hiányzó jogi oldal: {label}", {**evidence, "status": "missing"}))
+        elif not any(p["page_id"] in footer for p in holders):
+            where = holders[0]["url"]
+            found.append(("legal_page", "low", None, None,
+                          f"a jogi oldal nem érhető el a láblécből: {label} ({where})",
+                          {**evidence, "status": "not_in_footer"}))
     return found
 
 

@@ -25,7 +25,11 @@
 - A csoport szerepe a tagjaié közül az erősebb (offer > product > component > article); ha a
   csoport bármely tagja kezdőoldal, jogi vagy köszönőoldal, a csoport `support`.
 - Oldaltípus (`page_types`, a crawl-jelentéshez és a webshop-szintekhez): termék, kategória,
-  márka × kategória, blog, szolgáltatás, egyéb.
+  márka × kategória, segédlista, blog, szolgáltatás, egyéb.
+- Canonical-duplikátum: az az oldal, amelynek a canonicalja egy másik alkalmas oldalra mutat
+  (`canonical_targets`), és a saját szerepe a cél csoportjának szerepe, a cél oldalcsoportjába
+  tartozik, így nem kap külön, azonos nevű entitást; a csoport szerepét nem változtatja meg.
+  Ha a cél más szerepű, a canonical hibás: az oldal külön csoport marad.
 """
 from __future__ import annotations
 
@@ -34,7 +38,7 @@ import re
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from urllib.parse import parse_qsl, urldefrag, urlsplit
+from urllib.parse import parse_qsl, urldefrag, urljoin, urlsplit
 
 import duckdb
 
@@ -59,8 +63,39 @@ SUPPORT_SLUGS = frozenset({
     "adatkezelesi-tajekoztato", "adatkezeles", "jogi-nyilatkozat", "sutik", "suti-tajekoztato",
     "aszf", "felhasznalasi-feltetelek", "thank-you", "thanks",
     "koszonjuk", "grazie", "404", "et-code-snippet", "et-code-snippet-type"})
+# A jogi oldalak fajtái a meglét-ellenőrzéshez (`legal_kind`): fajtánként a teljes slugok és a
+# slug-kezdetek. A slug egy útvonalszegmens vagy lekérdezés-érték kisbetűvel, „_” helyett „-”,
+# a végi sorszám nélkül („garancia_7” → „garancia”).
+LEGAL_KINDS: dict[str, tuple[frozenset[str], tuple[str, ...]]] = {
+    "terms": (frozenset({"aszf", "altalanos-szerzodesi-feltetelek", "vasarlasi-feltetelek",
+                         "felhasznalasi-feltetelek", "jogi-nyilatkozat", "terms",
+                         "terms-of-service", "terms-of-use", "terms-and-conditions"}), ()),
+    "privacy": (frozenset({"privacy", "privacy-policy", "privacy-notice", "privacy-centre",
+                           "privacy-center", "cookie-policy", "cookies", "sutik",
+                           "suti-tajekoztato", "information/personaldata"}),
+                ("adatved", "adatkezel")),
+    "withdrawal": (frozenset({"withdrawal", "returns", "return-policy"}), ("elallas",)),
+    "shipping_payment": (frozenset({"shipping", "shipping-policy", "delivery", "payment",
+                                    "csomagkuldes", "kedvezo-csomagkuldes"}),
+                         ("szallitas", "fizetes")),
+    "warranty": (frozenset({"warranty"}), ("garancia", "jotallas", "szavatossag")),
+    "contact": (frozenset({"impresszum", "impressum", "imprint", "information/contact"}),
+                ("kapcsolat", "contact")),
+}
+LEGAL_TAIL_WORDS = frozenset({
+    "es", "nyilatkozat", "tajekoztato", "feltetelek", "jog", "szabalyzat", "informaciok",
+    "modok", "fizetes", "fizetesi", "szallitas", "szallitasi", "iranyelvek", "policy", "us"})
+# A segédlista (nem valódi kategória): a listaoldal neve szerint (az utolsó útvonalszegmens
+# szavai így kezdődnek), és URL szerint (slug vagy lekérdezés).
+HELPER_LIST_WORDS = ("kifuto", "akcio", "ujdonsag", "outlet", "ajandek")
+HELPER_SLUGS = frozenset({"sitemap", "oldalterkep", "information/sitemap", "hibabejelentes",
+                          "special=1"})
+# Platformszabály: a Shoprenter a `<body>` osztályával jelöli az oldal fajtáját.
+SHOPRENTER_BODY = {"category-list-body": "category", "special-list-body": "list",
+                   "latest-list-body": "list"}
+BODY_CLASS = re.compile(r"<body\b[^>]*\bclass=[\"']([^\"']*)[\"']", re.IGNORECASE)
 NAV_POSITIONS = ("nav", "aside", "footer")
-PAGE_TYPES = ("product", "category", "brand_category", "blog", "service", "other")
+PAGE_TYPES = ("product", "category", "brand_category", "list", "blog", "service", "other")
 BLOG_TYPES = frozenset({"BlogPosting", "NewsArticle"})
 HUB_MIN_PARTS = 2
 COMPONENT_H1_WORDS = 4
@@ -102,7 +137,8 @@ def page_roles(con: duckdb.DuckDBPyConnection) -> dict[int, PageInfo]:
     nodes = schema_nodes(con)
     code_pages = {b.page_id for b in extract_queries.blocks(con)
                   if b.kind == "code" and b.region == "content"}
-    groups = {page_id: group_key(url, hreflang) for page_id, url, _, _, _, hreflang in rows}
+    base = {page_id: group_key(url, hreflang) for page_id, url, _, _, _, hreflang in rows}
+    groups = dict(base)
     site_pages = {page_url(url) for _, url, _, _, _, _ in rows}
     linkers: dict[str, set[str]] = defaultdict(set)
     for from_id, to_id in sorted({(link.from_page_id, link.to_page_id)
@@ -119,20 +155,115 @@ def page_roles(con: duckdb.DuckDBPyConnection) -> dict[int, PageInfo]:
                                  page_id in services, site_pages)
     members: dict[str, list[int]] = defaultdict(list)
     for page_id in own:
-        members[groups[page_id]].append(page_id)
-    out: dict[int, PageInfo] = {}
+        members[base[page_id]].append(page_id)
+    group_role: dict[str, str] = {}
     for key, page_ids in members.items():
         roles = [own[p] for p in page_ids]
         if any(reason in ("home", "support_url") for _, reason in roles):
-            role = "support"
+            group_role[key] = "support"
         else:
-            role = min((r for r, _ in roles), key=lambda r: (ENTITY_ROLES + ("support",)).index(r))
-        for page_id, url, lang, title, h1, _ in rows:
-            if page_id in page_ids:
-                mine, reason = own[page_id]
-                out[page_id] = PageInfo(page_id, url, primary_lang(lang), title, h1, key, role,
-                                        reason if mine == role else f"group:{role}")
+            group_role[key] = min((r for r, _ in roles),
+                                  key=lambda r: (ENTITY_ROLES + ("support",)).index(r))
+    # a canonical-duplikátum a cél csoportjába kerül, ha a saját szerepe a cél csoportjáé; a
+    # csoport szerepét a duplikátum nem változtatja meg
+    for page_id, target in canonical_targets(con, {p: url for p, url, *_ in rows}).items():
+        if own[page_id][0] == group_role[base[target]]:
+            groups[page_id] = base[target]
+    out: dict[int, PageInfo] = {}
+    for page_id, url, lang, title, h1, _ in rows:
+        key = groups[page_id]
+        role = group_role[key]
+        mine, reason = own[page_id]
+        out[page_id] = PageInfo(page_id, url, primary_lang(lang), title, h1, key, role,
+                                reason if mine == role else f"group:{role}")
     return out
+
+
+def canonical_key(url: str) -> str:
+    """A canonical-összevetés kulcsa: töredék és záró perjel nélkül, a lekérdezéssel (a
+    `?tab=` változatok külön oldalak)."""
+    parts = urlsplit(url.split("#", 1)[0])
+    return f"{parts.scheme}://{parts.netloc}{parts.path.rstrip('/') or '/'}" \
+        + (f"?{parts.query}" if parts.query else "")
+
+
+def canonical_targets(con: duckdb.DuckDBPyConnection,
+                      urls: Mapping[int, str]) -> dict[int, int]:
+    """Oldal → a canonical szerinti eredeti oldal, az `urls` oldalai között (a láncot az
+    eredetiig követve). Kimarad, akinek nincs canonicalja, akié önmagára vagy a készleten
+    kívülre mutat, és akinek a lánca körbeér."""
+    node = {canonical_key(url): page_id for page_id, url in urls.items()}
+    declared: dict[int, int] = {}
+    for meta in crawl.page_metas(con):
+        if meta.canonical is None or meta.page_id not in urls:
+            continue
+        target = node.get(canonical_key(urljoin(urls[meta.page_id], meta.canonical)))
+        if target is not None and target != meta.page_id:
+            declared[meta.page_id] = target
+    found: dict[int, int] = {}
+    for page_id, target in declared.items():
+        seen = {page_id}
+        while target in declared and target not in seen:
+            seen.add(target)
+            target = declared[target]
+        if target not in seen:
+            found[page_id] = target
+    return found
+
+
+def _slugs(url: str) -> list[str]:
+    """Az URL slugjai: az útvonalszegmensek, a lekérdezés-értékek és a `kulcs=érték` párok,
+    kisbetűvel, „_” helyett „-”, a végi sorszám nélkül („garancia_7” → „garancia”)."""
+    parts = urlsplit(url)
+    pieces = [p for p in parts.path.split("/") if p]
+    pieces += [value for _, value in parse_qsl(parts.query)]
+    found = [re.sub(r"-\d+$", "", piece.lower().replace("_", "-")) for piece in pieces]
+    return found + [f"{key.lower()}={value.lower()}" for key, value in parse_qsl(parts.query)]
+
+
+def legal_kind(url: str) -> str | None:
+    """A jogi oldal fajtája az URL szerint (`LEGAL_KINDS`: terms, privacy, withdrawal,
+    shipping_payment, warranty, contact), vagy None. Egy slug teljes egyezése vagy a fajta
+    slug-kezdete számít („adatvedelmi-nyilatkozat”, „vasarlasi_feltetelek_5”, „garancia_7”,
+    „withdrawal”); a slug-kezdet után csak a `LEGAL_TAIL_WORDS` szavai állhatnak
+    („szallitas-es-fizetes” igen, „garancialis-javitas-blog” nem)."""
+    slugs = _slugs(url)
+    for kind, (exact, prefixes) in LEGAL_KINDS.items():
+        for slug in slugs:
+            first, *rest = slug.split("-")
+            if slug in exact or (prefixes and first.startswith(prefixes)
+                                 and set(rest) <= LEGAL_TAIL_WORDS):
+                return kind
+    return None
+
+
+def helper_list(url: str) -> bool:
+    """Segédlista az URL szerint (`HELPER_SLUGS`): oldaltérkép, hibabejelentés, akciós lista
+    (`special=1`)."""
+    return any(slug in HELPER_SLUGS for slug in _slugs(url))
+
+
+def helper_list_name(url: str) -> bool:
+    """A listaoldal neve szerint segédlista: az utolsó útvonalszegmens egy szava
+    `HELPER_LIST_WORDS` kezdetű (kifutó, akció / akciós, újdonság, outlet, ajándék). Csak
+    listaoldalra kérdezendő: a cikk címében álló „ajándék” nem segédlista."""
+    path = [p for p in urlsplit(url).path.split("/") if p]
+    words = re.split(r"[-_]+", path[-1].lower()) if path else []
+    return any(word.startswith(HELPER_LIST_WORDS) for word in words)
+
+
+def platform_types(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int]) -> dict[int, str]:
+    """Oldaltípus a webshop-platform jeléből. Shoprenter (`SHOPRENTER_BODY`): a `<body>`
+    `category-list-body` osztálya kategóriaoldal, a `special-list-body` és a
+    `latest-list-body` segédlista. Más platformra nincs szabály: az oldal kimarad."""
+    found: dict[int, str] = {}
+    for page_id in page_ids:
+        match = BODY_CLASS.search(crawl.rendered_dom(con, page_id) or "")
+        classes = set(match.group(1).split()) if match else set()
+        kind = next((kind for name, kind in SHOPRENTER_BODY.items() if name in classes), None)
+        if kind is not None:
+            found[page_id] = kind
+    return found
 
 
 def page_types(con: duckdb.DuckDBPyConnection,
@@ -141,17 +272,30 @@ def page_types(con: duckdb.DuckDBPyConnection,
 
     1. a site-fájl `[page_types]` mintái (típus → regexek a normalizált URL-re, `re.search`),
        a `PAGE_TYPES` sorrendjében; a site szerkezetéből, pl. a márka × kategória oldal;
-    2. az oldalra mutató JSON-LD vagy microdata `Product` → product, `Service` → service (a
+    2. segédlista az URL szerint (`helper_list`: oldaltérkép, hibabejelentés, akciós lista) →
+       list;
+    3. a webshop-platform jele (`platform_types`): kategória vagy segédlista; a kategóriaoldal,
+       amelynek a neve segédlistát jelöl (`helper_list_name`: kifutó, akciós, újdonság, outlet,
+       ajándék), szintén list. A segédlistának nincs kategória-entitása és fő entitása;
+    4. az oldalra mutató JSON-LD vagy microdata `Product` → product, `Service` → service (a
        microdata forrása és az oldalra mutatás szabálya: `crawl.schema_items`);
-    3. `BlogPosting` / `NewsArticle` csomópont → blog (az `Article` nem: a WordPress SEO-bővítménye
+    5. `BlogPosting` / `NewsArticle` csomópont → blog (az `Article` nem: a WordPress SEO-bővítménye
        minden oldalra teszi);
-    4. különben other."""
+    6. különben other."""
     compiled = {kind: [re.compile(p) for p in (patterns or {}).get(kind, ())]
                 for kind in PAGE_TYPES}
     nodes = schema_nodes(con)
     found: dict[int, str] = {}
-    for page_id, url in [(page.page_id, page.url) for page in crawl.rendered_pages(con)]:
+    rendered = [(page.page_id, page.url) for page in crawl.rendered_pages(con)]
+    platform = platform_types(con, [page_id for page_id, _ in rendered])
+    for page_id, url in rendered:
         kind = next((k for k in PAGE_TYPES if any(p.search(url) for p in compiled[k])), None)
+        if kind is None and helper_list(url):
+            kind = "list"
+        if kind is None and page_id in platform:
+            kind = "list" if helper_list_name(url) else platform[page_id]
+        elif kind == "category" and helper_list_name(url):
+            kind = "list"
         own = nodes.get(page_id, [])
         for schema, name in (("Product", "product"), ("Service", "service")):
             if kind is None and any(
@@ -220,12 +364,14 @@ def representative(members: list[PageInfo], site_lang: str | None) -> PageInfo:
 
 def support_url(url: str) -> bool:
     """Jogi, köszönő vagy hibaoldal az URL szerint: egy útvonalszegmens vagy lekérdezés-érték
-    (kisbetűvel, „_” helyett „-”) egy `SUPPORT_SLUGS` slug; a „/privacy-policy/” és a
-    „?tab=privacy_policy” igen, az „/eprivacy-and-gdpr-diagnostics/” nem."""
+    (kisbetűvel, „_” helyett „-”) egy `SUPPORT_SLUGS` slug, vagy az URL jogi oldal
+    (`legal_kind`, a kapcsolat-oldal nélkül: azt a gráf külön kezeli); a „/privacy-policy/”, a
+    „?tab=privacy_policy” és a „/garancia_7” igen, az „/eprivacy-and-gdpr-diagnostics/” nem."""
     parts = urlsplit(url)
     pieces = [p for p in parts.path.split("/") if p]
     pieces += [value for _, value in parse_qsl(parts.query)]
-    return any(piece.lower().replace("_", "-") in SUPPORT_SLUGS for piece in pieces)
+    return any(piece.lower().replace("_", "-") in SUPPORT_SLUGS for piece in pieces) \
+        or legal_kind(url) not in (None, "contact")
 
 
 def service_pages(con: duckdb.DuckDBPyConnection) -> set[int]:
