@@ -742,7 +742,7 @@ def _legal_pages(site: _Site) -> list[tuple]:
     canonical-duplikátum is számít), vagy ha egy jogi oldal egy headingje vagy legfeljebb
     `LEGAL_TITLE_WORDS` szavas bekezdése (címként álló sor) megnevezi (`LEGAL_HEADING_WORDS`:
     pl. az „Elállási jog” az ÁSZF-en belül). Megállapítás: a fajta hiányzik (közepes), vagy megvan, de egyik oldalára sem mutat
-    lábléc-link (alacsony). Nem webshopon nem fut: ott a hat fajta nem mind várható."""
+    lábléc-link (alacsony; a bizonyíték jelzi, ha a menüből elérhető). Nem webshopon nem fut: ott a hat fajta nem mind várható."""
     if not any(page["role"] == "product" for page in site.pages.values()):
         return []
     by_kind: dict[str, list[dict]] = defaultdict(list)
@@ -753,6 +753,7 @@ def _legal_pages(site: _Site) -> list[tuple]:
         if kind is not None:
             by_kind[kind].append(page)
     footer = {link.to_page_id for link in crawl.links(site.con) if link.position == "footer"}
+    menu = {link.to_page_id for link in crawl.links(site.con) if link.position == "nav"}
     legal = {page["page_id"]: page for pages in by_kind.values() for page in pages}
     titles: dict[int, list[str]] = defaultdict(list)       # jogi oldal → címként álló sorok
     for block in extract_queries.blocks(site.con):
@@ -781,9 +782,11 @@ def _legal_pages(site: _Site) -> list[tuple]:
                           f"hiányzó jogi oldal: {label}", {**evidence, "status": "missing"}))
         elif not any(p["page_id"] in footer for p in holders):
             where = holders[0]["url"]
+            in_menu = any(p["page_id"] in menu for p in holders)
             found.append(("legal_page", "low", None, None,
-                          f"a jogi oldal nem érhető el a láblécből: {label} ({where})",
-                          {**evidence, "status": "not_in_footer"}))
+                          f"a jogi oldal nem érhető el a láblécből: {label} ({where})"
+                          + ("; a menüből elérhető" if in_menu else ""),
+                          {**evidence, "status": "not_in_footer", "in_menu": in_menu}))
     return found
 
 

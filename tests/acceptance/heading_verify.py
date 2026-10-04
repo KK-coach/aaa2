@@ -18,7 +18,8 @@ Szabályok: `missing_h1` (a DOM-ban sehol nincs H1), `multiple_h1` (a fő tartal
 két H1), `missing_h2` (a fő tartalomban nincs H2), `empty_section` (a megnevezett heading után
 azonos vagy magasabb szintű heading jön, és a kettő között nincs szöveg és nincs tartalmi
 elem), `skipped_level` (a megnevezett heading több mint eggyel mélyebb az előtte álló, nála
-magasabb szintű headingnél; az összevont tételnél a szintminta is egyezik). A
+magasabb szintű headingnél; az összevont tételnél a szintminta is egyezik),
+`paragraph_heading` (az üres szakasz feltétele, és a heading 12 szónál hosszabb). A
 `h1_outside_content` maga DOM-vizsgálat, itt nincs mihez mérni.
 
 Korlát: a chrome és a rejtett elem felismerése ugyanazokra a jelekre épül, mint az eszközé; a
@@ -42,7 +43,8 @@ NO_TEXT = {"script", "style", "noscript", "iframe", "template", "head", "title"}
 ELEMENTS = {"img", "picture", "svg", "video", "audio", "canvas", "object", "embed", "iframe",
             "form", "input", "select", "textarea", "button", "table"}
 STRUCTURE = ("missing_h1", "h1_outside_content", "multiple_h1", "empty_section",
-             "skipped_level", "missing_h2")
+             "skipped_level", "missing_h2", "paragraph_heading")
+PARAGRAPH_WORDS = 12
 
 
 def key(text: str | None) -> str:
@@ -145,10 +147,13 @@ def check(kind: str, page: dict, sequence: list[list], all_h1: int,
             continue
         ok = False
         for i in positions:
-            if kind == "empty_section":
+            if kind in ("empty_section", "paragraph_heading"):
+                words = len(label.split(": ", 1)[1].split())
                 ok = ok or (i + 1 < len(sequence) and sequence[i + 1][0] <= level
-                            and sequence[i][2] == 0 and not sequence[i][3])
-                seen.add(f"H{level}")
+                            and sequence[i][2] == 0 and not sequence[i][3]
+                            and (words > PARAGRAPH_WORDS) == (kind == "paragraph_heading"))
+                if kind == "empty_section":
+                    seen.add(f"H{level}")
             else:
                 parent = next((item[0] for item in reversed(sequence[:i]) if item[0] < level),
                               None)
