@@ -1,5 +1,5 @@
 {
- "status": "Claude verdiktje, 2026-10-03 (kilencedik kör: az üres szakasz a DOM szerint, az üres szakasz és a kihagyott szint szerep és szintminta szerint összevonva; független DOM-ellenőrzéssel); Krisztián jóváhagyására",
+ "status": "Claude verdiktje, 2026-10-03 (kilencedik kör: az üres szakasz a DOM szerint, az üres szakasz és a kihagyott szint szerep és szintminta szerint összevonva; független DOM-ellenőrzéssel); Krisztián jóváhagyására; 2026-10-04: az újraépített állapotra átállás tételei (3 új, 1 megszűnt)",
  "sites": {
   "kk-coach": {
    "h1_title_mismatch | Kiss Krisztián | https://kk.coach/about/": {
@@ -58,9 +58,9 @@
     "note": "23 oldalon, 81 említés, két oldalcsoport headingjében; egy mérési tanácsadó site-ján nincs róla cikk vagy szakasz"
    },
    "uncovered_topic | Artificial intelligence": {
-    "summary": "Artificial intelligence (concept/discipline): 22 oldalon szerepel, egyiknek sem fő entitása",
+    "summary": "Artificial intelligence (tech/other): 6 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
-    "note": "22 oldalon, 8 oldalcsoport headingjében, saját cikk vagy szakasz nélkül"
+    "note": "az angol oldalakon 6 oldalon, saját cikk vagy szakasz nélkül; a magyar alak külön entitás (mesterséges intelligencia), mert a két alak típusa eltér (tech / concept)"
    },
    "empty_section | https://kk.coach/hu/": {
     "summary": "üres szakasz: H2: — Bizonyítékok",
@@ -81,6 +81,16 @@
     "summary": "kihagyott heading-szint (H2→H4): 3 ajánlatoldal",
     "verdict": "valid",
     "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
+   },
+   "uncovered_topic | mesterséges intelligencia": {
+    "summary": "mesterséges intelligencia (concept/discipline): 18 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "valid",
+    "note": "18 oldalon, 7 helyen headingben, saját cikk vagy szakasz nélkül; ugyanaz a téma, mint az angol „Artificial intelligence” tétel (a két nyelvi alak nem olvad össze)"
+   },
+   "uncovered_topic | Stratégia": {
+    "summary": "Stratégia (concept/method): 3 oldalon szerepel, egyiknek sem fő entitása",
+    "verdict": "invalid",
+    "note": "egyszavas köznév; a kizárás a kisbetűs alakra épít, a név az átállás után nagybetűs („stratégia” → „Stratégia”)"
    }
   },
   "marketinglens": {
@@ -108,11 +118,6 @@
     "summary": "paid search (concept/discipline): 8 oldalon szerepel, egyiknek sem fő entitása",
     "verdict": "valid",
     "note": "nyolc oldalon, három headingben; nincs róla cikk vagy szakasz"
-   },
-   "shared_topic | Grow Online and Offline Sales | en": {
-    "summary": "Grow Online and Offline Sales: 2 oldal közös témája, átfedés nélkül (en)",
-    "verdict": "invalid",
-    "note": "az írországi oldal fő entitása a kinyerés „PPC Management” neve, amely az ajánlat aliasa; a két oldal nem ugyanarról szól (alias-feloldás)"
    },
    "missing_h1 | https://marketinglens.com/app-marketing/global-expansion-strategy-leveraging-google-ads-for-mobile-app-market-penetration/": {
     "summary": "nincs H1",
@@ -303,6 +308,11 @@
     "summary": "kihagyott heading-szint (H2→H5): 3 ajánlatoldal",
     "verdict": "valid",
     "note": "a független DOM-ellenőrzés megerősíti (tests/acceptance/heading_verify.py)"
+   },
+   "cannibalization | New Market Expansion | en": {
+    "summary": "New Market Expansion: 2 oldal fő entitása, átfedő másodlagos entitással vagy hasonló title-lel (en)",
+    "verdict": "",
+    "note": ""
    }
   },
   "duex": {
