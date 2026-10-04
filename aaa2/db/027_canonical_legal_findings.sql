@@ -3,7 +3,7 @@
 -- findings.type új értékei: 'paragraph_heading' (bekezdés headingként jelölve: 12 szónál
 --   hosszabb, üres szakaszú heading), 'canonical_issue' (hibás canonical), 'legal_page' (webshopon
 --   hiányzó vagy a láblécből nem elérhető jogi oldal).
--- page_nodes.canonical_issue új értéke: 'other_type' (a canonical célja más szerepű oldal; az
+-- page_nodes.canonical_issue új értéke: 'other_type' (a canonical célja más szerepű oldal, az
 --   oldal nem duplikátum, külön marad).
 -- A CHECK megszorítás nem módosítható helyben, ezért mindkét tábla az új megszorítással épül
 --   újra, a soraik változatlanok.
@@ -47,10 +47,9 @@ CREATE TABLE page_nodes_027 (
     decision        JSON
 );
 
-INSERT INTO page_nodes_027
-SELECT page_id, url, role, support_kind, title, h1, lang, group_key, hreflang_pages, main_status,
-       canonical_page, canonical_issue, decision
-FROM page_nodes ORDER BY page_id;
+-- BY NAME: a közös adatbázis (`shared.duckdb`) page_nodes táblája régebbi alakú (a canonical
+-- oszlopok nélkül, üresen); a hiányzó oszlop NULL marad.
+INSERT INTO page_nodes_027 BY NAME SELECT * FROM page_nodes ORDER BY page_id;
 
 DROP TABLE page_nodes;
 
