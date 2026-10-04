@@ -539,6 +539,22 @@ def test_a_section_title_above_links_to_several_products_is_not_a_card_title(sho
                        ).fetchone() == (0,)
 
 
+def test_linked_item_headings_do_not_close_the_section(shop_config):
+    # az ajánlott termékek neve maga is (magasabb szintű) linkelt heading: a szakasz ezeken át
+    # tart, így a „Hasonló termékek” itt sem kártyacím
+    def items(paths):
+        return "".join(f"<p><a href='{p}'>Villámnézet</a></p><h2><a href='{p}'>{PRODUCTS[p]}"
+                       f"</a></h2><p>Raktáron</p>" for p in paths)
+    con = related_shop(lambda path: "<h3>Hasonló termékek</h3>"
+                       + items([p for p in PRODUCTS if p != path][:2]))
+    run_rules(con)
+    run_site(con)
+    assert con.execute("SELECT count(*) FROM entity_aliases WHERE alias = 'Hasonló termékek'"
+                       ).fetchone() == (0,)
+    assert con.execute("SELECT count(*) FROM merge_log WHERE rule = 'page_identity'"
+                       ).fetchone() == (0,)
+
+
 def test_a_heading_above_a_single_link_stays_a_card_title(shop_config):
     # egy heading, alatta egyetlen céloldalra mutató link: kártyacím, a céloldal aliasa
     con = related_shop(lambda path: "<h3>Kedvencünk</h3><p>Rövid ajánló.</p>"

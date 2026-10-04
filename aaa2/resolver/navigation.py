@@ -65,8 +65,9 @@ def _card_headings(ctx: _Context) -> dict[str, list[tuple[int, int, str, str | N
     `links` sorrendjéből: az oldal azonos szövegű linkjei a DOM-sorrendben), az előtte álló
     legfeljebb `CARD_LOOKBACK` blokk közül a legközelebbi, legalább 3. szintű, rövid heading
     (legfeljebb `CARD_TITLE_WORDS` szó) a csoport aliasa, ha közben nincs más link, és a
-    heading szakaszában (a következő headingig) minden link ugyanarra az egy oldalcsoportra
-    mutat. Ha a heading alatt több különböző oldalcsoportra mutató link áll, az szakaszcím
+    heading szakaszában minden link ugyanarra az egy oldalcsoportra mutat. A szakasz a
+    következő nem linkelt headingig tart: a linkelt heading (webshopban az ajánlott termék
+    neve, szinttől függetlenül) a szakasz eleme, nem a határa. Ha a heading alatt több különböző oldalcsoportra mutató link áll, az szakaszcím
     („Hasonló termékek”), nem kártyacím, és nem ad nevet.
     Csoportonként: (oldal, heading-sorszám, szöveg, az oldal nyelve)."""
     roles = ctx.roles
@@ -99,7 +100,7 @@ def _card_headings(ctx: _Context) -> dict[str, list[tuple[int, int, str, str | N
                 if prev.kind == "heading":
                     section: set[str] = set()
                     for later in range(index - back + 1, len(blocks)):
-                        if blocks[later].kind == "heading":
+                        if blocks[later].kind == "heading" and not blocks[later].anchors:
                             break
                         section |= targets[later]
                     if (prev.level or 0) >= 3 and 0 < len(prev.text.split()) <= CARD_TITLE_WORDS \
