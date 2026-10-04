@@ -503,3 +503,81 @@ def test_nested_families_with_brand_prefix_parent_and_orphan(shop_config):
     assert "Acme Therm" not in ids and con.execute(
         "SELECT count(*) FROM page_entities WHERE entity_id = ?",
         [ids["Acme Therma"]]).fetchone()[0] >= 4                            # H1-említések
+
+
+PRODUCTS = {"/spd/a": "Levendula szappan 100g", "/spd/b": "Narancs szappan 120g",
+            "/spd/c": "Olíva szappan 100g", "/spd/d": "Kamilla szappan 90g"}
+
+
+def related_shop(recommend):
+    """Négy termékoldal; mindegyik alján a `recommend(path)` ajánló-blokk."""
+    pages = {"/": html("Pelda Webshop", "<main><h1>Pelda Webshop</h1></main>")}
+    for path, name in PRODUCTS.items():
+        node = {"@type": "Product", "name": name, "url": f"{SHOP}{path}"}
+        pages[path] = html(f"{name} - Pel", f"<main><h1>{name}</h1><p>Leírás.</p>"
+                                            f"{recommend(path)}</main>", head=ld(node))
+    return site(pages)
+
+
+def links(paths):
+    return "".join(f"<p><a href='{p}'>{PRODUCTS[p]}</a></p>" for p in paths)
+
+
+def test_a_section_title_above_links_to_several_products_is_not_a_card_title(shop_config):
+    # a „Hasonló termékek” szakaszcím alatt több termékre mutató link áll: nem kártyacím
+    con = related_shop(lambda path: "<h3>Hasonló termékek</h3>"
+                       + links([p for p in PRODUCTS if p != path][:2]))
+    run_rules(con)
+    run = run_site(con)
+    assert run.shop["products"] == 4
+    assert con.execute("SELECT count(*) FROM merge_log WHERE rule = 'page_identity'"
+                       ).fetchone() == (0,)
+    assert sorted(name for (name,) in con.execute(
+        "SELECT name FROM entities WHERE type = 'product' AND subtype IS DISTINCT FROM 'line'"
+    ).fetchall()) == sorted(PRODUCTS.values())
+    assert con.execute("SELECT count(*) FROM entity_aliases WHERE alias = 'Hasonló termékek'"
+                       ).fetchone() == (0,)
+
+
+def test_linked_item_headings_do_not_close_the_section(shop_config):
+    # az ajánlott termékek neve maga is (magasabb szintű) linkelt heading: a szakasz ezeken át
+    # tart, így a „Hasonló termékek” itt sem kártyacím
+    def items(paths):
+        return "".join(f"<p><a href='{p}'>Villámnézet</a></p><h2><a href='{p}'>{PRODUCTS[p]}"
+                       f"</a></h2><p>Raktáron</p>" for p in paths)
+    con = related_shop(lambda path: "<h3>Hasonló termékek</h3>"
+                       + items([p for p in PRODUCTS if p != path][:2]))
+    run_rules(con)
+    run_site(con)
+    assert con.execute("SELECT count(*) FROM entity_aliases WHERE alias = 'Hasonló termékek'"
+                       ).fetchone() == (0,)
+    assert con.execute("SELECT count(*) FROM merge_log WHERE rule = 'page_identity'"
+                       ).fetchone() == (0,)
+
+
+def test_a_heading_above_a_single_link_stays_a_card_title(shop_config):
+    # egy heading, alatta egyetlen céloldalra mutató link: kártyacím, a céloldal aliasa
+    con = related_shop(lambda path: "<h3>Kedvencünk</h3><p>Rövid ajánló.</p>"
+                       + links(["/spd/b"]) if path == "/spd/a" else "")
+    run_rules(con)
+    run_site(con)
+    assert con.execute(
+        "SELECT e.name FROM entity_aliases a JOIN entities e USING (entity_id) WHERE "
+        "a.alias = 'Kedvencünk'").fetchall() == [("Narancs szappan 120g",)]
+
+
+def test_entities_bound_to_different_pages_do_not_merge_on_a_shared_name(shop_config):
+    # minden oldal alján ugyanaz a cím, alatta egy-egy másik termék linkje: a cím kártyacím,
+    # így több termék aliasa, de két, más-más oldalhoz kötött termék ettől nem olvad össze
+    order = list(PRODUCTS)
+    con = related_shop(lambda path: "<h3>Ajánlott</h3>"
+                       + links([order[(order.index(path) + 1) % len(order)]]))
+    run_rules(con)
+    run_site(con)
+    assert con.execute("SELECT count(*) FROM merge_log WHERE rule = 'page_identity'"
+                       ).fetchone() == (0,)
+    assert sorted(name for (name,) in con.execute(
+        "SELECT name FROM entities WHERE type = 'product' AND anchor_page_id IS NOT NULL"
+    ).fetchall()) == sorted(PRODUCTS.values())
+    again = run_site(con)                                      # újrafuttatva is külön maradnak
+    assert again.merges.get("page_identity", 0) == 0
