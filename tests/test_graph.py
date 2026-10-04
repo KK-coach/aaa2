@@ -148,6 +148,26 @@ def test_the_site_entity_and_json_ld_about(tmp_path):
     assert got["https://pelda.hu/rolunk/"][1] == "Pelda"             # a primary első eleme
 
 
+def test_a_primary_name_without_the_legal_form_resolves_to_the_organisation():
+    # a kinyerés „Pelda Hungary”-t nevez meg; a szervezet neve „PELDA HUNGARY Kft.”, alias nélkül
+    con = site({"/": html("Bolt", "<main><h1>Bolt</h1><p>Üdv.</p></main>"),
+                "/rolunk/": html("Rólunk", "<main><h1>Rólunk</h1><p>A PELDA HUNGARY Kft. "
+                                 "2010 óta működik.</p></main>")})
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    llm_entity(con, "https://pelda.hu/rolunk/", "PELDA HUNGARY Kft.", "PELDA HUNGARY Kft.", "org")
+    primary(con, "https://pelda.hu/rolunk/", ["Pelda Hungary"])
+    build_graph(con)
+    got = {r[0]: r for r in chosen(con)}
+    assert got["https://pelda.hu/rolunk/"][1] == "PELDA HUNGARY Kft."
+    assert "primary" in got["https://pelda.hu/rolunk/"][4]
+    # más típusnál a jogi forma a név része marad
+    con.execute("UPDATE entities SET type = 'concept' WHERE name = 'PELDA HUNGARY Kft.'")
+    build_graph(con)
+    assert "https://pelda.hu/rolunk/" not in {r[0] for r in chosen(con)
+                                               if "primary" in r[4]}
+
+
 def test_edges_from_mentions_main_entities_relations_and_wikidata_classes():
     con = business_site()
     run_rules(con)

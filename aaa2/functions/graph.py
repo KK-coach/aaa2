@@ -100,7 +100,7 @@ from aaa2.entities.gate import occurs
 from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import alias_key
 from aaa2.resolver import queries as resolver_queries
-from aaa2.resolver.names import normal_key
+from aaa2.resolver.names import normal_key, without_legal_form
 from aaa2.resolver.overrides import canonical_language
 from aaa2.resolver.pages import (
     PageInfo,
@@ -387,9 +387,15 @@ class _Graph:
                 self.canonical[page_id] = target
 
     def _index(self, entity_id: int, form: str | None) -> None:
+        """A név a névindexbe; szervezetnél a név végi jogi forma nélküli alak is („DUEX
+        HUNGARY Kft.” a „DUEX Hungary” megnevezésre is feloldódik)."""
         if form and alias_key(form):
-            self.index[alias_key(form)].add(entity_id)
-            self.normal[normal_key(form)].add(entity_id)
+            forms = {form}
+            if self.entities[entity_id][2] == "org":
+                forms.add(without_legal_form(form))
+            for item in forms:
+                self.index[alias_key(item)].add(entity_id)
+                self.normal[normal_key(item)].add(entity_id)
 
     def _schema_ids(self) -> dict[str, str]:
         """A site JSON-LD csomópontjainak `@id` → név térképe (az összes oldalról)."""

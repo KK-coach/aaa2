@@ -37,7 +37,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 import duckdb
 import httpx
@@ -168,6 +168,24 @@ def canonical_key(url: httpx.URL | str) -> str:
     return f"{url.scheme}://{url.host}{url.path}?{query}"
 
 
+EQUIVALENT_SERVICES = ("wikidata", "wikipedia")
+
+
+def match_key(key: str) -> str:
+    """A kérés kulcsa az írásmódtól függetlenül: a paraméterek értéke kisbetűsítve, a
+    whitespace egy szóközzé; a `titles` címváltozatai halmazként. Két kérés, amelynek ez a
+    kulcsa azonos, csak a név kis- és nagybetűiben (és a címváltozatok készletében) tér el."""
+    base, _, query = key.partition("?")
+    params = []
+    for item in query.split("&") if query else []:
+        name, _, value = item.partition("=")
+        value = " ".join(unquote(value).casefold().split())
+        if name == "titles":
+            value = "|".join(sorted({" ".join(title.split()) for title in value.split("|")}))
+        params.append(f"{name}={quote(value, safe='')}")
+    return f"{base}?{'&'.join(params)}"
+
+
 # ---------------------------------------------------------------------------
 # API-hívás cache-sel, naplóval, újrapróbával
 # ---------------------------------------------------------------------------
@@ -188,6 +206,7 @@ class _Api:
         self.clock, self.monotonic = clock, monotonic
         self.counts = _Counts()
         self.last_wiki = -WIKI_MIN_INTERVAL
+        self._equivalents: dict[int, dict[tuple[str, str], str]] = {}
 
     def get(self, service: str, url: str, params: list[tuple[str, str]]) -> tuple[str, dict | None]:
         request = self.http.build_request("GET", url, params=params,
@@ -202,6 +221,15 @@ class _Api:
             self.counts.cache_shared += 1
             self._store(self.con, service, key, cached)
             return key, cached
+        for source in (self.con, self.shared):
+            cached = self._equivalent(source, service, key)
+            if cached is not None:
+                if source is self.con:
+                    self.counts.cache_site += 1
+                else:
+                    self.counts.cache_shared += 1
+                self._store(self.con, service, key, cached)
+                return key, cached
         body = self._call(service, key, request)
         if body is not None:
             self._store(self.con, service, key, body)
@@ -260,9 +288,29 @@ class _Api:
                           "request_key = ? ORDER BY ALL", [service, key]).fetchone()
         return json.loads(row[0]) if row else None
 
+    def _equivalent(self, con, service: str, key: str) -> dict | None:
+        """Ugyanennek a kérésnek más írásmódú névvel tárolt válasza (`match_key`); több közül a
+        kulcs szerint első. Csak ott, ahol a szolgáltatás a kis- és nagybetűt nem különbözteti
+        meg, vagy a találatot a név kulcsa szerint vetjük össze (`EQUIVALENT_SERVICES`)."""
+        if con is None or service not in EQUIVALENT_SERVICES:
+            return None
+        index = self._equivalents.get(id(con))
+        if index is None:
+            index = self._equivalents[id(con)] = {}
+            for other_service, other in con.execute(
+                    "SELECT service, request_key FROM validation_cache WHERE service IN "
+                    "(SELECT unnest(?)) ORDER BY ALL", [list(EQUIVALENT_SERVICES)]).fetchall():
+                index.setdefault((other_service, match_key(other)), other)
+        other = index.get((service, match_key(key)))
+        return self._cached(con, service, other) if other is not None else None
+
     def _store(self, con, service: str, key: str, body: dict) -> None:
         con.execute("INSERT OR REPLACE INTO validation_cache VALUES (?, ?, ?, ?)",
                     [service, key, json.dumps(body, ensure_ascii=False), self.clock()])
+        index = self._equivalents.get(id(con))
+        if index is not None and service in EQUIVALENT_SERVICES:
+            found = (service, match_key(key))
+            index[found] = min(index.get(found, key), key)
 
 
 # ---------------------------------------------------------------------------
