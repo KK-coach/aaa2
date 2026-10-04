@@ -93,6 +93,7 @@ import duckdb
 from aaa2.contracts import EntityView, Finding, FindingView, PageView, SiteViews
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
+from aaa2.entities import queries as extract_queries
 from aaa2.entities import store
 from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
@@ -127,6 +128,7 @@ LEGAL_HEADING_WORDS = {
     "shipping_payment": ("szallitas", "fizetes", "shipping", "payment", "delivery"),
     "warranty": ("garancia", "jotallas", "szavatossag", "warranty"),
     "contact": ("kapcsolat", "elerhetoseg", "contact", "impresszum")}
+LEGAL_TITLE_WORDS = 6                   # ennél nem hosszabb bekezdés címként álló sor lehet
 CANONICAL_LABELS = {"not_crawled": "a cél nincs a készletben", "error_status": "a cél hibás",
                     "not_a_node": "a cél nem oldal-csomópont", "loop": "körbeérő lánc",
                     "other_type": "a cél más típusú oldal"}
@@ -736,32 +738,37 @@ def _canonical_issues(site: _Site) -> list[tuple]:
 
 def _legal_pages(site: _Site) -> list[tuple]:
     """Webshopon (van termékoldal) a jogi oldalak megléte és elérhetősége a láblécből, a
-    `LEGAL_LABELS` fajtáira. Megvan a fajta, ha van ilyen oldal (`pages.legal_kind`), vagy ha
-    egy jogi oldal egy headingje megnevezi (`LEGAL_HEADING_WORDS`: pl. az elállás az ÁSZF-en
-    belül). Megállapítás: a fajta hiányzik (közepes), vagy megvan, de egyik oldalára sem mutat
+    `LEGAL_LABELS` fajtáira. Megvan a fajta, ha van ilyen oldal (`pages.legal_kind`; a
+    canonical-duplikátum is számít), vagy ha egy jogi oldal egy headingje vagy legfeljebb
+    `LEGAL_TITLE_WORDS` szavas bekezdése (címként álló sor) megnevezi (`LEGAL_HEADING_WORDS`:
+    pl. az „Elállási jog” az ÁSZF-en belül). Megállapítás: a fajta hiányzik (közepes), vagy megvan, de egyik oldalára sem mutat
     lábléc-link (alacsony). Nem webshopon nem fut: ott a hat fajta nem mind várható."""
     if not any(page["role"] == "product" for page in site.pages.values()):
         return []
     by_kind: dict[str, list[dict]] = defaultdict(list)
-    for page in site.nodes():
+    for page in site.pages.values():
         kind = legal_kind(page["url"])
         if kind is None and page["support"] == "contact":
             kind = "contact"
         if kind is not None:
             by_kind[kind].append(page)
     footer = {link.to_page_id for link in crawl.links(site.con) if link.position == "footer"}
-    legal = [page for pages in by_kind.values() for page in pages]
+    legal = {page["page_id"]: page for pages in by_kind.values() for page in pages}
+    titles: dict[int, list[str]] = defaultdict(list)       # jogi oldal → címként álló sorok
+    for block in extract_queries.blocks(site.con):
+        if block.page_id in legal and block.region == "content" and (
+                block.kind == "heading" or (block.kind == "paragraph" and len(
+                    (block.text or "").split()) <= LEGAL_TITLE_WORDS)):
+            titles[block.page_id].append(block.text or "")
     found = []
     for kind in LEGAL_KINDS:
         label = LEGAL_LABELS[kind]
         pages = sorted(by_kind.get(kind, []), key=lambda p: p["url"])
         inside = []
         if not pages:
-            for page in sorted(legal, key=lambda p: p["url"]):
-                nodes = (site.headings.get(page["page_id"]) or {}).get("sequence") or []
-                named = [node["text"] for node in nodes
-                         if any(word in alias_key(node["text"])
-                                for word in LEGAL_HEADING_WORDS[kind])]
+            for page in sorted(legal.values(), key=lambda p: p["url"]):
+                named = [text for text in titles[page["page_id"]]
+                         if any(word in alias_key(text) for word in LEGAL_HEADING_WORDS[kind])]
                 if named:
                     inside.append({"url": page["url"], "headings": named[:3],
                                    "page_id": page["page_id"]})

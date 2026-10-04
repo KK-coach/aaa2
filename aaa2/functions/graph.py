@@ -456,6 +456,8 @@ class _Graph:
             return "support", "contact"
         if kind == "list":                     # segédlista: nincs fő entitása
             return "listing", "list"
+        if kind == "not_found":                # 200-as „nem található” oldal: nincs tartalma
+            return info.role, "placeholder"
         if info.role in ("support", "article") and CATEGORY_SEGMENTS & set(
                 urlsplit(info.url).path.lower().split("/")):
             return "listing", "list"

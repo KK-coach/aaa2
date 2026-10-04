@@ -91,11 +91,12 @@ HELPER_LIST_WORDS = ("kifuto", "akcio", "ujdonsag", "outlet", "ajandek")
 HELPER_SLUGS = frozenset({"sitemap", "oldalterkep", "information/sitemap", "hibabejelentes",
                           "special=1"})
 # Platformszabály: a Shoprenter a `<body>` osztályával jelöli az oldal fajtáját.
-SHOPRENTER_BODY = {"category-list-body": "category", "special-list-body": "list",
-                   "latest-list-body": "list"}
+SHOPRENTER_BODY = {"not_found_body": "not_found", "category-list-body": "category",
+                   "special-list-body": "list", "latest-list-body": "list"}
 BODY_CLASS = re.compile(r"<body\b[^>]*\bclass=[\"']([^\"']*)[\"']", re.IGNORECASE)
 NAV_POSITIONS = ("nav", "aside", "footer")
-PAGE_TYPES = ("product", "category", "brand_category", "list", "blog", "service", "other")
+PAGE_TYPES = ("product", "category", "brand_category", "list", "not_found", "blog",
+              "service", "other")
 BLOG_TYPES = frozenset({"BlogPosting", "NewsArticle"})
 HUB_MIN_PARTS = 2
 COMPONENT_H1_WORDS = 4
@@ -255,7 +256,9 @@ def helper_list_name(url: str) -> bool:
 def platform_types(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int]) -> dict[int, str]:
     """Oldaltípus a webshop-platform jeléből. Shoprenter (`SHOPRENTER_BODY`): a `<body>`
     `category-list-body` osztálya kategóriaoldal, a `special-list-body` és a
-    `latest-list-body` segédlista. Más platformra nincs szabály: az oldal kimarad."""
+    `latest-list-body` segédlista, a `not_found_body` a 200-as státusszal kiszolgált „nem
+    található” oldal (megszűnt kategória vagy információs oldal). Más platformra nincs szabály:
+    az oldal kimarad."""
     found: dict[int, str] = {}
     for page_id in page_ids:
         match = BODY_CLASS.search(crawl.rendered_dom(con, page_id) or "")
@@ -274,7 +277,8 @@ def page_types(con: duckdb.DuckDBPyConnection,
        a `PAGE_TYPES` sorrendjében; a site szerkezetéből, pl. a márka × kategória oldal;
     2. segédlista az URL szerint (`helper_list`: oldaltérkép, hibabejelentés, akciós lista) →
        list;
-    3. a webshop-platform jele (`platform_types`): kategória vagy segédlista; a kategóriaoldal,
+    3. a webshop-platform jele (`platform_types`): kategória, segédlista vagy nem található
+       oldal (not_found: nincs fő entitása); a kategóriaoldal,
        amelynek a neve segédlistát jelöl (`helper_list_name`: kifutó, akciós, újdonság, outlet,
        ajándék), szintén list. A segédlistának nincs kategória-entitása és fő entitása;
     4. az oldalra mutató JSON-LD vagy microdata `Product` → product, `Service` → service (a
@@ -293,7 +297,8 @@ def page_types(con: duckdb.DuckDBPyConnection,
         if kind is None and helper_list(url):
             kind = "list"
         if kind is None and page_id in platform:
-            kind = "list" if helper_list_name(url) else platform[page_id]
+            kind = "list" if platform[page_id] == "category" and helper_list_name(url) \
+                else platform[page_id]
         elif kind == "category" and helper_list_name(url):
             kind = "list"
         own = nodes.get(page_id, [])
