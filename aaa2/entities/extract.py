@@ -285,9 +285,13 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
             max_usd: float | None = None, workers: int = 1, reuse: bool = False,
             fork: Callable[[duckdb.DuckDBPyConnection], Worker] | None = None,
             clock: Callable[[], datetime] | None = None,
-            monotonic: Callable[[], float] | None = None) -> LLMRun:
+            monotonic: Callable[[], float] | None = None,
+            records_only: bool = False) -> LLMRun:
     """`page_ids`: csak ezek közül az alkalmas oldalak; `limit`: legfeljebb ennyi oldal;
     `refine`: a kinyerés utáni lépés (`v3.V3Step`; None: nincs); `save`: mentés az említés- és entitástáblába;
+    `records_only`: a futás csak az oldalankénti rekordot írja (`entity_run_pages`), az említés-
+    és entitástáblát nem; azokat utána a `restore_llm` építi fel a rekordokból (a pipeline így
+    fut, hogy a végállapot ne függjön a korábbi futásoktól);
     `resume`: a modell legutóbbi futásának folytatása; `max_usd`: a futás költséghatára
     foglalással (`_CostCap`: új oldal csak akkor indul, ha a lekönyvelt és a lefoglalt költség
     az oldaléval együtt a határ alatt marad; különben a többi oldal kimarad). `workers`: ennyi oldal LLM-lépései futnak
@@ -394,7 +398,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
             con.begin()
             try:
                 log.fabricated = _store(con, run_id, page_id, lang, record, blocks, index,
-                                        started, save, client.model)
+                                        started, save and not records_only, client.model)
                 _log(con, run_id, page_id, log, seconds + monotonic() - store_began, clock)
                 con.commit()
             except Exception:
@@ -417,76 +421,88 @@ def clear_entities(con: duckdb.DuckDBPyConnection) -> None:
 
 def stored_records(con: duckdb.DuckDBPyConnection) -> dict[int, dict]:
     """Oldalanként a legutóbbi kész LLM-rekord: a modell, a kinyerés, a kinyerés utáni rekord,
-    a darabszám és a rekord bemenet-hash-e."""
+    a darabszám, a rekord bemenet-hash-e és a futása."""
     found: dict[int, dict] = {}
-    for page_id, model, extraction, refined, chunks, input_hash, raw_hash in \
+    for page_id, model, extraction, refined, chunks, input_hash, raw_hash, run_id in \
             store.entity_run_pages_for_stored_records(con):
         if page_id not in found:
             found[page_id] = {"model": model, "extraction": json.loads(extraction),
                               "refined": json.loads(refined) if refined else None,
                               "chunks": chunks or 0, "input_hash": input_hash,
-                              "raw_html_hash": raw_hash}
+                              "raw_html_hash": raw_hash, "run_id": run_id}
     return found
+
+
+@dataclass(frozen=True)
+class Restored:
+    """A visszaírás eredménye: a visszaírt oldalak száma, a kimaradás okai (oldalszám) és az
+    érintett LLM-futások."""
+
+    pages: int
+    skipped: dict[str, int]
+    run_ids: tuple[int, ...]
 
 
 def restore_llm(con: duckdb.DuckDBPyConnection,
                 models_for: Callable[[str], Sequence[str | None]] | None = None,
-                clock: Callable[[], datetime] | None = None,
-                monotonic: Callable[[], float] | None = None) -> LLMRun | None:
+                clock: Callable[[], datetime] | None = None) -> Restored | None:
     """Az LLM-említések visszaírása a tárolt kinyerésből, hívás nélkül: oldalanként a legutóbbi
     kész rekord (`stored_records`) említései, típus-szavazatai és bizonyítékai kerülnek az
-    említés- és entitástáblába, egy új LLM-futás alatt (0 hívás; az oldal oka `restored`, a
-    rekordja és a bemenet-hash-e átkerül, így a következő futás újrahasználhatja).
+    említés- és entitástáblába, a rekord saját futása alatt. Új futás és új naplósor nem
+    készül: a visszaírás az entitás-táblák levezetése a rekordokból, így akárhányszor fut,
+    ugyanazt adja. A végén az érintett LLM-futások említés-számai (`entity_runs`) frissülnek.
 
     `models_for`: a kinyerő modellhez a bemenet-hash modelljei (`input_models`); ha adott, az
     az oldal, amelynek a tárolt bemenet-hash-e nem egyezik a mostani blokkokéval, kimarad
     (`restore_input_changed`: a rekord blokk-azonosítói már nem a mostani blokkokra mutatnak).
-    Tárolt rekord nélküli oldal: `restore_no_record`. None, ha egy oldalnak sincs rekordja."""
-    clock = clock or _now
-    monotonic = monotonic or time.monotonic
-    began = monotonic()
-    started = clock()
+    Tárolt rekord nélküli oldal: `restore_no_record`; tartalmi blokk nélküli:
+    `no_content_blocks`. None, ha egy oldalnak sincs rekordja."""
+    started = (clock or _now)()
     records = stored_records(con)
     if not records:
         return None
-    model = next(iter(sorted({r["model"] for r in records.values()},
-                             key=lambda m: -sum(1 for r in records.values()
-                                                if r["model"] == m))))
-    (run_id,) = store.insert_entity_runs_in_run_llm(con, started, model)
     index = _EntityIndex(con)
     site = site_line(con) or ""
-    raw_hashes = {page.page_id: page.raw_html_hash for page in crawl.pages(con)}
+    skipped: Counter[str] = Counter()
+    runs: set[int] = set()
+    pages = 0
     for page_id, lang in select_pages(con):
         blocks = page_blocks(con, page_id, region="content")
-        if not blocks:
-            _log(con, run_id, page_id, _PageLog("skipped", Counter(no_content_blocks=1)), 0.0,
-                 clock)
-            continue
         stored = records.get(page_id)
+        if not blocks:
+            skipped["no_content_blocks"] += 1
+            continue
         if stored is None:
-            _log(con, run_id, page_id, _PageLog("skipped", Counter(restore_no_record=1)), 0.0,
-                 clock)
+            skipped["restore_no_record"] += 1
             continue
         current = (input_fingerprint(site, blocks, models_for(stored["model"]))
                    if models_for is not None else stored["input_hash"])
         if stored["input_hash"] is not None and current != stored["input_hash"]:
-            _log(con, run_id, page_id, _PageLog("skipped", Counter(restore_input_changed=1)),
-                 0.0, clock)
+            skipped["restore_input_changed"] += 1
             continue
-        log = _PageLog("done", Counter(restored=1), chunks=stored["chunks"],
-                       extraction=stored["extraction"], refined=stored["refined"])
-        log.raw_html_hash, log.input_hash = raw_hashes.get(page_id), stored["input_hash"]
         con.begin()
         try:
-            log.fabricated = _store(con, run_id, page_id, lang,
-                                    stored["refined"] or stored["extraction"], blocks, index,
-                                    started, True, stored["model"])
-            _log(con, run_id, page_id, log, 0.0, clock)
+            _store(con, stored["run_id"], page_id, lang,
+                   stored["refined"] or stored["extraction"], blocks, index, started, True,
+                   stored["model"])
             con.commit()
         except Exception:
             con.rollback()
             raise
-    return _finish(con, run_id, model, monotonic() - began, clock)
+        runs.add(stored["run_id"])
+        pages += 1
+    for run_id in sorted(runs):
+        _refresh(con, run_id)
+    return Restored(pages, dict(sorted(skipped.items())), tuple(sorted(runs)))
+
+
+def _refresh(con: duckdb.DuckDBPyConnection, run_id: int) -> None:
+    """Az LLM-futás említés-számai (`entity_runs`: oldal, entitás, sor, pozíciók) a mostani
+    említésekből; a futás ideje, hívásai és költsége marad."""
+    positions = dict(store.mention_sources_for_finish_2(con, run_id))
+    entities, pages_with = store.mention_sources_for_finish(con, run_id)
+    store.update_entity_runs_in_refresh(con, pages_with, entities, sum(positions.values()),
+                                        dumps(positions), run_id)
 
 
 def input_models(model: str, refine_fingerprint: str | None) -> tuple[str | None, ...]:

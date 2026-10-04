@@ -549,11 +549,19 @@ def test_rebuild_entities_restores_the_stored_extraction_without_calls(tmp_path,
     clear_entities(con)
     assert con.execute("SELECT count(*) FROM entities").fetchone() == (0,)
     run_rules(con)
+    runs = con.execute("SELECT count(*) FROM entity_runs").fetchone()
     restored = restore_llm(con)
-    assert len(adapter.calls) == calls and restored.llm_calls == 0
-    assert restored.skipped == {"restored": 1, "restore_no_record": 1} and state() == before
-    # az új futás sorai hordozzák a rekordot: a következő futás újrahasználja
-    assert set(stored_records(con)) == {2}
+    assert len(adapter.calls) == calls
+    assert (restored.pages, restored.skipped) == (1, {"restore_no_record": 1})
+    assert state() == before
+    # a visszaírás nem új futás: a rekord a saját futásáé marad, a futásnapló nem nő
+    assert set(stored_records(con)) == {2} and restored.run_ids == (records[2]["run_id"],)
+    assert con.execute("SELECT count(*) FROM entity_runs").fetchone() == runs
+    # még egyszer visszaírva ugyanaz az állapot
+    clear_entities(con)
+    run_rules(con)
+    restore_llm(con)
+    assert state() == before
     # más bemenet-hash: az oldal kimarad (a rekord blokk-azonosítói nem a mostani blokkokéi)
     clear_entities(con)
     skipped = restore_llm(con, lambda model: (model, None, "más beállítás"))
@@ -561,3 +569,65 @@ def test_rebuild_entities_restores_the_stored_extraction_without_calls(tmp_path,
     assert con.execute("SELECT count(*) FROM page_entities ms JOIN mention_sources s USING "
                        "(mention_id) WHERE s.source = 'llm'").fetchone() == (0,)
     assert api.rebuild_entities is not None
+
+
+def test_after_a_re_extraction_the_end_state_equals_the_rebuilt_one(tmp_path, monkeypatch):
+    # az `aaa entities` végállapota a tárolt kinyerés levezetése: újrakinyerés után nem marad
+    # nyom a korábbi kinyerésből (név, típus-szavazat, alias), és az újraépítés ugyanazt adja
+    import copy
+    from types import SimpleNamespace
+
+    import aaa2.api.steps as steps_module
+    from aaa2 import api
+
+    con = site({"/": html("Példa", "<p>A Budapest Coffee Fest idén is lesz</p>"),
+                "/b/": html("B", "<p>A Coffee Fest szervezője a Példa Egyesület</p>")})
+    first = [reply(mention("b1", "Budapest Coffee Fest", "Budapest Coffee Fest", "event")),
+             reply(mention("b1", "Coffee Fest", "Budapest Coffee Fest", "event"))]
+    second = [reply(mention("b1", "Coffee Fest", "coffee fest", "concept")),
+              reply(mention("b1", "Példa Egyesület", "Példa Egyesület", "org"))]
+    adapter = Scripted(first + second)
+
+    def fake_client(con, model, credentials=None):
+        """A konfigurált modell nevén futó kliens a közös, előre megírt válaszokkal."""
+        own = copy.copy(adapter)
+        own.config = CONFIG.providers[CONFIG.provider_of(model)]
+        return LLMClient(con, own, CONFIG, tmp_path / "ledger.jsonl", lambda: NOON,
+                         Retry(sleep=lambda _: None), model=model)
+
+    monkeypatch.setattr(steps_module, "_pipeline_client", fake_client)
+    monkeypatch.setattr(steps_module, "load_site_credentials", lambda domain: {})
+    opened = SimpleNamespace(con=con, domain="pelda.hu", name="pelda", path=tmp_path / "x")
+
+    def state():
+        return (sorted(con.execute(
+                    "SELECT name, type, list_sort(aliases), type_votes, source FROM entities"
+                ).fetchall(), key=str),
+                sorted(con.execute(
+                    "SELECT e.name, pe.page_id, b.ordinal, pe.char_start, pe.surface_form, "
+                    "s.source FROM page_entities pe JOIN entities e USING (entity_id) JOIN "
+                    "blocks b USING (block_id) JOIN mention_sources s USING (mention_id)"
+                ).fetchall()),
+                sorted(con.execute("SELECT e.name, a.alias FROM entity_aliases a JOIN entities "
+                                   "e USING (entity_id)").fetchall()))
+
+    def run(**options):
+        api.extract(opened, knowledge=False, workers=1, **options)
+        api.resolve(opened, knowledge=False)
+        return state()
+
+    before = run(llm=True)
+    assert ("Budapest Coffee Fest", "event") in {row[:2] for row in before[0]}
+    after = run(llm=True, fresh=True)
+    assert len(adapter.calls) == 4
+    names = {row[:2] for row in after[0]}
+    assert ("coffee fest", "concept") in names and ("Példa Egyesület", "org") in names
+    assert not any("Budapest Coffee Fest" in str(row) for part in after for row in part)
+    # az újraépítés és az LLM nélküli futás ugyanezt adja, hívás nélkül
+    api.rebuild_entities(opened, knowledge=False)
+    assert state() == after
+    assert run(llm=False) == after and run(llm=True) == after
+    assert len(adapter.calls) == 4
+    # az LLM-futás említés-számai a levezetett állapotból
+    assert con.execute("SELECT entities, row_count FROM entity_runs WHERE method = 'llm' "
+                       "ORDER BY run_id DESC LIMIT 1").fetchone() == (2, 2)

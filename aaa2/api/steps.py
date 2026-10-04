@@ -26,7 +26,7 @@ from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
 from aaa2.entities.dom import build_blocks
 from aaa2.entities.extract import (
-    LLMRun,
+    Restored,
     Worker,
     clear_entities,
     estimate_llm,
@@ -118,6 +118,7 @@ class ExtractResult:
 
     run_ids: list[int] = field(default_factory=list)
     estimate_only: bool = False
+    restored: Restored | None = None
 
 
 def _step_model(value: str) -> str | None:
@@ -167,13 +168,21 @@ def extract(site: Site, *, llm: bool | None = None, knowledge: bool | None = Non
     result = ExtractResult()
     if steps.blocks:
         build_blocks(con)
-    if not estimate and steps.rules:
-        result.run_ids.append(run_rules(con, entity_pages=entity_page_ids(page_roles(con))).run_id)
     if not use_llm:
         if estimate:
             notify("becslés: az LLM-lépések kikapcsolva, nincs hívás")
             result.estimate_only = True
+            return result
+        models = load_config().pipeline
+        verify_choice = _step_model(models["verify"]) if steps.services else None
+        fingerprint = (v3_fingerprint(steps, verify_choice)
+                       if steps.services or steps.concepts else None)
+        rules_run, result.restored = _project(con, steps, fingerprint)
+        if rules_run is not None:
+            result.run_ids.append(rules_run)
         return result
+    if not estimate and steps.rules:           # a kinyerés utáni lépés a szabálykör entitásait látja
+        run_rules(con, entity_pages=entity_page_ids(page_roles(con)))
     site_lang = _site_language(con)
     shared = connect(shared_path()) if use_knowledge and not estimate else None
     kb = _knowledge(con, shared) if shared is not None else None
@@ -231,13 +240,39 @@ def extract(site: Site, *, llm: bool | None = None, knowledge: bool | None = Non
 
         count = workers or pipeline.workers
         notify(f"párhuzamosság: {count} oldal egyszerre")
-        result.run_ids.append(run_llm(con, client, refine=refine, save=steps.save, limit=limit,
-                                      resume=resume, max_usd=cap, workers=count, fork=fork,
-                                      reuse=not fresh).run_id)
+        llm_run = run_llm(con, client, refine=refine, save=steps.save, limit=limit,
+                          resume=resume, max_usd=cap, workers=count, fork=fork,
+                          reuse=not fresh, records_only=True).run_id
+        rules_run, result.restored = _project(
+            con, steps, v3_fingerprint(steps, verify_choice) if refines else None)
+        result.run_ids += [run_id for run_id in (rules_run, llm_run) if run_id is not None]
     finally:
         if shared is not None:
             shared.close()
     return result
+
+
+def _project(con: duckdb.DuckDBPyConnection, steps,
+             fingerprint: str | None) -> tuple[int | None, Restored | None]:
+    """Az entitás-táblák levezetése a tárolt kinyerésből: üríti az entitás-, az említés-, a
+    bizonyíték-, az alias-, a kapcsolat- és az összevonás-táblákat, a gráfot és a
+    megállapításokat; utána a szabálykör és a tárolt kinyerés visszaírása (`restore_llm`: az az
+    oldal, amelynek a rekordja más bemenetből készült, kimarad). Az `aaa entities` minden
+    futása így végződik, ezért a végállapot nem függ a korábbi futásoktól. Visszaad: (a
+    szabálykör futása, a visszaírás)."""
+    con.begin()
+    try:
+        findings_module.clear_findings(con)
+        graph_module.clear_graph(con)
+        clear_resolution(con)
+        clear_entities(con)
+        con.commit()
+    except Exception:
+        con.rollback()
+        raise
+    rules_run = (run_rules(con, entity_pages=entity_page_ids(page_roles(con))).run_id
+                 if steps.rules else None)
+    return rules_run, restore_llm(con, lambda model: input_models(model, fingerprint))
 
 
 # --- resolve -------------------------------------------------------------------------------
@@ -276,39 +311,25 @@ class RebuildResult:
     tárolt kinyerés) és a feloldás."""
 
     rules_run: int | None
-    restored: LLMRun | None
+    restored: Restored | None
     resolved: ResolveResult
 
 
 def rebuild_entities(site: Site, *, knowledge: bool | None = None) -> RebuildResult:
-    """Az entitások újraépítése a tárolt kinyerésből, LLM-hívás nélkül. Üríti az entitás-, az
-    említés-, a bizonyíték-, az alias-, a kapcsolat- és az összevonás-táblákat, a gráfot és a
-    megállapításokat; utána a szabálykör, a tárolt kinyerés visszaírása (`restore_llm`: az az
-    oldal, amelynek a rekordja más bemenetből készült, kimarad), a site-kör és a tudásbázis-
-    kapcsolás (`resolve`). A blokkok, a futásnapló, a tárolt kinyerés és a hívásnapló marad; a
-    gráfot és a megállapításokat utána az `aaa graph` és az `aaa findings` építi fel."""
+    """Az entitások újraépítése a tárolt kinyerésből, LLM-hívás nélkül: ugyanaz a levezetés,
+    amellyel az `aaa entities` minden futása végződik (ürítés, szabálykör, a tárolt kinyerés
+    visszaírása), utána a site-kör és a tudásbázis-kapcsolás (`resolve`). A blokkok, a
+    futásnapló, a tárolt kinyerés és a hívásnapló marad; a gráfot és a megállapításokat utána
+    az `aaa graph` és az `aaa findings` építi fel."""
     con = site.con
-    pipeline = load_pipeline()
-    steps = pipeline.steps
+    steps = load_pipeline().steps
     models = load_config().pipeline
     verify_choice = _step_model(models["verify"]) if steps.services else None
     fingerprint = (v3_fingerprint(steps, verify_choice)
                    if steps.services or steps.concepts else None)
     if steps.blocks:
         build_blocks(con)
-    con.begin()
-    try:
-        findings_module.clear_findings(con)
-        graph_module.clear_graph(con)
-        clear_resolution(con)
-        clear_entities(con)
-        con.commit()
-    except Exception:
-        con.rollback()
-        raise
-    rules_run = (run_rules(con, entity_pages=entity_page_ids(page_roles(con))).run_id
-                 if steps.rules else None)
-    restored = restore_llm(con, lambda model: input_models(model, fingerprint))
+    rules_run, restored = _project(con, steps, fingerprint)
     return RebuildResult(rules_run, restored, resolve(site, knowledge=knowledge))
 
 
