@@ -39,6 +39,7 @@ from aaa2.entities.gate import KnowledgeBase
 from aaa2.entities.report import run_report, write_entity_table
 from aaa2.entities.rules import run_rules
 from aaa2.entities.v3 import V3Step, load_pipeline, v3_fingerprint
+from aaa2.functions import facts as facts_module
 from aaa2.functions import findings as findings_module
 from aaa2.functions import graph as graph_module
 from aaa2.functions import graph_queries
@@ -421,7 +422,9 @@ class FindResult:
 def find(site: Site, *, out: Path | None = None) -> FindResult:
     """SEO-megállapítások a gráfból (a `build_graph` után), LLM nélkül. `out`: ha meg van adva,
     kimenet ide: `<név>-findings.csv`, `<név>-view-site.csv`, `<név>-view-entities.csv`,
-    `<név>-view-pages.csv`, `<név>-views.html`. Gráf nélkül: `GraphMissing`."""
+    `<név>-view-pages.csv`, `<név>-views.html`, és a tényfájlok (`<név>-view-links.csv`,
+    `<név>-view-structured-data.csv`, `<név>-view-site-facts.csv`). Gráf nélkül:
+    `GraphMissing`."""
     con = site.con
     if not graph_queries.page_nodes(con):
         raise GraphMissing("nincs gráf: előbb `aaa graph`")
@@ -429,7 +432,8 @@ def find(site: Site, *, out: Path | None = None) -> FindResult:
     paths: dict[str, Path] = {}
     if out is not None:
         paths = {"findings": findings_module.export_findings(con, out, site.name),
-                 **findings_module.export_views(con, out, site.name)}
+                 **findings_module.export_views(con, out, site.name),
+                 **facts_module.export_facts(con, out, site.name)}
     return FindResult(run, paths)
 
 

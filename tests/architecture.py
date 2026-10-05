@@ -43,6 +43,7 @@ MODULES: tuple[tuple[str, str], ...] = (
     ("aaa2/resolver/", "resolve"),
     ("aaa2/entities/report.py", "report"),
     ("aaa2/entities/", "extract"),
+    ("aaa2/functions/facts.py", "report"),
     ("aaa2/functions/graph.py", "graph"),
     ("aaa2/functions/graph_queries.py", "graph"),
     ("aaa2/functions/findings.py", "findings"),

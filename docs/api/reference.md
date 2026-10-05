@@ -134,7 +134,9 @@ find(site: 'Site', *, out: 'Path | None' = None) -> 'FindResult'
 
 SEO-megállapítások a gráfból (a `build_graph` után), LLM nélkül. `out`: ha meg van adva,
 kimenet ide: `<név>-findings.csv`, `<név>-view-site.csv`, `<név>-view-entities.csv`,
-`<név>-view-pages.csv`, `<név>-views.html`. Gráf nélkül: `GraphMissing`.
+`<név>-view-pages.csv`, `<név>-views.html`, és a tényfájlok (`<név>-view-links.csv`,
+`<név>-view-structured-data.csv`, `<név>-view-site-facts.csv`). Gráf nélkül:
+`GraphMissing`.
 
 ### `entity_report`
 
