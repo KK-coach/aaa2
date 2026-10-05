@@ -42,8 +42,14 @@ def test_contracts_build_from_the_current_data(monkeypatch):
                 "blocks, mentions, prominent, rank, knowledge, sol, kept) VALUES "
                 "(?, ?, ?, ?, 'concept', 'heading', 2, 3, true, 1, NULL, NULL, true)",
                 [run_id, page_id, entity_id, name])
-    con.execute("INSERT INTO crawl_runs (started_at, pages_done, notes) VALUES (?, 11, 'teszt')",
-                [NOON])
+    con.execute("INSERT INTO crawl_runs (started_at, pages_done, notes, mode) VALUES "
+                "(?, 11, 'teszt', 'links')", [NOON])
+    con.execute("INSERT INTO sitemap_files (snapshot, ordinal, url, source, found, urls, "
+                "fetched_at) VALUES ('crawl', 0, ?, 'robots', true, 1, ?)",
+                [f"{BASE}/sitemap.xml", NOON])
+    con.execute("INSERT INTO sitemap_urls (snapshot, ordinal, raw_url, url, lastmod, "
+                "sitemap_file, source, fetched_at) VALUES ('crawl', 0, ?, ?, '2026-09-01', ?, "
+                "'robots', ?)", [f"{BASE}/meres/", f"{BASE}/meres/", f"{BASE}/sitemap.xml", NOON])
     con.execute("INSERT INTO llm_calls (domain, page_id, model, tokens_in, tokens_out, cost_usd, "
                 "purpose, called_at) VALUES ('pelda.hu', ?, 'gpt-6-luna', 10, 5, 0.001, "
                 "'extract', ?)", [page_id, NOON])

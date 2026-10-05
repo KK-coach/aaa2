@@ -78,6 +78,19 @@ az exclude, a párhuzamosság és a render-időkorlát alapja a site-fájl `[cra
 oldalanként (URL, státusz, hiba); `on_options`: a crawl indulása előtt a tényleges beállítás.
 Hibás site-fájl vagy seed: `ApiError`.
 
+### `sitemap`
+
+```python
+sitemap(site: 'Site', *, fetch: 'bool' = True, sitemap_url: 'str | None' = None) -> 'SitemapResult'
+```
+
+A sitemap tényeinek pótlása egy korábbi crawlhoz, oldal-crawl nélkül. (1) Ha a crawl
+idejéről nincs tárolt sitemap, a crawl-sorból visszaállítja, mely címek jöttek a sitemapből.
+(2) A módot nem rögzítő futások módja a site-fájl `[crawl] sitemap_only` beállításából.
+(3) `fetch`: a mai sitemap lekérése (néhány HTTP-kérés a sitemap-fájlokra) külön
+pillanatképbe, a lekérés idejével; `fetch=False`, ha a site azóta megváltozott, és a mai
+sitemap nem a tárolt crawlhoz tartozik.
+
 ### `extract`
 
 ```python
@@ -178,6 +191,19 @@ Mezők:
 - `path`: `Path`
 - `options`: `CrawlOptions`
 - `site_file_scope`: `bool`
+
+### `SitemapResult`
+
+A sitemap pótlása egy tárolt crawlhoz: a sorból visszaállított címek száma (`restored`),
+hány futás kapott módot (`modes`), és ha volt lekérés: a forrás, a fájlok és a címek száma.
+
+Mezők:
+
+- `restored`: `int`
+- `modes`: `int`
+- `source`: `str | None`
+- `files`: `int`
+- `urls`: `int`
 
 ### `ExtractResult`
 

@@ -1,0 +1,75 @@
+{
+  "additionalProperties": false,
+  "description": "Egy lekért sitemap-fájl (`sitemap_files`). `snapshot`: `crawl` (a crawl idején) vagy\n`refetch` (utólagos lekérés); `source`: honnan került elő a sitemap (`given`: megadott cím,\n`robots`: a robots.txt Sitemap-sora, `default`: alapútvonal).",
+  "properties": {
+    "fetched_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fetched At"
+    },
+    "found": {
+      "title": "Found",
+      "type": "boolean"
+    },
+    "is_index": {
+      "default": false,
+      "title": "Is Index",
+      "type": "boolean"
+    },
+    "ordinal": {
+      "title": "Ordinal",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": "1.8",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "snapshot": {
+      "enum": [
+        "crawl",
+        "refetch"
+      ],
+      "title": "Snapshot",
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "given",
+        "robots",
+        "default",
+        "queue"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "url": {
+      "title": "Url",
+      "type": "string"
+    },
+    "urls": {
+      "default": 0,
+      "title": "Urls",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "snapshot",
+    "ordinal",
+    "url",
+    "source",
+    "found"
+  ],
+  "title": "SitemapFile",
+  "type": "object",
+  "x-module": "crawl",
+  "x-schema-version": "1.8"
+}

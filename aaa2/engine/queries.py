@@ -15,7 +15,16 @@ from urllib.parse import urljoin, urlsplit
 import duckdb
 import zstandard
 
-from aaa2.contracts import CrawlRun, Link, Page, PageMeta, Site, StructuredData
+from aaa2.contracts import (
+    CrawlRun,
+    Link,
+    Page,
+    PageMeta,
+    Site,
+    SitemapFile,
+    SitemapUrl,
+    StructuredData,
+)
 
 _PAGE = "SELECT * EXCLUDE (rendered_html), rendered_html IS NOT NULL AS has_rendered_html FROM pages"
 
@@ -220,6 +229,28 @@ def _absolute_urls(value: object, base: str) -> object:
 def latest_crawl_run(con: duckdb.DuckDBPyConnection) -> CrawlRun | None:
     rows = _rows(con, "SELECT * FROM crawl_runs ORDER BY run_id DESC LIMIT 1")
     return CrawlRun.from_row(rows[0]) if rows else None
+
+
+def crawl_runs(con: duckdb.DuckDBPyConnection) -> list[CrawlRun]:
+    """A crawl-futások sorban."""
+    return [CrawlRun.from_row(row) for row in _rows(con, "SELECT * FROM crawl_runs ORDER BY run_id")]
+
+
+def queue_size(con: duckdb.DuckDBPyConnection) -> int:
+    """A crawl-sor mérete (ezt korlátozza a `max_pages`)."""
+    return con.execute("SELECT count(*) FROM crawl_queue").fetchone()[0]
+
+
+def sitemap_files(con: duckdb.DuckDBPyConnection) -> list[SitemapFile]:
+    """A lekért sitemap-fájlok pillanatképenként, a lekérés sorrendjében."""
+    return [SitemapFile.from_row(row) for row in _rows(
+        con, "SELECT * FROM sitemap_files ORDER BY snapshot, ordinal")]
+
+
+def sitemap_urls(con: duckdb.DuckDBPyConnection) -> list[SitemapUrl]:
+    """A sitemap címei pillanatképenként, a fájlbeli sorrendben."""
+    return [SitemapUrl.from_row(row) for row in _rows(
+        con, "SELECT * FROM sitemap_urls ORDER BY snapshot, ordinal")]
 
 
 def queue_status_counts(con: duckdb.DuckDBPyConnection) -> list[tuple[str, int]]:

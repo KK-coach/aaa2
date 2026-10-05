@@ -12,9 +12,9 @@ from aaa2 import api
 
 GROUPS = (
     ("Site", ("open_site", "Site", "domain_of", "ApiError", "SiteNotFound", "GraphMissing")),
-    ("Lépések", ("crawl", "extract", "resolve", "rebuild_entities", "build_graph", "find", "entity_report",
+    ("Lépések", ("crawl", "sitemap", "extract", "resolve", "rebuild_entities", "build_graph", "find", "entity_report",
                  "validate", "check_models")),
-    ("A lépések eredményei", ("CrawlResult", "ExtractResult", "ResolveResult", "RebuildResult", "GraphResult",
+    ("A lépések eredményei", ("CrawlResult", "SitemapResult", "ExtractResult", "ResolveResult", "RebuildResult", "GraphResult",
                               "FindResult")),
     ("Lekérdezések (szerződések)", ("site_profile", "pages", "page_metas", "links",
                                     "structured_data", "latest_crawl_run", "entities",

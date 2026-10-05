@@ -10,6 +10,8 @@ from aaa2.engine.frontier import (
     Discovery,
     Frontier,
     Robots,
+    SitemapFile,
+    SitemapUrl,
     discover,
     probe_https_redirect,
     read_sitemaps,
@@ -240,7 +242,14 @@ async def test_discover_falls_back_to_sitemap_xml():
         robots_status=404,
         robots_txt=None,
         sitemap_urls=("https://kk.coach/blog/elso/", "https://kk.coach/rolam/"),
+        sitemap_source="default",
+        sitemap_entries=(
+            SitemapUrl("https://kk.coach/blog/elso/", None, "https://kk.coach/sitemap.xml"),
+            SitemapUrl("https://kk.coach/rolam/", None, "https://kk.coach/sitemap.xml")),
+        sitemap_files=(SitemapFile("https://kk.coach/sitemap.xml", True, False, 2),),
+        sitemap_fetched_at=found.sitemap_fetched_at,
     )
+    assert found.sitemap_fetched_at is not None
 
 
 async def test_discover_sitemap_override_wins():

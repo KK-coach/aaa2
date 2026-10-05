@@ -14,6 +14,9 @@ SOURCES: dict[type[Contract], tuple[str, str]] = {
     contracts.LLMCall: ("llm_calls", "SELECT * FROM llm_calls ORDER BY call_id"),
     contracts.Site: ("site", "SELECT * FROM site ORDER BY domain"),
     contracts.CrawlRun: ("crawl_runs", "SELECT * FROM crawl_runs ORDER BY run_id"),
+    contracts.SitemapFile: ("sitemap_files",
+                            "SELECT * FROM sitemap_files ORDER BY snapshot, ordinal"),
+    contracts.SitemapUrl: ("sitemap_urls", "SELECT * FROM sitemap_urls ORDER BY snapshot, ordinal"),
     contracts.Page: ("pages", ("SELECT * EXCLUDE (rendered_html), rendered_html IS NOT NULL AS "
                                "has_rendered_html FROM pages ORDER BY page_id")),
     contracts.Link: ("links", "SELECT * FROM links ORDER BY from_page_id, ordinal, to_url"),

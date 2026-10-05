@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.7"
+SCHEMA_VERSION = "1.8"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -130,6 +130,40 @@ class CrawlRun(Contract):
     pages_per_sec: float | None = None
     bytes_stored: int | None = None
     notes: str | None = None
+    mode: Literal["links", "sitemap"] | None = None
+
+
+class SitemapFile(Contract):
+    """Egy lekért sitemap-fájl (`sitemap_files`). `snapshot`: `crawl` (a crawl idején) vagy
+    `refetch` (utólagos lekérés); `source`: honnan került elő a sitemap (`given`: megadott cím,
+    `robots`: a robots.txt Sitemap-sora, `default`: alapútvonal)."""
+
+    module: ClassVar[str] = "crawl"
+    snapshot: Literal["crawl", "refetch"]
+    ordinal: int
+    url: str
+    source: Literal["given", "robots", "default", "queue"]
+    found: bool
+    is_index: bool = False
+    urls: int = 0
+    fetched_at: datetime | None = None
+
+
+class SitemapUrl(Contract):
+    """Egy cím a sitemapből (`sitemap_urls`): a nyers cím és a normalizált cím (a crawl
+    címeivel azonos normalizálással), a site címe-e, `lastmod`, a fájl. `source = queue`: a
+    korábbi crawl sorából visszaállított cím (nyers cím, fájl és lastmod nélkül)."""
+
+    module: ClassVar[str] = "crawl"
+    snapshot: Literal["crawl", "refetch"]
+    ordinal: int
+    raw_url: str | None = None
+    url: str | None = None
+    internal: bool = True
+    lastmod: str | None = None
+    sitemap_file: str | None = None
+    source: Literal["given", "robots", "default", "queue"]
+    fetched_at: datetime | None = None
 
 
 class Page(Contract):
@@ -618,6 +652,6 @@ DERIVED: tuple[type[Contract], ...] = (
     HeadingView, PageView, SiteViews)
 
 CONTRACTS: tuple[type[Contract], ...] = (
-    LLMCall, Site, CrawlRun, Page, Link, PageMeta, StructuredData, Block, Mention, MentionSource, Candidate, Entity, Alias,
+    LLMCall, Site, CrawlRun, SitemapFile, SitemapUrl, Page, Link, PageMeta, StructuredData, Block, Mention, MentionSource, Candidate, Entity, Alias,
     Relation, MergeRecord, KbLink, PageNode, Edge, MainEntity, EntityWeight, Finding,
     *DERIVED)

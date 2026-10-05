@@ -20,8 +20,8 @@ import httpx
 from aaa2.api.site import ApiError, GraphMissing, Site
 from aaa2.db.connect import connect, shared_path
 from aaa2.engine import queries as crawl_queries
-from aaa2.engine.crawl import CrawlOptions, CrawlSummary, run_crawl
-from aaa2.engine.frontier import MAX_PAGES
+from aaa2.engine.crawl import CrawlOptions, CrawlSummary, run_crawl, run_sitemap_refetch
+from aaa2.engine.frontier import MAX_PAGES, record_missing_mode, restore_sitemap_from_queue
 from aaa2.engine.normalize import UrlPolicy
 from aaa2.engine.render import CONCURRENCY, RENDER_TIMEOUT
 from aaa2.entities.dom import build_blocks
@@ -109,6 +109,41 @@ def crawl(url: str, *, sitemap: str | None = None, max_pages: int = MAX_PAGES,
     except ValueError as exc:
         raise ApiError(f"hiba: {exc}") from exc
     return CrawlResult(summary, path, options, scoped)
+
+
+# --- sitemap -------------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class SitemapResult:
+    """A sitemap pótlása egy tárolt crawlhoz: a sorból visszaállított címek száma (`restored`),
+    hány futás kapott módot (`modes`), és ha volt lekérés: a forrás, a fájlok és a címek száma."""
+
+    restored: int
+    modes: int
+    source: str | None = None
+    files: int = 0
+    urls: int = 0
+
+
+def sitemap(site: Site, *, fetch: bool = True, sitemap_url: str | None = None) -> SitemapResult:
+    """A sitemap tényeinek pótlása egy korábbi crawlhoz, oldal-crawl nélkül. (1) Ha a crawl
+    idejéről nincs tárolt sitemap, a crawl-sorból visszaállítja, mely címek jöttek a sitemapből.
+    (2) A módot nem rögzítő futások módja a site-fájl `[crawl] sitemap_only` beállításából.
+    (3) `fetch`: a mai sitemap lekérése (néhány HTTP-kérés a sitemap-fájlokra) külön
+    pillanatképbe, a lekérés idejével; `fetch=False`, ha a site azóta megváltozott, és a mai
+    sitemap nem a tárolt crawlhoz tartozik."""
+    con = site.con
+    domain = site.domain
+    sitemap_only = load_site_config(domain).crawl.sitemap_only if domain else False
+    restored = restore_sitemap_from_queue(con)
+    modes = record_missing_mode(con, sitemap_only)
+    if not fetch:
+        return SitemapResult(restored, modes)
+    try:
+        source, files, urls = asyncio.run(run_sitemap_refetch(con, sitemap_url))
+    except ValueError as exc:
+        raise ApiError(f"hiba: {exc}") from exc
+    return SitemapResult(restored, modes, source, files, urls)
 
 
 # --- extract -------------------------------------------------------------------------------

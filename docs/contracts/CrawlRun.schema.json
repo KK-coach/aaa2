@@ -51,6 +51,22 @@
       "default": null,
       "title": "Max Pages"
     },
+    "mode": {
+      "anyOf": [
+        {
+          "enum": [
+            "links",
+            "sitemap"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Mode"
+    },
     "notes": {
       "anyOf": [
         {
@@ -116,7 +132,7 @@
       "type": "integer"
     },
     "schema_version": {
-      "default": "1.7",
+      "default": "1.8",
       "title": "Schema Version",
       "type": "string"
     },
@@ -133,5 +149,5 @@
   "title": "CrawlRun",
   "type": "object",
   "x-module": "crawl",
-  "x-schema-version": "1.7"
+  "x-schema-version": "1.8"
 }

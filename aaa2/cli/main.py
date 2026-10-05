@@ -289,6 +289,33 @@ def graph(
 
 
 @app.command()
+def sitemap(
+    domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
+    db: Annotated[Path | None, typer.Option(
+        help="a site-adatbázis útvonala (alapból data/<domain>.duckdb)")] = None,
+    fetch: Annotated[bool, typer.Option(
+        "--fetch/--no-fetch",
+        help="a mai sitemap lekérése (csak a sitemap-fájlok, oldal nem)")] = True,
+    url: Annotated[str | None, typer.Option(help="a sitemap címe; alapból a tárolt robots.txt "
+                                                 "Sitemap-sorai, különben az alapútvonalak")] = None,
+) -> None:
+    """A sitemap tényeinek pótlása egy korábbi crawlhoz, új oldal-crawl nélkül: a crawl idején
+    a sitemapből jött címek a crawl-sorból, a futás módja a site-fájlból, és (`--fetch`) a mai
+    sitemap külön pillanatképben, a lekérés idejével."""
+    site = _open(domain, db)
+    try:
+        result = api.sitemap(site, fetch=fetch, sitemap_url=url)
+    except api.ApiError as exc:
+        _fail(exc)
+    finally:
+        site.close()
+    typer.echo(f"a crawl-sorból visszaállított sitemap-cím: {result.restored}; módot kapott "
+               f"futás: {result.modes}")
+    if result.source is not None:
+        typer.echo(f"lekérve: forrás {result.source}, {result.files} fájl, {result.urls} cím")
+
+
+@app.command()
 def findings(
     domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
     db: Annotated[Path | None, typer.Option(
