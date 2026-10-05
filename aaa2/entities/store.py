@@ -1193,3 +1193,26 @@ def entity_rows(con: duckdb.DuckDBPyConnection) -> list[dict]:
     cursor = con.execute("SELECT * FROM entities ORDER BY entity_id")
     names = [column[0] for column in cursor.description]
     return [dict(zip(names, row, strict=True)) for row in cursor.fetchall()]
+
+
+def entities_for_language_pairs(con: duckdb.DuckDBPyConnection) -> list[tuple]:
+    """Lekérdezés: entities. Hívja: resolver/language.py: Topics."""
+    return con.execute(
+        "SELECT entity_id, name, type, subtype, aliases, flags, anchor_page_id FROM entities "
+        "ORDER BY entity_id").fetchall()
+
+
+def page_entities_for_language_pairs(con: duckdb.DuckDBPyConnection) -> list[tuple]:
+    """Lekérdezés: page_entities. Hívja: resolver/language.py: Topics."""
+    return con.execute(
+        "SELECT page_id, entity_id, count(*) FROM page_entities GROUP BY page_id, entity_id "
+        "ORDER BY page_id, entity_id").fetchall()
+
+
+def entity_runs_for_language_pairs(con: duckdb.DuckDBPyConnection) -> list[tuple]:
+    """Lekérdezés: entity_run_pages, entity_runs. Hívja: resolver/language.py: Topics."""
+    return con.execute(
+        "SELECT p.page_id, json_extract(coalesce(p.refined, p.extraction), "
+        "'$.primary_entities') FROM entity_run_pages p JOIN entity_runs r USING "
+        "(run_id) WHERE r.method = 'llm' AND p.status = 'done' ORDER BY p.run_id DESC, "
+        "p.finished_at DESC, p.page_id").fetchall()

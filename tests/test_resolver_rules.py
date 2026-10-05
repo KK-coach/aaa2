@@ -83,6 +83,7 @@ def test_the_site_round_runs_its_steps_in_a_fixed_order(monkeypatch):
     step("_normalized_merges")
     step("_abbreviation_merges")
     step("_type_split", {})
+    step("_language_pairs")
     step("_steps")
     step("apply_overrides", 0)
     step("_offers", 0)
@@ -91,7 +92,8 @@ def test_the_site_round_runs_its_steps_in_a_fixed_order(monkeypatch):
     site_module.run_site(con, clock=lambda: NOON)
     assert calls == ["_page_entities", "_packages", "run_shop", "_hreflang_place",
                      "_normalized_merges", "_abbreviation_merges", "_type_split", "_steps",
-                     "_normalized_merges", "_abbreviation_merges", "apply_overrides", "_offers",
+                     "_normalized_merges", "_abbreviation_merges", "_language_pairs",
+                     "apply_overrides", "_offers",
                      "_demo", "_template"]
 
 
