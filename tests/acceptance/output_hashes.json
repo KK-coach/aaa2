@@ -1,17 +1,17 @@
 {
  "duex": {
-  "duex-edges.csv": "350a3c034ca58c9bbd7853e10c6ebf03cf0858ff976dce61fee0cbc43309ba37",
+  "duex-edges.csv": "9f7a88937798044158f05f8ffacc993dad4663a8678625c25111207988f0538b",
   "duex-entities.csv": "a4dc8088d505556d968dec1a8e17babeb678355a29c03b166fbdcf9366fa129e",
-  "duex-findings.csv": "7f97dc99d27e3ec41ca0c08f8646ae95d78e467174ae7e8b94c70ac8610c4ca9",
+  "duex-findings.csv": "c0e061c8d237d71be7f04ad30a5e97fcd7a616e059f2605583089224ca5dbff4",
   "duex-is-a-rejected.csv": "654d0f790fd4f22e6bd7d5eee67d05318fc7b3316f22706986af00c6ad7d57bf",
-  "duex-main-entity.csv": "fc17ab07621ad42d480acf438594c8033c2861d3b4ae4d65b7717708257badad",
+  "duex-main-entity.csv": "883ec4f2596000cee164eddb49f8d7b8c1e38e22ce3c1eea45a26619b0ff471a",
   "duex-run.md": "c12ffcfe25b3bdea641d44ae1acb982defe27911689981d8fd7b3276e0ee9713",
-  "duex-view-entities.csv": "b32facc80dfba41310621d0ccce76c3fa8f32530e574daa95455a876d2ec25ad",
+  "duex-view-entities.csv": "fcffcbfac7b41c804fa0aadf9087df139183fea343e408ed1eecedb462a2a266",
   "duex-view-headings.csv": "e615c837eca14d4636738834bcd249e6962579b167801de0870d88fd2db5d9c9",
-  "duex-view-pages.csv": "edfe04125bbe65370040438cba1e3a5f1a5aaed14a5ca5fb10c2538972eba4ac",
-  "duex-view-site.csv": "c3a2f89cc6de9f2ced1f4d104a7cb72975a8f4769b8679cb472c09ab167ca91a",
-  "duex-views.html": "191dbfb96b90044fb7f43b0b25729803248548ee0c2ae56ce6b1e8b36d75f002",
-  "duex-weights.csv": "2c31ea751a45047c5db12c20d5197ea8d7c088842be45596284fe147dcc0f411"
+  "duex-view-pages.csv": "17213d82ee3139e1190f8104470aec1654c2caa07957ec7ca1e307747036b1f9",
+  "duex-view-site.csv": "3ab44902deb6b0d318d0ee74046f4b2931f5ce129e0ca3f264a1046d87c18bdf",
+  "duex-views.html": "1ee3f433dbf19a1f1a1b86332aed243a2fa52a3f349c94ce22f555d7175fd140",
+  "duex-weights.csv": "1aaed22d62fe988a77e60bed4e0edbeb3e1d749891ec7f9ebe45b339d0eb1dd8"
  },
  "kk-coach": {
   "kk-coach-edges.csv": "72b672e457846524a296bc62ce6d11fe6051c79076e08047b496cad1c3241bb8",
@@ -20,12 +20,12 @@
   "kk-coach-is-a-rejected.csv": "98cbe388db8158d0859896ad0c20dfa7adfbd7e3983f8f02a387b35494b66ddf",
   "kk-coach-main-entity.csv": "2a1068076caee90fbd2e1a33e8c3163000c7b1eefb31678d7e1e770eb2c87037",
   "kk-coach-run.md": "549fa2dc06ba689d30a85db703307b271021a87afe885bc0cf061b13eb12e139",
-  "kk-coach-view-entities.csv": "73df95abd4767583011935e9a3a665e595edb1283a9286ed839c5a2bd2560153",
+  "kk-coach-view-entities.csv": "1c517e1409f2b617d44b5f7b09f75ed33969886f6fd523b009fa65cf566b5513",
   "kk-coach-view-headings.csv": "e6e953de19e24767bb578a945a00957d8499c4b228a85e294fddbb6d4b165dc0",
   "kk-coach-view-pages.csv": "1d8eb97ec1f48ba68a5c51519623561edab992df89bcdcb79bb98f140ba632b3",
-  "kk-coach-view-site.csv": "b5ae5822f710d951ad9dcb69916bbaa84d8286205e8380a8ffc86d035aee3518",
-  "kk-coach-views.html": "800f26975d427dcb1497f2e6088c1b42c10b41bcbe6c78be87cb5698ef9d4d0f",
-  "kk-coach-weights.csv": "914c542d19fba58bd82b48bb4a9128c2b95c77e04789852382dd44000e6b2e0c"
+  "kk-coach-view-site.csv": "550bbab841978052f0d023a71232966f5689c857a50574ab22897923d6f3b9da",
+  "kk-coach-views.html": "4b0b49098141e8caccc33bc7f114a85c84514a1e55b643269c4127608fe1a3ce",
+  "kk-coach-weights.csv": "93fa32225f52c258d57817e2145e14061344d0c2c9468fef1a1a063b6cec42e0"
  },
  "kk-coach-2026-10": {
   "kk-coach-2026-10-edges.csv": "ea527e8867487a663c88132fc98137213323c021dbd697178b32e30081ece2b2",
@@ -38,7 +38,7 @@
   "kk-coach-2026-10-view-headings.csv": "18500f6fc3d69a76343311482e2eb7d0a45d1f00bff55c3d6f4e415ec88b962e",
   "kk-coach-2026-10-view-pages.csv": "68fe4b9e4a780a9a1de86fc1e7de01ba2646c1b483c90e52be6272f86555df9f",
   "kk-coach-2026-10-view-site.csv": "6a6715194ff25cd7c5ae7ff6d1bc00900325624dacfffb7d3d872f56c3385f35",
-  "kk-coach-2026-10-views.html": "cea053a860ac55be1d0ca682f709ffa5006a33c8b3846394108c6c13d2350fa9",
+  "kk-coach-2026-10-views.html": "c990a23a543ff63f6ac2b21fee04dc2d57d8a6b3fa32282eb9c4b4b290b1ea62",
   "kk-coach-2026-10-weights.csv": "4c9e1797cfef712603d5c02688900ae4ebf66ba9fda835832507dedc7b412ed8"
  },
  "marketinglens": {
@@ -48,12 +48,12 @@
   "marketinglens-is-a-rejected.csv": "dd7be4cd7f7ab3821022609ac8ddd039e64a4a67ab18cabb359855b7cb2757ab",
   "marketinglens-main-entity.csv": "a1a8a9e8362733c16f0b17b4e547d44472a7ac9c28bcb33a29584b9e6d222f4e",
   "marketinglens-run.md": "7126578e0eca1ba0a6d07b799baa59de752ae2a5316b22140a9d18e04007c7e5",
-  "marketinglens-view-entities.csv": "856c260a0749de9b39df123ff8ed05ef9ff5678ed6d67e2717175b306b6991fd",
+  "marketinglens-view-entities.csv": "058089cfe70196565bd210ff8a46d42e04cadc3ee23ff2b91e5aae2a50e960a2",
   "marketinglens-view-headings.csv": "3a58dffee51b442f62a30f042a55b3a9a6a9f4ee82c4feb089d4cd867e1934b8",
   "marketinglens-view-pages.csv": "ac37e905a1576f0d4c0f38b3be848ded5bd2a3cd582349e799d6dfaa4eda6ffa",
-  "marketinglens-view-site.csv": "87ce77a6793f7af51c70d54dddc48ab776b58ea68317050bc7957de5b0845b9a",
-  "marketinglens-views.html": "36d9e28b711c438279556311c4f581d1c5d2098495cfcecc25f13e44ba18c20a",
-  "marketinglens-weights.csv": "af81d70313ab79b61ca0e3e0fa5d3c4f60ee12d3a86521e110444e0fbb3e905e"
+  "marketinglens-view-site.csv": "bbec0bd8eddd9a16c13dbc12ee8dc26ac4181459c686c2ee85e3ded8c5de8d8a",
+  "marketinglens-views.html": "726c2af2275ded184fbc98554e8bda2615d91c73a63911310e7ef65ce9f96675",
+  "marketinglens-weights.csv": "343ee04baf8a9cbc227b60f3dab83ecf1dba9a79a4559e08a31842a8e67c5160"
  },
  "materia": {
   "materia-edges.csv": "49a93e1b2614647d35bae201b3249fc656f46bd19982f79aedd1842ec8ad8312",
@@ -66,7 +66,7 @@
   "materia-view-headings.csv": "75a800c9f9af284b93dbd2b9e5233e674fd56048479ac7eecebad6d0286e1e99",
   "materia-view-pages.csv": "c15f0e1bdf40ff2878d46ed3534ecdec16782711678baff5c720b08457346928",
   "materia-view-site.csv": "383de1f7d40d0fd56a15c2daf9b3cd46fb677547f4e21578b5680062ca6d8f42",
-  "materia-views.html": "316d85f1a1082bc4f0dedede29365f7845417bbb1aeae1e6e85d4790204dba8b",
+  "materia-views.html": "506394d55e067ff6662a1b20dae764d25f54d720f0bbf87fc909ae9ed79da93c",
   "materia-weights.csv": "b94a534f7d4d6b6cffc1ae0afd3e0ba9d150dbb12d33c2bc140656bdf0a99bd0"
  },
  "ngx-bootstrap": {
@@ -80,7 +80,7 @@
   "ngx-bootstrap-view-headings.csv": "feeaa45d2ccf8269a5390df1f3176504f1641ea017d8db7bd0bb40c8dd3dcae1",
   "ngx-bootstrap-view-pages.csv": "7c7c5ed4ad5be3539777fa2114d45e71b514071a0e5b4c8bc2e6a0e8be5e8315",
   "ngx-bootstrap-view-site.csv": "59d4707d740c04403d8ecb52c6cc0f6d2e6aca5577a15993d87adc069b062604",
-  "ngx-bootstrap-views.html": "d928ab8de873a650bbb0031364c7a164e761be98774ce65b085b7e1a45b2998c",
+  "ngx-bootstrap-views.html": "960fde75e65a13e37843b60ca55cce4dbde75f2324edb8ff49a0db4e374859ba",
   "ngx-bootstrap-weights.csv": "1100ee97bd75922803f1df0bc69f59980dba3316dbf85879381192954afdc5c4"
  }
 }

@@ -345,16 +345,6 @@
     "summary": "2 H1 a fő tartalomban: valamelyik H1-ben nincs entitás; valamelyik H1-szakasz üres vagy nincs alatta érdemi tartalom",
     "verdict": "valid",
     "note": "A fő tartalomban két H1 áll; az első csak a cím megismétlése a címsávban, alatta nincs érdemi tartalom."
-   },
-   "legal_page | legal_page | withdrawal": {
-    "summary": "hiányzó jogi oldal: elállás",
-    "verdict": "",
-    "note": ""
-   },
-   "legal_page | legal_page | warranty": {
-    "summary": "hiányzó jogi oldal: garancia",
-    "verdict": "",
-    "note": ""
    }
   },
   "ngx-bootstrap": {
