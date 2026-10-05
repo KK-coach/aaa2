@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 import duckdb
 import zstandard
@@ -75,6 +75,40 @@ def links(con: duckdb.DuckDBPyConnection) -> list[Link]:
     return [Link.from_row(row) for row in _rows(
         con, "SELECT * FROM links ORDER BY from_page_id, ordinal, to_url, anchor, position, "
              "to_page_id, nofollow")]
+
+
+def link_targets(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
+    """A készleten kívüli belső linkcélok feloldása készletbeli oldalra: linkcél (URL) →
+    `page_id`, azokra a linkekre, amelyeknek nincs `to_page_id`-jük.
+
+    A webshop ugyanazt az oldalt kategóriaúttal bővített címen is linkeli
+    (`/hirek_1/<slug>`, `/kezmuves-szappanok/<slug>`), a készletben az oldal a `/<slug>` címen
+    áll (a bővített cím 200-as választ ad, a canonicalja a `/<slug>`; a sitemap-módú crawl a
+    bővített címet nem járja be, így a canonicalja nincs tárolva). A feloldás a tárolt címekből
+    készül: a cél lekérdezés nélküli útvonalának utolsó szegmense pontosan egy olyan készletbeli
+    oldal címe, amely ugyanazon a hoston a gyökér alatt, egyetlen szegmensből áll, és a cél
+    útvonala ennél hosszabb (üres szegmens nélkül: a dupla perjeles cím nem ilyen). A rögzített
+    két bolt felvételén a szabály minden találata egyezik a bővített cím canonicaljával
+    (napvirág 225, serafim 271 cím). Amit a szabály nem fed le (más szegmensű canonical), az
+    feloldatlan marad. A `links` tábla nem változik."""
+    slugs: dict[tuple[str, str], list[int]] = {}
+    for page in pages(con):
+        parts = urlsplit(page.url)
+        segments = parts.path.split("/")[1:]
+        if not parts.query and len(segments) == 1 and segments[0]:
+            slugs.setdefault((parts.netloc, segments[0]), []).append(page.page_id)
+    found: dict[str, int] = {}
+    for link in links(con):
+        if link.to_page_id is not None or link.to_url in found:
+            continue
+        parts = urlsplit(link.to_url)
+        segments = parts.path.split("/")[1:]
+        if parts.query or len(segments) < 2 or not all(segments):
+            continue
+        targets = slugs.get((parts.netloc, segments[-1]), [])
+        if len(targets) == 1:
+            found[link.to_url] = targets[0]
+    return found
 
 
 def json_ld(con: duckdb.DuckDBPyConnection) -> list[StructuredData]:

@@ -1058,6 +1058,48 @@ def heading_rows(pages: list[dict]) -> list[dict]:
     return rows
 
 
+PAGE_FACT_COLUMNS = ("státusz", "végső URL", "meta description", "noindex", "hreflang",
+                     "szószám", "külső linkek", "bejövő belső linkek", "hivatkozó oldalak",
+                     "kimenő belső linkek")
+
+
+def page_facts(con: duckdb.DuckDBPyConnection) -> dict[int, dict]:
+    """Oldalanként a crawl tényei az oldalnézethez (`PAGE_FACT_COLUMNS`), a crawl-modul
+    szerződésein át: státuszkód, végső URL, meta description, noindex, hreflang (nyelv|URL
+    párok), szószám, a külső linkek száma, a bejövő belső linkek száma (linksor), a
+    hivatkozó oldalak száma (különböző forrásoldalak; a menü miatt a linksor-szám sokszoros
+    lehet), és a kimenő belső linkek száma (linksor; a készleten kívüli belső cél is számít).
+    A cél a feloldott céloldal (`crawl.link_targets`: a kategóriaúttal bővített cím is a
+    készletbeli oldalnak számít); az oldal önmagára mutató linkjei kimaradnak. A nem tárolt
+    érték üres."""
+    hreflang = {meta.page_id: meta.hreflang for meta in crawl.page_metas(con)}
+    resolved = crawl.link_targets(con)
+    inbound: Counter[int] = Counter()
+    outbound: Counter[int] = Counter()
+    referrers: dict[int, set[int]] = defaultdict(set)
+    for link in crawl.links(con):
+        target = link.to_page_id if link.to_page_id is not None else resolved.get(link.to_url)
+        if target == link.from_page_id:
+            continue
+        outbound[link.from_page_id] += 1
+        if target is not None:
+            inbound[target] += 1
+            referrers[target].add(link.from_page_id)
+
+    def shown(value: object) -> object:
+        return "" if value is None else value
+
+    return {page.page_id: {
+        "státusz": shown(page.status), "végső URL": page.final_url or "",
+        "meta description": page.meta_description or "",
+        "noindex": "" if page.noindex is None else "igen" if page.noindex else "nem",
+        "hreflang": " | ".join(hreflang.get(page.page_id) or []),
+        "szószám": shown(page.word_count), "külső linkek": shown(page.external_link_count),
+        "bejövő belső linkek": inbound[page.page_id],
+        "hivatkozó oldalak": len(referrers[page.page_id]),
+        "kimenő belső linkek": outbound[page.page_id]} for page in crawl.pages(con)}
+
+
 def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
     """A három CSV-nézet sorai a `view_data` adataiból: site-áttekintő (típus és rang szerint),
     entitásonkénti szomszédság (rang szerint), oldalak (URL szerint)."""
@@ -1088,6 +1130,7 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
             "csak említő oldalak száma": len(only), "csak említő oldalak": " | ".join(only)})
     overview.sort(key=lambda r: (r["típus"], r["rang"]))
     pages = []
+    facts = page_facts(site.con)
     for page in page_rows:
         has_main = page["main_entity_id"] is not None
         pages.append({
@@ -1106,7 +1149,8 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
             "további említett entitások": "; ".join(
                 f"{m['entity']} ({m['weight']:g})" for m in page["other_mentions"]),
             "megállapítások": " || ".join(page["findings"]),
-            "jelzések": " || ".join(page["notes"])})
+            "jelzések": " || ".join(page["notes"]),
+            **facts.get(page["page_id"], dict.fromkeys(PAGE_FACT_COLUMNS, ""))})
     return overview, neighbourhood, pages
 
 
@@ -1159,7 +1203,8 @@ def export_views(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[s
         "pages": _write(out / f"{name}-view-pages.csv", pages, [
             "url", "szerep", "segédoldal", "nyelv", "canonical", "fő entitás", "típus",
             "megbízhatóság", "bizonyítékok", "másodlagos", "H1", "a H1-ben", "title",
-            "a title-ben", "további említett entitások", "megállapítások", "jelzések"]),
+            "a title-ben", "további említett entitások", "megállapítások", "jelzések",
+            *PAGE_FACT_COLUMNS]),
         "headings": _write(out / f"{name}-view-headings.csv",
                            heading_rows(list(trees.values())), [
             "url", "mélység", "szint", "heading", "entitások", "kapcsolat a fő entitáshoz",

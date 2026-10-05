@@ -37,6 +37,15 @@ TABLE_FIELDS = ("entity", "type", "subtype", "tier", "flags", "source", "pages",
                 "from_service_pages")
 
 
+# a CSV fejléce (a sorok kulcsai a kódban angolok maradnak)
+TABLE_HEADERS = {"entity": "entitás", "type": "típus", "subtype": "altípus", "tier": "szint",
+                 "flags": "jelzők", "source": "forrás", "pages": "oldalak",
+                 "mentions": "említések", "title": "title", "heading": "heading", "nav": "menü",
+                 "card": "kártya", "table_row": "táblázatsor", "anchor_page": "kötött oldal",
+                 "wikidata_qid": "Wikidata QID", "wikidata_status": "Wikidata státusz",
+                 "wikipedia": "Wikipedia", "from_service_pages": "szolgáltatásból lett fogalom"}
+
+
 def wikipedia_url(value: str | None) -> str:
     """`nyelv:cím` → a szócikk URL-je."""
     if not value:
@@ -85,9 +94,9 @@ def write_entity_table(con: duckdb.DuckDBPyConnection, path: Path) -> int:
     rows = entity_table(con)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8-sig", newline="") as handle:
-        writer = csv.DictWriter(handle, TABLE_FIELDS)
-        writer.writeheader()
-        writer.writerows(rows)
+        writer = csv.writer(handle)
+        writer.writerow([TABLE_HEADERS[field] for field in TABLE_FIELDS])
+        writer.writerows([[row[field] for field in TABLE_FIELDS] for row in rows])
     return len(rows)
 
 

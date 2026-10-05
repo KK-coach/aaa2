@@ -439,8 +439,8 @@ def test_entity_table_counts_pages_mentions_places_and_links(tmp_path):
     path = tmp_path / "out" / "t.csv"
     assert write_entity_table(con, path) == len(rows)
     with path.open(encoding="utf-8-sig", newline="") as handle:
-        assert next(csv.reader(handle))[:8] == ["entity", "type", "subtype", "tier", "flags",
-                                                "source", "pages", "mentions"]
+        assert next(csv.reader(handle))[:8] == ["entitás", "típus", "altípus", "szint", "jelzők",
+                                                "forrás", "oldalak", "említések"]
 
 
 def test_wikipedia_url():
