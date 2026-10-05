@@ -21,7 +21,7 @@
           "type": "integer"
         },
         "schema_version": {
-          "default": "1.5",
+          "default": "1.6",
           "title": "Schema Version",
           "type": "string"
         },
@@ -85,7 +85,7 @@
           "type": "array"
         },
         "schema_version": {
-          "default": "1.5",
+          "default": "1.6",
           "title": "Schema Version",
           "type": "string"
         },
@@ -182,7 +182,7 @@
           "title": "Recommendation"
         },
         "schema_version": {
-          "default": "1.5",
+          "default": "1.6",
           "title": "Schema Version",
           "type": "string"
         },
@@ -238,7 +238,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.5",
+          "default": "1.6",
           "title": "Schema Version",
           "type": "string"
         }
@@ -256,7 +256,7 @@
       "description": "Egy H1 a fő tartalmon kívül: `cookie` (cookie- vagy consent-elem), `dialog` (popup,\nmodális ablak), `chrome` (fejléc, menü, lábléc, oldalsáv).",
       "properties": {
         "schema_version": {
-          "default": "1.5",
+          "default": "1.6",
           "title": "Schema Version",
           "type": "string"
         },
@@ -325,7 +325,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.5",
+          "default": "1.6",
           "title": "Schema Version",
           "type": "string"
         },
@@ -375,7 +375,7 @@
           "type": "integer"
         },
         "schema_version": {
-          "default": "1.5",
+          "default": "1.6",
           "title": "Schema Version",
           "type": "string"
         },
@@ -593,7 +593,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.5",
+          "default": "1.6",
           "title": "Schema Version",
           "type": "string"
         },
@@ -679,7 +679,7 @@
       "type": "array"
     },
     "schema_version": {
-      "default": "1.5",
+      "default": "1.6",
       "title": "Schema Version",
       "type": "string"
     },
@@ -694,5 +694,5 @@
   "title": "SiteViews",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.5"
+  "x-schema-version": "1.6"
 }
