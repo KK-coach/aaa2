@@ -1,5 +1,5 @@
 {
- "status": "Claude verdiktje, 2026-10-03 (kilencedik kör: az üres szakasz a DOM szerint, az üres szakasz és a kihagyott szint szerep és szintminta szerint összevonva; független DOM-ellenőrzéssel); Krisztián jóváhagyására; 2026-10-04: az újraépített állapotra átállás tételei (3 új, 1 megszűnt)",
+ "status": "Claude verdiktje, 2026-10-03 (kilencedik kör: az üres szakasz a DOM szerint, az üres szakasz és a kihagyott szint szerep és szintminta szerint összevonva; független DOM-ellenőrzéssel); Krisztián jóváhagyására; 2026-10-04: az újraépített állapotra átállás tételei (3 új, 1 megszűnt); 2026-10-04: a jogi oldal, a hibás canonical és a bekezdés-heading tételei",
  "sites": {
   "kk-coach": {
    "h1_title_mismatch | Kiss Krisztián | https://kk.coach/about/": {
@@ -87,10 +87,10 @@
     "verdict": "valid",
     "note": "18 oldalon, 7 helyen headingben, saját cikk vagy szakasz nélkül; ugyanaz a téma, mint az angol „Artificial intelligence” tétel (a két nyelvi alak nem olvad össze)"
    },
-   "uncovered_topic | Stratégia": {
-    "summary": "Stratégia (concept/method): 3 oldalon szerepel, egyiknek sem fő entitása",
-    "verdict": "invalid",
-    "note": "egyszavas köznév; a kizárás a kisbetűs alakra épít, a név az átállás után nagybetűs („stratégia” → „Stratégia”)"
+   "canonical_issue | https://kk.coach/hu/": {
+    "summary": "hibás canonical (a cél nincs a készletben): https://kk.coach/hu/hu/",
+    "verdict": "valid",
+    "note": "a magyar kezdőoldal canonicalja a nem létező /hu/hu/ címre mutat"
    }
   },
   "marketinglens": {
@@ -219,11 +219,6 @@
     "verdict": "valid",
     "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
    },
-   "empty_section | https://marketinglens.com/digital-marketing-agency-contact/": {
-    "summary": "üres szakasz: H4: Operations Manager",
-    "verdict": "valid",
-    "note": "A megnevezett heading után a DOM-ban rögtön azonos vagy magasabb szintű heading jön, köztük nincs látható szöveg."
-   },
    "empty_section | https://marketinglens.com/digital-marketing-agency/": {
     "summary": "üres szakasz: H3: We are MarketingLens",
     "verdict": "valid",
@@ -236,11 +231,6 @@
    },
    "skipped_level | https://marketinglens.com/digital-marketing-agency/": {
     "summary": "kihagyott heading-szint: H3: Digital Marketing Agency; H4: BERTI B.; H4: BALAZS V. PH.D",
-    "verdict": "valid",
-    "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
-   },
-   "skipped_level | https://marketinglens.com/digital-marketing-agency-contact/": {
-    "summary": "kihagyott heading-szint: H3: Performance Marketing Experts in Digital Advertising, Data, and Strategy; H3: Book a Free Strategy Call",
     "verdict": "valid",
     "note": "A megnevezett heading szintje több mint eggyel mélyebb a DOM-ban előtte álló szülőjénél."
    },
@@ -311,8 +301,13 @@
    },
    "cannibalization | New Market Expansion | en": {
     "summary": "New Market Expansion: 2 oldal fő entitása, átfedő másodlagos entitással vagy hasonló title-lel (en)",
-    "verdict": "",
-    "note": ""
+    "verdict": "invalid",
+    "note": "hub és kifejtő oldal: az ajánlatoldal és az azt kifejtő cikk nem verseng (Krisztián, 2026-10-05)"
+   },
+   "canonical_issue | https://marketinglens.com/business-to-business/dubai-digital-marketing-agency/": {
+    "summary": "hibás canonical (a cél nincs a készletben): https://marketinglens.com/digital-marketing-agency-uae/",
+    "verdict": "valid",
+    "note": "a canonical cél (/digital-marketing-agency-uae/) visszairányít magára az oldalra (Krisztián, 2026-10-05)"
    }
   },
   "duex": {

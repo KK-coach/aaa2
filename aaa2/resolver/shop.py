@@ -55,6 +55,7 @@ from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
 from aaa2.db.stable_json import dumps
+from aaa2.engine import queries as crawl
 from aaa2.entities import queries as extract_queries
 from aaa2.entities import store
 from aaa2.entities.rules import alias_key
@@ -248,14 +249,29 @@ def run_shop(ctx: _Context, merger: Merger, config: SiteConfig) -> ShopRun:
     roots = {key for key in category_groups
              if len(category_groups) > 1 and all(key in a for a, info in zip(
                  ancestors, pages_of["category"], strict=True) if page_url(info.url) != key)}
+    menu_anchors: dict[int, Counter] = defaultdict(Counter)       # oldal → menü-anchorok
+    for link in crawl.links(ctx.con):
+        if link.position == "nav" and link.to_page_id is not None and (link.anchor or "").strip():
+            menu_anchors[link.to_page_id][link.anchor.strip()] += 1
     category_ids: dict[str, int] = {}
     for key, members in sorted(category_groups.items()):
         if key in roots:
             continue
         rep = min(members, key=lambda m: m.page_id)
         trail = trails.get(rep.page_id, [])
-        canonical = (rep.h1 or (trail[-1][0] if trail else "") or rep.url).strip()
-        names = [Name(canonical, "h1", rep.lang)]
+        # a név a morzsamenü utolsó eleméből (ha az oldalt nevezi meg), különben a kategóriára
+        # mutató leggyakoribb menü-anchorból; a H1 végső tartalék (gyakran szlogen)
+        crumb = trail[-1][0].strip() if trail and (
+            not trail[-1][1] or page_url(trail[-1][1]) == key) else ""
+        anchors = Counter()
+        for info in members:
+            anchors.update(menu_anchors.get(info.page_id, {}))
+        menu = min(anchors, key=lambda a: (-anchors[a], len(a), a)) if anchors else ""
+        h1 = (rep.h1 or "").strip()
+        canonical = crumb or menu or h1 or rep.url
+        names = [Name(canonical, "nav" if canonical in (crumb, menu) else "h1", rep.lang)]
+        if h1 and h1 != canonical:
+            names.append(Name(h1, "h1", rep.lang))
         names += [Name(n, "nav", rep.lang) for trail in trails.values() for n, u in trail
                   if u and page_url(u) == key and n != canonical]
         entity_id = _anchored_entity(ctx, merger, members, "concept", "category", canonical,

@@ -350,32 +350,30 @@ def test_canonical_duplicates_inherit_the_original_and_broken_canonicals_do_not_
     con = business_site()
     run_rules(con)
     run_site(con, clock=lambda: NOON)
-    canonical = {"https://pelda.hu/blog/cikk/": "https://pelda.hu/hu/meres/",
-                 "https://pelda.hu/adatvedelem/": "/blog/cikk/",          # lánc, relatív
+    canonical = {"https://pelda.hu/adatvedelem/": "/kapcsolat/",           # relatív, azonos szerep
+                 "https://pelda.hu/blog/cikk/": "https://pelda.hu/hu/meres/",   # más szerep
                  "https://pelda.hu/kapcsolat/": "https://pelda.hu/nincs/",
                  "https://pelda.hu/": "https://pelda.hu"}                  # önmaga
     for url, target in canonical.items():
         con.execute("UPDATE pages SET canonical = ? WHERE url = ?", [target, url])
     run = build_graph(con)
-    assert (run.duplicates, dict(run.canonical_issues)) == (2, {"not_crawled": 1})
+    assert (run.duplicates, dict(run.canonical_issues)) == (
+        1, {"not_crawled": 1, "other_type": 1})
     rows = {url: rest for url, *rest in con.execute(
         "SELECT p.url, o.url, p.role, p.main_status, p.group_key = o.group_key, "
         "p.canonical_issue FROM page_nodes p LEFT JOIN page_nodes o "
         "ON o.page_id = p.canonical_page ORDER BY p.url").fetchall()}
-    meres = "https://pelda.hu/hu/meres/"
-    assert rows["https://pelda.hu/blog/cikk/"] == [meres, "offer", "main", True, None]
-    assert rows["https://pelda.hu/adatvedelem/"] == [meres, "offer", "main", True, None]
-    assert rows["https://pelda.hu/kapcsolat/"] == [None, "support", "support", None,
-                                                   "not_crawled"]
+    kapcsolat = "https://pelda.hu/kapcsolat/"
+    # a duplikátum a cél oldalcsoportjába tartozik, és a cél döntését örökli
+    assert rows["https://pelda.hu/adatvedelem/"] == [kapcsolat, "support", "support", True, None]
+    # a más szerepű oldalra mutató canonical nem számít: az oldal külön marad
+    assert rows["https://pelda.hu/blog/cikk/"] == [None, "article", "main", None, "other_type"]
+    assert rows[kapcsolat] == [None, "support", "support", None, "not_crawled"]
     assert rows["https://pelda.hu/"][0] is None and rows["https://pelda.hu/"][4] is None
-    got = {r[0]: r for r in chosen(con) if r[2] == "main"}
-    assert got["https://pelda.hu/blog/cikk/"][1:4] == got[meres][1:4]
-    assert run.edges["duplicate_of"] == 2 and run.edges["about"] == 0
+    assert run.edges["duplicate_of"] == 1
     assert con.execute("SELECT count(*) FROM edges WHERE type = 'main_entity' AND from_id IN "
                        "(SELECT page_id FROM page_nodes WHERE canonical_page IS NOT NULL)"
                        ).fetchone() == (0,)
-    assert con.execute("SELECT main_pages FROM entity_weights JOIN entities USING (entity_id) "
-                       "WHERE name = 'Mérés'").fetchone() == (2,)     # a duplikátum nem számít
 
 
 def test_a_canonical_loop_does_not_count():

@@ -81,6 +81,15 @@ def update_entity_runs_in_refresh(con: duckdb.DuckDBPyConnection, pages_with, en
         "by_position = ? WHERE run_id = ?", [pages_with, entities, rows, positions, run_id])
 
 
+def lowercase_word_entities(con: duckdb.DuckDBPyConnection) -> list[tuple]:
+    """Lekérdezés: page_entities, entities. Hívja: functions/findings.py: _Site.__init__."""
+    return con.execute(
+        "SELECT DISTINCT entity_id FROM page_entities WHERE surface_form = lower(surface_form) "
+        "AND surface_form NOT LIKE '% %' AND surface_form <> upper(surface_form) UNION "
+        "SELECT entity_id FROM entities, unnest(aliases) AS a(alias) WHERE alias = lower(alias) "
+        "AND alias NOT LIKE '% %' AND alias <> upper(alias) ORDER BY 1").fetchall()
+
+
 def delete_mention_sources_in_store(con: duckdb.DuckDBPyConnection, page_id, value):
     """Törlés: mention_sources, page_entities. Hívja: entities/extract.py: store."""
     con.execute(
