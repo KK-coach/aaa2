@@ -6,7 +6,13 @@ import json
 import pytest
 
 from aaa2.entities.rules import run_rules
-from aaa2.functions.findings import build_findings, exclusion, loosely_named, product_title
+from aaa2.functions.findings import (
+    build_findings,
+    exclusion,
+    loosely_named,
+    product_title,
+    shares_word,
+)
 from aaa2.functions.graph import _Graph, build_graph
 from aaa2.resolver import overrides
 from aaa2.resolver.pages import (
@@ -73,8 +79,8 @@ def shop():
                                     "/levendula-szappan-100g"),
         "/index.php?route=product/list&special=1": listing("Akciók", "special-list-body"),
         "/hibabejelentes_8": page("Hibabejelentés", "<main><h1>Hibabejelentés</h1></main>"),
-        "/megszunt-kategoria": page("A keresett oldal nem található", "<main><h1>A keresett "
-                                    "oldal nem található</h1></main>", "not_found_body"),
+        "/megszunt-kategoria": page("Hoppá", "<main><h1>Hoppá</h1></main>", "not_found_body"),
+        "/regi-oldal": page("A keresett oldal nem található", "<main><h1>Keresés</h1></main>"),
         "/levendula-szappan-100g": product(
             "Levendula szappan 100g", "/levendula-szappan-100g",
             extra=f"<h4>{LONG}</h4><h4>Tárolás</h4><p>Száraz helyen.</p>"),
@@ -161,8 +167,9 @@ def test_category_legal_and_helper_pages_get_the_right_main_entity():
     # a 200-as „nem található” oldal nem kap fő entitást; egy közepes megállapítás sorolja fel
     assert nodes["/megszunt-kategoria"][1:] == ["placeholder", "support", None]
     soft = [f for f in found if f[0] == "soft_404"]
+    # a platform jele és a title / H1 szövege egyaránt felismeri
     assert [(f[1], [p["url"].removeprefix(BASE) for p in f[3]["pages"]]) for f in soft] == [
-        ("medium", ["/megszunt-kategoria"])]
+        ("medium", ["/megszunt-kategoria", "/regi-oldal"])]
     # a jogi oldalnak nincs fő entitása
     for path in ("/altalanos-szerzodesi-feltetelek", "/adatvedelmi_nyilatkozat_3",
                  "/garancia_7"):
@@ -217,6 +224,13 @@ def test_a_product_title_with_the_headword_and_the_size_is_not_a_mismatch():
     assert loosely_named(["Fürdőtejek"], "fürdőtej") and loosely_named(
         ["Szilárd Sampon"], "Hajsampon, szilárd samponok")
     assert not loosely_named(["Bőrtípus szerint"], "Keress bőrtípusod szerint")
+    # a kategóriaoldal title-jének elég a név egy tartalmas szava, szótő szerint
+    assert shares_word(["Kéz- és lábápolók"], "Kézkrémek, lábkrémek")
+    assert shares_word(["Citrusos illatú illóolajok"], "Citrusos illat - 100%-os illóolaj")
+    assert not shares_word(["Zero Waste eszközök"], "Kiegészítő termékek")
+    # a kategóriaoldal eltérése közepes súlyosságú (a H1 szlogen, a title nem nevezi meg)
+    assert [f[1] for f in found if f[0] == "h1_title_mismatch"
+            and "/bortipus" in json.dumps(f[3])] == ["medium"]
 
 
 def test_a_long_empty_heading_is_a_paragraph_marked_as_a_heading():

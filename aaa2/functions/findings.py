@@ -119,6 +119,8 @@ TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés", "cannibalization": "Ka
                "soft_404": "Nem található oldal 200-as státusszal"}
 # többes szám jele a kulcsban (ékezet nélkül): a kategória neve és a H1 / title összevetéséhez
 PLURAL_ENDINGS = frozenset({"k", "ok", "ek", "ak", "s", "es"})
+CONTENT_WORD_CHARS = 3                  # ennél rövidebb szó nem tartalmas
+FILLER_WORDS = frozenset({"the", "for", "egy", "csak", "meg", "nem", "mint"})
 # a jogi fajták, amelyek jellemzően az ÁSZF részei: ha az ÁSZF szövege külső keretben
 # (iframe) áll, a hiányuk nem állapítható meg
 EMBEDDED_KINDS = frozenset({"withdrawal", "shipping_payment", "warranty"})
@@ -305,7 +307,8 @@ class _Site:
             in_title = product_title(page["h1"] or self.name(main[0]), page["title"])
         if page["role"] == "category":         # a többes számtól függetlenül
             in_h1 = in_h1 or loosely_named(forms, page["h1"])
-            in_title = in_title or loosely_named(forms, page["title"])
+            # a title-nek elég a név egy tartalmas szava (a title gyakran kulcsszavak sora)
+            in_title = in_title or shares_word(forms, page["title"])
         return in_h1, in_title, forms
 
     def naming_forms(self, entity_id: int, page: dict) -> list[str]:
@@ -376,6 +379,21 @@ def loosely_named(forms: list[str], text: str | None) -> bool:
                for tokens in (_tokens(form) for form in forms))
 
 
+def shares_word(forms: list[str], text: str | None) -> bool:
+    """A szöveg tartalmazza-e valamelyik alak legalább egy tartalmas szavát (legalább
+    `CONTENT_WORD_CHARS` jel, nem töltelékszó) szótő szerint: egyes vagy többes számban
+    (`PLURAL_ENDINGS`), vagy az egyik szó a másik eleje (összetett szó előtagja, ragozott
+    alak: „kéz” ↔ „kézkrémek”, „illatú” ↔ „illat”)."""
+    words = [w for w in _tokens(text or "") if len(w) >= CONTENT_WORD_CHARS]
+    for form in forms:
+        for token in _tokens(form):
+            if len(token) < CONTENT_WORD_CHARS or token in FILLER_WORDS:
+                continue
+            if any(word.startswith(token) or token.startswith(word) for word in words):
+                return True
+    return False
+
+
 def product_title(name: str | None, title: str | None) -> bool:
     """Termékoldalon a title megnevezi-e a terméket szó szerinti egyezés nélkül: benne áll a
     név fejszava (az első szó) és minden kiszerelése (`QUANTITY`: „90g”, „50 ml”, „2*25g”); a
@@ -429,7 +447,8 @@ def _mismatches(site: _Site) -> list[tuple]:
             (not in_title, "a fő entitás nincs a title-ben")) if flag]
         if not problems:                       # a H1 hiánya a `missing_h1` megállapítás
             continue
-        severity = "high" if not in_title else "medium"
+        # kategóriaoldalon a név a morzsamenüből jön, az eltérés ott mindig közepes
+        severity = "high" if not in_title and page["role"] != "category" else "medium"
         records.append((severity, page, entity_id,
                         {"url": page["url"], "main_entity": site.name(entity_id),
                          "confidence": main[2], "h1": page["h1"], "title": page["title"],

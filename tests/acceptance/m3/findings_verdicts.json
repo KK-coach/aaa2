@@ -301,13 +301,13 @@
    },
    "cannibalization | New Market Expansion | en": {
     "summary": "New Market Expansion: 2 oldal fő entitása, átfedő másodlagos entitással vagy hasonló title-lel (en)",
-    "verdict": "",
-    "note": ""
+    "verdict": "invalid",
+    "note": "hub és kifejtő oldal: az ajánlatoldal és az azt kifejtő cikk nem verseng (Krisztián, 2026-10-05)"
    },
    "canonical_issue | https://marketinglens.com/business-to-business/dubai-digital-marketing-agency/": {
     "summary": "hibás canonical (a cél nincs a készletben): https://marketinglens.com/digital-marketing-agency-uae/",
-    "verdict": "",
-    "note": ""
+    "verdict": "valid",
+    "note": "a canonical cél (/digital-marketing-agency-uae/) visszairányít magára az oldalra (Krisztián, 2026-10-05)"
    }
   },
   "duex": {

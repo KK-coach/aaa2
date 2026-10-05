@@ -94,6 +94,8 @@ HELPER_SLUGS = frozenset({"sitemap", "oldalterkep", "information/sitemap", "hiba
 # Platformszabály: a Shoprenter a `<body>` osztályával jelöli az oldal fajtáját.
 SHOPRENTER_BODY = {"not_found_body": "not_found", "category-list-body": "category",
                    "special-list-body": "list", "latest-list-body": "list"}
+# Platformfüggetlen jel a 200-as „nem található” oldalra: a title vagy a H1 szövege.
+NOT_FOUND_TEXT = re.compile(r"nem található|not found|\b404\b", re.IGNORECASE)
 BODY_CLASS = re.compile(r"<body\b[^>]*\bclass=[\"']([^\"']*)[\"']", re.IGNORECASE)
 NAV_POSITIONS = ("nav", "aside", "footer")
 PAGE_TYPES = ("product", "category", "brand_category", "list", "not_found", "blog",
@@ -279,7 +281,9 @@ def page_types(con: duckdb.DuckDBPyConnection,
 
     1. a site-fájl `[page_types]` mintái (típus → regexek a normalizált URL-re, `re.search`),
        a `PAGE_TYPES` sorrendjében; a site szerkezetéből, pl. a márka × kategória oldal;
-    2. segédlista az URL szerint (`helper_list`: oldaltérkép, hibabejelentés, akciós lista) →
+    2. a 200-as „nem található” oldal a title vagy a H1 szövegéből (`NOT_FOUND_TEXT`: „nem
+       található”, „not found”, „404”) → not_found;
+    2b. segédlista az URL szerint (`helper_list`: oldaltérkép, hibabejelentés, akciós lista) →
        list;
     3. a webshop-platform jele (`platform_types`): kategória, segédlista vagy nem található
        oldal (not_found: nincs fő entitása); a kategóriaoldal,
@@ -294,10 +298,14 @@ def page_types(con: duckdb.DuckDBPyConnection,
                 for kind in PAGE_TYPES}
     nodes = schema_nodes(con)
     found: dict[int, str] = {}
-    rendered = [(page.page_id, page.url) for page in crawl.rendered_pages(con)]
-    platform = platform_types(con, [page_id for page_id, _ in rendered])
-    for page_id, url in rendered:
+    rendered = [(page.page_id, page.url, page.title, page.h1)
+                for page in crawl.rendered_pages(con)]
+    platform = platform_types(con, [row[0] for row in rendered])
+    for page_id, url, title, h1 in rendered:
         kind = next((k for k in PAGE_TYPES if any(p.search(url) for p in compiled[k])), None)
+        if kind is None and (NOT_FOUND_TEXT.search(title or "")
+                             or NOT_FOUND_TEXT.search(h1 or "")):
+            kind = "not_found"
         if kind is None and helper_list(url):
             kind = "list"
         if kind is None and page_id in platform:
