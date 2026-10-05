@@ -1059,24 +1059,32 @@ def heading_rows(pages: list[dict]) -> list[dict]:
 
 
 PAGE_FACT_COLUMNS = ("státusz", "végső URL", "meta description", "noindex", "hreflang",
-                     "szószám", "külső linkek", "bejövő belső linkek", "kimenő belső linkek")
+                     "szószám", "külső linkek", "bejövő belső linkek", "hivatkozó oldalak",
+                     "kimenő belső linkek")
 
 
 def page_facts(con: duckdb.DuckDBPyConnection) -> dict[int, dict]:
     """Oldalanként a crawl tényei az oldalnézethez (`PAGE_FACT_COLUMNS`), a crawl-modul
     szerződésein át: státuszkód, végső URL, meta description, noindex, hreflang (nyelv|URL
-    párok), szószám, a külső linkek száma, és a bejövő / kimenő belső linkek száma (linksor,
-    az oldal önmagára mutató linkjei nélkül; a kimenőben a készleten kívüli belső cél is
-    számít). A nem tárolt érték üres."""
+    párok), szószám, a külső linkek száma, a bejövő belső linkek száma (linksor), a
+    hivatkozó oldalak száma (különböző forrásoldalak; a menü miatt a linksor-szám sokszoros
+    lehet), és a kimenő belső linkek száma (linksor; a készleten kívüli belső cél is számít).
+    A cél a feloldott céloldal (`crawl.link_targets`: a kategóriaúttal bővített cím is a
+    készletbeli oldalnak számít); az oldal önmagára mutató linkjei kimaradnak. A nem tárolt
+    érték üres."""
     hreflang = {meta.page_id: meta.hreflang for meta in crawl.page_metas(con)}
+    resolved = crawl.link_targets(con)
     inbound: Counter[int] = Counter()
     outbound: Counter[int] = Counter()
+    referrers: dict[int, set[int]] = defaultdict(set)
     for link in crawl.links(con):
-        if link.to_page_id == link.from_page_id:
+        target = link.to_page_id if link.to_page_id is not None else resolved.get(link.to_url)
+        if target == link.from_page_id:
             continue
         outbound[link.from_page_id] += 1
-        if link.to_page_id is not None:
-            inbound[link.to_page_id] += 1
+        if target is not None:
+            inbound[target] += 1
+            referrers[target].add(link.from_page_id)
 
     def shown(value: object) -> object:
         return "" if value is None else value
@@ -1088,6 +1096,7 @@ def page_facts(con: duckdb.DuckDBPyConnection) -> dict[int, dict]:
         "hreflang": " | ".join(hreflang.get(page.page_id) or []),
         "szószám": shown(page.word_count), "külső linkek": shown(page.external_link_count),
         "bejövő belső linkek": inbound[page.page_id],
+        "hivatkozó oldalak": len(referrers[page.page_id]),
         "kimenő belső linkek": outbound[page.page_id]} for page in crawl.pages(con)}
 
 

@@ -20,8 +20,10 @@ def facts_site():
                   "<a href='/nincs/'>egy hiányzó oldal</a>.</p></main>",
                   head=ld({"@type": "Organization", "name": "Pelda", "url": f"{BASE}/"})),
         "/meres/": html("Mérés · Pelda", "<main><h1>Mérés</h1><p>Szöveg. <a href='/'>Vissza</a>"
-                        "</p></main>", head=ld({"@type": "Service", "name": "Mérés",
-                                                "url": f"{BASE}/meres/"}))})
+                        " és <a href='/blog/szappan-100g'>a szappan</a>, <a "
+                        "href='/akcio/szappan-100g'>akcióban</a>.</p></main>",
+                        head=ld({"@type": "Service", "name": "Mérés", "url": f"{BASE}/meres/"})),
+        "/szappan-100g": html("Szappan", "<main><h1>Szappan</h1><p>Leírás.</p></main>")})
     con.execute("UPDATE pages SET meta_description = 'A mérésről szól.', word_count = 42, "
                 "external_link_count = 3, noindex = false, final_url = url, "
                 "hreflang = ['hu|https://pelda.hu/meres/', 'en|https://pelda.hu/en/measurement/'] "
@@ -36,14 +38,45 @@ def facts_site():
 
 def test_link_rows_carry_the_anchor_position_and_nofollow():
     rows = link_rows(facts_site())
-    assert list(rows[0]) == ["honnan", "hová", "horgonyszöveg", "pozíció", "nofollow"]
-    assert {"honnan": f"{BASE}/", "hová": f"{BASE}/meres/", "horgonyszöveg": "A mérésről",
-            "pozíció": "body", "nofollow": "igen"} in rows
-    assert {"honnan": f"{BASE}/", "hová": f"{BASE}/meres/", "horgonyszöveg": "Mérés",
-            "pozíció": "nav", "nofollow": "nem"} in rows
-    # a készleten kívüli belső cél is sor
-    assert any(row["hová"] == f"{BASE}/nincs/" for row in rows)
+    assert list(rows[0]) == ["honnan", "hová", "feloldott céloldal", "horgonyszöveg",
+                             "pozíció", "nofollow"]
+    target = f"{BASE}/meres/"
+    assert {"honnan": f"{BASE}/", "hová": target, "feloldott céloldal": target,
+            "horgonyszöveg": "A mérésről", "pozíció": "body", "nofollow": "igen"} in rows
+    assert {"honnan": f"{BASE}/", "hová": target, "feloldott céloldal": target,
+            "horgonyszöveg": "Mérés", "pozíció": "nav", "nofollow": "nem"} in rows
+    # a készleten kívüli belső cél is sor, feloldott céloldal nélkül
+    missing = next(row for row in rows if row["hová"] == f"{BASE}/nincs/")
+    assert missing["feloldott céloldal"] == ""
+    # a kategóriaúttal bővített cím a készletbeli oldalra oldódik fel; a „hová” az eredeti cél
+    variants = {row["hová"]: row["feloldott céloldal"] for row in rows
+                if row["hová"].endswith("/szappan-100g")}
+    assert variants == {f"{BASE}/blog/szappan-100g": f"{BASE}/szappan-100g",
+                        f"{BASE}/akcio/szappan-100g": f"{BASE}/szappan-100g"}
     assert [row["honnan"] for row in rows] == sorted(row["honnan"] for row in rows)
+
+
+def test_a_nofollow_that_was_not_stored_stays_empty():
+    con = facts_site()
+    con.execute("UPDATE links SET nofollow = NULL WHERE anchor = 'Vissza'")
+    assert next(row for row in link_rows(con) if row["horgonyszöveg"] == "Vissza")[
+        "nofollow"] == ""
+
+
+def test_link_targets_resolve_only_unambiguous_root_level_slugs():
+    from aaa2.engine import queries as crawl
+
+    con = facts_site()
+    ids = dict(con.execute("SELECT url, page_id FROM pages").fetchall())
+    assert crawl.link_targets(con) == {
+        f"{BASE}/blog/szappan-100g": ids[f"{BASE}/szappan-100g"],
+        f"{BASE}/akcio/szappan-100g": ids[f"{BASE}/szappan-100g"]}
+    # dupla perjeles cím, lekérdezéses cím és több szegmensű készletbeli oldal nem oldódik fel
+    for url in (f"{BASE}//szappan-100g", f"{BASE}/blog/szappan-100g?szin=kek",
+                f"{BASE}/hu/valami/meres"):
+        con.execute("INSERT INTO links (from_page_id, to_url, to_page_id, anchor, position, "
+                    "ordinal) VALUES (1, ?, NULL, 'x', 'body', 90)", [url])
+    assert len(crawl.link_targets(con)) == 2
 
 
 def test_structured_rows_list_the_stored_items_without_judging_them():
@@ -64,7 +97,7 @@ def test_site_facts_are_key_value_rows_and_missing_values_stay_empty():
     assert facts["technológia"] == "" and facts["technológiai jelek"] == "generator:WordPress 7"
     assert facts["HTTPS-átirányítás"] == "igen (301)" and facts["záró perjel"] == "igen"
     assert facts["robots.txt státusz"] == 200 and facts["robots.txt"] == "User-agent: *"
-    assert facts["oldalak száma"] == 2 and facts["oldalak státusz szerint: 200"] == 2
+    assert facts["oldalak száma"] == 3 and facts["oldalak státusz szerint: 200"] == 3
 
 
 def test_page_facts_and_the_page_view_columns(tmp_path):
@@ -75,9 +108,12 @@ def test_page_facts_and_the_page_view_columns(tmp_path):
         "státusz": 200, "végső URL": f"{BASE}/meres/", "meta description": "A mérésről szól.",
         "noindex": "nem", "szószám": 42, "külső linkek": 3,
         "hreflang": "hu|https://pelda.hu/meres/ | en|https://pelda.hu/en/measurement/",
-        "bejövő belső linkek": 2, "kimenő belső linkek": 1}
+        "bejövő belső linkek": 2, "hivatkozó oldalak": 1, "kimenő belső linkek": 3}
     # a kezdőoldalról három link megy ki (kettő a mérésre, egy a hiányzó oldalra)
     assert facts[ids[f"{BASE}/"]]["kimenő belső linkek"] == 3
+    # a kategóriaúttal bővített címen érkező két link a készletbeli oldalé, egy forrásoldalról
+    szappan = facts[ids[f"{BASE}/szappan-100g"]]
+    assert (szappan["bejövő belső linkek"], szappan["hivatkozó oldalak"]) == (2, 1)
     run_rules(con)
     run_site(con, clock=lambda: NOON)
     build_graph(con)
