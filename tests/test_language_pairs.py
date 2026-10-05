@@ -126,3 +126,61 @@ def test_the_home_pages_of_a_pair_keep_their_own_topics():
     topic(con, "/en/", "Organic growth consulting", "concept")
     run_site(con, clock=lambda: NOON)
     assert merges(con) == []
+
+
+def exported(con, tmp_path):
+    """A gráf és a nézetek CSV-kimenete: fájlkulcs → sorok."""
+    import csv
+
+    from aaa2.functions.findings import build_findings, export_views
+    from aaa2.functions.graph import build_graph, export_csv
+
+    build_graph(con)
+    build_findings(con)
+    paths = {**export_csv(con, tmp_path, "pelda"), **export_views(con, tmp_path, "pelda")}
+    found = {}
+    for key, path in paths.items():
+        if path.suffix == ".csv":
+            with path.open(encoding="utf-8-sig", newline="") as handle:
+                found[key] = list(csv.DictReader(handle))
+    return found
+
+
+def test_page_outputs_show_the_name_in_the_language_of_the_page(tmp_path):
+    con = pair_site({
+        "/hu/blog/serp/": page("hu", "Saját mérőeszköz", "<p>A SERP-figyelő naponta mér.</p>"),
+        "/en/blog/serp/": page("en", "My own tool", "<p>The SERP tracker measures daily.</p>"),
+    }, [{"hu": "/hu/blog/serp/", "en": "/en/blog/serp/"}])
+    topic(con, "/hu/blog/serp/", "SERP-figyelő", "tech", "software")
+    topic(con, "/en/blog/serp/", "SERP tracker", "tech", "software")
+    run_site(con, clock=lambda: NOON)
+    out = exported(con, tmp_path)
+    # oldalszinten: a magyar (elsődleges nyelvű) oldalon a megtartott név, az angolon az angol
+    for key in ("main_entity", "pages"):
+        names = {row["url"]: row["fő entitás"] for row in out[key]}
+        assert names[f"{BASE}/hu/blog/serp/"] == "SERP-figyelő", key
+        assert names[f"{BASE}/en/blog/serp/"] == "SERP tracker", key
+    # site-szinten a megtartott név marad, a másik nyelvű név külön oszlopban, forrással
+    for key in ("weights", "site", "entities"):
+        row = next(row for row in out[key] if row["entitás"] == "SERP-figyelő")
+        assert row["más nyelvű nevek"] == "en: SERP tracker (hreflang)", key
+        assert not any(row["entitás"] == "SERP tracker" for row in out[key]), key
+
+
+def test_other_language_labels_of_a_page_entity_are_listed_but_never_shown(tmp_path):
+    # az ajánlatoldal angol H1-e és title-je `hreflang` forrású alias, de nem a nyelvi
+    # összevonásból jön: az angol oldalon is a megtartott név áll, a címkék csak az oszlopban
+    from tests.test_entities_site import business_site
+
+    con = business_site()
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    kept, = con.execute("SELECT e.name FROM entities e JOIN pages p ON p.page_id = "
+                        "e.anchor_page_id WHERE p.url LIKE '%/meres/'").fetchone()
+    assert con.execute("SELECT count(*) FROM entity_aliases WHERE source = 'hreflang' AND "
+                       "lang = 'en'").fetchone()[0] > 0
+    out = exported(con, tmp_path)
+    names = {row["url"]: row["fő entitás"] for row in out["pages"]}
+    assert names[f"{BASE}/en/measurement/"] == names[f"{BASE}/hu/meres/"] == kept
+    row = next(row for row in out["site"] if row["entitás"] == kept)
+    assert "(hreflang)" in row["más nyelvű nevek"] and row["más nyelvű nevek"].startswith("en: ")

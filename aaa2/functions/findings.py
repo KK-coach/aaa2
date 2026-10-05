@@ -82,7 +82,7 @@ import json
 import math
 import re
 from collections import Counter, defaultdict
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from itertools import combinations
 from pathlib import Path
@@ -101,6 +101,7 @@ from aaa2.functions import graph_queries
 from aaa2.functions import headings as heading_tree
 from aaa2.functions.graph import evidence_text
 from aaa2.resolver import queries as resolver_queries
+from aaa2.resolver.display import OTHER_NAMES_COLUMN, DisplayNames
 from aaa2.resolver.names import normal_key
 from aaa2.resolver.overrides import load_site_config, site_domain
 from aaa2.resolver.pages import LEGAL_KINDS, canonical_key, legal_kind, page_types
@@ -266,6 +267,7 @@ class _Site:
             self.mention_edges[edge.from_id].append(
                 (edge.to_id, edge.weight or 0.0, edge.evidence))
         self._headings: dict[int, dict] | None = None
+        self.display = DisplayNames(con)
 
     @property
     def headings(self) -> dict[int, dict]:
@@ -278,6 +280,11 @@ class _Site:
 
     def name(self, entity_id: int) -> str:
         return self.entities[entity_id]["name"]
+
+    def shown(self, entity_id: int, page: Mapping) -> str:
+        """Az entitás neve az oldal kimenetében: az oldal nyelvén, ha van ilyen neve a nyelvi
+        összevonásból (`display.DisplayNames.on_page`), különben a megtartott név."""
+        return self.display.on_page(entity_id, self.name(entity_id), page["lang"])
 
     def kind(self, entity_id: int) -> str:
         entity = self.entities[entity_id]
@@ -930,7 +937,9 @@ def view_data(site: _Site) -> tuple[list[dict], list[dict]]:
     említő oldalak; oldalanként (URL szerint): a szerep, a canonical-döntés, a fő entitás a
     bizonyítékaival, a másodlagos entitások, a H1 és a title megnevezése, a további említett
     entitások a súlyukkal és az oldal megállapításai. A CSV- és HTML-nézetek és a JSON-szerződés
-    ebből készül."""
+    ebből készül. Az entitásoknál a megtartott név áll, a többi nyelvű név külön
+    (`other_names`); az oldalaknál az entitások neve az oldal nyelvén (`_Site.shown`). A
+    megállapítások szövege a megtartott nevet használja."""
     relations = _relations(site)
     main_pages: dict[int, list[str]] = defaultdict(list)
     for page in site.nodes():
@@ -963,7 +972,8 @@ def view_data(site: _Site) -> tuple[list[dict], list[dict]]:
                           for kind, direction, other in relations.get(entity_id, [])],
             "main_pages": sorted(main_pages[entity_id]),
             "mention_only_pages": sorted(set(mention_pages[entity_id])
-                                         - set(main_pages[entity_id]))})
+                                         - set(main_pages[entity_id])),
+            "other_names": site.display.other_names(entity_id)})
     pages = []
     for page in sorted(site.pages.values(), key=lambda p: p["url"]):
         chosen = site.chosen.get(page["page_id"], [])
@@ -977,20 +987,22 @@ def view_data(site: _Site) -> tuple[list[dict], list[dict]]:
             "duplicate_of": site.pages[page["canonical"]]["url"] if duplicate else None,
             "canonical_issue": page["issue"],
             "main_entity_id": main[0] if main else None,
-            "main_entity": site.name(main[0]) if main else None,
+            "main_entity": site.shown(main[0], page) if main else None,
             "main_entity_type": site.kind(main[0]) if main else None,
             "confidence": main[2] if main else None,
             "evidence": main[3] if main else None,
             "evidence_text": evidence_text(main[3]) if main else None,
-            "secondary": [site.name(c[0]) for c in chosen if c[1] == "secondary"],
+            "secondary": [site.shown(c[0], page) for c in chosen if c[1] == "secondary"],
             "h1": page["h1"], "in_h1": in_h1 if main else None,
             "title": page["title"], "in_title": in_title if main else None,
-            "other_mentions": [{"entity_id": e, "entity": site.name(e), "weight": w}
+            "other_mentions": [{"entity_id": e, "entity": site.shown(e, page), "weight": w}
                                for e, w, _ in site.mention_edges[page["page_id"]]
                                if e not in picked and w > 0][:PAGE_MENTIONS],
             "findings": [] if duplicate else list(by_url[page["url"]]),
             "notes": [] if duplicate else page_notes(page),
-            **_heading_view(site.headings.get(page["page_id"]))})
+            **_heading_view(site.headings.get(page["page_id"]),
+                            lambda entity, page=page: site.shown(entity["entity_id"], page)
+                            if entity["entity_id"] in site.entities else entity["entity"])})
     return entities, pages
 
 
@@ -1006,15 +1018,17 @@ def page_notes(page: Mapping) -> list[str]:
     return notes
 
 
-def _heading_view(data: dict | None) -> dict:
+def _heading_view(data: dict | None, shown: Callable[[dict], str] | None = None) -> dict:
     """Az oldal heading-fája a nézethez: a fa (`headings`), a fő tartalmon kívüli H1-ek
-    (`h1_outside`) és a több H1 megítélése (`h1_justified`)."""
+    (`h1_outside`) és a több H1 megítélése (`h1_justified`). `shown`: a heading entitásának
+    megjelenített neve (az oldal nyelvén)."""
     if data is None:
         return {"headings": [], "h1_outside": [], "h1_justified": None}
 
     def node_view(node: dict) -> dict:
         return {"level": node["level"], "text": node["text"],
-                "entities": [dict(entity) for entity in node["entities"]],
+                "entities": [{**entity, "entity": shown(entity)} if shown else dict(entity)
+                             for entity in node["entities"]],
                 "relation": node["relation"], "words": node["words"],
                 "total_words": node["total_words"], "empty": node["empty"],
                 "media_only": node["media_only"],
@@ -1112,7 +1126,9 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
     for entity in entities:
         overview.append({
             "típus": entity["type"], "altípus": entity["subtype"] or "",
-            "entitás": entity["name"], "rang": entity["rank"], "súly": entity["weight"],
+            "entitás": entity["name"],
+            OTHER_NAMES_COLUMN: site.display.other_text(entity["entity_id"]),
+            "rang": entity["rank"], "súly": entity["weight"],
             "szülő": related(entity, "part_of", "→"),
             "kategória": related(entity, "is_a", "→"),
             "márka": related(entity, "brand_of", "←"),
@@ -1121,6 +1137,7 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
         only = entity["mention_only_pages"]
         neighbourhood.append({
             "entitás": entity["name"],
+            OTHER_NAMES_COLUMN: site.display.other_text(entity["entity_id"]),
             "típus": "/".join(filter(None, (entity["type"], entity["subtype"]))),
             "rang": entity["rank"], "súly": entity["weight"],
             "élek": "; ".join(f"{r['type']} {r['direction']} {r['entity']}"
@@ -1194,10 +1211,10 @@ def export_views(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[s
     trees = {page["url"]: page for page in view_data(site)[1]}
     paths = {
         "site": _write(out / f"{name}-view-site.csv", overview, [
-            "típus", "altípus", "entitás", "rang", "súly", "szülő", "kategória", "márka",
-            "oldalak", "említések", "fő oldalak"]),
+            "típus", "altípus", "entitás", OTHER_NAMES_COLUMN, "rang", "súly", "szülő",
+            "kategória", "márka", "oldalak", "említések", "fő oldalak"]),
         "entities": _write(out / f"{name}-view-entities.csv", neighbourhood, [
-            "entitás", "típus", "rang", "súly", "élek", "fő oldalak",
+            "entitás", OTHER_NAMES_COLUMN, "típus", "rang", "súly", "élek", "fő oldalak",
             "csak említő oldalak száma", "csak említő oldalak"]),
         "pages": _write(out / f"{name}-view-pages.csv", pages, [
             "url", "szerep", "segédoldal", "nyelv", "canonical", "fő entitás", "típus",

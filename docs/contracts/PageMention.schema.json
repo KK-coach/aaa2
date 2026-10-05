@@ -11,7 +11,7 @@
       "type": "integer"
     },
     "schema_version": {
-      "default": "1.6",
+      "default": "1.7",
       "title": "Schema Version",
       "type": "string"
     },
@@ -28,5 +28,5 @@
   "title": "PageMention",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.6"
+  "x-schema-version": "1.7"
 }
