@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.6"
+SCHEMA_VERSION = "1.7"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -483,9 +483,18 @@ class EntityRelation(Contract):
     entity: str
 
 
+class OtherName(Contract):
+    """Az entitás egy neve a site elsődleges nyelvétől eltérő nyelven, a forrásával."""
+
+    module: ClassVar[str] = "findings"
+    lang: str
+    name: str
+    source: str
+
+
 class EntityView(Contract):
     """Egy entitás a site-áttekintőben: rang és súly, a kapcsolatai, a fő oldalai és a csak
-    említő oldalak."""
+    említő oldalak. `name`: a megtartott név; `other_names`: a többi nyelvű név."""
 
     module: ClassVar[str] = "findings"
     entity_id: int
@@ -499,6 +508,7 @@ class EntityView(Contract):
     relations: list[EntityRelation] = Field(default_factory=list)
     main_pages: list[str] = Field(default_factory=list)
     mention_only_pages: list[str] = Field(default_factory=list)
+    other_names: list[OtherName] = Field(default_factory=list)
 
 
 class PageMention(Contract):
@@ -604,7 +614,7 @@ class SiteViews(Contract):
 
 # a több táblából összeállított szerződések (nincs egyetlen forrástáblájuk)
 DERIVED: tuple[type[Contract], ...] = (
-    FindingView, EntityRelation, EntityView, PageMention, HeadingEntity, HeadingOutside,
+    FindingView, EntityRelation, OtherName, EntityView, PageMention, HeadingEntity, HeadingOutside,
     HeadingView, PageView, SiteViews)
 
 CONTRACTS: tuple[type[Contract], ...] = (

@@ -99,6 +99,7 @@ from aaa2.entities.gate import occurs
 from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import alias_key
 from aaa2.resolver import queries as resolver_queries
+from aaa2.resolver.display import OTHER_NAMES_COLUMN, DisplayNames
 from aaa2.resolver.listing import CATEGORY_SEGMENTS, LIST_MIN_SHARE, ListShape
 from aaa2.resolver.names import normal_key, without_legal_form
 from aaa2.resolver.overrides import canonical_language
@@ -933,9 +934,12 @@ def _weights(con: duckdb.DuckDBPyConnection, graph: _Graph, config: GraphConfig)
 
 def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str, Path]:
     """A három táblázat: oldalanként a fő entitás (`<név>-main-entity.csv`), az éltábla
-    (`<név>-edges.csv`) és az entitások súlya (`<név>-weights.csv`)."""
+    (`<név>-edges.csv`) és az entitások súlya (`<név>-weights.csv`). Az oldalankénti táblában
+    az entitás neve az oldal nyelvén áll, a rangsorban a megtartott név, mellette a többi
+    nyelvű név (`display.DisplayNames`)."""
     out.mkdir(parents=True, exist_ok=True)
     names = dict(store.entities_for_export_csv(con))
+    display = DisplayNames(con)
     kinds = {row[0]: (row[1], row[2]) for row in store.entities_for_export_csv_2(con)}
     urls = dict(con.execute("SELECT page_id, url FROM page_nodes ORDER BY ALL").fetchall())
     chosen: dict[int, list[tuple]] = defaultdict(list)
@@ -962,11 +966,13 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
         pages.append({
             "url": url, "szerep": role, "segédoldal": support or "", "állapot": status,
             "canonical": note,
-            "fő entitás": names.get(main[0][0], "") if main else "",
+            "fő entitás": display.on_page(main[0][0], names.get(main[0][0], ""), lang)
+            if main else "",
             "típus": "/".join(filter(None, kinds.get(main[0][0], ("", "")))) if main else "",
             "megbízhatóság": main[0][2] if main else "",
             "bizonyítékok": evidence_text(main[0][3]) if main else "",
-            "másodlagos": "; ".join(f"{names.get(e, e)} ({c})" for e, _, c, _ in secondary),
+            "másodlagos": "; ".join(f"{display.on_page(e, names.get(e, e), lang)} ({c})"
+                                    for e, _, c, _ in secondary),
             "title": title or "", "h1": h1 or "", "nyelv": lang or ""})
     paths["main_entity"] = _write(out / f"{name}-main-entity.csv", pages)
     edges = []
@@ -992,6 +998,7 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
     for rank, row in enumerate(weighted, start=1):
         entity_id, *parts, weight = row
         weights.append({"rang": rank, "entitás": names.get(entity_id),
+                        OTHER_NAMES_COLUMN: display.other_text(entity_id),
                         "típus": "/".join(filter(None, kinds.get(entity_id, ("", "")))),
                         "oldalak": parts[0], "említések": parts[1], "szerkezeti": parts[2],
                         "fő oldalak": parts[3], "másodlagos oldalak": parts[4],

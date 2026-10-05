@@ -60,3 +60,25 @@ def relation_from_ids(con: duckdb.DuckDBPyConnection, kind: str) -> list[int]:
     return [entity_id for (entity_id,) in con.execute(
         "SELECT DISTINCT from_id FROM entity_relations WHERE type = ? ORDER BY from_id",
         [kind]).fetchall()]
+
+
+def language_pair_names(con: duckdb.DuckDBPyConnection) -> dict[int, dict[str, str]]:
+    """A nyelvi összevonásból (`language_pair`) jövő nevek: entitás → nyelv → név. A név a
+    beolvadt entitás neve, ha a megtartott entitáson nyelvvel jelölt `hreflang` aliasként áll;
+    ha a megtartott entitás később maga is beolvadt, a neve a végső entitásé."""
+    merges = con.execute("SELECT merge_id, kept_id, removed_id, removed_name, rule FROM merge_log "
+                         "ORDER BY merge_id").fetchall()
+    tagged = {(entity_id, alias): lang for entity_id, alias, lang in con.execute(
+        "SELECT entity_id, alias, lang FROM entity_aliases WHERE source = 'hreflang' AND "
+        "lang IS NOT NULL ORDER BY entity_id, alias").fetchall()}
+    found: dict[int, dict[str, str]] = {}
+    for index, (_, kept, _, name, rule) in enumerate(merges):
+        if rule != "language_pair":
+            continue
+        for _, later_kept, later_removed, _, _ in merges[index + 1:]:
+            if later_removed == kept:
+                kept = later_kept
+        lang = tagged.get((kept, name))
+        if lang is not None:
+            found.setdefault(kept, {}).setdefault(lang, name)
+    return found
