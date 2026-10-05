@@ -94,12 +94,12 @@ import duckdb
 
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
-from aaa2.entities import queries as extract_queries
 from aaa2.entities import store
 from aaa2.entities.gate import occurs
 from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import alias_key
 from aaa2.resolver import queries as resolver_queries
+from aaa2.resolver.listing import CATEGORY_SEGMENTS, LIST_MIN_SHARE, ListShape
 from aaa2.resolver.names import normal_key, without_legal_form
 from aaa2.resolver.overrides import canonical_language
 from aaa2.resolver.pages import (
@@ -127,13 +127,9 @@ SUPPORT_SCHEMA = {"ContactPage": "contact", "CollectionPage": "list",
 CONTACT_URL_WORDS = ("contact", "kapcsolat", "kontakt", "contatti")
 PROFILE_TYPES = frozenset({"AboutPage", "ProfilePage"})
 PROFILE_URL_WORDS = ("about", "rolam", "rolunk", "author", "szerzo")
-CATEGORY_SEGMENTS = frozenset({"category", "kategoria"})
 CANONICAL_ISSUES = {"not_crawled": "a cél nincs a készletben", "error_status": "a cél hibás",
                     "other_type": "a cél más típusú oldal",
                     "not_a_node": "a cél nem oldal-csomópont", "loop": "körbeérő lánc"}
-LIST_MIN_SHARE = 0.5                     # a teaser-blokkok aránya ennél nagyobb: lista
-LIST_MIN_ROWS = 3                        # legalább ennyi táblázatsor: táblázatos lista lehet
-EXCERPT_CHARS = 40                       # a kivonat-teaser legalább ennyi jelnyi eleje
 INSTANCE_TYPES = frozenset({"tech", "org", "product", "place", "person"})
 SAME_TYPE_CLASSES = frozenset({"tech", "concept"})
 _SEPARATORS = re.compile(r"[/\-_.?=&]+")
@@ -333,7 +329,6 @@ class _Graph:
         self.site_lang = canonical_language(con)
         originals = canonical_targets(con, self.urls)
         self.inbound: dict[int, list[tuple[int, str, bool]]] = defaultdict(list)
-        self.outbound: dict[int, list[tuple[int, str]]] = defaultdict(list)
         for from_id, to_id, anchor, position in sorted(
                 ((link.from_page_id, link.to_page_id, link.anchor, link.position)
                  for link in crawl.links(con) if link.to_page_id is not None),
@@ -342,17 +337,7 @@ class _Graph:
             if from_id in self.roles and to_id in self.roles \
                     and self.roles[from_id].group != self.roles[to_id].group:
                 self.inbound[to_id].append((from_id, anchor or "", position == "body"))
-                self.outbound[from_id].append((to_id, alias_key(anchor or "")))
-        self.texts: dict[int, list[str]] = defaultdict(list)
-        self.rows: Counter[int] = Counter()                    # oldal → tartalmi táblázatsorok
-        for page_id, kind, text in [(b.page_id, b.kind, b.text)
-                                    for b in extract_queries.blocks(con)
-                                    if b.region == "content"
-                                    and b.kind in ("heading", "paragraph", "table_row")]:
-            if kind == "table_row":
-                self.rows[page_id] += 1
-            elif alias_key(text or ""):
-                self.texts[page_id].append(alias_key(text))
+        self.shape = ListShape(con, self.roles)
         self.articles = {e for e, row in self.entities.items() if row[7] is not None
                          and row[2] == "work" and row[3] == "article"}
         self.supports: dict[int, list[tuple[int, str]]] = {}   # cikkoldal → (ajánlat, tulajd.)
@@ -491,28 +476,12 @@ class _Graph:
         return info.role, None
 
     def table_share(self, info: PageInfo) -> float:
-        """A tartalmi blokkok (heading és bekezdés a H1 nélkül, táblázatsor) hányad része
-        táblázatsor, ha legalább `LIST_MIN_ROWS` sor van: a jórészt táblázatból álló segédoldal
-        (letöltések, katalógusok listája) lista, nem egy entitásról szól."""
-        rows = self.rows[info.page_id]
-        if rows < LIST_MIN_ROWS:
-            return 0.0
-        texts = [b for b in self.texts.get(info.page_id, []) if b != alias_key(info.h1 or "")]
-        return rows / (rows + len(texts))
+        """A táblázatsorok aránya az oldal tartalmi blokkjai között (`ListShape.table_share`)."""
+        return self.shape.table_share(info)
 
     def teaser_share(self, info: PageInfo) -> float:
-        """A tartalmi heading- és bekezdésblokkok (a H1 nélkül) hányad része teaser: egy más
-        oldalcsoportra mutató link szövege (cím), vagy legalább `EXCERPT_CHARS` jelnyi eleje a
-        linkelt oldal egy blokkjának eleje (kivonat)."""
-        blocks = [b for b in self.texts.get(info.page_id, []) if b != alias_key(info.h1 or "")]
-        if not blocks:
-            return 0.0
-        links = self.outbound.get(info.page_id, [])
-        anchors = {anchor for _, anchor in links if anchor}
-        target = [text for page in {t for t, _ in links} for text in self.texts.get(page, [])]
-        teasers = sum(1 for b in blocks if b in anchors or (
-            len(b) >= EXCERPT_CHARS and any(t.startswith(b[:EXCERPT_CHARS]) for t in target)))
-        return teasers / len(blocks)
+        """A kivonatok aránya az oldal tartalmi blokkjai között (`ListShape.teaser_share`)."""
+        return self.shape.teaser_share(info)
 
     # -- a fő entitás ----------------------------------------------------------
 

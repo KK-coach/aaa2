@@ -45,6 +45,10 @@
   `normalized_name`). Két különböző oldalhoz kötött entitás, két eltérő
   szint (core, package) és két nem kompatibilis altípus (package kontra component) nem olvad
   össze; a hreflang-párban a kanonikus nyelvű oldal entitása marad.
+- Nyelvi változatok (`language.py`, `language_pair`): a hreflang-pár két oldalának fő témája
+  egy entitás, ha a típusuk és az altípusuk azonos, egyik oldal sem kezdő- vagy listaoldal, és
+  mindkettőnek van szövegtörzse; a megtartott név a site elsődleges nyelvén álló alak, a másik
+  név nyelvvel jelölt `hreflang` alias.
 - Fogalom és ajánlat (9. pont): a service típusú entitás LLM-említései, amelyeket az LLM
   fogalomként talált (a tárolt rekordok szerint), fogalom-entitáshoz kerülnek (`type_split`),
   kivéve a heading-, title- vagy kártyablokkot egészében lefedő említést és az ajánlat
@@ -73,6 +77,7 @@ from aaa2.db.stable_json import dumps
 from aaa2.entities import store
 from aaa2.resolver.context import SiteRun, _Context
 from aaa2.resolver.flags import _demo, _template
+from aaa2.resolver.language import _language_pairs
 from aaa2.resolver.merge import Merger, _abbreviation_merges, _hreflang_place, _normalized_merges
 from aaa2.resolver.names import _now
 from aaa2.resolver.offers import (
@@ -118,6 +123,7 @@ def run_site(con: duckdb.DuckDBPyConnection,
         _steps(con, run)
         _normalized_merges(con, merger)
         _abbreviation_merges(con, merger)
+        _language_pairs(context, merger, config)
         run.overrides = apply_overrides(context, merger, config)
         run.offers = _offers(con, split)
         run.placeholder_pages = sorted(roles[p].url for p in context.placeholder if p in roles)
