@@ -6,8 +6,8 @@ import json
 import pytest
 
 from aaa2.entities.rules import run_rules
-from aaa2.functions.findings import build_findings, exclusion, product_title
-from aaa2.functions.graph import build_graph
+from aaa2.functions.findings import build_findings, exclusion, loosely_named, product_title
+from aaa2.functions.graph import _Graph, build_graph
 from aaa2.resolver import overrides
 from aaa2.resolver.pages import (
     helper_list,
@@ -28,9 +28,17 @@ LONG = ("Miből készül a szappan? ÖSSZETEVŐK: extra szűz olívaolaj, kókus
         "nátrium-hidroxid, levendula illóolaj és szárított levendulavirág")
 
 
+NAV = "<nav><a href='/szappanok'>Szappan</a></nav>"
+
+
 def page(title, body, body_class="information-page-body", head=""):
     return (f"<html lang='hu'><head><title>{title}</title>{head}</head>"
-            f"<body class='page-body {body_class}'>{body}{FOOTER}</body></html>")
+            f"<body class='page-body {body_class}'>{NAV}{body}{FOOTER}</body></html>")
+
+
+def crumbs(*names):
+    return ld({"@type": "BreadcrumbList", "itemListElement": [
+        {"@type": "ListItem", "position": i + 1, "name": name} for i, name in enumerate(names)]})
 
 
 def product(name, path, title=None, extra=""):
@@ -39,9 +47,10 @@ def product(name, path, title=None, extra=""):
                 "product-page-body", ld(node))
 
 
-def listing(h1, body_class, *paths):
+def listing(h1, body_class, *paths, title=None, head=""):
     links = "".join(f"<p><a href='{path}'>termék</a></p>" for path in paths)
-    return page(h1, f"<main><h1>{h1}</h1>{links}</main>", f"product-list-body {body_class}")
+    return page(title or h1, f"<main><h1>{h1}</h1>{links}</main>",
+                f"product-list-body {body_class}", head)
 
 
 def shop():
@@ -50,6 +59,16 @@ def shop():
                   ld({"@type": "Organization", "name": "Pelda Bolt", "url": f"{BASE}/"})),
         "/szappanok": listing("Szappanok", "category-list-body", "/levendula-szappan-100g",
                               "/furdogolyo-kecsketejes-90g"),
+        "/furdotejek": listing("Fürdőtejek a legjobb áron", "category-list-body",
+                               "/furdogolyo-kecsketejes-90g", title="fürdőtej",
+                               head=crumbs("Kezdőlap", "Fürdőtejek")),
+        "/bortipus": listing("Segítünk megtalálni a megfelelő terméket", "category-list-body",
+                             "/levendula-szappan-100g", title="Keress közöttük",
+                             head=crumbs("Kezdőlap", "Bőrtípus szerint")),
+        "/katalogusok": page("Letöltések", "<main><h1>Letöltések</h1><p>Itt találod.</p><table>"
+                             "<tr><th>Név</th><th>Fájl</th></tr><tr><td>Szappan 2025</td><td>"
+                             "Letöltés</td></tr><tr><td>Olaj 2025</td><td>Letöltés</td></tr>"
+                             "<tr><td>Krém 2025</td><td>Letöltés</td></tr></table></main>"),
         "/akcios-termekek": listing("Akciós termékek", "category-list-body",
                                     "/levendula-szappan-100g"),
         "/index.php?route=product/list&special=1": listing("Akciók", "special-list-body"),
@@ -105,6 +124,8 @@ def test_legal_slugs_with_numbers_and_hungarian_names_are_recognised():
         "/index.php?route=information/contact": "contact", "/garancialis-javitas-blog": None,
         "/blog/payment-gateway-tips/": None, "/eprivacy-and-gdpr-diagnostics/": None}
     assert support_url(BASE + "/garancia_7") and support_url(BASE + "/privacy-policy/")
+    # szókezdet a slug bármely szavában
+    assert legal_kind(BASE + "/kedvezo-csomagkuldes") == "shipping_payment"
     # a kapcsolat-oldalt a gráf külön kezeli, a szerep-döntésben nem jogi oldal
     assert not support_url(BASE + "/index.php?route=information/contact")
     assert helper_list(BASE + "/index.php?route=product/list&special=1")
@@ -126,14 +147,22 @@ def test_the_platform_marks_category_pages_and_helper_lists():
 
 def test_category_legal_and_helper_pages_get_the_right_main_entity():
     nodes, found = analysed(shop())
-    # a kategóriaoldal fő entitása a kategória, oldalhoz kötött entitásként
-    assert nodes["/szappanok"] == ["category", None, "main", "Szappanok"]
+    # a kategóriaoldal fő entitása a kategória, oldalhoz kötött entitásként; a neve a
+    # morzsamenü utolsó eleme, annak híján a menü-anchor, és csak végül a H1
+    assert nodes["/furdotejek"] == ["category", None, "main", "Fürdőtejek"]
+    assert nodes["/bortipus"] == ["category", None, "main", "Bőrtípus szerint"]
+    assert nodes["/szappanok"] == ["category", None, "main", "Szappan"]
+    # a jórészt táblázatból álló segédoldal lista
+    assert nodes["/katalogusok"] == ["listing", "list", "support", None]
     # a segédlistának nincs fő entitása, és ez nem megállapítás
     for path in ("/akcios-termekek", "/index.php?route=product/list&special=1",
                  "/hibabejelentes_8"):
         assert nodes[path] == ["listing", "list", "support", None]
-    # a 200-as „nem található” oldal sem kap fő entitást és megállapítást
+    # a 200-as „nem található” oldal nem kap fő entitást; egy közepes megállapítás sorolja fel
     assert nodes["/megszunt-kategoria"][1:] == ["placeholder", "support", None]
+    soft = [f for f in found if f[0] == "soft_404"]
+    assert [(f[1], [p["url"].removeprefix(BASE) for p in f[3]["pages"]]) for f in soft] == [
+        ("medium", ["/megszunt-kategoria"])]
     # a jogi oldalnak nincs fő entitása
     for path in ("/altalanos-szerzodesi-feltetelek", "/adatvedelmi_nyilatkozat_3",
                  "/garancia_7"):
@@ -158,6 +187,14 @@ def test_the_shop_gets_a_finding_for_each_missing_or_unreachable_legal_page():
                      "contact": ("low", "not_in_footer")}
     inside = next(f[3] for f in found if f[0] == "legal_page" and f[3]["kind"] == "warranty")
     assert inside["pages"] == [{"url": f"{BASE}/garancia_7"}]
+    # ha az ÁSZF szövege külső keretben áll, a benne várható fajták hiánya nem állapítható meg
+    con = shop()
+    con.execute("UPDATE pages SET rendered_html = ? WHERE url LIKE '%szerzodesi%'", [
+        __import__("zstandard").ZstdCompressor().compress(page(
+            "ÁSZF", "<main><h1>ÁSZF</h1><iframe src='//jogi.example/aszf'></iframe></main>"
+        ).encode())])
+    kinds = {f[3]["kind"] for f in analysed(con)[1] if f[0] == "legal_page"}
+    assert "shipping_payment" not in kinds and "withdrawal" not in kinds
     # nem bolton (nincs termékoldal) az ellenőrzés nem fut
     plain = site({"/": page("Pelda", "<main><h1>Pelda</h1></main>")})
     assert not [f for f in analysed(plain)[1] if f[0] == "legal_page"]
@@ -172,8 +209,14 @@ def test_a_product_title_with_the_headword_and_the_size_is_not_a_mismatch():
     assert product_title("Levendula szappan", "Levendula szappan natúr") \
         and not product_title("Levendula szappan", "Levendula olaj")
     _, found = analysed(shop())
-    mismatches = [f[3]["url"].removeprefix(BASE) for f in found if f[0] == "h1_title_mismatch"]
-    assert mismatches == ["/sampon-korpas-hajra-50g"]
+    mismatches = sorted(item["url"].removeprefix(BASE) for f in found
+                        if f[0] == "h1_title_mismatch" for item in f[3].get("pages") or [f[3]])
+    # a kategóriaoldalon a többes szám nem eltérés („Fürdőtejek” ↔ „fürdőtej”); ahol sem a H1,
+    # sem a title nem nevezi meg a kategóriát, az megállapítás
+    assert mismatches == ["/bortipus", "/sampon-korpas-hajra-50g"]
+    assert loosely_named(["Fürdőtejek"], "fürdőtej") and loosely_named(
+        ["Szilárd Sampon"], "Hajsampon, szilárd samponok")
+    assert not loosely_named(["Bőrtípus szerint"], "Keress bőrtípusod szerint")
 
 
 def test_a_long_empty_heading_is_a_paragraph_marked_as_a_heading():
@@ -234,6 +277,20 @@ def test_a_canonical_duplicate_joins_the_group_of_its_target_and_gets_no_entity_
     assert con.execute("SELECT count(*) FROM page_nodes WHERE canonical_page IS NOT NULL"
                        ).fetchone() == (1,)
     assert not [f for f in found if f[0] == "canonical_issue"]
+
+
+def test_a_link_to_a_duplicate_counts_as_a_link_to_the_original():
+    con = articles({"/archiv/meresi-terv/": f"{BASE}/blog/meresi-terv/"})
+    ids = {url.removeprefix(BASE): page_id for page_id, url in con.execute(
+        "SELECT page_id, url FROM pages").fetchall()}
+    con.execute("INSERT INTO links (from_page_id, to_url, to_page_id, anchor, position, ordinal) "
+                "VALUES (?, ?, ?, 'a mérési tervről', 'body', 99)",
+                [ids["/meres/"], BASE + "/archiv/meresi-terv/", ids["/archiv/meresi-terv/"]])
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    graph = _Graph(con, {})
+    assert (ids["/meres/"], "a mérési tervről", True) in graph.inbound[ids["/blog/meresi-terv/"]]
+    assert not graph.inbound[ids["/archiv/meresi-terv/"]]
 
 
 def test_a_canonical_to_another_kind_of_page_stays_separate_and_is_a_finding():

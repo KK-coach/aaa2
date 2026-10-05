@@ -75,13 +75,14 @@ LEGAL_KINDS: dict[str, tuple[frozenset[str], tuple[str, ...]]] = {
                            "suti-tajekoztato", "information/personaldata"}),
                 ("adatved", "adatkezel")),
     "withdrawal": (frozenset({"withdrawal", "returns", "return-policy"}), ("elallas",)),
-    "shipping_payment": (frozenset({"shipping", "shipping-policy", "delivery", "payment",
-                                    "csomagkuldes", "kedvezo-csomagkuldes"}),
+    "shipping_payment": (frozenset({"shipping", "shipping-policy", "delivery", "payment"}),
                          ("szallitas", "fizetes")),
     "warranty": (frozenset({"warranty"}), ("garancia", "jotallas", "szavatossag")),
     "contact": (frozenset({"impresszum", "impressum", "imprint", "information/contact"}),
                 ("kapcsolat", "contact")),
 }
+# szókezdet a slug bármely szavában (nem csak az elsőben): „kedvezo-csomagkuldes”
+LEGAL_WORD_STARTS = {"shipping_payment": ("csomagkuld",)}
 LEGAL_TAIL_WORDS = frozenset({
     "es", "nyilatkozat", "tajekoztato", "feltetelek", "jog", "szabalyzat", "informaciok",
     "modok", "fizetes", "fizetesi", "szallitas", "szallitasi", "iranyelvek", "policy", "us"})
@@ -227,13 +228,16 @@ def legal_kind(url: str) -> str | None:
     shipping_payment, warranty, contact), vagy None. Egy slug teljes egyezése vagy a fajta
     slug-kezdete számít („adatvedelmi-nyilatkozat”, „vasarlasi_feltetelek_5”, „garancia_7”,
     „withdrawal”); a slug-kezdet után csak a `LEGAL_TAIL_WORDS` szavai állhatnak
-    („szallitas-es-fizetes” igen, „garancialis-javitas-blog” nem)."""
+    („szallitas-es-fizetes” igen, „garancialis-javitas-blog” nem); a `LEGAL_WORD_STARTS`
+    szókezdete a slug bármely szavában számít („kedvezo-csomagkuldes”)."""
     slugs = _slugs(url)
     for kind, (exact, prefixes) in LEGAL_KINDS.items():
+        starts = LEGAL_WORD_STARTS.get(kind, ())
         for slug in slugs:
             first, *rest = slug.split("-")
             if slug in exact or (prefixes and first.startswith(prefixes)
-                                 and set(rest) <= LEGAL_TAIL_WORDS):
+                                 and set(rest) <= LEGAL_TAIL_WORDS) \
+                    or (starts and any(word.startswith(starts) for word in [first, *rest])):
                 return kind
     return None
 

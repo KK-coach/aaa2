@@ -103,11 +103,11 @@ from aaa2.functions.graph import evidence_text
 from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.names import normal_key
 from aaa2.resolver.overrides import load_site_config, site_domain
-from aaa2.resolver.pages import LEGAL_KINDS, canonical_key, legal_kind
+from aaa2.resolver.pages import LEGAL_KINDS, canonical_key, legal_kind, page_types
 
 TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
          "uncovered_topic", "unclear_topic", *heading_tree.STRUCTURE_TYPES,
-         "canonical_issue", "legal_page")
+         "canonical_issue", "legal_page", "soft_404")
 TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés", "cannibalization": "Kannibalizáció",
                "shared_topic": "Közös téma", "missing_page": "Hiányzó oldal",
                "uncovered_topic": "Lefedetlen téma", "unclear_topic": "Nem egyértelmű téma",
@@ -115,7 +115,13 @@ TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés", "cannibalization": "Ka
                "multiple_h1": "Több H1", "empty_section": "Üres szakasz",
                "skipped_level": "Kihagyott heading-szint", "missing_h2": "Hiányzó H2",
                "paragraph_heading": "Bekezdés headingként jelölve",
-               "canonical_issue": "Hibás canonical", "legal_page": "Jogi oldal"}
+               "canonical_issue": "Hibás canonical", "legal_page": "Jogi oldal",
+               "soft_404": "Nem található oldal 200-as státusszal"}
+# többes szám jele a kulcsban (ékezet nélkül): a kategória neve és a H1 / title összevetéséhez
+PLURAL_ENDINGS = frozenset({"k", "ok", "ek", "ak", "s", "es"})
+# a jogi fajták, amelyek jellemzően az ÁSZF részei: ha az ÁSZF szövege külső keretben
+# (iframe) áll, a hiányuk nem állapítható meg
+EMBEDDED_KINDS = frozenset({"withdrawal", "shipping_payment", "warranty"})
 # a jogi oldalak fajtái a meglét-ellenőrzéshez: megnevezés, és a szavak, amelyekkel egy jogi
 # oldal headingje a fajtát megnevezi (ha nincs külön oldala, de egy jogi oldalon belül megvan)
 LEGAL_LABELS = {"terms": "ÁSZF", "privacy": "adatvédelem", "withdrawal": "elállás",
@@ -202,7 +208,7 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
     rows = [*_mismatches(site), *_shared_topics(site), *_uncovered(site, run),
             *_unclear_topics(site),
             *heading_tree.structure_findings(site.pages, site.headings, ROLE_LABELS),
-            *_canonical_issues(site), *_legal_pages(site)]
+            *_canonical_issues(site), *_legal_pages(site), *_soft_404(site)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -297,6 +303,9 @@ class _Site:
             or (in_h1 and bool(page["h1"]) and names_in([page["h1"]], page["title"], cut=True))
         if not in_title and page["role"] == "product":
             in_title = product_title(page["h1"] or self.name(main[0]), page["title"])
+        if page["role"] == "category":         # a többes számtól függetlenül
+            in_h1 = in_h1 or loosely_named(forms, page["h1"])
+            in_title = in_title or loosely_named(forms, page["title"])
         return in_h1, in_title, forms
 
     def naming_forms(self, entity_id: int, page: dict) -> list[str]:
@@ -351,6 +360,20 @@ def names_in(forms: list[str], text: str | None, cut: bool = False) -> bool:
             if shared >= CUT_MIN_CHARS and shared >= CUT_MIN_SHARE * len(name):
                 return True
     return False
+
+
+def loosely_named(forms: list[str], text: str | None) -> bool:
+    """A szöveg megnevezi-e valamelyik alakot a többes számtól és a kis-nagybetűtől függetlenül:
+    az alak minden szava szerepel a szövegben, egyes vagy többes számban (`PLURAL_ENDINGS`:
+    „Fürdőtejek” ↔ „fürdőtej”, „Szilárd Sampon” ↔ „Szilárd Samponok”)."""
+    words = _tokens(text or "")
+
+    def same(a: str, b: str) -> bool:
+        short, long = sorted((a, b), key=len)
+        return a == b or (long.startswith(short) and long[len(short):] in PLURAL_ENDINGS)
+
+    return any(tokens and all(any(same(token, word) for word in words) for token in tokens)
+               for tokens in (_tokens(form) for form in forms))
 
 
 def product_title(name: str | None, title: str | None) -> bool:
@@ -741,13 +764,19 @@ def _legal_pages(site: _Site) -> list[tuple]:
     `LEGAL_LABELS` fajtáira. Megvan a fajta, ha van ilyen oldal (`pages.legal_kind`; a
     canonical-duplikátum is számít), vagy ha egy jogi oldal egy headingje vagy legfeljebb
     `LEGAL_TITLE_WORDS` szavas bekezdése (címként álló sor) megnevezi (`LEGAL_HEADING_WORDS`:
-    pl. az „Elállási jog” az ÁSZF-en belül). Megállapítás: a fajta hiányzik (közepes), vagy megvan, de egyik oldalára sem mutat
+    pl. az „Elállási jog” az ÁSZF-en belül). Ha az ÁSZF szövege külső keretben (iframe) áll, a jellemzően benne lévő fajták
+    (`EMBEDDED_KINDS`: elállás, szállítás és fizetés, garancia) hiánya nem állapítható meg,
+    nincs megállapítás. Megállapítás: a fajta hiányzik (közepes), vagy megvan, de egyik oldalára sem mutat
     lábléc-link (alacsony; a bizonyíték jelzi, ha a menüből elérhető). Nem webshopon nem fut: ott a hat fajta nem mind várható."""
     if not any(page["role"] == "product" for page in site.pages.values()):
         return []
     by_kind: dict[str, list[dict]] = defaultdict(list)
+    embedded = False                           # az ÁSZF szövege külső keretben (iframe) áll
     for page in site.pages.values():
         kind = legal_kind(page["url"])
+        if kind == "terms" and "<iframe" in (crawl.rendered_dom(site.con, page["page_id"])
+                                              or "").lower():
+            embedded = True
         if kind is None and page["support"] == "contact":
             kind = "contact"
         if kind is not None:
@@ -777,6 +806,8 @@ def _legal_pages(site: _Site) -> list[tuple]:
         evidence = {"group": f"legal_page | {kind}", "kind": kind, "label": label,
                     "pages": [{"url": p["url"]} for p in pages],
                     "inside": [{"url": p["url"], "headings": p["headings"]} for p in inside]}
+        if not holders and embedded and kind in EMBEDDED_KINDS:
+            continue                           # a beágyazott ÁSZF tartalma nem látható
         if not holders:
             found.append(("legal_page", "medium", None, None,
                           f"hiányzó jogi oldal: {label}", {**evidence, "status": "missing"}))
@@ -788,6 +819,21 @@ def _legal_pages(site: _Site) -> list[tuple]:
                           + ("; a menüből elérhető" if in_menu else ""),
                           {**evidence, "status": "not_in_footer", "in_menu": in_menu}))
     return found
+
+
+def _soft_404(site: _Site) -> list[tuple]:
+    """A 200-as státusszal kiszolgált „nem található” oldalak (`pages.page_types`: not_found;
+    ma a Shoprenter `not_found_body` jele ismeri fel) egy közepes megállapításban, az oldalak
+    listájával: a keresőnek és a látogatónak létező oldalnak látszanak."""
+    kinds = page_types(site.con, load_site_config(site_domain(site.con)).page_types)
+    pages = sorted((page for page in site.pages.values()
+                    if kinds.get(page["page_id"]) == "not_found"), key=lambda p: p["url"])
+    if not pages:
+        return []
+    return [("soft_404", "medium", None, None,
+             f"nem található oldal 200-as státusszal: {len(pages)} oldal",
+             {"group": "soft_404", "pages": [{"url": page["url"], "title": page["title"]}
+                                             for page in pages]})]
 
 
 # ---------------------------------------------------------------------------
@@ -1186,6 +1232,8 @@ def _finding_html(finding: dict) -> str:
     elif finding["type"] == "canonical_issue":
         pairs = [("oldal", _link(evidence["url"])), ("canonical", _e(evidence["canonical"])),
                  ("ok", _e(CANONICAL_LABELS.get(evidence["issue"], evidence["issue"])))]
+    elif finding["type"] == "soft_404":
+        pairs = [("oldalak", "<br>".join(_link(page["url"]) for page in evidence["pages"]))]
     elif finding["type"] == "legal_page":
         pairs = [("fajta", _e(evidence["label"])),
                  ("oldalak", "<br>".join(_link(page["url"]) for page in evidence["pages"])),

@@ -2,7 +2,8 @@
 --
 -- findings.type új értékei: 'paragraph_heading' (bekezdés headingként jelölve: 12 szónál
 --   hosszabb, üres szakaszú heading), 'canonical_issue' (hibás canonical), 'legal_page' (webshopon
---   hiányzó vagy a láblécből nem elérhető jogi oldal).
+--   hiányzó vagy a láblécből nem elérhető jogi oldal), 'soft_404' (200-as státusszal
+--   kiszolgált „nem található” oldal).
 -- page_nodes.canonical_issue új értéke: 'other_type' (a canonical célja más szerepű oldal, az
 --   oldal nem duplikátum, külön marad).
 -- A CHECK megszorítás nem módosítható helyben, ezért mindkét tábla az új megszorítással épül
@@ -14,7 +15,7 @@ CREATE TABLE findings_027 (
                     'h1_title_mismatch', 'cannibalization', 'shared_topic', 'missing_page',
                     'uncovered_topic', 'unclear_topic', 'missing_h1', 'h1_outside_content',
                     'multiple_h1', 'empty_section', 'skipped_level', 'missing_h2',
-                    'paragraph_heading', 'canonical_issue', 'legal_page')),
+                    'paragraph_heading', 'canonical_issue', 'legal_page', 'soft_404')),
     severity    VARCHAR NOT NULL CHECK (severity IN ('high', 'medium', 'low')),
     page_id     INTEGER,
     entity_id   INTEGER,
