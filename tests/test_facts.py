@@ -38,22 +38,60 @@ def facts_site():
 
 def test_link_rows_carry_the_anchor_position_and_nofollow():
     rows = link_rows(facts_site())
-    assert list(rows[0]) == ["honnan", "hová", "feloldott céloldal", "horgonyszöveg",
-                             "pozíció", "nofollow"]
+    assert list(rows[0]) == ["honnan", "hová", "feloldott céloldal", "feloldás módja",
+                             "horgonyszöveg", "pozíció", "nofollow"]
     target = f"{BASE}/meres/"
     assert {"honnan": f"{BASE}/", "hová": target, "feloldott céloldal": target,
-            "horgonyszöveg": "A mérésről", "pozíció": "body", "nofollow": "igen"} in rows
+            "feloldás módja": "tárolt", "horgonyszöveg": "A mérésről", "pozíció": "body",
+            "nofollow": "igen"} in rows
     assert {"honnan": f"{BASE}/", "hová": target, "feloldott céloldal": target,
-            "horgonyszöveg": "Mérés", "pozíció": "nav", "nofollow": "nem"} in rows
-    # a készleten kívüli belső cél is sor, feloldott céloldal nélkül
+            "feloldás módja": "tárolt", "horgonyszöveg": "Mérés", "pozíció": "nav",
+            "nofollow": "nem"} in rows
+    # a készleten kívüli belső cél is sor, feloldott céloldal és feloldási mód nélkül
     missing = next(row for row in rows if row["hová"] == f"{BASE}/nincs/")
-    assert missing["feloldott céloldal"] == ""
-    # a kategóriaúttal bővített cím a készletbeli oldalra oldódik fel; a „hová” az eredeti cél
-    variants = {row["hová"]: row["feloldott céloldal"] for row in rows
+    assert (missing["feloldott céloldal"], missing["feloldás módja"]) == ("", "")
+    # a kategóriaúttal bővített cím a készletbeli oldalra oldódik fel; a „hová” az eredeti cél,
+    # és a mód jelzi, hogy a cél következtetett, nem tárolt
+    variants = {row["hová"]: (row["feloldott céloldal"], row["feloldás módja"]) for row in rows
                 if row["hová"].endswith("/szappan-100g")}
-    assert variants == {f"{BASE}/blog/szappan-100g": f"{BASE}/szappan-100g",
-                        f"{BASE}/akcio/szappan-100g": f"{BASE}/szappan-100g"}
+    assert variants == {
+        f"{BASE}/blog/szappan-100g": (f"{BASE}/szappan-100g", "következtetett"),
+        f"{BASE}/akcio/szappan-100g": (f"{BASE}/szappan-100g", "következtetett")}
     assert [row["honnan"] for row in rows] == sorted(row["honnan"] for row in rows)
+
+
+def test_a_language_prefix_is_not_a_category_path():
+    # az /en/<slug> más nyelvű oldal, nem a /<slug> változata: nem oldódik fel
+    from aaa2.engine import queries as crawl
+
+    con = facts_site()
+    for url in (f"{BASE}/en/szappan-100g", f"{BASE}/hu/szappan-100g",
+                f"{BASE}/de/szappan-100g"):
+        con.execute("INSERT INTO links (from_page_id, to_url, to_page_id, anchor, position, "
+                    "ordinal) VALUES (1, ?, NULL, 'x', 'body', 90)", [url])
+    # a site nyelve hu, a hreflang nyelvei hu és en; a „de” nem a site nyelve
+    resolved = crawl.link_targets(con)
+    assert f"{BASE}/en/szappan-100g" not in resolved
+    assert f"{BASE}/hu/szappan-100g" not in resolved
+    assert f"{BASE}/de/szappan-100g" in resolved
+    by_url = {link.to_url: link for link in crawl.links(con)}
+    assert (by_url[f"{BASE}/en/szappan-100g"].to_page_id,
+            by_url[f"{BASE}/en/szappan-100g"].resolution) == (None, None)
+    assert by_url[f"{BASE}/blog/szappan-100g"].resolution == "inferred"
+    assert by_url[f"{BASE}/meres/"].resolution == "stored"
+
+
+def test_the_graph_counts_an_inferred_link_as_an_inbound_link():
+    # a gráf ugyanazt a feloldott célt használja, mint a kimenet
+    from aaa2.functions.graph import _Graph
+
+    con = facts_site()
+    ids = dict(con.execute("SELECT url, page_id FROM pages").fetchall())
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    graph = _Graph(con, {})
+    inbound = graph.inbound[ids[f"{BASE}/szappan-100g"]]
+    assert sorted(anchor for _, anchor, _ in inbound) == ["a szappan", "akcióban"]
 
 
 def test_a_nofollow_that_was_not_stored_stays_empty():

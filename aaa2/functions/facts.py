@@ -3,8 +3,8 @@
 A crawl begyűjtött, de eddig ki nem írt tényei három fájlban (`export_facts`):
 
 - `<név>-view-links.csv`: a belső linkek soronként: honnan, hová (a link eredeti célja),
-  feloldott céloldal (a készletbeli URL), horgonyszöveg, pozíció (nav, body, aside, footer),
-  nofollow. A crawl csak a belső linkeket tárolja; a külső linkekből
+  feloldott céloldal (a készletbeli URL), feloldás módja (tárolt / következtetett),
+  horgonyszöveg, pozíció (nav, body, aside, footer), nofollow. A crawl csak a belső linkeket tárolja; a külső linkekből
   oldalanként a darabszám van meg (az oldalnézetben).
 - `<név>-view-structured-data.csv`: oldalanként a tárolt strukturált adat elemei: url, formátum
   (JSON-LD, microdata, RDFa, Open Graph), típus. Egy sor egy tárolt elem (a JSON-LD `@graph`
@@ -28,7 +28,9 @@ from aaa2.engine import queries as crawl
 
 SYNTAX_LABELS = {"json-ld": "JSON-LD", "microdata": "microdata", "rdfa": "RDFa",
                  "opengraph": "Open Graph"}
-LINK_COLUMNS = ("honnan", "hová", "feloldott céloldal", "horgonyszöveg", "pozíció", "nofollow")
+LINK_COLUMNS = ("honnan", "hová", "feloldott céloldal", "feloldás módja", "horgonyszöveg",
+                "pozíció", "nofollow")
+RESOLUTION_LABELS = {"stored": "tárolt", "inferred": "következtetett", None: ""}
 STRUCTURED_COLUMNS = ("url", "formátum", "típus")
 FACT_COLUMNS = ("tény", "érték")
 
@@ -40,18 +42,20 @@ def yes_no(value: bool | None) -> str:
 
 def link_rows(con: duckdb.DuckDBPyConnection) -> list[dict]:
     """A belső linkek a forrásoldal URL-je és a DOM-sorrend szerint. A „hová” a link eredeti
-    célja; a „feloldott céloldal” a készletbeli oldal URL-je, amelyre a link mutat (a link
-    tárolt céloldala, vagy a kategóriaúttal bővített cím feloldása: `crawl.link_targets`);
-    üres, ha a cél nincs a készletben. A nem tárolt nofollow üres."""
+    célja; a „feloldott céloldal” a készletbeli oldal URL-je, amelyre a link mutat; üres, ha
+    a cél nincs a készletben. A „feloldás módja”: `tárolt` (a crawl tárolta: a link célja a
+    készletbeli cím) vagy `következtetett` (a kategóriaúttal bővített cím feloldása a tárolt
+    címekből, `crawl.link_targets`): a következtetett cél nem ugyanolyan tény, mint a tárolt.
+    A nem tárolt nofollow üres."""
     urls = {page.page_id: page.url for page in crawl.pages(con)}
-    resolved = crawl.link_targets(con)
     rows = []
     for link in crawl.links(con):
-        target = link.to_page_id if link.to_page_id is not None else resolved.get(link.to_url)
+        target = link.to_page_id
         rows.append((urls.get(link.from_page_id, ""),
                      link.ordinal if link.ordinal is not None else -1,
                      {"honnan": urls.get(link.from_page_id, ""), "hová": link.to_url,
                       "feloldott céloldal": urls.get(target, "") if target is not None else "",
+                      "feloldás módja": RESOLUTION_LABELS[link.resolution],
                       "horgonyszöveg": link.anchor or "", "pozíció": link.position,
                       "nofollow": yes_no(link.nofollow)}))
     rows.sort(key=lambda row: (row[0], row[1], row[2]["hová"], row[2]["horgonyszöveg"],

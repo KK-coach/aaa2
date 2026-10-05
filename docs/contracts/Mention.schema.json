@@ -25,7 +25,7 @@
           "type": "integer"
         },
         "schema_version": {
-          "default": "1.5",
+          "default": "1.6",
           "title": "Schema Version",
           "type": "string"
         },
@@ -135,7 +135,7 @@
       "type": "string"
     },
     "schema_version": {
-      "default": "1.5",
+      "default": "1.6",
       "title": "Schema Version",
       "type": "string"
     },
@@ -161,5 +161,5 @@
   "title": "Mention",
   "type": "object",
   "x-module": "extract",
-  "x-schema-version": "1.5"
+  "x-schema-version": "1.6"
 }

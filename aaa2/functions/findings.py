@@ -1069,16 +1069,15 @@ def page_facts(con: duckdb.DuckDBPyConnection) -> dict[int, dict]:
     párok), szószám, a külső linkek száma, a bejövő belső linkek száma (linksor), a
     hivatkozó oldalak száma (különböző forrásoldalak; a menü miatt a linksor-szám sokszoros
     lehet), és a kimenő belső linkek száma (linksor; a készleten kívüli belső cél is számít).
-    A cél a feloldott céloldal (`crawl.link_targets`: a kategóriaúttal bővített cím is a
+    A cél a feloldott céloldal (`crawl.links`, `link_targets`: a kategóriaúttal bővített cím is a
     készletbeli oldalnak számít); az oldal önmagára mutató linkjei kimaradnak. A nem tárolt
     érték üres."""
     hreflang = {meta.page_id: meta.hreflang for meta in crawl.page_metas(con)}
-    resolved = crawl.link_targets(con)
     inbound: Counter[int] = Counter()
     outbound: Counter[int] = Counter()
     referrers: dict[int, set[int]] = defaultdict(set)
     for link in crawl.links(con):
-        target = link.to_page_id if link.to_page_id is not None else resolved.get(link.to_url)
+        target = link.to_page_id
         if target == link.from_page_id:
             continue
         outbound[link.from_page_id] += 1

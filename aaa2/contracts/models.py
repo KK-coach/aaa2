@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.5"
+SCHEMA_VERSION = "1.6"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -166,12 +166,16 @@ class Page(Contract):
 
 
 class Link(Contract):
-    """Egy belső link (`links`)."""
+    """Egy belső link (`links`). `to_page_id`: a céloldal a készletben; `resolution`: honnan
+    tudjuk (`stored`: a crawl tárolta, a link célja a készletbeli cím; `inferred`: a cél a
+    készletbeli oldal kategóriaúttal bővített címe, a tárolt címekből következtetve; None: a
+    cél nincs a készletben)."""
 
     module: ClassVar[str] = "crawl"
     from_page_id: int
     to_url: str
     to_page_id: int | None = None
+    resolution: Literal["stored", "inferred"] | None = None
     anchor: str | None = None
     position: str
     nofollow: bool | None = None
