@@ -709,13 +709,17 @@ def _uncovered(site: _Site, run: FindingsRun) -> list[tuple]:
         subfamilies = [{"entity": site.name(child), "page_count": site.weights[child]["pages"]}
                        for child in sorted(under.get(entity_id, []), key=site.name)]
         many = weight["pages"] >= HIGH_PAGES
+        partial = crawl.completeness(site.con).limited
         severity = ("high" if many else "medium") if family else ("medium" if many else "low")
         tail = f"; alcsaládjai: {', '.join(c['entity'] for c in subfamilies)}" \
             if subfamilies else ""
         found.append((kind, severity, None, entity_id,
                       (f"{entity['name']} ({site.kind(entity_id)}): {weight['pages']} oldalon "
-                       f"szerepel, egyiknek sem fő entitása{tail}"),
+                       f"szerepel, egyiknek sem fő entitása{tail}"
+                       + (" (részleges bejárás: a be nem járt oldalak között lehet saját oldala)"
+                          if partial else "")),
                       {"entity": entity["name"], "type": site.kind(entity_id),
+                       **({"crawl": "partial"} if partial else {}),
                        "action": ACTIONS[kind], "page_share": round(candidate["page_share"], 2),
                        "template_share": round(candidate["template_share"], 2),
                        "weight": weight["weight"], "rank": site.rank[entity_id],
@@ -756,11 +760,8 @@ def _canonical_issues(site: _Site) -> list[tuple]:
     canonical az oldal saját URL-je a lekérdezés nélkül (a tartalmat kiválasztó lekérdezést
     dobja el, pl. terméklista → `index.php`); (3) teljes crawl és a kereten belüli cél: a cél
     a site-on sehol nem érhető el, megállapítás (pl. `/hu/` → `/hu/hu/`)."""
-    crawl_config = load_site_config(site_domain(site.con)).crawl
-    last = crawl.latest_crawl_run(site.con)
-    limited = crawl_config.sitemap_only or (
-        last is not None and last.max_pages is not None
-        and len(site.pages) >= last.max_pages)
+    state = crawl.completeness(site.con)        # a crawl-modul rögzített teljességi állapota
+    limited = state.sitemap_mode or state.limited
     hosts = {urlsplit(page["url"]).netloc for page in site.pages.values()}
     found = []
     for page in sorted(site.pages.values(), key=lambda p: p["url"]):
@@ -770,9 +771,8 @@ def _canonical_issues(site: _Site) -> list[tuple]:
         target = urljoin(page["url"], detail.get("canonical") or "")
         if page["issue"] == "not_crawled":
             outside = urlsplit(target).netloc not in hosts \
-                or (crawl_config.include and not re.search(crawl_config.include, target)) \
-                or (crawl_config.exclude_pattern
-                    and re.search(crawl_config.exclude_pattern, target))
+                or (state.include and not re.search(state.include, target)) \
+                or (state.exclude and re.search(state.exclude, target))
             drops_query = "?" in page["url"] and canonical_key(target) == canonical_key(
                 page["url"].split("?", 1)[0])
             if outside or (limited and not drops_query):
@@ -807,8 +807,15 @@ def _legal_pages(site: _Site) -> list[tuple]:
             kind = "contact"
         if kind is not None:
             by_kind[kind].append(page)
-    footer = {link.to_page_id for link in crawl.links(site.con) if link.position == "footer"}
-    menu = {link.to_page_id for link in crawl.links(site.con) if link.position == "nav"}
+    links = crawl.links(site.con)
+    footer = {link.to_page_id for link in links if link.position == "footer"}
+    menu = {link.to_page_id for link in links if link.position == "nav"}
+    # jogi oldalra mutató link, amelynek a célja nincs bejárva: fajta → (cím, pozíciók)
+    unchecked: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+    for link in links:
+        if link.to_page_id is None and (found_kind := legal_kind(link.to_url)) is not None:
+            unchecked[found_kind][link.to_url].add(link.position)
+    partial = crawl.completeness(site.con).limited
     legal = {page["page_id"]: page for pages in by_kind.values() for page in pages}
     titles: dict[int, list[str]] = defaultdict(list)       # jogi oldal → címként álló sorok
     for block in extract_queries.blocks(site.con):
@@ -834,9 +841,21 @@ def _legal_pages(site: _Site) -> list[tuple]:
                     "inside": [{"url": p["url"], "headings": p["headings"]} for p in inside]}
         if not holders and embedded and kind in EMBEDDED_KINDS:
             continue                           # a beágyazott ÁSZF tartalma nem látható
-        if not holders:
+        if not holders and unchecked.get(kind):
+            # a hivatkozás megvan, a céloldal nincs bejárva: a hiány nem állítható
+            targets = sorted(unchecked[kind])
+            found.append(("legal_page", "low", None, None,
+                          ("jogi oldal hivatkozva, a cél nincs bejárva (nem ellenőrzött): "
+                           f"{label} ({targets[0]})"),
+                          {**evidence, "status": "linked_unchecked",
+                           "links": [{"url": url, "positions": sorted(unchecked[kind][url])}
+                                     for url in targets]}))
+        elif not holders:
             found.append(("legal_page", "medium", None, None,
-                          f"hiányzó jogi oldal: {label}", {**evidence, "status": "missing"}))
+                          f"hiányzó jogi oldal: {label}"
+                          + (" (részleges bejárás: nem ellenőrzött)" if partial else ""),
+                          {**evidence, "status": "missing",
+                           **({"crawl": "partial"} if partial else {})}))
         elif not any(p["page_id"] in footer for p in holders):
             where = holders[0]["url"]
             in_menu = any(p["page_id"] in menu for p in holders)
@@ -1320,6 +1339,9 @@ def _finding_html(finding: dict) -> str:
                  ("más jogi oldalon belül", "<br>".join(
                      f"{_link(page['url'])}: {_e('; '.join(page['headings']))}"
                      for page in evidence["inside"]))]
+        if evidence.get("links"):
+            pairs.append(("hivatkozott, be nem járt cél", "<br>".join(
+                _link(link["url"]) for link in evidence["links"])))
     else:
         pairs = [("oldal", _link(evidence["url"])), ("H1", _e(evidence["h1"])),
                  ("title", _e(evidence["title"])),

@@ -14,7 +14,6 @@ from aaa2.functions.findings import (
     shares_word,
 )
 from aaa2.functions.graph import _Graph, build_graph
-from aaa2.resolver import overrides
 from aaa2.resolver.pages import (
     helper_list,
     helper_list_name,
@@ -319,27 +318,33 @@ def test_a_canonical_to_another_kind_of_page_stays_separate_and_is_a_finding():
                        "'%/archiv/%'").fetchone() == (None, "other_type")    # nem duplikátum
 
 
-@pytest.mark.parametrize(("crawl", "url", "target", "expected"), [
-    ("", "/blog/meresi-terv/", "/nincs/", ["not_crawled"]),              # teljes crawl
-    ("exclude = ['/nincs/']", "/blog/meresi-terv/", "/nincs/", []),      # a keret kizárta
-    ("sitemap_only = true", "/blog/meresi-terv/", "/nincs/", []),        # korlátozott crawl
-    ("", "/blog/meresi-terv/", "https://masik.hu/x/", []),               # más host
+def crawl_frame(con, mode="links", exclude="", skipped=0):
+    """A crawl kerete, ahogy a futás rögzíti (a megállapítások ebből olvassák, nem a site-fájlból)."""
+    con.execute("INSERT INTO crawl_runs (started_at, finished_at, max_pages, mode, include, "
+                "exclude, skipped_by_limit, stopped) VALUES (current_timestamp, "
+                "current_timestamp, 5000, ?, '', ?, ?, ?)",
+                [mode, exclude, skipped, "oldalkorlát" if skipped else None])
+    return con
+
+
+@pytest.mark.parametrize(("frame", "url", "target", "expected"), [
+    ({}, "/blog/meresi-terv/", "/nincs/", ["not_crawled"]),                    # teljes crawl
+    ({"exclude": "/nincs/"}, "/blog/meresi-terv/", "/nincs/", []),             # a keret kizárta
+    ({"mode": "sitemap"}, "/blog/meresi-terv/", "/nincs/", []),                # sitemap-mód
+    ({"skipped": 3}, "/blog/meresi-terv/", "/nincs/", []),                     # a korláton megállt
+    ({}, "/blog/meresi-terv/", "https://masik.hu/x/", []),                     # más host
 ])
 def test_a_canonical_outside_the_set_is_a_finding_unless_the_crawl_frame_excludes_it(
-        tmp_path, monkeypatch, crawl, url, target, expected):
-    (tmp_path / "pelda.hu.toml").write_text(f"[crawl]\n{crawl}\n", encoding="utf-8")
-    monkeypatch.setattr(overrides, "SITES_DIR", tmp_path)
-    _, found = analysed(articles({url: target}))
+        frame, url, target, expected):
+    _, found = analysed(crawl_frame(articles({url: target}), **frame))
     assert [f[3]["issue"] for f in found if f[0] == "canonical_issue"] == expected
 
 
 def test_a_canonical_that_drops_the_query_is_a_finding_even_on_a_limited_crawl(
         tmp_path, monkeypatch):
-    (tmp_path / "pelda.hu.toml").write_text("[crawl]\nsitemap_only = true\n", encoding="utf-8")
-    monkeypatch.setattr(overrides, "SITES_DIR", tmp_path)
-    con = site({"/": page("Pelda", "<main><h1>Pelda</h1></main>"),
-                "/index.php?route=product/list&latest=1": listing("Újdonságok",
-                                                                  "latest-list-body")})
+    con = crawl_frame(site({"/": page("Pelda", "<main><h1>Pelda</h1></main>"),
+                            "/index.php?route=product/list&latest=1": listing(
+                                "Újdonságok", "latest-list-body")}), mode="sitemap")
     con.execute("UPDATE pages SET canonical = ? WHERE url LIKE '%latest=1%'",
                 [f"{BASE}/index.php"])
     _, found = analysed(con)

@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.9"
+SCHEMA_VERSION = "1.10"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -132,6 +132,10 @@ class CrawlRun(Contract):
     notes: str | None = None
     mode: Literal["links", "sitemap"] | None = None
     crawl_id: int | None = None       # a futás crawlja (a folytatásnál a folytatott crawlé)
+    skipped_by_limit: int | None = None   # az oldalkorlát miatt kimaradt címek; None: nem ismert
+    include: str | None = None        # a hatókör mintái; '' ha nem volt, None: nem ismert
+    exclude: str | None = None
+    stopped: str | None = None        # a megállás oka; None: nem állt meg idő előtt
 
 
 class SitemapFile(Contract):

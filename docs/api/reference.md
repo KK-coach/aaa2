@@ -88,7 +88,8 @@ sitemap(site: 'Site', *, fetch: 'bool' = True, sitemap_url: 'str | None' = None)
 
 A sitemap tényeinek pótlása egy korábbi crawlhoz, oldal-crawl nélkül. (1) Ha a crawl
 idejéről nincs tárolt sitemap, a crawl-sorból visszaállítja, mely címek jöttek a sitemapből.
-(2) A módot nem rögzítő futások módja a site-fájl `[crawl] sitemap_only` beállításából.
+(2) A módot és a hatókört nem rögzítő futások módja és hatóköre a site-fájl `[crawl]`
+részéből (`sitemap_only`, `include`, `exclude`).
 (3) `fetch`: a mai sitemap lekérése (néhány HTTP-kérés a sitemap-fájlokra) külön
 pillanatképbe, a lekérés idejével; `fetch=False`, ha a site azóta megváltozott, és a mai
 sitemap nem a tárolt crawlhoz tartozik.

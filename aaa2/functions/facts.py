@@ -138,17 +138,10 @@ def site_fact_rows(con: duckdb.DuckDBPyConnection) -> list[dict]:
 
 
 def crawl_state(con: duckdb.DuckDBPyConnection) -> tuple[str | None, bool]:
-    """(a crawl módja, megállt-e az oldalkorláton vagy idő előtt). A mód az első futásé (a
-    folytatás ugyanabban a módban fut); a korlát: a sor elérte a futás `max_pages` értékét, vagy
-    a futás megjegyzése megállást rögzít."""
-    runs = crawl.crawl_runs(con)
-    if not runs:
-        return None, False
-    size = crawl.queue_size(con)
-    limit = max((run.max_pages or 0) for run in runs)
-    stopped = any("megállt:" in (run.notes or "") or "megszakítva" in (run.notes or "")
-                  for run in runs[-1:])
-    return runs[0].mode, bool(limit and size >= limit) or stopped
+    """(a crawl módja, megállt-e az oldalkorláton vagy idő előtt) a crawl-modul teljességi
+    állapotából (`crawl.completeness`)."""
+    state = crawl.completeness(con)
+    return state.mode, state.limited
 
 
 def sitemap_facts(con: duckdb.DuckDBPyConnection) -> list[tuple[str, object]]:
@@ -175,9 +168,16 @@ def sitemap_facts(con: duckdb.DuckDBPyConnection) -> list[tuple[str, object]]:
     else:
         has = "igen" if found else "nem"
     pages = {item.url for item in mine if item.url and item.internal}
+    state = crawl.completeness(con)
     return [
         ("crawl módja", MODE_LABELS.get(mode, mode or "")),
-        ("a crawl az oldalkorláton állt meg", yes_no(limited) if crawl.crawl_runs(con) else ""),
+        ("a crawl az oldalkorláton állt meg", yes_no(limited) if state.crawled else ""),
+        ("crawl: a korlát miatt kimaradt címek",
+         "" if state.skipped_by_limit is None else state.skipped_by_limit),
+        ("crawl: a megállás oka", state.stopped or ""),
+        ("crawl: hatókör (include)", state.include or ""),
+        ("crawl: hatókör (exclude)", state.exclude or ""),
+        ("crawl: a bejárás teljessége", "; ".join(state.states)),
         ("sitemap", has),
         ("sitemap: honnan került elő", SOURCE_LABELS.get(source, "")),
         ("sitemap: a robots.txt hivatkozza",

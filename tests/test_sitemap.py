@@ -55,8 +55,8 @@ def crawled():
         "/kimaradt/": html("Kimaradt", "<main><h1>Kimaradt</h1></main>")})
     con.execute("UPDATE site SET robots_txt = ?, https_redirect = true, trailing_slash = true",
                 [f"User-agent: *\nSitemap: {BASE}/sitemap.xml\n"])
-    con.execute("INSERT INTO crawl_runs (started_at, max_pages, notes) VALUES (?, 5000, 'új')",
-                [NOON])
+    con.execute("INSERT INTO crawl_runs (started_at, finished_at, max_pages, notes) VALUES "
+                "(?, ?, 5000, 'új')", [NOON, NOON])
     for url, priority in ((f"{BASE}/", 0), (f"{BASE}/meres/", 10), (f"{BASE}/lista/?a=1&b=2", 10),
                           (f"{BASE}/kimaradt/", 30)):
         con.execute("INSERT INTO crawl_queue (url, priority, status) VALUES (?, ?, 'done')",
