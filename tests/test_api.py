@@ -161,3 +161,51 @@ def test_views_are_a_versioned_contract_consistent_with_the_csv_views(tmp_path):
     assert json.loads(text)["schema_version"] == contracts.SCHEMA_VERSION
     written = api.export_views_json(opened, tmp_path)
     assert written.name == "pelda-views.json" and written.read_text(encoding="utf-8") == text
+
+
+@pytest.mark.parametrize("given, expected", [
+    ({}, (300, True, 3, 45.0, "/bolt/")),                       # a site-fájl értékei
+    ({"max_pages": 50, "sitemap_only": False, "concurrency": 1, "render_timeout": 10.0,
+      "include": "/mas/"}, (50, False, 1, 10.0, "/mas/")),      # a megadott paraméter felülír
+])
+def test_crawl_takes_every_crawl_setting_from_the_site_file(tmp_path, monkeypatch, given,
+                                                            expected):
+    from aaa2.api import steps
+    from aaa2.resolver.overrides import load_site_config
+
+    (tmp_path / "pelda.hu.toml").write_text(
+        "[crawl]\ninclude = '/bolt/'\nconcurrency = 3\nrender_timeout = 45\n"
+        "max_pages = 300\nsitemap_only = true\n", encoding="utf-8")
+    monkeypatch.setattr(steps, "load_site_config",
+                        lambda domain: load_site_config(domain, tmp_path))
+    seen = {}
+
+    async def fake_crawl(url, options, progress=None):
+        seen["options"] = options
+        return None, tmp_path / "pelda.hu.duckdb"
+
+    monkeypatch.setattr(steps, "run_crawl", fake_crawl)
+    result = steps.crawl("https://pelda.hu/", **given)
+    options = seen["options"]
+    assert (options.max_pages, options.sitemap_only, options.concurrency,
+            options.render_timeout, options.include) == expected
+    assert result.options is options
+
+
+def test_crawl_without_a_site_file_uses_the_defaults(tmp_path, monkeypatch):
+    from aaa2.api import steps
+    from aaa2.resolver.overrides import load_site_config
+
+    monkeypatch.setattr(steps, "load_site_config",
+                        lambda domain: load_site_config(domain, tmp_path))
+    seen = {}
+
+    async def fake_crawl(url, options, progress=None):
+        seen["options"] = options
+        return None, tmp_path / "x.duckdb"
+
+    monkeypatch.setattr(steps, "run_crawl", fake_crawl)
+    steps.crawl("https://pelda.hu/")
+    options = seen["options"]
+    assert (options.max_pages, options.sitemap_only, options.concurrency) == (
+        steps.MAX_PAGES, False, steps.CONCURRENCY)

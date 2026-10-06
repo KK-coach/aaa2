@@ -79,15 +79,17 @@ class CrawlResult:
     site_file_scope: bool
 
 
-def crawl(url: str, *, sitemap: str | None = None, max_pages: int = MAX_PAGES,
+def crawl(url: str, *, sitemap: str | None = None, max_pages: int | None = None,
           concurrency: int | None = None, render_timeout: float | None = None,
           respect_robots: bool = True, resume: bool = False, include: str | None = None,
-          exclude: str | None = None,
+          exclude: str | None = None, sitemap_only: bool | None = None,
           progress: Callable[[str, int | None, str | None], None] | None = None,
           on_options: Callable[[CrawlOptions, bool], None] | None = None) -> CrawlResult:
     """Egy site sitewide crawlja Playwright-renderrel a `data/<domain>.duckdb`-be. Az include,
-    az exclude, a párhuzamosság és a render-időkorlát alapja a site-fájl `[crawl]` része
-    (`aaa2/core/sites/<domain>.toml`), ha van; a megadott paraméter felülírja. `progress`:
+    az exclude, a párhuzamosság, a render-időkorlát, az oldalkorlát (`max_pages`) és a
+    sitemap-mód (`sitemap_only`) alapja a site-fájl `[crawl]` része
+    (`aaa2/core/sites/<domain>.toml`), ha van; a megadott paraméter felülírja, a site-fájl
+    hiányzó értéke helyett az alapérték áll. `progress`:
     oldalanként (URL, státusz, hiba); `on_options`: a crawl indulása előtt a tényleges beállítás.
     Hibás site-fájl vagy seed: `ApiError`."""
     try:
@@ -95,7 +97,8 @@ def crawl(url: str, *, sitemap: str | None = None, max_pages: int = MAX_PAGES,
     except ValueError as exc:
         raise ApiError(f"hiba: {exc}") from exc
     options = CrawlOptions(
-        sitemap=sitemap, max_pages=max_pages,
+        sitemap=sitemap, max_pages=max_pages or site.max_pages or MAX_PAGES,
+        sitemap_only=site.sitemap_only if sitemap_only is None else sitemap_only,
         concurrency=concurrency or site.concurrency or CONCURRENCY,
         render_timeout=render_timeout or site.render_timeout or RENDER_TIMEOUT,
         respect_robots=respect_robots, resume=resume,
