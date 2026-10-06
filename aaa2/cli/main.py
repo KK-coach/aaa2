@@ -21,7 +21,12 @@ def crawl(
     sitemap: Annotated[
         str | None, typer.Option(help="Sitemap URL; alapból robots.txt / sitemap.xml")
     ] = None,
-    max_pages: Annotated[int, typer.Option(help="keményhatár a sor méretére")] = api.MAX_PAGES,
+    max_pages: Annotated[int | None, typer.Option(
+        help=f"keményhatár a sor méretére (alapból a site-fájlé, különben {api.MAX_PAGES})")] = None,
+    sitemap_only: Annotated[bool | None, typer.Option(
+        "--sitemap-only/--follow-links",
+        help="sitemap-mód: a sorba csak a seed és a sitemap címei kerülnek "
+             "(alapból a site-fájlé, különben link alapú)")] = None,
     concurrency: Annotated[
         int | None,
         typer.Option(help=f"párhuzamos Playwright-contextek (alapból {api.CONCURRENCY})")
@@ -42,12 +47,14 @@ def crawl(
     quiet: Annotated[bool, typer.Option(help="oldalanként ne írjon sort")] = False,
 ) -> None:
     """Egy site sitewide crawlja Playwright-renderrel a data/<domain>.duckdb-be. Az include, az
-    exclude és a párhuzamosság alapja a site-fájl `[crawl]` része, ha van
-    (`aaa2/core/sites/<domain>.toml`); a parancssor felülírja."""
+    exclude, a párhuzamosság, az oldalkorlát és a sitemap-mód alapja a site-fájl `[crawl]`
+    része, ha van (`aaa2/core/sites/<domain>.toml`); a parancssor felülírja."""
 
     def on_options(options, scoped: bool) -> None:
         if scoped:
-            typer.echo(f"site-fájl: include={options.include!r} exclude={options.exclude!r}")
+            typer.echo(f"site-fájl: include={options.include!r} exclude={options.exclude!r} "
+                       f"max_pages={options.max_pages} "
+                       f"mód={'sitemap' if options.sitemap_only else 'link alapú'}")
 
     def progress(page_url: str, page_status: int | None, error: str | None) -> None:
         if not quiet:
@@ -58,7 +65,8 @@ def crawl(
         result = api.crawl(
             url, sitemap=sitemap, max_pages=max_pages, concurrency=concurrency,
             render_timeout=render_timeout, respect_robots=respect_robots, resume=resume,
-            include=include, exclude=exclude, progress=progress, on_options=on_options)
+            include=include, exclude=exclude, sitemap_only=sitemap_only, progress=progress,
+            on_options=on_options)
     except api.ApiError as exc:
         _fail(exc)
     summary = result.summary
@@ -286,6 +294,33 @@ def graph(
     typer.echo(f"súlyozott entitás: {run.weights}")
     for path in paths.values():
         typer.echo(str(path))
+
+
+@app.command()
+def sitemap(
+    domain: Annotated[str, typer.Argument(help="registrable domain vagy egy URL a site-ról")],
+    db: Annotated[Path | None, typer.Option(
+        help="a site-adatbázis útvonala (alapból data/<domain>.duckdb)")] = None,
+    fetch: Annotated[bool, typer.Option(
+        "--fetch/--no-fetch",
+        help="a mai sitemap lekérése (csak a sitemap-fájlok, oldal nem)")] = True,
+    url: Annotated[str | None, typer.Option(help="a sitemap címe; alapból a tárolt robots.txt "
+                                                 "Sitemap-sorai, különben az alapútvonalak")] = None,
+) -> None:
+    """A sitemap tényeinek pótlása egy korábbi crawlhoz, új oldal-crawl nélkül: a crawl idején
+    a sitemapből jött címek a crawl-sorból, a futás módja a site-fájlból, és (`--fetch`) a mai
+    sitemap külön pillanatképben, a lekérés idejével."""
+    site = _open(domain, db)
+    try:
+        result = api.sitemap(site, fetch=fetch, sitemap_url=url)
+    except api.ApiError as exc:
+        _fail(exc)
+    finally:
+        site.close()
+    typer.echo(f"a crawl-sorból visszaállított sitemap-cím: {result.restored}; módot kapott "
+               f"futás: {result.modes}")
+    if result.source is not None:
+        typer.echo(f"lekérve: forrás {result.source}, {result.files} fájl, {result.urls} cím")
 
 
 @app.command()

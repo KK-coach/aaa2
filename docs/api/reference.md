@@ -69,14 +69,29 @@ A megállapításokhoz előbb a gráf kell (`build_graph`).
 ### `crawl`
 
 ```python
-crawl(url: 'str', *, sitemap: 'str | None' = None, max_pages: 'int' = 5000, concurrency: 'int | None' = None, render_timeout: 'float | None' = None, respect_robots: 'bool' = True, resume: 'bool' = False, include: 'str | None' = None, exclude: 'str | None' = None, progress: 'Callable[[str, int | None, str | None], None] | None' = None, on_options: 'Callable[[CrawlOptions, bool], None] | None' = None) -> 'CrawlResult'
+crawl(url: 'str', *, sitemap: 'str | None' = None, max_pages: 'int | None' = None, concurrency: 'int | None' = None, render_timeout: 'float | None' = None, respect_robots: 'bool' = True, resume: 'bool' = False, include: 'str | None' = None, exclude: 'str | None' = None, sitemap_only: 'bool | None' = None, progress: 'Callable[[str, int | None, str | None], None] | None' = None, on_options: 'Callable[[CrawlOptions, bool], None] | None' = None) -> 'CrawlResult'
 ```
 
 Egy site sitewide crawlja Playwright-renderrel a `data/<domain>.duckdb`-be. Az include,
-az exclude, a párhuzamosság és a render-időkorlát alapja a site-fájl `[crawl]` része
-(`aaa2/core/sites/<domain>.toml`), ha van; a megadott paraméter felülírja. `progress`:
+az exclude, a párhuzamosság, a render-időkorlát, az oldalkorlát (`max_pages`) és a
+sitemap-mód (`sitemap_only`) alapja a site-fájl `[crawl]` része
+(`aaa2/core/sites/<domain>.toml`), ha van; a megadott paraméter felülírja, a site-fájl
+hiányzó értéke helyett az alapérték áll. `progress`:
 oldalanként (URL, státusz, hiba); `on_options`: a crawl indulása előtt a tényleges beállítás.
 Hibás site-fájl vagy seed: `ApiError`.
+
+### `sitemap`
+
+```python
+sitemap(site: 'Site', *, fetch: 'bool' = True, sitemap_url: 'str | None' = None) -> 'SitemapResult'
+```
+
+A sitemap tényeinek pótlása egy korábbi crawlhoz, oldal-crawl nélkül. (1) Ha a crawl
+idejéről nincs tárolt sitemap, a crawl-sorból visszaállítja, mely címek jöttek a sitemapből.
+(2) A módot nem rögzítő futások módja a site-fájl `[crawl] sitemap_only` beállításából.
+(3) `fetch`: a mai sitemap lekérése (néhány HTTP-kérés a sitemap-fájlokra) külön
+pillanatképbe, a lekérés idejével; `fetch=False`, ha a site azóta megváltozott, és a mai
+sitemap nem a tárolt crawlhoz tartozik.
 
 ### `extract`
 
@@ -178,6 +193,19 @@ Mezők:
 - `path`: `Path`
 - `options`: `CrawlOptions`
 - `site_file_scope`: `bool`
+
+### `SitemapResult`
+
+A sitemap pótlása egy tárolt crawlhoz: a sorból visszaállított címek száma (`restored`),
+hány futás kapott módot (`modes`), és ha volt lekérés: a forrás, a fájlok és a címek száma.
+
+Mezők:
+
+- `restored`: `int`
+- `modes`: `int`
+- `source`: `str | None`
+- `files`: `int`
+- `urls`: `int`
 
 ### `ExtractResult`
 

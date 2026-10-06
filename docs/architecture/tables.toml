@@ -33,6 +33,14 @@ contracts = ["CrawlRun"]
 owner = "crawl"
 contracts = []
 
+[tables.sitemap_files]
+owner = "crawl"
+contracts = ["SitemapFile"]
+
+[tables.sitemap_urls]
+owner = "crawl"
+contracts = ["SitemapUrl"]
+
 [tables.pages]
 owner = "crawl"
 contracts = ["Page", "PageMeta"]

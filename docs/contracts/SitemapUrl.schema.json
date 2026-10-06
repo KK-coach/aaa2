@@ -1,0 +1,108 @@
+{
+  "additionalProperties": false,
+  "description": "Egy cím a sitemapből (`sitemap_urls`): a nyers cím és a normalizált cím (a crawl\ncímeivel azonos normalizálással), a site címe-e, `lastmod`, a fájl. `source = queue`: a\nkorábbi crawl sorából visszaállított cím (nyers cím, fájl és lastmod nélkül).",
+  "properties": {
+    "fetched_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fetched At"
+    },
+    "internal": {
+      "default": true,
+      "title": "Internal",
+      "type": "boolean"
+    },
+    "lastmod": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Lastmod"
+    },
+    "ordinal": {
+      "title": "Ordinal",
+      "type": "integer"
+    },
+    "raw_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Raw Url"
+    },
+    "schema_version": {
+      "default": "1.8",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sitemap_file": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sitemap File"
+    },
+    "snapshot": {
+      "enum": [
+        "crawl",
+        "refetch"
+      ],
+      "title": "Snapshot",
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "given",
+        "robots",
+        "default",
+        "queue"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Url"
+    }
+  },
+  "required": [
+    "snapshot",
+    "ordinal",
+    "source"
+  ],
+  "title": "SitemapUrl",
+  "type": "object",
+  "x-module": "crawl",
+  "x-schema-version": "1.8"
+}

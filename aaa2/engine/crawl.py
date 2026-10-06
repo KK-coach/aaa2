@@ -63,6 +63,7 @@ from aaa2.engine.frontier import (
     QueueItem,
     discover,
     fetch_robots,
+    refetch_sitemap,
 )
 from aaa2.engine.normalize import UrlPolicy, is_internal, normalize, slash_alternate
 from aaa2.engine.parse import ParsedPage, parse_page
@@ -192,9 +193,10 @@ class _Run:
         if self.options.resume:
             await self._resume()
         (self.run_id,) = self.con.execute(
-            "INSERT INTO crawl_runs (started_at, max_pages, concurrency, notes) "
-            "VALUES (?, ?, ?, ?) RETURNING run_id",
-            [started, self.options.max_pages, self.options.concurrency, f"{mode}: {seed_url}"],
+            "INSERT INTO crawl_runs (started_at, max_pages, concurrency, notes, mode) "
+            "VALUES (?, ?, ?, ?, ?) RETURNING run_id",
+            [started, self.options.max_pages, self.options.concurrency, f"{mode}: {seed_url}",
+             "sitemap" if self.options.sitemap_only else "links"],
         ).fetchone()
         finished = False
         try:
@@ -561,3 +563,17 @@ def _transaction(con: duckdb.DuckDBPyConnection) -> Iterator[None]:
 
 def _now() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
+
+
+SITEMAP_USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
+
+
+async def run_sitemap_refetch(con: duckdb.DuckDBPyConnection, sitemap: str | None = None
+                              ) -> tuple[str, int, int]:
+    """A sitemap utólagos lekérése egy tárolt crawlhoz (`frontier.refetch_sitemap`): csak a
+    sitemap-fájlokat kéri le, böngésző és oldal-lekérés nélkül."""
+    async with httpx.AsyncClient(
+        headers={"User-Agent": SITEMAP_USER_AGENT, **NAVIGATION_HEADERS}, timeout=HTTP_TIMEOUT
+    ) as client:
+        return await refetch_sitemap(con, client, sitemap)

@@ -163,7 +163,8 @@ def test_page_facts_and_the_page_view_columns(tmp_path):
     meres = next(row for row in rows if row["url"].endswith("/meres/"))
     assert (meres["státusz"], meres["szószám"], meres["bejövő belső linkek"]) == ("200", "42", "2")
     assert sorted(path.name for key, path in paths.items()
-                  if key in ("links", "structured", "site_facts")) == [
-        "pelda-view-links.csv", "pelda-view-site-facts.csv", "pelda-view-structured-data.csv"]
+                  if key in ("links", "structured", "site_facts", "sitemap")) == [
+        "pelda-view-links.csv", "pelda-view-site-facts.csv", "pelda-view-sitemap.csv",
+        "pelda-view-structured-data.csv"]
     with paths["site_facts"].open(encoding="utf-8-sig", newline="") as handle:
         assert next(csv.reader(handle)) == ["tény", "érték"]

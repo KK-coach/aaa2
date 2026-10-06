@@ -22,6 +22,7 @@ import re
 import zlib
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import duckdb
@@ -47,6 +48,11 @@ _LOC = re.compile(
     r"<loc(?:\s[^>]*)?>\s*(?:<!\[CDATA\[)?\s*(.*?)\s*(?:\]\]>)?\s*</loc>", re.IGNORECASE | re.DOTALL
 )
 _SITEMAP_INDEX = re.compile(r"<sitemapindex[\s>]", re.IGNORECASE)
+_URL_BLOCK = re.compile(r"<url(?:\s[^>]*)?>(.*?)</url>", re.IGNORECASE | re.DOTALL)
+_LASTMOD = re.compile(r"<lastmod(?:\s[^>]*)?>\s*(.*?)\s*</lastmod>", re.IGNORECASE | re.DOTALL)
+# alapútvonalak, ha a robots.txt nem hivatkoz sitemapet; az első, amelyik sitemapet ad
+DEFAULT_SITEMAPS = ("/sitemap.xml", "/sitemap_index.xml", "/wp-sitemap.xml")
+SITEMAP_SOURCES = ("given", "robots", "default")
 
 
 @dataclass(frozen=True)
@@ -94,8 +100,31 @@ class Robots:
 
 
 @dataclass(frozen=True)
+class SitemapUrl:
+    """Egy cím a sitemapből: a nyers cím, a `lastmod` (ahogy a fájlban áll) és a fájl."""
+
+    raw_url: str
+    lastmod: str | None = None
+    sitemap_file: str | None = None
+
+
+@dataclass(frozen=True)
+class SitemapFile:
+    """Egy lekért sitemap-fájl: megvan-e (200-as válasz címmel vagy sitemap indexszel), index-e,
+    és hány címet adott (az ismétlődőkkel együtt)."""
+
+    url: str
+    found: bool
+    is_index: bool = False
+    urls: int = 0
+
+
+@dataclass(frozen=True)
 class Discovery:
-    """A crawl előtti hálózati felmérés: átirányítás, robots.txt, sitemap-URL-ek."""
+    """A crawl előtti hálózati felmérés: átirányítás, robots.txt, sitemap-URL-ek. A sitemap
+    részletei: honnan került elő (`sitemap_source`: given, robots, default), a címek a
+    `lastmod`-dal és a fájljukkal (`sitemap_entries`), a lekért fájlok (`sitemap_files`) és a
+    lekérés ideje."""
 
     https_redirect: bool = False
     https_redirect_status: int | None = None
@@ -103,6 +132,10 @@ class Discovery:
     sitemap_urls: tuple[str, ...] = ()
     robots_status: int | None = None
     robots_txt: str | None = None
+    sitemap_source: str | None = None
+    sitemap_entries: tuple[SitemapUrl, ...] = ()
+    sitemap_files: tuple[SitemapFile, ...] = ()
+    sitemap_fetched_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -121,26 +154,56 @@ async def discover(
     max_urls: int = MAX_SITEMAP_URLS,
 ) -> Discovery:
     """https-próba, robots.txt, sitemap. A sitemap a `sitemap` URL-ből, különben a robots.txt
-    Sitemap-soraiból, különben a `/sitemap.xml`-ből jön. A robots.txt Sitemap-sorait
-    `respect_robots=False` mellett is felhasználja."""
+    Sitemap-soraiból, különben az alapútvonalakról jön (`DEFAULT_SITEMAPS`: az első, amelyik
+    sitemapet ad). A robots.txt Sitemap-sorait `respect_robots=False` mellett is felhasználja."""
     https_redirect, https_redirect_status = await probe_https_redirect(client, seed_url)
     robots_status, robots_txt = await fetch_robots_file(client, seed_url)
     robots = Robots.parse(robots_txt) if robots_txt is not None else None
-    if sitemap:
-        roots = [sitemap]
-    elif robots is not None and robots.sitemaps:
-        roots = list(robots.sitemaps)
-    else:
-        roots = [urljoin(seed_url, "/sitemap.xml")]
-    urls = await read_sitemaps(client, roots, max_urls=max_urls)
+    source, entries, files = await find_sitemap(
+        client, seed_url, sitemap=sitemap, robots_sitemaps=robots.sitemaps if robots else (),
+        max_urls=max_urls)
     return Discovery(
         https_redirect=https_redirect,
         https_redirect_status=https_redirect_status,
         robots=robots if respect_robots else None,
-        sitemap_urls=tuple(urls),
+        sitemap_urls=tuple(dict.fromkeys(entry.raw_url for entry in entries)),
         robots_status=robots_status,
         robots_txt=robots_txt,
+        sitemap_source=source,
+        sitemap_entries=tuple(entries),
+        sitemap_files=tuple(files),
+        sitemap_fetched_at=_now(),
     )
+
+
+def _now() -> datetime:
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
+async def find_sitemap(
+    client: httpx.AsyncClient,
+    seed_url: str,
+    *,
+    sitemap: str | None = None,
+    robots_sitemaps: Sequence[str] = (),
+    max_urls: int = MAX_SITEMAP_URLS,
+) -> tuple[str, list[SitemapUrl], list[SitemapFile]]:
+    """(forrás, címek, lekért fájlok). Forrás: `given` (megadott cím), `robots` (a robots.txt
+    Sitemap-sorai), `default` (alapútvonal: sorban próbálva, az első, amelyik sitemapet ad)."""
+    if sitemap:
+        source, attempts = "given", [[sitemap]]
+    elif robots_sitemaps:
+        source, attempts = "robots", [list(robots_sitemaps)]
+    else:
+        source, attempts = "default", [[urljoin(seed_url, path)] for path in DEFAULT_SITEMAPS]
+    entries: list[SitemapUrl] = []
+    files: list[SitemapFile] = []
+    for roots in attempts:
+        entries, found = await read_sitemap_files(client, roots, max_urls=max_urls)
+        files += found
+        if any(item.found for item in found):
+            break
+    return source, entries, files
 
 
 async def probe_https_redirect(
@@ -197,30 +260,141 @@ async def read_sitemaps(
     max_files: int = MAX_SITEMAP_FILES,
 ) -> list[str]:
     """Az oldal-URL-ek a sitemapokból, sitemap indexet kibontva, gzipet kicsomagolva, ismétlés nélkül."""
+    entries, _ = await read_sitemap_files(client, roots, max_urls=max_urls, max_files=max_files)
+    return list(dict.fromkeys(entry.raw_url for entry in entries))
+
+
+async def read_sitemap_files(
+    client: httpx.AsyncClient,
+    roots: Sequence[str],
+    *,
+    max_urls: int = MAX_SITEMAP_URLS,
+    max_files: int = MAX_SITEMAP_FILES,
+) -> tuple[list[SitemapUrl], list[SitemapFile]]:
+    """A sitemapok címei (a `lastmod`-dal és a fájljukkal; az ismétlődő cím minden előfordulása
+    külön tétel, a `max_urls` a különböző címekre vonatkozik) és a lekért fájlok, sitemap indexet
+    kibontva, gzipet kicsomagolva."""
     pending = list(roots)
     seen_files: set[str] = set()
-    urls: list[str] = []
+    entries: list[SitemapUrl] = []
+    files: list[SitemapFile] = []
     seen_urls: set[str] = set()
-    while pending and len(seen_files) < max_files and len(urls) < max_urls:
+    while pending and len(seen_files) < max_files and len(seen_urls) < max_urls:
         sitemap_url = pending.pop(0)
         if sitemap_url in seen_files:
             continue
         seen_files.add(sitemap_url)
         body = await _fetch(client, sitemap_url)
         if body is None:
+            files.append(SitemapFile(sitemap_url, False))
             continue
         text = body.decode("utf-8", "replace")
         locs = [html.unescape(loc) for loc in _LOC.findall(text)]
         if _SITEMAP_INDEX.search(text):
             pending.extend(urljoin(sitemap_url, loc) for loc in locs)
+            files.append(SitemapFile(sitemap_url, True, True))
             continue
+        lastmods: dict[str, str] = {}
+        for block in _URL_BLOCK.findall(text):
+            loc, lastmod = _LOC.search(block), _LASTMOD.search(block)
+            if loc and lastmod and lastmod.group(1):
+                lastmods.setdefault(html.unescape(loc.group(1)), lastmod.group(1))
+        added = 0
         for loc in locs:
-            if len(urls) >= max_urls:
-                break
-            if loc and loc not in seen_urls:
+            if not loc:
+                continue
+            if loc not in seen_urls:
+                if len(seen_urls) >= max_urls:
+                    break
                 seen_urls.add(loc)
-                urls.append(loc)
-    return urls
+            entries.append(SitemapUrl(loc, lastmods.get(loc), sitemap_url))
+            added += 1
+        files.append(SitemapFile(sitemap_url, bool(locs), False, added))
+    return entries, files
+
+
+def store_sitemap(
+    con: duckdb.DuckDBPyConnection,
+    policy: UrlPolicy,
+    source: str,
+    entries: Sequence[SitemapUrl],
+    files: Sequence[SitemapFile],
+    *,
+    snapshot: str,
+    fetched_at: datetime | None,
+) -> None:
+    """A sitemap tárolása (`sitemap_files`, `sitemap_urls`): a `snapshot` korábbi sorai helyére.
+    A címek a crawl címeivel azonos normalizálással kerülnek a `url` oszlopba."""
+    con.execute("DELETE FROM sitemap_files WHERE snapshot = ?", [snapshot])
+    con.execute("DELETE FROM sitemap_urls WHERE snapshot = ?", [snapshot])
+    for ordinal, item in enumerate(files):
+        con.execute(
+            "INSERT INTO sitemap_files (snapshot, ordinal, url, source, found, is_index, urls, "
+            "fetched_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [snapshot, ordinal, item.url, source, item.found, item.is_index, item.urls,
+             fetched_at])
+    for ordinal, entry in enumerate(entries):
+        con.execute(
+            "INSERT INTO sitemap_urls (snapshot, ordinal, raw_url, url, internal, lastmod, "
+            "sitemap_file, source, fetched_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [snapshot, ordinal, entry.raw_url, normalize(entry.raw_url, policy),
+             is_internal(entry.raw_url, policy), entry.lastmod, entry.sitemap_file, source,
+             fetched_at])
+
+
+def stored_policy(con: duckdb.DuckDBPyConnection) -> UrlPolicy | None:
+    """A tárolt crawl URL-szabályai a `site` táblából (seed, https-átirányítás, záró perjel)."""
+    row = con.execute("SELECT seed_url, https_redirect, trailing_slash FROM site").fetchone()
+    if row is None:
+        return None
+    seed_url, https_redirect, trailing_slash = row
+    policy = UrlPolicy.from_seed(seed_url, https_redirect=bool(https_redirect))
+    return replace(policy, trailing_slash=trailing_slash)
+
+
+def restore_sitemap_from_queue(con: duckdb.DuckDBPyConnection) -> int:
+    """A korábbi crawl sitemap-címei a crawl-sorból (`crawl_queue.priority` = sitemap), ha a
+    crawl idejéről nincs tárolt sitemap: a `crawl` pillanatkép `queue` forrással, nyers cím,
+    fájl és lastmod nélkül. Visszaad: hány cím került be (0, ha már volt tárolt sitemap)."""
+    (stored,) = con.execute(
+        "SELECT (SELECT count(*) FROM sitemap_urls WHERE snapshot = 'crawl') + (SELECT count(*) "
+        "FROM sitemap_files WHERE snapshot = 'crawl')").fetchone()
+    if stored:
+        return 0
+    started = con.execute("SELECT min(started_at) FROM crawl_runs").fetchone()[0]
+    urls = [url for (url,) in con.execute(
+        "SELECT url FROM crawl_queue WHERE priority = ? ORDER BY url",
+        [PRIORITY["sitemap"]]).fetchall()]
+    for ordinal, url in enumerate(urls):
+        con.execute(
+            "INSERT INTO sitemap_urls (snapshot, ordinal, raw_url, url, internal, lastmod, "
+            "sitemap_file, source, fetched_at) VALUES ('crawl', ?, NULL, ?, true, NULL, NULL, "
+            "'queue', ?)", [ordinal, url, started])
+    return len(urls)
+
+
+def record_missing_mode(con: duckdb.DuckDBPyConnection, sitemap_only: bool) -> int:
+    """A mód pótlása azokon a futásokon, amelyek még nem rögzítették (`crawl_runs.mode` üres):
+    `sitemap`, ha a crawl sitemap-módban futott, különben `links`. Visszaad: hány futáson."""
+    mode = "sitemap" if sitemap_only else "links"
+    return len(con.execute("UPDATE crawl_runs SET mode = ? WHERE mode IS NULL RETURNING run_id",
+                           [mode]).fetchall())
+
+
+async def refetch_sitemap(con: duckdb.DuckDBPyConnection, client: httpx.AsyncClient,
+                          sitemap: str | None = None) -> tuple[str, int, int]:
+    """A sitemap utólagos lekérése egy tárolt crawlhoz (`refetch` pillanatkép): csak a
+    sitemap-fájlokat kéri le, oldalt nem. A forrás a tárolt robots.txt Sitemap-soraiból, különben
+    az alapútvonalakról jön. Visszaad: (forrás, fájlok száma, címek száma)."""
+    policy = stored_policy(con)
+    if policy is None:
+        raise ValueError("nincs tárolt crawl: a site tábla üres")
+    seed_url, robots_txt = con.execute("SELECT seed_url, robots_txt FROM site").fetchone()
+    robots = Robots.parse(robots_txt) if robots_txt is not None else None
+    source, entries, files = await find_sitemap(
+        client, seed_url, sitemap=sitemap, robots_sitemaps=robots.sitemaps if robots else ())
+    store_sitemap(con, policy, source, entries, files, snapshot="refetch", fetched_at=_now())
+    return source, len(files), len(entries)
 
 
 class Frontier:
@@ -298,6 +472,12 @@ class Frontier:
                 include=include, exclude=exclude, follow_links=follow_links,
             )
             frontier._insert(seed, depth=0, priority=PRIORITY["seed"], discovered_from=None)
+            con.execute("DELETE FROM sitemap_files")
+            con.execute("DELETE FROM sitemap_urls")
+            if discovery.sitemap_source is not None:
+                store_sitemap(con, policy, discovery.sitemap_source, discovery.sitemap_entries,
+                              discovery.sitemap_files, snapshot="crawl",
+                              fetched_at=discovery.sitemap_fetched_at)
             for url in discovery.sitemap_urls:
                 frontier.add(url, depth=1, priority=PRIORITY["sitemap"])
             frontier.add_links(QueueItem(seed, 0, PRIORITY["seed"]), links)

@@ -55,6 +55,7 @@ from aaa2.api.steps import (
     GraphResult,
     RebuildResult,
     ResolveResult,
+    SitemapResult,
     build_graph,
     check_models,
     crawl,
@@ -63,6 +64,7 @@ from aaa2.api.steps import (
     find,
     rebuild_entities,
     resolve,
+    sitemap,
     validate,
 )
 from aaa2.engine.frontier import MAX_PAGES
@@ -94,6 +96,7 @@ __all__ = [
     "SiteNotFound",
     # állapot és költség
     "SiteStatus",
+    "SitemapResult",
     "build_graph",
     "check_models",
     "crawl",
@@ -123,6 +126,7 @@ __all__ = [
     "resolve",
     # lekérdezések (szerződések)
     "site_profile",
+    "sitemap",
     "status",
     "structured_data",
     "table_rows",

@@ -33,6 +33,8 @@ from aaa2.contracts.models import (
     PageView,
     Relation,
     Site,
+    SitemapFile,
+    SitemapUrl,
     SiteViews,
     StructuredData,
 )
@@ -72,5 +74,7 @@ __all__ = [
     "Relation",
     "Site",
     "SiteViews",
+    "SitemapFile",
+    "SitemapUrl",
     "StructuredData",
 ]

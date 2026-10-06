@@ -83,7 +83,7 @@
       "type": "string"
     },
     "schema_version": {
-      "default": "1.7",
+      "default": "1.8",
       "title": "Schema Version",
       "type": "string"
     },
@@ -126,5 +126,5 @@
   "title": "PageNode",
   "type": "object",
   "x-module": "graph",
-  "x-schema-version": "1.7"
+  "x-schema-version": "1.8"
 }
