@@ -186,3 +186,47 @@ def test_site_credentials_are_validated(tmp_path, body):
     (tmp_path / "x.hu.toml").write_text(body, encoding="utf-8")
     with pytest.raises(ValueError):
         load_site_credentials("x.hu", tmp_path)
+
+
+def test_a_mistyped_provider_section_is_an_error_not_the_default_key(tmp_path, monkeypatch):
+    """Az elgépelt `[llm.opneai]` szakasz nem maradhat észrevétlen: nélküle a site az alap
+    OpenAI-kulccsal futna, az ügyfélnek szánt fiókelkülönítés elmaradna."""
+    (tmp_path / "ugyfel.hu.toml").write_text(
+        "[llm.opneai]\nkey_env = 'OPENAI_API_KEY_X'\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="ismeretlen szolgáltató"):
+        load_site_credentials("ugyfel.hu", tmp_path)
+
+
+@pytest.mark.parametrize("body", ["[llm]\nopenai = 'OPENAI_API_KEY_X'\n",
+                                  "[llm.openai]\n"])
+def test_a_provider_section_must_be_a_table_with_content(tmp_path, body):
+    (tmp_path / "x.hu.toml").write_text(body, encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_site_credentials("x.hu", tmp_path)
+
+
+@pytest.mark.parametrize("change, message", [
+    (lambda text: text + "\n[opneai]\nmodel = 'x'\n", "opneai"),
+    (lambda text: text.replace("[openai]\n", "[openai]\nkey_evn = 'X'\n", 1), "key_evn"),
+])
+def test_an_unknown_section_or_key_in_the_model_config_is_an_error(tmp_path, change, message):
+    from aaa2.llm.config import CONFIG_PATH, load_config
+
+    path = tmp_path / "models.toml"
+    path.write_text(change(CONFIG_PATH.read_text(encoding="utf-8")), encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        load_config(path)
+
+
+def test_key_sources_name_the_key_set_without_its_value(tmp_path):
+    from aaa2.llm.client import key_sources
+    from aaa2.llm.config import load_config
+
+    config = load_config()
+    base = key_sources(config, {}, ["openai"])
+    assert base == [f"LLM-kulcs: openai: {config.providers['openai'].key_env} (alapkulcs)"]
+    own = key_sources(config, {"openai": Credentials("OPENAI_API_KEY_X", "proj_x")},
+                      ["openai", "anthropic"])
+    assert own == [
+        f"LLM-kulcs: anthropic: {config.providers['anthropic'].key_env} (alapkulcs)",
+        "LLM-kulcs: openai: OPENAI_API_KEY_X (a site-fájl kulcsa), projekt proj_x"]

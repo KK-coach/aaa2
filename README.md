@@ -21,11 +21,19 @@ A terv és a döntések a projektindítóban vannak (Claude-dokumentum, AAA v2 p
 
 ```bash
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
+pip install -e ".[dev]" -c constraints.txt
 playwright install chromium
-pytest
+pytest -m "not slow" -n auto
 aaa --help
 ```
+
+A `constraints.txt` a tesztelt függőségverziókat rögzíti (tiszta környezetben, Windows,
+Python 3.14: a gyors tesztsor ezekkel fut le); nélküle a `pyproject.toml` tartományai szerint a
+legfrissebb verziók települnek. A `selectolax` felső korlátja (`<1`) a `pyproject.toml`-ban is
+áll: az 1.0 megszünteti a kód által használt `selectolax.parser.HTMLParser` osztályt. A
+`httpx[socks]` extra a SOCKS-proxy mögötti futáshoz kell. A CI (`.github/workflows/ci.yml`)
+ugyanezt a telepítést és a gyors tesztsort futtatja tiszta gépen; a felvételt visszajátszó
+és az élő tesztek kimaradnak.
 
 ## Konvenciók
 
