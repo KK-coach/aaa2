@@ -53,16 +53,19 @@ def test_six_workers_storing_the_same_cache_keys_do_not_conflict(tmp_path):
 
 
 async def test_the_retry_after_a_403_has_the_same_hard_limit(make_renderer, monkeypatch):  # noqa: F811
-    # a határidő elég tág a rendes kísérletnek lassú gépen is (2 × 2 + 1 = 5 mp)
-    monkeypatch.setattr(render_module, "HARD_TIMEOUT_MARGIN_S", 1.0)
-    renderer, _ = await make_renderer({"https://kk.test/": 403}, render_timeout=2.0)
+    # az első (rendes) kísérlet a szokott, tág határidővel fut, lassú gépen is; a határidő csak
+    # a 403 után, a második kísérlet előtt rövidül le, hogy a beragadás hamar kiderüljön
+    renderer, _ = await make_renderer({"https://kk.test/": 403})
     original, attempts = renderer._render_page, []
 
     async def hang_on_the_fallback(context, url, retryable):
         attempts.append(url)
         if len(attempts) > 1:                   # a másik user-agenttel indított kísérlet beragad
             await asyncio.Event().wait()
-        return await original(context, url, retryable)
+        result = await original(context, url, retryable)
+        monkeypatch.setattr(render_module, "HARD_TIMEOUT_MARGIN_S", 0.3)
+        renderer.render_timeout = 0.2
+        return result
 
     renderer._render_page = hang_on_the_fallback
     result = await asyncio.wait_for(renderer.render("https://kk.test/"), 40)
