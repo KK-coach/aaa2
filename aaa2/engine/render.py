@@ -268,9 +268,15 @@ class Renderer:
     ) -> RenderResult:
         await self._ensure_browser()
         if fallback:
+            # a másik user-agenttel indított kísérlet ugyanazt a határidőt kapja, mint a rendes
             context = await self._new_context(self.fallback_user_agent)
             try:
-                return await self._render_page(context, url, retryable)
+                return await asyncio.wait_for(
+                    self._render_page(context, url, retryable), self._hard_timeout
+                )
+            except TimeoutError:
+                return RenderResult(url, error="hard_timeout",
+                                    render_ms=int(self._hard_timeout * 1000))
             finally:
                 await _close_quietly(context)
         generation = self._generation

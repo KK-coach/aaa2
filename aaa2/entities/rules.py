@@ -68,6 +68,7 @@ import duckdb
 import zstandard
 from selectolax.parser import HTMLParser
 
+from aaa2.db import transaction
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
 from aaa2.engine.normalize import page_url
@@ -354,7 +355,7 @@ def run_rules(con: duckdb.DuckDBPyConnection,
     for pair, candidate in candidates.items():
         keys_of[id(candidate)].append(pair)
         unique.setdefault(id(candidate), candidate)
-    con.begin()
+    transaction.begin(con)
     try:
         (run_id,) = store.insert_entity_runs_in_run_rules(con, started)
         store.delete_mention_sources_in_run_rules(con)
@@ -390,9 +391,9 @@ def run_rules(con: duckdb.DuckDBPyConnection,
                 pages_with.add(mention.page_id)
         store.delete_entities_in_run_rules(con)
         store.update_entity_runs_in_run_rules(con, clock(), len(pages), len(pages_with), len(entity_ids), rows, json.dumps(dict(sorted(by_position.items()))), dumps(skipped, ensure_ascii=False), run_id)
-        con.commit()
+        transaction.commit(con)
     except Exception:
-        con.rollback()
+        transaction.rollback(con)
         raise
     return EntityRun(run_id, len(pages), len(pages_with), len(entity_ids), rows,
                      dict(by_position), skipped)

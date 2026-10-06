@@ -30,6 +30,7 @@
 from __future__ import annotations
 
 import json
+import threading
 import time
 import tomllib
 from collections import Counter
@@ -199,6 +200,18 @@ class _Counts:
     errors: Counter = field(default_factory=Counter)
 
 
+# Kulcsonkénti zár a gyorsítótárhoz: a párhuzamos szálak (saját kurzorral, saját `_Api`-val)
+# ugyanazt a fogalmat több oldalon is lekérik; zár nélkül ugyanazt a sort egyszerre írnák
+# (elsődlegeskulcs-ütközés a véglegesítéskor), és a kérés is többször menne ki.
+_KEY_LOCKS: dict[tuple[str, str], threading.Lock] = {}
+_KEY_LOCKS_GUARD = threading.Lock()
+
+
+def _key_lock(service: str, key: str) -> threading.Lock:
+    with _KEY_LOCKS_GUARD:
+        return _KEY_LOCKS.setdefault((service, key), threading.Lock())
+
+
 class _Api:
     def __init__(self, con, shared, http: httpx.Client, retry: Retry,
                  clock: Callable[[], datetime], monotonic: Callable[[], float]):
@@ -212,15 +225,19 @@ class _Api:
         request = self.http.build_request("GET", url, params=params,
                                           headers={"User-Agent": USER_AGENT})
         key = canonical_key(request.url)
+        with _key_lock(service, key):          # egy kulcsot egyszerre egy szál kér le és ír
+            return key, self._get(service, key, request)
+
+    def _get(self, service: str, key: str, request: httpx.Request) -> dict | None:
         cached = self._cached(self.con, service, key)
         if cached is not None:
             self.counts.cache_site += 1
-            return key, cached
+            return cached
         cached = self._cached(self.shared, service, key) if self.shared is not None else None
         if cached is not None:
             self.counts.cache_shared += 1
             self._store(self.con, service, key, cached)
-            return key, cached
+            return cached
         for source in (self.con, self.shared):
             cached = self._equivalent(source, service, key)
             if cached is not None:
@@ -229,16 +246,17 @@ class _Api:
                 else:
                     self.counts.cache_shared += 1
                 self._store(self.con, service, key, cached)
-                return key, cached
+                return cached
         body = self._call(service, key, request)
         if body is not None:
             self._store(self.con, service, key, body)
-        return key, body
+        return body
 
     def share(self, service: str, key: str) -> None:
-        body = self._cached(self.con, service, key)
-        if self.shared is not None and body is not None:
-            self._store(self.shared, service, key, body)
+        with _key_lock(service, key):
+            body = self._cached(self.con, service, key)
+            if self.shared is not None and body is not None:
+                self._store(self.shared, service, key, body)
 
     def _call(self, service: str, key: str, request: httpx.Request) -> dict | None:
         attempt, status, error = 0, None, None

@@ -135,10 +135,13 @@ class OpenAIAdapter:
         return [model.id for model in self.client.models.list()]
 
 
+GEMINI_TIMEOUT_MS = 600_000             # a google-genai kliens alapból határidő nélkül vár
+
+
 class GeminiAdapter:
     def __init__(self, config: ProviderConfig, api_key: str, base_url: str | None = None):
         self.config = config
-        options = types.HttpOptions(base_url=base_url) if base_url else None
+        options = types.HttpOptions(base_url=base_url, timeout=GEMINI_TIMEOUT_MS)
         self.client = genai.Client(api_key=api_key, vertexai=False, http_options=options)
 
     def call(self, model: str, schema: type[BaseModel], prompt: str, input: str,
