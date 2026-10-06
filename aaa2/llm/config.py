@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import tomllib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from datetime import date
 from itertools import pairwise
 from pathlib import Path
@@ -108,14 +108,22 @@ def load_site_credentials(domain: str | None, directory: Path | None = None
                           ) -> dict[str, Credentials]:
     """A site-fájl `[llm.<szolgáltató>]` részei: `key_env`, `project`. Ügyfélmunkánál a site a
     saját kulcsával és projektjével fut (pl. kikapcsolt adatmegosztású OpenAI-projekt). Nincs
-    fájl vagy rész: üres (a `models.toml` kulcsai). Ismeretlen kulcs, projekt nem OpenAI-nál,
-    vagy nem szöveg: ValueError."""
+    fájl vagy rész: üres (a `models.toml` kulcsai). Ismeretlen szolgáltató (pl. az elgépelt
+    `[llm.opneai]`: nélküle a site észrevétlenül az alapkulccsal futna), üres rész, ismeretlen
+    kulcs, projekt nem OpenAI-nál, vagy nem szöveg: ValueError."""
     path = (directory or SITES_DIR) / f"{domain}.toml" if domain else None
     if path is None or not path.exists():
         return {}
     section = tomllib.loads(path.read_text(encoding="utf-8")).get("llm", {})
+    if not isinstance(section, dict):
+        raise ValueError(f"{path.name} [llm]: szolgáltatónként egy rész ([llm.openai])")  # noqa: TRY004
     found: dict[str, Credentials] = {}
     for provider, values in section.items():
+        if provider not in PROVIDERS:
+            raise ValueError(f"{path.name} [llm.{provider}]: ismeretlen szolgáltató; a "
+                             f"szolgáltatók: {', '.join(PROVIDERS)}")
+        if not isinstance(values, dict) or not values:
+            raise ValueError(f"{path.name} [llm.{provider}]: key_env és project, szövegként")
         unknown = set(values) - {"key_env", "project"}
         if unknown or not all(isinstance(v, str) and v for v in values.values()):
             raise ValueError(f"{path.name} [llm.{provider}]: key_env és project, szövegként")
@@ -150,16 +158,21 @@ class LLMConfig:
 
 
 def load_config(path: Path = CONFIG_PATH) -> LLMConfig:
-    """Beolvas és ellenőriz: mindhárom szolgáltató, 0 < küszöb ≤ keret, a fallback csak
+    """Beolvas és ellenőriz: nincs ismeretlen szakasz vagy szolgáltató-kulcs, mindhárom
+    szolgáltató megvan, 0 < küszöb ≤ keret, a fallback csak
     megadott modellre kapcsolható, modellenként legalább egy ársor, egy modell ársorainak
     érvényessége nem fedi át egymást, és a `[pipeline]` minden lépésének modellje konfigurált
     (az ellenőrzésé "off" is lehet)."""
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
+    allowed = {f.name for f in fields(ProviderConfig)} - {"name"}
     providers = {}
     for name in PROVIDERS:
         if name not in raw:
             raise ValueError(f"{path.name}: hiányzik a [{name}] szakasz")
         section = dict(raw[name])
+        extra = sorted(set(section) - allowed)
+        if extra:
+            raise ValueError(f"{path.name} [{name}]: ismeretlen kulcs: {', '.join(extra)}")
         section["alternatives"] = tuple(section.get("alternatives", ()))
         provider = ProviderConfig(name=name, **section)
         if not 0 < provider.stop_usd <= provider.budget_usd:
@@ -167,6 +180,9 @@ def load_config(path: Path = CONFIG_PATH) -> LLMConfig:
         if provider.use_fallback and not provider.fallback:
             raise ValueError(f"[{name}]: use_fallback, de nincs fallback modell")
         providers[name] = provider
+    unknown = sorted(set(raw) - {*PROVIDERS, "prices", "pipeline"})
+    if unknown:
+        raise ValueError(f"{path.name}: ismeretlen szakasz: {', '.join(unknown)}")
     prices = tuple(_price(entry) for entry in raw.get("prices", []))
     for provider in providers.values():
         for model in provider.models:

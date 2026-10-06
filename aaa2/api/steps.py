@@ -46,7 +46,7 @@ from aaa2.functions import graph as graph_module
 from aaa2.functions import graph_queries
 from aaa2.functions.findings import FindingsRun
 from aaa2.functions.graph import GraphRun
-from aaa2.llm.client import ModelCheck, Retry, open_clients
+from aaa2.llm.client import ModelCheck, Retry, key_sources, open_clients
 from aaa2.llm.client import check_models as _check_models
 from aaa2.llm.config import PIPELINE_OFF, load_config, load_site_credentials
 from aaa2.resolver.knowledge import KnowledgeRun, link_entities
@@ -257,9 +257,9 @@ def extract(site: Site, *, llm: bool | None = None, knowledge: bool | None = Non
             credentials = load_site_credentials(site.domain)
         except ValueError as exc:
             raise ApiError(f"hiba: {exc}") from exc
-        for name, own in sorted(credentials.items()):
-            notify(f"site-kulcs: {name}: {own.key_env or 'alapkulcs'}"
-                   + (f", projekt {own.project}" if own.project else ""))
+        used = [config.provider_of(model) for model in (chosen, verify_choice) if model]
+        for line in key_sources(config, credentials, [name for name in used if name]):
+            notify(line)
         client = _pipeline_client(con, chosen, credentials)
         verifier = None
         if verify_choice:
