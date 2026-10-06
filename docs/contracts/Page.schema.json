@@ -188,9 +188,21 @@
       "title": "Run Id"
     },
     "schema_version": {
-      "default": "1.8",
+      "default": "1.9",
       "title": "Schema Version",
       "type": "string"
+    },
+    "seen_crawl_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Seen Crawl Id"
     },
     "status": {
       "anyOf": [
@@ -231,6 +243,18 @@
       ],
       "default": null,
       "title": "Word Count"
+    },
+    "x_robots_tag": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "X Robots Tag"
     }
   },
   "required": [
@@ -240,5 +264,5 @@
   "title": "Page",
   "type": "object",
   "x-module": "crawl",
-  "x-schema-version": "1.8"
+  "x-schema-version": "1.9"
 }

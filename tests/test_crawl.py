@@ -329,6 +329,10 @@ async def test_page_transaction_is_all_or_nothing_and_resume_completes(site, too
     await run(con, site, tools, resume=True)
     assert set(pages(con)) == {site.url(path) for path in EXPECTED_PAGES}
     assert set(queue(con).values()) == {"done", "failed"}
+    # a folytatás ugyanaz a crawl: a két futás egy crawlhoz tartozik, és minden oldalt az látott
+    assert con.execute("SELECT run_id, crawl_id FROM crawl_runs ORDER BY run_id").fetchall() == [
+        (1, 1), (2, 1)]
+    assert con.execute("SELECT DISTINCT seen_crawl_id FROM pages").fetchall() == [(1,)]
 
 
 async def test_resume_after_interrupt_with_db_reopen(site, tools, tmp_path):

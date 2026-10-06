@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.8"
+SCHEMA_VERSION = "1.9"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -131,6 +131,7 @@ class CrawlRun(Contract):
     bytes_stored: int | None = None
     notes: str | None = None
     mode: Literal["links", "sitemap"] | None = None
+    crawl_id: int | None = None       # a futás crawlja (a folytatásnál a folytatott crawlé)
 
 
 class SitemapFile(Contract):
@@ -190,6 +191,8 @@ class Page(Contract):
     render_ms: int | None = None
     fetched_at: datetime | None = None
     run_id: int | None = None
+    seen_crawl_id: int | None = None  # melyik crawl látta utoljára (az aktuális készlet jelölése)
+    x_robots_tag: str | None = None   # a válasz X-Robots-Tag fejléce; None: nem ismert
     has_rendered_html: bool | None = None
 
     @property
