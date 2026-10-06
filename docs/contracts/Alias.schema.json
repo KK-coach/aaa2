@@ -23,7 +23,7 @@
       "title": "Lang"
     },
     "schema_version": {
-      "default": "1.8",
+      "default": "1.9",
       "title": "Schema Version",
       "type": "string"
     },
@@ -40,5 +40,5 @@
   "title": "Alias",
   "type": "object",
   "x-module": "resolve",
-  "x-schema-version": "1.8"
+  "x-schema-version": "1.9"
 }
