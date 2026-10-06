@@ -694,6 +694,7 @@ def _uncovered(site: _Site, run: FindingsRun) -> list[tuple]:
         if top is not None:
             under[top].append(entity_id)
     nested = {child for children in under.values() for child in children}
+    partial = crawl.completeness(site.con).partial
     found = []
     for candidate in kept:
         entity_id, weight = candidate["entity_id"], candidate["weight"]
@@ -709,8 +710,7 @@ def _uncovered(site: _Site, run: FindingsRun) -> list[tuple]:
         subfamilies = [{"entity": site.name(child), "page_count": site.weights[child]["pages"]}
                        for child in sorted(under.get(entity_id, []), key=site.name)]
         many = weight["pages"] >= HIGH_PAGES
-        partial = crawl.completeness(site.con).limited
-        severity = ("high" if many else "medium") if family else ("medium" if many else "low")
+        severity =("high" if many else "medium") if family else ("medium" if many else "low")
         tail = f"; alcsaládjai: {', '.join(c['entity'] for c in subfamilies)}" \
             if subfamilies else ""
         found.append((kind, severity, None, entity_id,
@@ -761,7 +761,7 @@ def _canonical_issues(site: _Site) -> list[tuple]:
     dobja el, pl. terméklista → `index.php`); (3) teljes crawl és a kereten belüli cél: a cél
     a site-on sehol nem érhető el, megállapítás (pl. `/hu/` → `/hu/hu/`)."""
     state = crawl.completeness(site.con)        # a crawl-modul rögzített teljességi állapota
-    limited = state.sitemap_mode or state.limited
+    limited = state.partial
     hosts = {urlsplit(page["url"]).netloc for page in site.pages.values()}
     found = []
     for page in sorted(site.pages.values(), key=lambda p: p["url"]):
@@ -815,7 +815,7 @@ def _legal_pages(site: _Site) -> list[tuple]:
     for link in links:
         if link.to_page_id is None and (found_kind := legal_kind(link.to_url)) is not None:
             unchecked[found_kind][link.to_url].add(link.position)
-    partial = crawl.completeness(site.con).limited
+    partial = crawl.completeness(site.con).partial
     legal = {page["page_id"]: page for pages in by_kind.values() for page in pages}
     titles: dict[int, list[str]] = defaultdict(list)       # jogi oldal → címként álló sorok
     for block in extract_queries.blocks(site.con):

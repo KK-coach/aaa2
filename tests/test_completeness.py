@@ -1,5 +1,7 @@
 """A crawl teljességi állapota egy forrásból (`crawl.completeness`), és a hiány típusú
 megállapítások: hiányt csak ellenőrzött célról állítanak."""
+import pytest
+
 from aaa2.db.connect import connect
 from aaa2.engine import queries
 from aaa2.engine.frontier import record_missing_mode
@@ -106,15 +108,50 @@ def test_a_missing_legal_page_on_a_partial_crawl_is_marked_unchecked():
                                      "ellenőrzött)"
 
 
-def test_uncovered_topic_and_missing_page_are_marked_on_a_partial_crawl(monkeypatch):
+COMPLETE_SCOPED = ("INSERT INTO crawl_runs (started_at, finished_at, max_pages, mode, include, "
+                   "exclude, skipped_by_limit) VALUES (current_timestamp, current_timestamp, "
+                   "5000, 'links', '', '/kosar/', 0)")
+PARTIAL_RUNS = {
+    "limit": "INSERT INTO crawl_runs (started_at, finished_at, max_pages, skipped_by_limit, "
+             "stopped) VALUES (current_timestamp, current_timestamp, 5, 3, 'oldalkorlát')",
+    "sitemap": "INSERT INTO crawl_runs (started_at, finished_at, max_pages, mode, "
+               "skipped_by_limit) VALUES (current_timestamp, current_timestamp, 5000, "
+               "'sitemap', 0)",
+}
+
+
+def test_a_missing_legal_page_in_sitemap_mode_is_marked_unchecked():
+    con = stored_site({"/levendula-szappan-100g": product(
+        "Levendula szappan 100g", "/levendula-szappan-100g")})
+    # teljes, linkeket követő bejárás hatókör-szűkítéssel: a hiány tény, nincs jelölés
+    con.execute(COMPLETE_SCOPED)
+    assert legal_findings(con)["warranty"][2] == "hiányzó jogi oldal: garancia"
+    # sitemap-módban a sitemapen kívüli oldalak nincsenek bejárva: a hiány nem bizonyított
+    con.execute("UPDATE crawl_runs SET mode = 'sitemap'")
+    assert legal_findings(con)["warranty"][2] == "hiányzó jogi oldal: garancia (részleges " \
+                                                 "bejárás: nem ellenőrzött)"
+
+
+def test_uncovered_topic_and_missing_page_stay_facts_on_a_complete_crawl(monkeypatch):
+    from aaa2.functions.findings import build_findings
+    from tests.test_findings import built, rows
+
+    con, _ = built(monkeypatch)
+    before = {kind: rows(con, kind) for kind in ("uncovered_topic", "missing_page")}
+    con.execute(COMPLETE_SCOPED)
+    build_findings(con)
+    assert {kind: rows(con, kind) for kind in before} == before
+
+
+@pytest.mark.parametrize("frame", sorted(PARTIAL_RUNS))
+def test_uncovered_topic_and_missing_page_are_marked_on_a_partial_crawl(monkeypatch, frame):
     from aaa2.functions.findings import build_findings
     from tests.test_findings import built, rows
 
     con, _ = built(monkeypatch)
     before = {kind: rows(con, kind) for kind in ("uncovered_topic", "missing_page")}
     assert all(len(found) == 1 and "crawl" not in found[0][2] for found in before.values())
-    con.execute("INSERT INTO crawl_runs (started_at, finished_at, max_pages, skipped_by_limit, "
-                "stopped) VALUES (current_timestamp, current_timestamp, 5, 3, 'oldalkorlát')")
+    con.execute(PARTIAL_RUNS[frame])
     build_findings(con)
     for kind, found in before.items():
         ((severity, summary, evidence),) = rows(con, kind)

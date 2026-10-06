@@ -291,6 +291,12 @@ class Completeness:
             and self.queue_size >= self.max_pages
 
     @property
+    def partial(self) -> bool:
+        """Vannak be nem járt oldalak a hatókörön belül (megállt bejárás vagy sitemap-mód): egy
+        oldal hiánya ilyenkor nem bizonyított."""
+        return self.limited or self.sitemap_mode
+
+    @property
     def complete(self) -> bool:
         return self.crawled and not (self.limited or self.scoped or self.sitemap_mode)
 
