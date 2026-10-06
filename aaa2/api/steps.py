@@ -132,15 +132,18 @@ class SitemapResult:
 def sitemap(site: Site, *, fetch: bool = True, sitemap_url: str | None = None) -> SitemapResult:
     """A sitemap tényeinek pótlása egy korábbi crawlhoz, oldal-crawl nélkül. (1) Ha a crawl
     idejéről nincs tárolt sitemap, a crawl-sorból visszaállítja, mely címek jöttek a sitemapből.
-    (2) A módot nem rögzítő futások módja a site-fájl `[crawl] sitemap_only` beállításából.
+    (2) A módot és a hatókört nem rögzítő futások módja és hatóköre a site-fájl `[crawl]`
+    részéből (`sitemap_only`, `include`, `exclude`).
     (3) `fetch`: a mai sitemap lekérése (néhány HTTP-kérés a sitemap-fájlokra) külön
     pillanatképbe, a lekérés idejével; `fetch=False`, ha a site azóta megváltozott, és a mai
     sitemap nem a tárolt crawlhoz tartozik."""
     con = site.con
     domain = site.domain
-    sitemap_only = load_site_config(domain).crawl.sitemap_only if domain else False
+    config = load_site_config(domain).crawl if domain else None
     restored = restore_sitemap_from_queue(con)
-    modes = record_missing_mode(con, sitemap_only)
+    modes = record_missing_mode(con, bool(config and config.sitemap_only),
+                                config.include if config else None,
+                                config.exclude_pattern if config else None)
     if not fetch:
         return SitemapResult(restored, modes)
     try:

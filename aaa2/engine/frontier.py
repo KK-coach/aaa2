@@ -373,10 +373,15 @@ def restore_sitemap_from_queue(con: duckdb.DuckDBPyConnection) -> int:
     return len(urls)
 
 
-def record_missing_mode(con: duckdb.DuckDBPyConnection, sitemap_only: bool) -> int:
-    """A mód pótlása azokon a futásokon, amelyek még nem rögzítették (`crawl_runs.mode` üres):
-    `sitemap`, ha a crawl sitemap-módban futott, különben `links`. Visszaad: hány futáson."""
+def record_missing_mode(con: duckdb.DuckDBPyConnection, sitemap_only: bool,
+                        include: str | None = None, exclude: str | None = None) -> int:
+    """A mód és a hatókör pótlása azokon a futásokon, amelyek még nem rögzítették
+    (`crawl_runs.mode`, ill. `include` és `exclude` üres): `sitemap`, ha a crawl sitemap-módban
+    futott, különben `links`; a hatókör a megadott minták ('' ha nincs). Visszaad: hány futáson
+    került be a mód."""
     mode = "sitemap" if sitemap_only else "links"
+    con.execute("UPDATE crawl_runs SET include = ?, exclude = ? WHERE include IS NULL AND "
+                "exclude IS NULL", [include or "", exclude or ""])
     return len(con.execute("UPDATE crawl_runs SET mode = ? WHERE mode IS NULL RETURNING run_id",
                            [mode]).fetchall())
 
@@ -419,6 +424,7 @@ class Frontier:
         self._include = re.compile(include) if include else None
         self._exclude = re.compile(exclude) if exclude else None
         self._known = {url for (url,) in con.execute("SELECT url FROM crawl_queue").fetchall()}
+        self.limit_skipped: set[str] = set()   # a `max_pages` miatt a sorból kimaradt címek
         self._leased: set[str] = set()
 
     @classmethod
@@ -557,6 +563,7 @@ class Frontier:
             )
             return False
         if len(self._known) >= self.max_pages:
+            self.limit_skipped.add(target)
             return False
         self._insert(target, depth=depth, priority=priority, discovered_from=discovered_from)
         return True

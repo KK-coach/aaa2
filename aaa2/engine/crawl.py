@@ -194,10 +194,11 @@ class _Run:
         if self.options.resume:
             await self._resume()
         (self.run_id,) = self.con.execute(
-            "INSERT INTO crawl_runs (started_at, max_pages, concurrency, notes, mode) "
-            "VALUES (?, ?, ?, ?, ?) RETURNING run_id",
+            "INSERT INTO crawl_runs (started_at, max_pages, concurrency, notes, mode, include, "
+            "exclude) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING run_id",
             [started, self.options.max_pages, self.options.concurrency, f"{mode}: {seed_url}",
-             "sitemap" if self.options.sitemap_only else "links"],
+             "sitemap" if self.options.sitemap_only else "links", self.options.include or "",
+             self.options.exclude or ""],
         ).fetchone()
         # a folytatás a folytatott crawlhoz tartozik; az új crawl a sajátja
         previous = self.con.execute(
@@ -557,12 +558,17 @@ class _Run:
     def _close_run(self, seconds: float, finished: bool) -> CrawlSummary:
         handled = self.done + self.failed
         rate = handled / seconds if seconds > 0 else 0.0
+        skipped_by_limit = len(self.frontier.limit_skipped) if self.frontier is not None else 0
+        if skipped_by_limit and self.stopped is None:
+            # a korlát elérése megállás: a sorba nem fért be minden talált cím
+            self.stopped = (f"oldalkorlát: a sor elérte a {self.options.max_pages} címet, "
+                            f"{skipped_by_limit} cím kimaradt")
         self.con.execute(
             "UPDATE crawl_runs SET finished_at = ?, pages_done = ?, pages_failed = ?, "
-            "pages_skipped = ?, pages_per_sec = ?, bytes_stored = ?, "
-            "notes = notes || ? WHERE run_id = ?",
+            "pages_skipped = ?, pages_per_sec = ?, bytes_stored = ?, skipped_by_limit = ?, "
+            "stopped = ?, notes = notes || ? WHERE run_id = ?",
             [_now() if finished else None, self.done, self.failed, self.skipped, rate,
-             self.bytes_stored,
+             self.bytes_stored, skipped_by_limit, self.stopped,
              ("" if finished else " (megszakítva)")
              + (f" (megállt: {self.stopped})" if self.stopped else ""), self.run_id],
         )

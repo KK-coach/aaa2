@@ -24,7 +24,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.9",
+          "default": "1.10",
           "title": "Schema Version",
           "type": "string"
         }
@@ -81,7 +81,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.9",
+          "default": "1.10",
           "title": "Schema Version",
           "type": "string"
         },
@@ -121,5 +121,5 @@
   },
   "$ref": "#/$defs/HeadingView",
   "x-module": "findings",
-  "x-schema-version": "1.9"
+  "x-schema-version": "1.10"
 }

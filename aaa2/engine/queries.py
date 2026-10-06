@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter
+from dataclasses import dataclass
 from urllib.parse import urljoin, urlsplit
 
 import duckdb
@@ -249,6 +250,85 @@ def latest_crawl_run(con: duckdb.DuckDBPyConnection) -> CrawlRun | None:
 def crawl_runs(con: duckdb.DuckDBPyConnection) -> list[CrawlRun]:
     """A crawl-futások sorban."""
     return [CrawlRun.from_row(row) for row in _rows(con, "SELECT * FROM crawl_runs ORDER BY run_id")]
+
+
+@dataclass(frozen=True)
+class Completeness:
+    """A legutóbbi crawl teljességi állapota, a futások rögzített adataiból (a folytatások
+    együtt): a mód, a korlát, a korlát miatt kimaradt címek, a hatókör-szűkítés és a megállás.
+
+    - `limited`: a bejárás nem teljes: cím maradt ki az oldalkorlát miatt, a futás megállt
+      (a várt oldalszám vagy idő túllépése), vagy megszakadt. A korlátot nem rögzítő korábbi
+      futásnál: a sor elérte a `max_pages` értékét.
+    - `scoped`: a hatókör szűkített (include vagy exclude minta).
+    - `sitemap_mode`: a sorba csak a seed és a sitemap címei kerültek; a sitemapen kívüli
+      linkcélok nincsenek bejárva.
+    Teljes a bejárás, ha egyik sem áll (`complete`)."""
+
+    mode: str | None = None
+    max_pages: int | None = None
+    queue_size: int = 0
+    skipped_by_limit: int | None = None
+    include: str | None = None
+    exclude: str | None = None
+    stopped: str | None = None
+    interrupted: bool = False
+    crawled: bool = False                   # volt-e crawl-futás
+
+    @property
+    def sitemap_mode(self) -> bool:
+        return self.mode == "sitemap"
+
+    @property
+    def scoped(self) -> bool:
+        return bool(self.include or self.exclude)
+
+    @property
+    def limited(self) -> bool:
+        if self.stopped or self.interrupted or self.skipped_by_limit:
+            return True
+        return self.skipped_by_limit is None and bool(self.max_pages) \
+            and self.queue_size >= self.max_pages
+
+    @property
+    def partial(self) -> bool:
+        """Vannak be nem járt oldalak a hatókörön belül (megállt bejárás vagy sitemap-mód): egy
+        oldal hiánya ilyenkor nem bizonyított."""
+        return self.limited or self.sitemap_mode
+
+    @property
+    def complete(self) -> bool:
+        return self.crawled and not (self.limited or self.scoped or self.sitemap_mode)
+
+    @property
+    def states(self) -> tuple[str, ...]:
+        """Az állapot megnevezve: teljes, vagy ami szűkíti (több is állhat egyszerre)."""
+        if not self.crawled:
+            return ()
+        found = [label for flag, label in ((self.limited, "oldalkorláton vagy idő előtt megállt"),
+                                           (self.scoped, "hatókörrel szűkített"),
+                                           (self.sitemap_mode, "sitemap-mód")) if flag]
+        return tuple(found) or ("teljes",)
+
+
+def completeness(con: duckdb.DuckDBPyConnection) -> Completeness:
+    """A legutóbbi crawl teljességi állapota: ezt olvassák a tényfájlok és a megállapítások."""
+    runs = crawl_runs(con)
+    if not runs:
+        return Completeness(queue_size=queue_size(con))
+    crawl_id = runs[-1].crawl_id
+    mine = [run for run in runs if crawl_id is not None and run.crawl_id == crawl_id] or runs
+    counted = [run.skipped_by_limit for run in mine if run.skipped_by_limit is not None]
+    return Completeness(
+        mode=mine[0].mode,
+        max_pages=max((run.max_pages or 0) for run in mine) or None,
+        queue_size=queue_size(con),
+        skipped_by_limit=sum(counted) if counted else None,
+        include=next((run.include for run in mine if run.include is not None), None),
+        exclude=next((run.exclude for run in mine if run.exclude is not None), None),
+        stopped=mine[-1].stopped,
+        interrupted=mine[-1].finished_at is None,
+        crawled=True)
 
 
 def queue_size(con: duckdb.DuckDBPyConnection) -> int:

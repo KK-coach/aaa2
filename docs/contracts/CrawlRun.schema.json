@@ -38,6 +38,18 @@
       "default": null,
       "title": "Crawl Id"
     },
+    "exclude": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Exclude"
+    },
     "finished_at": {
       "anyOf": [
         {
@@ -50,6 +62,18 @@
       ],
       "default": null,
       "title": "Finished At"
+    },
+    "include": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Include"
     },
     "max_pages": {
       "anyOf": [
@@ -144,14 +168,38 @@
       "type": "integer"
     },
     "schema_version": {
-      "default": "1.9",
+      "default": "1.10",
       "title": "Schema Version",
       "type": "string"
+    },
+    "skipped_by_limit": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Skipped By Limit"
     },
     "started_at": {
       "format": "date-time",
       "title": "Started At",
       "type": "string"
+    },
+    "stopped": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stopped"
     }
   },
   "required": [
@@ -161,5 +209,5 @@
   "title": "CrawlRun",
   "type": "object",
   "x-module": "crawl",
-  "x-schema-version": "1.9"
+  "x-schema-version": "1.10"
 }
