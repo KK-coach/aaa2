@@ -18,7 +18,7 @@ import os
 import random
 import threading
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -240,6 +240,20 @@ def open_clients(con: duckdb.DuckDBPyConnection, *, config: LLMConfig | None = N
         clients[name] = LLMClient(con, adapter, config, ledger_path, clock, retry,
                                   (models or {}).get(name))
     return clients, skipped
+
+
+def key_sources(config: LLMConfig, credentials: Mapping[str, Credentials] | None,
+                providers: Iterable[str]) -> list[str]:
+    """Soronként, melyik kulcskészlettel fut egy szolgáltató: a kulcsot tartó környezeti változó
+    neve (az értéke soha), és hogy az a site-fájl saját kulcsa-e vagy az alapkulcs; a projekt,
+    ha van. A futás elején írjuk ki, hogy az ügyfélkulcs használata látható legyen."""
+    lines = []
+    for name in sorted(set(providers)):
+        own = (credentials or {}).get(name, Credentials())
+        origin = "a site-fájl kulcsa" if own.key_env else "alapkulcs"
+        lines.append(f"LLM-kulcs: {name}: {own.key_env or config.providers[name].key_env} "
+                     f"({origin})" + (f", projekt {own.project}" if own.project else ""))
+    return lines
 
 
 @dataclass(frozen=True)
