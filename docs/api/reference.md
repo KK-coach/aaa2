@@ -125,9 +125,14 @@ rebuild_entities(site: 'Site', *, knowledge: 'bool | None' = None) -> 'RebuildRe
 
 Az entitások újraépítése a tárolt kinyerésből, LLM-hívás nélkül: ugyanaz a levezetés,
 amellyel az `aaa entities` minden futása végződik (ürítés, szabálykör, a tárolt kinyerés
-visszaírása), utána a site-kör és a tudásbázis-kapcsolás (`resolve`). A blokkok, a
+visszaírása), utána a site-kör és a tudásbázis-kapcsolás. A blokkok, a
 futásnapló, a tárolt kinyerés és a hívásnapló marad; a gráfot és a megállapításokat utána
 az `aaa graph` és az `aaa findings` építi fel.
+
+A blokképítés, a levezetés és a site-kör egy tranzakció: ha bármelyik elbukik, vagy a
+védelem megállítja a futást, a korábbi kész állapot (entitások, említések, blokkok, gráf,
+megállapítások) változatlanul megmarad. A tudásbázis-kapcsolás ezután fut (hálózati
+hívásokkal); ha az bukik el, az entitások készen állnak, kapcsolás nélkül.
 
 ### `build_graph`
 

@@ -69,11 +69,13 @@ import time
 from collections import Counter, defaultdict, deque
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as WorkerTimeout
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 
 import duckdb
 
+from aaa2.db import transaction
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
 from aaa2.entities import store
@@ -205,6 +207,11 @@ def run_pages(con: duckdb.DuckDBPyConnection, run_id: int | None) -> dict[int, d
             for page_id, status, reasons, call_ids, extraction, refined, input_hash in rows}
 
 
+# A fő szál legfeljebb ennyit vár egy oldal szálának eredményére (az LLM-kliens saját
+# időkorlátjai és újrapróbálkozásai ennél jóval rövidebbek; ez a végső határ).
+WORKER_TIMEOUT_S = 1800.0
+
+
 @dataclass
 class _PageLog:
     status: str
@@ -286,7 +293,8 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
             fork: Callable[[duckdb.DuckDBPyConnection], Worker] | None = None,
             clock: Callable[[], datetime] | None = None,
             monotonic: Callable[[], float] | None = None,
-            records_only: bool = False) -> LLMRun:
+            records_only: bool = False,
+            page_timeout: float = WORKER_TIMEOUT_S) -> LLMRun:
     """`page_ids`: csak ezek közül az alkalmas oldalak; `limit`: legfeljebb ennyi oldal;
     `refine`: a kinyerés utáni lépés (`v3.V3Step`; None: nincs); `save`: mentés az említés- és entitástáblába;
     `records_only`: a futás csak az oldalankénti rekordot írja (`entity_run_pages`), az említés-
@@ -299,7 +307,10 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
     szálon, oldalsorrendben, így az eredmény a párhuzamosságtól független. `workers = 1` vagy
     `fork` nélkül sorban, a megadott kliensekkel. `reuse`: a változatlan oldal (azonos
     kinyerő modell és bemenet-hash, `input_fingerprint`) a modell korábbi futásának tárolt
-    kinyerését és ellenőrzését kapja, hívás nélkül (inkrementális futás)."""
+    kinyerését és ellenőrzését kapja, hívás nélkül (inkrementális futás). `page_timeout`: a
+    fő szál legfeljebb ennyi másodpercet vár egy oldal szálának eredményére; utána az oldal
+    `failed` (`worker_timeout`), a futás a többi oldallal folytatódik, és a végén nem várja meg
+    a beragadt szálat."""
     clock = clock or _now
     monotonic = monotonic or time.monotonic
     began = monotonic()
@@ -339,6 +350,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
     cap = _CostCap(max_usd, _run_cost(con, run_id)) if max_usd is not None else None
     pending: deque = deque()
     stop_reason: str | None = None
+    abandoned = False                           # volt-e szál, amelyre a várakozás lejárt
     waiting = list(pages)
     try:
         while waiting or pending:
@@ -376,7 +388,15 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
             if not pending:
                 break
             page_id, lang, blocks, outcome = pending.popleft()
-            log, status, seconds = outcome.result() if executor else outcome
+            try:
+                log, status, seconds = (outcome.result(timeout=page_timeout) if executor
+                                        else outcome)
+            except WorkerTimeout:
+                abandoned = True
+                log, status, seconds = (
+                    _PageLog("failed", Counter(worker_timeout=1),
+                             error=f"a szál {page_timeout:g} mp alatt nem adott eredményt"),
+                    "failed", float(page_timeout))
             log.raw_html_hash, log.input_hash = raw_hashes.get(page_id), hashes.get(page_id)
             if cap is not None:
                 before = set((previous.get(page_id) or {}).get("call_ids") or [])
@@ -406,7 +426,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                 raise
     finally:
         if executor is not None:
-            executor.shutdown(wait=True, cancel_futures=True)
+            executor.shutdown(wait=not abandoned, cancel_futures=True)
     if stop_reason is not None:
         _stop(con, run_id, waiting, previous, stop_reason, clock)
     store.delete_entities_in_run_llm(con)
@@ -507,14 +527,14 @@ def restore_llm(con: duckdb.DuckDBPyConnection,
         if status != "restore":
             skipped[status] += 1
             continue
-        con.begin()
+        transaction.begin(con)
         try:
             _store(con, stored["run_id"], page_id, langs.get(page_id),
                    stored["refined"] or stored["extraction"], blocks, index, started, True,
                    stored["model"])
-            con.commit()
+            transaction.commit(con)
         except Exception:
-            con.rollback()
+            transaction.rollback(con)
             raise
         runs.add(stored["run_id"])
         pages += 1

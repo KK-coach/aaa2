@@ -19,6 +19,7 @@ import httpx
 
 from aaa2.api.site import ApiError, GraphMissing, Site
 from aaa2.db.connect import connect, shared_path
+from aaa2.db.transaction import atomic
 from aaa2.engine import queries as crawl_queries
 from aaa2.engine.crawl import CrawlOptions, CrawlSummary, run_crawl, run_sitemap_refetch
 from aaa2.engine.frontier import MAX_PAGES, record_missing_mode, restore_sitemap_from_queue
@@ -206,17 +207,22 @@ def extract(site: Site, *, llm: bool | None = None, knowledge: bool | None = Non
     use_llm = steps.extraction if llm is None else llm
     use_knowledge = steps.knowledge if knowledge is None else knowledge
     result = ExtractResult()
-    if steps.blocks:
-        build_blocks(con)
     if not use_llm:
         if estimate:
+            if steps.blocks:
+                build_blocks(con)
             notify("becslés: az LLM-lépések kikapcsolva, nincs hívás")
             result.estimate_only = True
             return result
-        rules_run, result.restored = _project(con, steps)
+        with atomic(con):                  # hiba vagy a védelem megállása: minden visszaáll
+            if steps.blocks:
+                build_blocks(con)
+            rules_run, result.restored = _project(con, steps)
         if rules_run is not None:
             result.run_ids.append(rules_run)
         return result
+    if steps.blocks:
+        build_blocks(con)
     if not estimate and steps.rules:           # a kinyerés utáni lépés a szabálykör entitásait látja
         run_rules(con, entity_pages=entity_page_ids(page_roles(con)))
     site_lang = _site_language(con)
@@ -279,7 +285,7 @@ def extract(site: Site, *, llm: bool | None = None, knowledge: bool | None = Non
         llm_run = run_llm(con, client, refine=refine, save=steps.save, limit=limit,
                           resume=resume, max_usd=cap, workers=count, fork=fork,
                           reuse=not fresh, records_only=True).run_id
-        rules_run, result.restored = _project(con, steps)
+        rules_run, result.restored = _project(con, steps, blocks_rebuilt=steps.blocks)
         result.run_ids += [run_id for run_id in (rules_run, llm_run) if run_id is not None]
     finally:
         if shared is not None:
@@ -290,7 +296,8 @@ def extract(site: Site, *, llm: bool | None = None, knowledge: bool | None = Non
 RESTORE_LOSS_LIMIT = 0.10       # a rekorddal bíró oldalak ekkora hányada maradhat ki
 
 
-def _project(con: duckdb.DuckDBPyConnection, steps) -> tuple[int | None, Restored | None]:
+def _project(con: duckdb.DuckDBPyConnection, steps, blocks_rebuilt: bool = False
+             ) -> tuple[int | None, Restored | None]:
     """Az entitás-táblák levezetése a tárolt kinyerésből: üríti az entitás-, az említés-, a
     bizonyíték-, az alias-, a kapcsolat- és az összevonás-táblákat, a gráfot és a
     megállapításokat; utána a szabálykör és a tárolt kinyerés visszaírása (`restore_llm`). Az
@@ -299,30 +306,32 @@ def _project(con: duckdb.DuckDBPyConnection, steps) -> tuple[int | None, Restore
 
     Ürítés előtt megszámolja, hány oldal írható vissza (`restore_plan`): ha a tárolt rekorddal
     bíró oldalak több mint `RESTORE_LOSS_LIMIT` hányada kimaradna (a blokkjaik a kinyerés óta
-    megváltoztak), `ApiError`-ral megáll, és az adatbázishoz nem nyúl. Visszaad: (a szabálykör
-    futása, a visszaírás)."""
+    megváltoztak), `ApiError`-ral megáll, és az adatbázishoz nem nyúl. Az ürítés, a szabálykör
+    és a visszaírás egy tranzakció: hiba esetén a korábbi kész állapot (entitások, gráf,
+    megállapítások) megmarad. `blocks_rebuilt`: a hívó a blokkokat ezen a tranzakción kívül,
+    korábban már újraépítette (az LLM-kör előtt); a védelem üzenete ilyenkor ezt mondja.
+    Visszaad: (a szabálykör futása, a visszaírás)."""
     plan = restore_plan(con)
     recorded = [status for status, stored, _ in plan.values()
                 if stored is not None and status != "no_content_blocks"]
     changed = recorded.count("restore_input_changed")
     if changed > RESTORE_LOSS_LIMIT * len(recorded):
+        untouched = ("a megváltozott oldalak blokkjai és említései már újraépültek, a többi "
+                     "entitás-tábla, a gráf és a megállapítások érintetlenek" if blocks_rebuilt
+                     else "az entitás-táblák érintetlenek")
         raise ApiError(
             f"a tárolt kinyerés {len(recorded)} oldalából {changed} nem írható vissza (a "
-            "blokkjaik a kinyerés óta megváltoztak); a futás megáll, az entitás-táblák "
-            "érintetlenek. Újrakinyerés kell: aaa entities --llm", code=3)
-    con.begin()
-    try:
+            f"blokkjaik a kinyerés óta megváltoztak); a futás megáll, {untouched}. "
+            "Újrakinyerés kell: aaa entities --llm", code=3)
+    with atomic(con):
         findings_module.clear_findings(con)
         graph_module.clear_graph(con)
         clear_resolution(con)
         clear_entities(con)
-        con.commit()
-    except Exception:
-        con.rollback()
-        raise
-    rules_run = (run_rules(con, entity_pages=entity_page_ids(page_roles(con))).run_id
-                 if steps.rules else None)
-    return rules_run, restore_llm(con, plan=plan)
+        rules_run = (run_rules(con, entity_pages=entity_page_ids(page_roles(con))).run_id
+                     if steps.rules else None)
+        restored = restore_llm(con, plan=plan)
+    return rules_run, restored
 
 
 # --- resolve -------------------------------------------------------------------------------
@@ -340,19 +349,23 @@ def resolve(site: Site, *, knowledge: bool | None = None) -> ResolveResult:
     """Feloldás LLM nélkül: a site-szintű entitások (oldalhoz kötés, csomagok, lépések,
     összevonás, demó- és sablonjelölés), utána a tudásbázis-kapcsolás (`knowledge`, alapból a
     `pipeline.toml` `knowledge`)."""
-    con = site.con
     steps = load_pipeline().steps
+    site_run = run_site(site.con) if steps.site else None
+    return ResolveResult(site_run, _link(site, steps, knowledge))
+
+
+def _link(site: Site, steps, knowledge: bool | None) -> KnowledgeRun | None:
+    """A tudásbázis-kapcsolás (`knowledge`, alapból a `pipeline.toml` `knowledge`); None, ha
+    nem fut."""
+    con = site.con
     use_knowledge = steps.knowledge if knowledge is None else knowledge
-    shared = connect(shared_path()) if use_knowledge else None
+    if not use_knowledge:
+        return None
+    shared = connect(shared_path())
     try:
-        site_run = run_site(con) if steps.site else None
-        linked = None
-        if shared is not None:
-            linked = link_entities(con, _knowledge(con, shared), _utcnow, _site_language(con))
+        return link_entities(con, _knowledge(con, shared), _utcnow, _site_language(con))
     finally:
-        if shared is not None:
-            shared.close()
-    return ResolveResult(site_run, linked)
+        shared.close()
 
 
 @dataclass(frozen=True)
@@ -368,15 +381,23 @@ class RebuildResult:
 def rebuild_entities(site: Site, *, knowledge: bool | None = None) -> RebuildResult:
     """Az entitások újraépítése a tárolt kinyerésből, LLM-hívás nélkül: ugyanaz a levezetés,
     amellyel az `aaa entities` minden futása végződik (ürítés, szabálykör, a tárolt kinyerés
-    visszaírása), utána a site-kör és a tudásbázis-kapcsolás (`resolve`). A blokkok, a
+    visszaírása), utána a site-kör és a tudásbázis-kapcsolás. A blokkok, a
     futásnapló, a tárolt kinyerés és a hívásnapló marad; a gráfot és a megállapításokat utána
-    az `aaa graph` és az `aaa findings` építi fel."""
+    az `aaa graph` és az `aaa findings` építi fel.
+
+    A blokképítés, a levezetés és a site-kör egy tranzakció: ha bármelyik elbukik, vagy a
+    védelem megállítja a futást, a korábbi kész állapot (entitások, említések, blokkok, gráf,
+    megállapítások) változatlanul megmarad. A tudásbázis-kapcsolás ezután fut (hálózati
+    hívásokkal); ha az bukik el, az entitások készen állnak, kapcsolás nélkül."""
     con = site.con
     steps = load_pipeline().steps
-    if steps.blocks:
-        build_blocks(con)
-    rules_run, restored = _project(con, steps)
-    return RebuildResult(rules_run, restored, resolve(site, knowledge=knowledge))
+    with atomic(con):
+        if steps.blocks:
+            build_blocks(con)
+        rules_run, restored = _project(con, steps)
+        site_run = run_site(con) if steps.site else None
+    return RebuildResult(rules_run, restored,
+                         ResolveResult(site_run, _link(site, steps, knowledge)))
 
 
 def entity_report(site: Site, out: Path, baseline: Path | None = None) -> tuple[Path, Path, int]:

@@ -34,7 +34,8 @@ def connect(path: Path | str = ":memory:") -> duckdb.DuckDBPyConnection:
 
 
 def migrate(con: duckdb.DuckDBPyConnection) -> list[str]:
-    """NNN_*.sql fájlok sorrendben; a lefutottakat a _migrations tábla tartja.
+    """NNN_*.sql fájlok sorrendben; a lefutottakat a _migrations tábla tartja. Egy migráció és
+    a naplóbejegyzése egy tranzakció.
 
     Ha futott migráció, utána CHECKPOINT: a séma az adatbázisfájlba kerül, a WAL-ban nem marad
     DDL. (A DuckDB 1.5 nem játssza vissza a `DEFAULT nextval(...)` oszlopos táblára futó
@@ -48,10 +49,19 @@ def migrate(con: duckdb.DuckDBPyConnection) -> list[str]:
     for sql_file in sorted(MIGRATIONS_DIR.glob("[0-9][0-9][0-9]_*.sql")):
         if sql_file.name in done:
             continue
-        con.execute(sql_file.read_text(encoding="utf-8"))
-        con.execute(
-            "INSERT INTO _migrations VALUES (?, current_timestamp)", [sql_file.name]
-        )
+        # a sémamódosítás és a naplóbejegyzése egy tranzakció: megszakadás után a migráció
+        # vagy teljesen megvan a naplójával, vagy semmi sincs belőle, így az újranyitás
+        # nem próbál meg újra egy már végrehajtott lépést
+        con.begin()
+        try:
+            con.execute(sql_file.read_text(encoding="utf-8"))
+            con.execute(
+                "INSERT INTO _migrations VALUES (?, current_timestamp)", [sql_file.name]
+            )
+            con.commit()
+        except BaseException:
+            con.rollback()
+            raise
         applied.append(sql_file.name)
     if applied:
         con.execute("CHECKPOINT")

@@ -73,6 +73,7 @@ from datetime import datetime
 
 import duckdb
 
+from aaa2.db import transaction
 from aaa2.db.stable_json import dumps
 from aaa2.entities import store
 from aaa2.resolver.context import SiteRun, _Context
@@ -102,7 +103,7 @@ def run_site(con: duckdb.DuckDBPyConnection,
     roles = page_roles(con)
     config = load_site_config(site_domain(con))
     site_lang = canonical_language(con, config)
-    con.begin()
+    transaction.begin(con)
     try:
         (run_id,) = store.insert_entity_runs_in_run_site(con, started)
         run = SiteRun(run_id, dict(Counter(info.role for info in roles.values())))
@@ -137,8 +138,8 @@ def run_site(con: duckdb.DuckDBPyConnection,
                          "template_mentions": run.template_mentions,
                          "template_entities": run.template_entities,
                          "thresholds": run.thresholds}, ensure_ascii=False), run_id)
-        con.commit()
+        transaction.commit(con)
     except Exception:
-        con.rollback()
+        transaction.rollback(con)
         raise
     return run
