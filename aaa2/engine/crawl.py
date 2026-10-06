@@ -87,6 +87,7 @@ _PAGE_COLUMNS = (
     "url", "status", "error", "canonical", "noindex", "title", "meta_description", "h1", "lang",
     "hreflang", "word_count", "main_content", "main_content_method", "external_link_count",
     "raw_html_hash", "rendered_html", "render_ms", "fetched_at", "run_id", "final_url",
+    "seen_crawl_id", "x_robots_tag",
 )
 _UPSERT_PAGE = (
     f"INSERT INTO pages ({', '.join(_PAGE_COLUMNS)}) "
@@ -198,6 +199,13 @@ class _Run:
             [started, self.options.max_pages, self.options.concurrency, f"{mode}: {seed_url}",
              "sitemap" if self.options.sitemap_only else "links"],
         ).fetchone()
+        # a folytatás a folytatott crawlhoz tartozik; az új crawl a sajátja
+        previous = self.con.execute(
+            "SELECT crawl_id FROM crawl_runs WHERE run_id < ? ORDER BY run_id DESC LIMIT 1",
+            [self.run_id]).fetchone() if self.options.resume else None
+        self.crawl_id = previous[0] if previous and previous[0] is not None else self.run_id
+        self.con.execute("UPDATE crawl_runs SET crawl_id = ? WHERE run_id = ?",
+                         [self.crawl_id, self.run_id])
         finished = False
         try:
             if not self.options.resume:
@@ -221,7 +229,7 @@ class _Run:
             raise ValueError(f"nem normalizálható seed URL: {seed_url!r}")
         candidates = [url for url in (seed, slash_alternate(seed)) if url]
         stored = None if self._js_dependent() else self._fresh_row(candidates)
-        if stored is not None and stored[3] is not None and await self._unchanged(seed, stored[1]):
+        if stored is not None and stored[3] is not None and await self._unchanged(seed, stored):
             await self._start_from_stored(seed_url, discovery, provisional, stored, started)
             return
         result = await self.renderer.render(seed)
@@ -247,7 +255,7 @@ class _Run:
     ) -> None:
         """A seed változatlan: a trailing-slash döntés a tárolt DOM linkjeiből jön, render nélkül,
         a sor a tárolt linkekkel indul."""
-        page_id, _, url, compressed, final_url = stored
+        page_id, _, url, compressed, final_url = stored[:5]
         html = zstandard.ZstdDecompressor().decompress(compressed).decode("utf-8")
         parsed = parse_page(html, final_url or url, provisional)
         options = self.options
@@ -345,35 +353,51 @@ class _Run:
         if self._js_dependent():
             return False
         stored = self._fresh_row([item.url])
-        if stored is None or not await self._unchanged(item.url, stored[1]):
+        if stored is None or stored[3] is None or not await self._unchanged(item.url, stored):
             return False
         self._skip(item, stored[0])
         return True
 
     def _fresh_row(self, urls: list[str]) -> tuple | None:
-        """(page_id, raw_html_hash, url, rendered_html, final_url) az első URL-hez, amelynek
-        van 7 napnál frissebb, hash-sel bíró sora; különben None."""
+        """(page_id, raw_html_hash, url, rendered_html, final_url, status, noindex,
+        x_robots_tag) az első URL-hez, amelynek van 7 napnál frissebb, hash-sel bíró, hiba nélkül
+        tárolt sora; különben None. A korábban sikertelen render (hibával vagy tárolt DOM nélkül
+        mentett sor) nem használható újra: az oldal újra renderelődik."""
         now = _now()
         for url in urls:
             row = self.con.execute(
-                "SELECT page_id, raw_html_hash, url, rendered_html, final_url, fetched_at "
-                "FROM pages WHERE url = ?", [url],
+                "SELECT page_id, raw_html_hash, url, rendered_html, final_url, status, noindex, "
+                "x_robots_tag, fetched_at, error FROM pages WHERE url = ?", [url],
             ).fetchone()
-            if row and row[1] is not None and row[5] is not None and now - row[5] <= SKIP_MAX_AGE:
-                return row[:5]
+            if row and row[1] is not None and row[8] is not None and row[9] is None \
+                    and now - row[8] <= SKIP_MAX_AGE:
+                return row[:8]
         return None
 
-    async def _unchanged(self, url: str, stored_hash: str) -> bool:
-        """A nyers GET válasza 400 alatti, és a stabil hash-e egyezik a tárolttal. A kliensnek a
-        böngésző navigációs fejléceit kell küldenie (`NAVIGATION_HEADERS`)."""
+    async def _unchanged(self, url: str, stored: tuple) -> bool:
+        """A nyers GET válasza a tárolt sorral egyezik: a státusz, a végső URL, az `X-Robots-Tag`
+        fejléc és a nyers HTML stabil hash-e is. A kliensnek a böngésző navigációs fejléceit
+        kell küldenie (`NAVIGATION_HEADERS`). (A `Link: rel=canonical` fejlécet a crawl nem
+        tárolja, ezért nem része az összevetésnek.)"""
+        _, stored_hash, _, _, stored_final, stored_status, stored_noindex, stored_robots = stored
         try:
             response = await self.client.get(url, follow_redirects=True)
         except httpx.HTTPError:
             return False
-        return (
-            response.status_code < 400
-            and stable_hash(decode_raw(response.content)) == stored_hash
-        )
+        if response.status_code >= 400 or response.status_code != stored_status:
+            return False
+        policy = self.frontier.policy if self.frontier is not None else None
+        final = str(response.url)
+        if stored_final and policy is not None \
+                and normalize(final, policy) != normalize(stored_final, policy):
+            return False
+        header = robots_header(response.headers)
+        if stored_robots is None:              # a jelölés előtti sor: a fejléc nem ismert
+            if header or stored_noindex:
+                return False
+        elif header != stored_robots:
+            return False
+        return stable_hash(decode_raw(response.content)) == stored_hash
 
     def _skip(self, item: QueueItem, page_id: int) -> None:
         """A sor érintetlen; a tárolt linkjei kerülnek a sorba."""
@@ -382,6 +406,8 @@ class _Run:
             [page_id],
         ).fetchall()
         with _transaction(self.con):
+            self.con.execute("UPDATE pages SET seen_crawl_id = ? WHERE page_id = ?",
+                             [self.crawl_id, page_id])
             self.frontier.add_links(item, links)
             self.frontier.mark_done(item.url)
         self.skipped += 1
@@ -429,6 +455,7 @@ class _Run:
         values.update(
             url=url, status=status, noindex=False, final_url=result.final_url,
             render_ms=result.render_ms, fetched_at=_now(), run_id=self.run_id,
+            seen_crawl_id=self.crawl_id, x_robots_tag=robots_header(result.headers),
         )
         page_id = self._upsert(values)
         self._clear_children(page_id)
@@ -441,6 +468,7 @@ class _Run:
             url=item.url, status=result.status, error=error, noindex=False,
             raw_html_hash=result.raw_html_hash, render_ms=result.render_ms, fetched_at=_now(),
             run_id=self.run_id, final_url=result.final_url,
+            seen_crawl_id=self.crawl_id, x_robots_tag=robots_header(result.headers),
         )
         parsed = None
         if error is None and _usable(result):
@@ -563,6 +591,15 @@ def _transaction(con: duckdb.DuckDBPyConnection) -> Iterator[None]:
 
 def _now() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
+
+
+def robots_header(headers) -> str:
+    """A válasz `X-Robots-Tag` fejléce összevethető alakban: kisbetűvel, a sorok és a direktívák
+    vesszővel, szóköz nélkül; üres, ha nincs ilyen fejléc."""
+    value = headers.get("x-robots-tag") if headers else None
+    parts = [part.strip().lower() for line in (value or "").splitlines()
+             for part in line.split(",")]
+    return ",".join(part for part in parts if part)
 
 
 SITEMAP_USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "

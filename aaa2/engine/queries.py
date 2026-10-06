@@ -26,7 +26,14 @@ from aaa2.contracts import (
     StructuredData,
 )
 
-_PAGE = "SELECT * EXCLUDE (rendered_html), rendered_html IS NOT NULL AS has_rendered_html FROM pages"
+# Az aktuális audit oldalkészlete: amit a legutóbbi crawl látott (feldolgozott, vagy a változatlan
+# tartalom miatt kihagyott; a folytatás ugyanaz a crawl). A jelölés nélküli sor (nem crawlból
+# származó adat) aktuálisnak számít. A történeti sorok megmaradnak, de a lekérdezők nem adják.
+CURRENT = ("(seen_crawl_id IS NULL OR seen_crawl_id = "
+           "(SELECT crawl_id FROM crawl_runs ORDER BY run_id DESC LIMIT 1))")
+CURRENT_IDS = f"(SELECT page_id FROM pages WHERE {CURRENT})"
+_PAGE = ("SELECT * EXCLUDE (rendered_html), rendered_html IS NOT NULL AS has_rendered_html "
+         f"FROM pages WHERE {CURRENT}")
 
 
 def _rows(con: duckdb.DuckDBPyConnection, query: str, parameters: list | None = None) -> list[dict]:
@@ -42,7 +49,7 @@ def site(con: duckdb.DuckDBPyConnection) -> Site | None:
 
 
 def pages(con: duckdb.DuckDBPyConnection) -> list[Page]:
-    """Minden oldal, `page_id` szerint."""
+    """Az aktuális készlet minden oldala (`CURRENT`), `page_id` szerint."""
     return [Page.from_row(row) for row in _rows(con, f"{_PAGE} ORDER BY page_id")]
 
 
@@ -55,7 +62,8 @@ def page_metas(con: duckdb.DuckDBPyConnection) -> list[PageMeta]:
     """Oldalanként a canonical és a hreflang, `page_id` szerint (a strukturált adat nélkül:
     azt a `json_ld` és a `structured_data` adja)."""
     return [PageMeta.from_row(row) for row in _rows(
-        con, "SELECT page_id, canonical, hreflang FROM pages ORDER BY page_id")]
+        con, f"SELECT page_id, canonical, hreflang FROM pages WHERE {CURRENT} "
+             "ORDER BY page_id")]
 
 
 def rendered_html(con: duckdb.DuckDBPyConnection, page_id: int) -> bytes | None:
@@ -84,8 +92,13 @@ LANGUAGE_SEGMENT = re.compile(r"^[a-z]{2,3}(?:-[a-z0-9]{2,4})?$", re.IGNORECASE)
 
 
 def _stored_links(con: duckdb.DuckDBPyConnection) -> list[dict]:
-    return _rows(con, "SELECT * FROM links ORDER BY from_page_id, ordinal, to_url, anchor, "
-                      "position, to_page_id, nofollow")
+    """A tárolt linkek az aktuális készlet oldalairól; a történeti oldalra mutató link célja
+    nincs a készletben (`to_page_id` üres)."""
+    return _rows(con, "SELECT * REPLACE (CASE WHEN to_page_id IN "
+                      f"{CURRENT_IDS} THEN to_page_id END AS to_page_id) FROM links "
+                      f"WHERE from_page_id IN {CURRENT_IDS} "
+                      "ORDER BY from_page_id, ordinal, to_url, anchor, position, to_page_id, "
+                      "nofollow")
 
 
 def links(con: duckdb.DuckDBPyConnection) -> list[Link]:
@@ -167,14 +180,15 @@ def json_ld(con: duckdb.DuckDBPyConnection) -> list[StructuredData]:
     """Az érvényes JSON-LD blokkok (a hibás JSON nélkül) az oldal és a sorszám szerint."""
     return [StructuredData.from_row({**row, "syntax": "json-ld"}) for row in _rows(
         con, "SELECT page_id, type, json, ordinal FROM schema_blocks "
-             "WHERE type IS DISTINCT FROM 'invalid' ORDER BY page_id, ordinal, type, json")]
+             f"WHERE type IS DISTINCT FROM 'invalid' AND page_id IN {CURRENT_IDS} "
+             "ORDER BY page_id, ordinal, type, json")]
 
 
 def structured_data(con: duckdb.DuckDBPyConnection) -> list[StructuredData]:
     """A microdata-, RDFa- és Open Graph-elemek az oldal és a sorszám szerint."""
     return [StructuredData.from_row(row) for row in _rows(
         con, "SELECT page_id, syntax, type, json, ordinal FROM structured_data "
-             "ORDER BY page_id, ordinal, syntax, type, json")]
+             f"WHERE page_id IN {CURRENT_IDS} ORDER BY page_id, ordinal, syntax, type, json")]
 
 
 # A microdata-elem ezen tulajdonságai URL-ek: a relatív érték az oldal URL-jéhez képest feloldva.
@@ -193,6 +207,7 @@ def schema_items(con: duckdb.DuckDBPyConnection) -> list[StructuredData]:
     items = json_ld(con)
     rows = _rows(con, "SELECT s.page_id, s.type, s.json, s.ordinal, p.url FROM structured_data s "
                       "JOIN pages p USING (page_id) WHERE s.syntax = 'microdata' "
+                      f"AND s.page_id IN {CURRENT_IDS} "
                       "ORDER BY s.page_id, s.ordinal, s.type, s.json")
     if not rows:
         return items

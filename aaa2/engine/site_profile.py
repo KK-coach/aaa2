@@ -31,6 +31,7 @@ from selectolax.parser import HTMLParser
 
 from aaa2.engine.market_scope import ScopePage, market_scope
 from aaa2.engine.normalize import UrlPolicy, normalize, slash_alternate
+from aaa2.engine.queries import CURRENT
 from aaa2.engine.target_country import (
     Candidate,
     leader,
@@ -91,7 +92,8 @@ def build_profile(con: duckdb.DuckDBPyConnection) -> SiteProfile:
     rows = con.execute(
         "SELECT page_id, url, title, meta_description, lang, hreflang, main_content, "
         "rendered_html FROM pages "
-        "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL"
+        "WHERE status BETWEEN 200 AND 299 AND error IS NULL AND rendered_html IS NOT NULL "
+        f"AND {CURRENT}"
     ).fetchall()
     schema = _schema_items(con)
     decompressor = zstandard.ZstdDecompressor()
