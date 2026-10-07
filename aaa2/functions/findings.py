@@ -754,7 +754,7 @@ def _uncovered(site: _Site, run: FindingsRun) -> list[tuple]:
         if top is not None:
             under[top].append(entity_id)
     nested = {child for children in under.values() for child in children}
-    partial = crawl.completeness(site.con).partial
+    partial = crawl.completeness(site.con).site_partial
     found = []
     for candidate in kept:
         entity_id, weight = candidate["entity_id"], candidate["weight"]
@@ -875,7 +875,7 @@ def _legal_pages(site: _Site) -> list[tuple]:
     for link in links:
         if link.to_page_id is None and (found_kind := legal_kind(link.to_url)) is not None:
             unchecked[found_kind][link.to_url].add(link.position)
-    partial = crawl.completeness(site.con).partial
+    partial = crawl.completeness(site.con).site_partial
     legal = {page["page_id"]: page for pages in by_kind.values() for page in pages}
     titles: dict[int, list[str]] = defaultdict(list)       # jogi oldal → címként álló sorok
     for block in extract_queries.blocks(site.con):
