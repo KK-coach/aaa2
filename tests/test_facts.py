@@ -13,7 +13,8 @@ from tests.test_entities_site import NOON
 BASE = "https://pelda.hu"
 
 
-def facts_site():
+def facts_site(mode="sitemap"):
+    """A kis site; a bejárás sitemap-módú (a bolt felvétele ilyen: a linkeket nem követi)."""
     con = site({
         "/": html("Pelda", "<nav><a href='/meres/'>Mérés</a></nav><main><h1>Pelda</h1>"
                   "<p>Üdv. <a href='/meres/' rel='nofollow'>A mérésről</a> és "
@@ -33,6 +34,9 @@ def facts_site():
                 "tech_signals = ['generator:WordPress 7'], trailing_slash = true, "
                 "https_redirect = true, https_redirect_status = 301, robots_status = 200, "
                 "robots_txt = 'User-agent: *'")
+    con.execute("INSERT INTO crawl_runs (started_at, finished_at, max_pages, mode, include, "
+                "exclude, skipped_by_limit) VALUES (current_timestamp, current_timestamp, "
+                "5000, ?, '', '', 0)", [mode])
     return con
 
 
@@ -115,6 +119,41 @@ def test_link_targets_resolve_only_unambiguous_root_level_slugs():
         con.execute("INSERT INTO links (from_page_id, to_url, to_page_id, anchor, position, "
                     "ordinal) VALUES (1, ?, NULL, 'x', 'body', 90)", [url])
     assert len(crawl.link_targets(con)) == 2
+
+
+def test_an_unknown_blog_link_is_not_resolved_to_a_root_level_page():
+    # linkeket követő bejárásnál a be nem járt belső cél nincs a készletben: a /blog/consulting
+    # link nem a /consulting szolgáltatásoldal változata, nem növeli annak a bejövő linkjeit
+    from aaa2.engine import queries as crawl
+    from aaa2.functions.graph import _Graph
+
+    def consulting_site(mode):
+        con = site({
+            "/": html("Pelda", "<main><h1>Pelda</h1><p>Üdv.</p></main>"),
+            "/consulting": html("Consulting", "<main><h1>Consulting</h1><p>Szöveg.</p></main>"),
+            "/blog/": html("Blog", "<main><h1>Blog</h1><p><a href='/blog/consulting'>A "
+                           "tanácsadásról szóló cikk</a></p></main>")})
+        con.execute("INSERT INTO crawl_runs (started_at, finished_at, max_pages, mode, include, "
+                    "exclude, skipped_by_limit) VALUES (current_timestamp, current_timestamp, "
+                    "5000, ?, '', '', 0)", [mode])
+        return con
+    con = consulting_site("links")
+    assert crawl.link_targets(con) == {}
+    (link,) = [link for link in crawl.links(con) if link.to_url == f"{BASE}/blog/consulting"]
+    assert (link.to_page_id, link.resolution) == (None, None)
+    (row,) = [row for row in link_rows(con) if row["hová"] == f"{BASE}/blog/consulting"]
+    assert (row["feloldott céloldal"], row["feloldás módja"]) == ("", "")
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    ids = dict(con.execute("SELECT url, page_id FROM pages").fetchall())
+    assert _Graph(con, {}).inbound.get(ids[f"{BASE}/consulting"], []) == []
+    # a mód dönt, nem más: ugyanez a site sitemap-módú bejárással (a bolt esete) feloldja
+    assert crawl.link_targets(consulting_site("sitemap")) == {
+        f"{BASE}/blog/consulting": ids[f"{BASE}/consulting"]}
+    # a mód nélküli (crawl-futás nélküli) készlet sem old fel
+    bare = facts_site()
+    bare.execute("DELETE FROM crawl_runs")
+    assert crawl.link_targets(bare) == {}
 
 
 def test_structured_rows_list_the_stored_items_without_judging_them():
