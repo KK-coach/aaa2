@@ -21,7 +21,7 @@
  "kk-coach": {
   "kk-coach-edges.csv": "0bdfd38872ab2503d91d18ab49e29b2aa7ede7ac341a74d3c556658933fd124a",
   "kk-coach-entities.csv": "c61972968e9004cf40808bfc439049ccc761470027ae573ebdf0989ebea835a7",
-  "kk-coach-findings.csv": "da9aa30a0e1c6d9a3c33914a31d3d4cd36ae222e478310ea1ac9b89b9bf856c9",
+  "kk-coach-findings.csv": "4299dd2e390f5450fa7307f5bbbac87434a5ff64ca69cff5eeef88474e237a8d",
   "kk-coach-is-a-rejected.csv": "e0983143a59b0a7c794de2ddd115aed4e3f06295cce2ef4807fdcb62e5dd75e8",
   "kk-coach-main-entity.csv": "7a0933212a57f91bea3aa3a05f0f9e10490333005d178ec660819f9c5e283376",
   "kk-coach-run.md": "37f4a1058aaa4ac35da3cbccbe07876f098e84401d3c175fbf0311b5e045d8f1",
@@ -34,13 +34,13 @@
   "kk-coach-view-site.csv": "5a2929f27d0cdfc97c803e2c723832d405507d163c44083c8d0504f92ce81fc6",
   "kk-coach-view-sitemap.csv": "15c6697cc4c0ffd56cce4105f4c31f323f5e1dbacb96001e1f03c972ffbe8894",
   "kk-coach-view-structured-data.csv": "2fd3cce62d63d16a2f353e522791ad412134c4a7481896a24fab3bbd20a4930e",
-  "kk-coach-views.html": "d61909e4f1271cace97a43b253fd0e82bf0b20e74f532fd6a7dbe167fe2ebeac",
+  "kk-coach-views.html": "f10b3f49d20ce5f089abbce13be1850dcb277e71bf9b8c40be7721901f4c6606",
   "kk-coach-weights.csv": "96fa055a32b891f1cc94f8ee5fc1591f487441b47ef81fda8ad88ab548c63cb0"
  },
  "kk-coach-2026-10": {
   "kk-coach-2026-10-edges.csv": "eaccfc28b8d42b23e1f105f4851f38c2f77a635996809ff11b522a89cbab95c3",
   "kk-coach-2026-10-entities.csv": "eeb565d539130e4b5aa72b7c0b682471e710c877a4ddc4cfedc1d2c9b1e96010",
-  "kk-coach-2026-10-findings.csv": "ed0c811c1c8be08640edcf85cb61601db43fc85fe4bf93fa08e2ab6481377543",
+  "kk-coach-2026-10-findings.csv": "5fb715e7ee517e51b2b0749f4e5c71c4c2fa559a2f439493457f71cf137bebcc",
   "kk-coach-2026-10-is-a-rejected.csv": "156f101355f979e6f03f8d03b008cb7a8bd54b8cb2a59dfb2c72cd4d4e2870ed",
   "kk-coach-2026-10-main-entity.csv": "d28c7d940458c7c9d72406368b43e09259def9f5244ca091980257d9b12b1d08",
   "kk-coach-2026-10-run.md": "443ae08c131eb04ef3dbf5b225083cb3d215b757856afda18f75e69a62813434",
@@ -53,7 +53,7 @@
   "kk-coach-2026-10-view-site.csv": "e4098d70b4bc43ec9b9c2874a27626b9ff4864ad995bdd094fe2559a6a4a149f",
   "kk-coach-2026-10-view-sitemap.csv": "45f69c0231e8554e5da8d4045016c6c3146c8e8cf45bf62b13da197da0f0d11f",
   "kk-coach-2026-10-view-structured-data.csv": "a506158b610658cfb0ec47ceeee2bec5ac07209bbad59c2e655726e1deb65b85",
-  "kk-coach-2026-10-views.html": "52b700470ca84595c1b42710bfb7fd01a9ab85c7be5b98c069f1e93961f345d0",
+  "kk-coach-2026-10-views.html": "9f91caf657f47cbdb26be022cafd881b876596e48e351166ba5feb8eadef3d88",
   "kk-coach-2026-10-weights.csv": "ae0a50d99ceae2594a7bdc7d2bb9a15622e6a5cf721782159413ffad7d31960b"
  },
  "marketinglens": {
