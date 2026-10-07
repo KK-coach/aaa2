@@ -30,7 +30,7 @@ def test_two_runs_on_the_same_database_write_identical_outputs(monkeypatch, tmp_
     con, _ = built(monkeypatch)
     first = outputs(con, tmp_path / "1")
     second = outputs(con, tmp_path / "2")
-    assert len(first) == 10 and all(first.values())            # nem üres zöld (a heading-nézettel)
+    assert len(first) == 11 and all(first.values())            # nem üres zöld (a heading-nézettel)
     assert first == second
 
 

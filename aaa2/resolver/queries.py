@@ -4,6 +4,7 @@ keresztül olvassa őket. A visszaadott érték szerződés (`aaa2/contracts`) v
 összesítés, rögzített sorrendben."""
 from __future__ import annotations
 
+import json
 from datetime import datetime
 
 import duckdb
@@ -60,6 +61,28 @@ def relation_from_ids(con: duckdb.DuckDBPyConnection, kind: str) -> list[int]:
     return [entity_id for (entity_id,) in con.execute(
         "SELECT DISTINCT from_id FROM entity_relations WHERE type = ? ORDER BY from_id",
         [kind]).fetchall()]
+
+
+def language_pair_merges(con: duckdb.DuckDBPyConnection) -> list[dict]:
+    """A nyelvi összevonások (`language_pair`) a naplóból, sorrendben: a megtartott entitás (ha
+    később maga is beolvadt, a végső entitás), az összevonáskori két név, a típus, az altípus,
+    a két nyelv és a két oldal."""
+    merges = con.execute("SELECT merge_id, kept_id, removed_id, kept_name, removed_name, rule, "
+                         "evidence FROM merge_log ORDER BY merge_id").fetchall()
+    found = []
+    for index, (_, kept, _, kept_name, removed_name, rule, evidence) in enumerate(merges):
+        if rule != "language_pair":
+            continue
+        for _, later_kept, later_removed, *_ in merges[index + 1:]:
+            if later_removed == kept:
+                kept = later_kept
+        data = json.loads(evidence) if evidence else {}
+        pages, langs = [*(data.get("pages") or []), "", ""], [*(data.get("langs") or []), "", ""]
+        found.append({"entity_id": kept, "kept_name": kept_name, "removed_name": removed_name,
+                      "type": data.get("type"), "subtype": data.get("subtype"),
+                      "kept_lang": langs[0], "removed_lang": langs[1],
+                      "kept_page": pages[0], "removed_page": pages[1]})
+    return found
 
 
 def language_pair_names(con: duckdb.DuckDBPyConnection) -> dict[int, dict[str, str]]:
