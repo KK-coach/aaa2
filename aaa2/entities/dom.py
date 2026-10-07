@@ -720,6 +720,13 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
     újraépülnek. A `blocks_built` előtti blokkok a jelenlegi hash-ekkel kerülnek a táblába; a
     tartalom-hash nélküli (024 előtti) sor a jelenlegit kapja, újraépítés nélkül.
 
+    A szerkezet változása (`blocks_built.dom_hash`: a tárolt renderelt DOM hash-e): ha az
+    oldalt a crawl újra renderelte, a mostani DOM-ból épített blokkok összevetődnek a
+    tároltakkal (`same_blocks`). A nyers HTML és a lapos szöveg változatlansága mellett is
+    változhat a szerkezet (heading helyett bekezdés): ilyenkor az oldal a megváltozott oldal
+    útján épül újra; ha a blokkok azonosak, csak a hash frissül. A DOM-hash nélküli (031
+    előtti) sor a jelenlegit kapja, újraépítés nélkül.
+
     A blokképítő változása (`BLOCKS_VERSION`, `blocks_built.builder_version`): a régebbi
     verzióval épült oldal blokkjai memóriában újraépülnek, és összevetődnek a tároltakkal
     (`same_blocks`: a szöveg, a heading-útvonal és a cellák értéke whitespace és nulla
@@ -755,22 +762,40 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
         if changed and (wanted is None or page_id in wanted):
             drop_page_blocks(con, page_id)
     decompressor = zstandard.ZstdDecompressor()
-    for (page_id,) in con.execute(
-            "SELECT page_id FROM blocks_built WHERE coalesce(builder_version, 1) < ? "
-            "ORDER BY page_id", [BLOCKS_VERSION]).fetchall():
-        if wanted is not None and page_id not in wanted:
-            continue
-        title, blob = crawl.rendered(con, page_id)
+
+    def unchanged(page_id: int, title: str | None, blob: bytes | None) -> bool:
+        """A tárolt blokkok azonosak-e a mostani DOM-ból építettekkel (`same_blocks`)."""
+        if blob is None:
+            return True
         stored = [(ordinal, kind, region, level, list(path or []), text,
                    json.loads(cells) if cells is not None else None)
                   for ordinal, kind, region, level, path, text, cells in con.execute(
                       "SELECT ordinal, kind, region, level, heading_path, text, cells FROM "
                       "blocks WHERE page_id = ? ORDER BY ordinal", [page_id]).fetchall()]
-        built = [] if blob is None else [
-            (b.ordinal, b.kind, b.region, b.level, b.heading_path, b.text, b.cells)
-            for b in parse_blocks(decompressor.decompress(blob).decode("utf-8", "replace"),
-                                  title)]
-        if blob is None or same_blocks(stored, built):
+        built = [(b.ordinal, b.kind, b.region, b.level, b.heading_path, b.text, b.cells)
+                 for b in parse_blocks(decompressor.decompress(blob).decode("utf-8", "replace"),
+                                       title)]
+        return same_blocks(stored, built)
+
+    for page_id, built_dom in con.execute(
+            "SELECT page_id, dom_hash FROM blocks_built ORDER BY page_id").fetchall():
+        if page_id not in hashes or (wanted is not None and page_id not in wanted):
+            continue
+        title, blob = crawl.rendered(con, page_id)
+        current = dom_hash(blob)
+        if built_dom == current:
+            continue
+        if built_dom is None or unchanged(page_id, title, blob):
+            con.execute("UPDATE blocks_built SET dom_hash = ? WHERE page_id = ?",
+                        [current, page_id])
+        else:
+            drop_page_blocks(con, page_id)
+    for (page_id,) in con.execute(
+            "SELECT page_id FROM blocks_built WHERE coalesce(builder_version, 1) < ? "
+            "ORDER BY page_id", [BLOCKS_VERSION]).fetchall():
+        if wanted is not None and page_id not in wanted:
+            continue
+        if unchanged(page_id, *crawl.rendered(con, page_id)):
             con.execute("UPDATE blocks_built SET builder_version = ? WHERE page_id = ?",
                         [BLOCKS_VERSION, page_id])
         else:
@@ -791,9 +816,15 @@ def build_blocks(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int] | None 
                 "cells) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", rows)
         con.execute(
             "INSERT OR REPLACE INTO blocks_built (page_id, raw_html_hash, built_at, "
-            "content_hash, builder_version) VALUES (?, ?, current_timestamp, ?, ?)",
-            [page_id, hashes[page_id], contents[page_id], BLOCKS_VERSION])
+            "content_hash, builder_version, dom_hash) VALUES (?, ?, current_timestamp, ?, ?, ?)",
+            [page_id, hashes[page_id], contents[page_id], BLOCKS_VERSION, dom_hash(blob)])
     return len(pages)
+
+
+def dom_hash(blob: bytes | None) -> str | None:
+    """A tárolt (tömörített) renderelt DOM hash-e; None, ha az oldalnak nincs tárolt DOM-ja. A
+    tárolt bájtok csak akkor változnak, ha a crawl az oldalt újra renderelte."""
+    return hashlib.sha256(blob).hexdigest() if blob is not None else None
 
 
 def content_hash(title: str | None, h1: str | None, main_content: str | None) -> str:
