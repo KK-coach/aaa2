@@ -2,7 +2,7 @@
  "duex": {
   "duex-edges.csv": "9f7a88937798044158f05f8ffacc993dad4663a8678625c25111207988f0538b",
   "duex-entities.csv": "34a480cc75f2ab6fe4a3a8e7fb14620ef237dbdf63f282312c38544fbdef2a43",
-  "duex-findings.csv": "c0e061c8d237d71be7f04ad30a5e97fcd7a616e059f2605583089224ca5dbff4",
+  "duex-findings.csv": "a89280a1d0b8c670a4427158b159c14c21b1fcc0ba663dabcf8d01dc5b017665",
   "duex-is-a-rejected.csv": "654d0f790fd4f22e6bd7d5eee67d05318fc7b3316f22706986af00c6ad7d57bf",
   "duex-main-entity.csv": "883ec4f2596000cee164eddb49f8d7b8c1e38e22ce3c1eea45a26619b0ff471a",
   "duex-run.md": "c12ffcfe25b3bdea641d44ae1acb982defe27911689981d8fd7b3276e0ee9713",
@@ -15,7 +15,7 @@
   "duex-view-site.csv": "fce7728f8a8e135faeaa8268f910132290a6a02e65303cda58f4c1fede7e01d4",
   "duex-view-sitemap.csv": "1c6265711e6e78e7234e6c5c8e3541835f12bc4d80deb9e3d360b9fe2547bf3c",
   "duex-view-structured-data.csv": "da85c54c155cbafbc57a8e6e063adc10da22994f7f785b006bb42d6cb903a297",
-  "duex-views.html": "db42d5d0394b6193fc0065f246232070b440d0bb745da3dfe1fc712e87ac16fa",
+  "duex-views.html": "b9481f5b454ed6601a5ed91798cfd9ce24731553d9e702f29e8351d7623e52da",
   "duex-weights.csv": "714e2bf0bd1f8a95464ca58d155c59b997b77abe6560208af545a3763b290c93"
  },
  "kk-coach": {
@@ -97,7 +97,7 @@
  "ngx-bootstrap": {
   "ngx-bootstrap-edges.csv": "437811e0205353ce7d8d07fbc4b7f7be216cc13ca21a40dc88067cfafec7296e",
   "ngx-bootstrap-entities.csv": "180ec0344ada6e97a8a5d9d22c5c5e4efe291c4678213f4d90f7d985861d8e1a",
-  "ngx-bootstrap-findings.csv": "6af8f46d7af2c923042856a8e9dc3f21bcd4b54aa0616618cf108205621b73e4",
+  "ngx-bootstrap-findings.csv": "e2a509fa170f9730753c8b92c7d266cf302bc9d035e144a13715e2476ac35926",
   "ngx-bootstrap-is-a-rejected.csv": "654d0f790fd4f22e6bd7d5eee67d05318fc7b3316f22706986af00c6ad7d57bf",
   "ngx-bootstrap-main-entity.csv": "da5eaf5f23fd40dad507e05f5478b59bb2322b55c81833e3382dab5710b73910",
   "ngx-bootstrap-run.md": "87e9053a009280a9fd550a29d578506f9d93ac6c92c550b3600c32a8a200209b",
@@ -110,7 +110,7 @@
   "ngx-bootstrap-view-site.csv": "5e69ee99515f68ea918ae54f437682910528790b6aaba4411722e79212b91941",
   "ngx-bootstrap-view-sitemap.csv": "f2e2c73333594891222aa8f35e15d3a5890c51d2122106d9d9fe42a5bab3058c",
   "ngx-bootstrap-view-structured-data.csv": "287c4323c7c7029ec1a649a093541e268fa4844025e680bf84787156b3e65abc",
-  "ngx-bootstrap-views.html": "1e98a9b41fcfaadce44d34bd090493822aed8e87569991bbff14ed89c6ae46b8",
+  "ngx-bootstrap-views.html": "f36b5732f73fa11d80feb7f4631339ce1c02237b04b074b1245328454ab54299",
   "ngx-bootstrap-weights.csv": "c0e9bd28fc066507fd65cb5b75611fc03bfb2b42465fe2656397e757eec3170e"
  }
 }
