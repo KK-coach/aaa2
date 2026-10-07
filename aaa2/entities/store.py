@@ -165,6 +165,21 @@ def update_entities_in_entityindex_write_votes(con: duckdb.DuckDBPyConnection, v
         "UPDATE entities SET type_votes = ?, type_suggested = ? WHERE entity_id = ?", [value, suggested, entity_id])
 
 
+def entities_for_majority_types(con: duckdb.DuckDBPyConnection, protected) -> list[tuple]:
+    """Lekérdezés: entities. Hívja: entities/extract.py: apply_majority_types."""
+    return con.execute(
+        "SELECT entity_id, type, subtype, type_votes FROM entities WHERE type_votes IS NOT NULL "
+        "AND NOT list_contains(?, source) ORDER BY entity_id", [list(protected)]).fetchall()
+
+
+def update_entities_in_apply_majority_types(con: duckdb.DuckDBPyConnection, kind, subtype,
+                                            entity_id):
+    """Módosítás: entities. Hívja: entities/extract.py: apply_majority_types."""
+    con.execute(
+        "UPDATE entities SET type_changed_from = type, type = ?, subtype = ? WHERE "
+        "entity_id = ?", [kind, subtype, entity_id])
+
+
 def entity_runs_for_resumable_run(con: duckdb.DuckDBPyConnection, model) -> tuple | None:
     """Lekérdezés: entity_runs. Hívja: entities/extract.py: resumable_run."""
     return con.execute(
@@ -212,8 +227,8 @@ def entities_for_entity_table(con: duckdb.DuckDBPyConnection) -> list[tuple]:
     """Lekérdezés: entities. Hívja: entities/report.py: entity_table."""
     return con.execute(
         "SELECT e.entity_id, e.name, e.type, e.subtype, e.tier, e.flags, e.source, "
-        "e.anchor_page_id, e.wikidata_id, e.wikidata_status, e.wikipedia FROM entities "
-        "e ORDER BY e.entity_id").fetchall()
+        "e.anchor_page_id, e.wikidata_id, e.wikidata_status, e.wikipedia, e.type_votes "
+        "FROM entities e ORDER BY e.entity_id").fetchall()
 
 
 def entity_runs_for_latest(con: duckdb.DuckDBPyConnection, method) -> tuple | None:
@@ -1194,6 +1209,13 @@ def entity_rows(con: duckdb.DuckDBPyConnection) -> list[dict]:
     cursor = con.execute("SELECT * FROM entities ORDER BY entity_id")
     names = [column[0] for column in cursor.description]
     return [dict(zip(names, row, strict=True)) for row in cursor.fetchall()]
+
+
+def entities_for_display_names(con: duckdb.DuckDBPyConnection) -> list[tuple]:
+    """Lekérdezés: entities. Hívja: resolver/display.py: DisplayNames."""
+    return con.execute(
+        "SELECT entity_id, name, type, lang, anchor_page_id FROM entities ORDER BY entity_id"
+    ).fetchall()
 
 
 def entities_for_language_pairs(con: duckdb.DuckDBPyConnection) -> list[tuple]:

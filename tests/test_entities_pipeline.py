@@ -427,7 +427,7 @@ def test_entity_table_counts_pages_mentions_places_and_links(tmp_path):
                 "WHERE name = 'Cash-flow'")
     rows = {row["entity"]: row for row in entity_table(con)}
     assert rows["Bérszámfejtés Csomag"] | {} == {
-        "entity": "Bérszámfejtés Csomag", "type": "service", "subtype": "", "tier": "",
+        "entity": "Bérszámfejtés Csomag", "type": "service", "type_votes": "service: 3", "subtype": "", "tier": "",
         "flags": "", "source": "llm", "pages": 2, "mentions": 3, "title": 1, "heading": 1,
         "nav": 0, "card": 0, "table_row": 0, "anchor_page": "", "wikidata_qid": "",
         "wikidata_status": "", "wikipedia": "", "from_service_pages": 0}
@@ -439,7 +439,8 @@ def test_entity_table_counts_pages_mentions_places_and_links(tmp_path):
     path = tmp_path / "out" / "t.csv"
     assert write_entity_table(con, path) == len(rows)
     with path.open(encoding="utf-8-sig", newline="") as handle:
-        assert next(csv.reader(handle))[:8] == ["entitás", "típus", "altípus", "szint", "jelzők",
+        assert next(csv.reader(handle))[:9] == ["entitás", "típus", "típus-szavazatok",
+                                                "altípus", "szint", "jelzők",
                                                 "forrás", "oldalak", "említések"]
 
 

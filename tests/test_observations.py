@@ -73,33 +73,55 @@ def test_a_stored_extraction_is_not_restored_onto_a_page_that_gained_a_block(tmp
     assert len(adapter.calls) == 1
 
 
-def test_the_type_of_a_shared_name_is_the_type_of_the_first_pages_record(tmp_path):
-    # 3. megfigyelés (fennáll, döntésre vár): az azonos nevű említések egy entitásba kerülnek,
-    # az entitás típusa az első oldal rekordjáé. A cikk saját rekordja fogalmat mond a
-    # „mérés”-re; ha az előtte álló ajánlatoldal rekordja szolgáltatásnak nevezi, a cikk
-    # említése is szolgáltatás típusú entitásé lesz. A saját rekord típusa csak szavazat
-    # (`type_votes`); a típust nem írja át. A végállapot a tárolt rekordokból vezethető le
-    # (nem függ a futások történetétől), de egy másik oldal új rekordja megváltoztatja.
-    def built(offer_kind, article_kind):
-        folder = tmp_path / f"{offer_kind}-{article_kind}"
-        folder.mkdir()
-        con = site({"/": html("Ajánlat", "<main><h1>Ajánlat</h1><p>A mérés a szolgáltatásunk."
-                              "</p></main>"),
-                    "/blog/": html("Cikk", "<main><h1>Cikk</h1><p>A mérés fogalma.</p></main>")})
-        client, _ = client_for(con, [reply(mention("b2", "mérés", "mérés", offer_kind)),
-                                     reply(mention("b2", "mérés", "mérés", article_kind))],
-                               folder)
-        run_llm(con, client)
-        return con.execute(
-            "SELECT p.url, e.type, e.type_votes, e.type_suggested FROM page_entities pe JOIN "
-            "entities e USING (entity_id) JOIN pages p ON p.page_id = pe.page_id WHERE "
-            "e.name = 'mérés' ORDER BY p.url").fetchall()
-    article = "https://pelda.hu/blog/"
-    same = {url: kind for url, kind, _, _ in built("concept", "concept")}
-    assert same[article] == "concept"
-    mixed = built("service", "concept")
-    assert {url: kind for url, kind, _, _ in mixed}[article] == "service"
-    assert {votes for _, _, votes, _ in mixed} == {'{"concept": 1, "service": 1}'}
-    assert {suggested for *_, suggested in mixed} == {"service"}     # holtverseny: a mostani
-    # a sorrend dönt: ha az első oldal rekordja mond fogalmat, mindkét oldalon fogalom marad
-    assert {kind for _, kind, _, _ in built("concept", "service")} == {"concept"}
+def shared_name_site(tmp_path, offer_kind, article_kind, head=""):
+    """Két oldal ugyanazzal a névvel: az ajánlatoldal egyszer, a cikk kétszer említi a
+    „mérés”-t; a kinyerés oldalanként más típust mond rá."""
+    folder = tmp_path / f"{offer_kind}-{article_kind}-{bool(head)}"
+    folder.mkdir()
+    con = site({"/": html("Ajánlat", "<main><h1>Ajánlat</h1><p>A mérés a szolgáltatásunk.</p>"
+                          "</main>", head=head),
+                "/blog/": html("Cikk", "<main><h1>Cikk</h1><p>A mérés fogalma.</p>"
+                               "<p>A mérés a gyakorlatban.</p></main>")})
+    if head:
+        run_rules(con)
+    client, _ = client_for(con, [
+        reply(mention("b2", "mérés", "mérés", offer_kind)),
+        reply(mention("b2", "mérés", "mérés", article_kind),
+              mention("b3", "mérés", "mérés", article_kind))], folder)
+    run_llm(con, client)
+    return con.execute(
+        "SELECT DISTINCT e.type, e.type_votes, e.type_changed_from, e.source FROM "
+        "page_entities pe JOIN entities e USING (entity_id) WHERE lower(e.name) = 'mérés'"
+    ).fetchall()
+
+
+def test_the_type_of_a_shared_name_is_the_majority_of_the_votes(tmp_path):
+    # 3. megfigyelés: az azonos nevű említések egy entitásba kerülnek; a típus a kinyerés
+    # szavazatainak többsége, nem az első oldal rekordjáé
+    assert shared_name_site(tmp_path, "service", "concept") == [
+        ("concept", '{"concept": 2, "service": 1}', "service", "llm")]
+    # a sorrend nem számít: ha az első oldal mond fogalmat és a másik kettő szolgáltatást
+    assert shared_name_site(tmp_path, "concept", "service") == [
+        ("service", '{"concept": 1, "service": 2}', "concept", "llm")]
+    assert shared_name_site(tmp_path, "concept", "concept") == [
+        ("concept", '{"concept": 3}', None, "llm")]
+
+
+def test_a_type_from_structured_data_is_not_overridden_by_the_votes(tmp_path):
+    from tests.test_entities_rules import ld
+
+    service = ld({"@type": "Service", "name": "Mérés", "url": "https://pelda.hu/"})
+    found = shared_name_site(tmp_path, "concept", "concept", head=service)
+    assert [(kind, source) for kind, _, _, source in found] == [("service", "schema")]
+    assert found[0][1] == '{"concept": 3}' and found[0][2] is None
+
+
+def test_a_tie_keeps_the_current_type_and_otherwise_the_fixed_order_decides():
+    from aaa2.entities.extract import majority_type
+
+    assert majority_type({"concept": 2, "service": 2}, "service") == "service"
+    assert majority_type({"concept": 2, "service": 2}, "concept") == "concept"
+    # a jelenlegi típus nincs a legjobbak között: a típusok rögzített sorrendje dönt
+    first = majority_type({"tech": 2, "service": 2, "org": 1}, "org")
+    assert first == majority_type({"service": 2, "tech": 2, "org": 1}, "org")
+    assert first in ("service", "tech")

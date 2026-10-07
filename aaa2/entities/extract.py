@@ -22,7 +22,14 @@ determinisztikus kör entitásaival összevonva.
   nyelvével.
 - Típusjavaslat: minden elfogadott említés egy szavazat az LLM típusára (`entities.type_votes`,
   futásról futásra halmozódva); `type_suggested` a legtöbb szavazatot kapott típus, holtversenyben
-  a jelenlegi. A típust ez nem írja át.
+  a jelenlegi.
+- Többségi típus (`apply_majority_types`, a kör végén): az entitás típusa a legtöbb szavazatot
+  kapott típus, függetlenül attól, melyik oldal rekordja hozta létre előbb. Csak ott dönt,
+  ahol az entitás nem strukturált adatból vagy szabályból jön (`MAJORITY_PROTECTED`: a
+  schema és a rule forrású típus erősebb a kinyerő modell szavazatainál). Holtversenyben a
+  jelenlegi típus marad, ha a legtöbb szavazatot kapottak között van; különben a típusok
+  rögzített sorrendjében az első (`majority_type`). A korábbi típus: `type_changed_from`; az
+  új típushoz nem tartozó altípus törlődik.
 - Kinyerés utáni lépés (`refine`, a pipeline-ban `v3.V3Step`): a rekord a mentés előtt; a
   bizonyítékai (`v3` mező) a `soft_checks`-be. Ha az ellenőrző hívás hibára fut, az oldal nem
   mentődik (`verify_error`). Ha a lépésnek van `current` vizsgálata, és a tárolt rekord nem
@@ -94,7 +101,7 @@ from aaa2.entities.v3 import (
 from aaa2.llm import calls as llm_calls
 from aaa2.llm.client import BudgetExceeded, LLMClient, LLMError, SchemaMismatch
 from aaa2.llm.config import LLMConfig, Usage
-from aaa2.llm.schemas import ENTITY_TYPES, BlockExtraction
+from aaa2.llm.schemas import ENTITY_TYPES, SUBTYPE_GLOSSARY, BlockExtraction
 
 
 @dataclass(frozen=True)
@@ -432,7 +439,40 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
     if stop_reason is not None:
         _stop(con, run_id, waiting, previous, stop_reason, clock)
     store.delete_entities_in_run_llm(con)
+    if save and not records_only:
+        apply_majority_types(con)
     return _finish(con, run_id, client.model, monotonic() - began, clock)
+
+
+MAJORITY_PROTECTED = ("schema", "rule")
+
+
+def majority_type(votes: Mapping[str, int], current: str) -> str:
+    """A legtöbb szavazatot kapott típus; holtversenyben a jelenlegi, ha a legjobbak között
+    van, különben a típusok rögzített sorrendjében (`ENTITY_TYPES`) az első."""
+    top = max(votes.values())
+    tied = [kind for kind, count in votes.items() if count == top]
+    if current in tied:
+        return current
+    return min(tied, key=lambda kind: ENTITY_TYPES.index(kind) if kind in ENTITY_TYPES
+               else len(ENTITY_TYPES))
+
+
+def apply_majority_types(con: duckdb.DuckDBPyConnection) -> int:
+    """A szavazatok többsége szerinti típus beírása a nem védett forrású entitásokra;
+    visszaad: hány entitás típusa változott."""
+    changed = 0
+    for entity_id, kind, subtype, raw in store.entities_for_majority_types(
+            con, MAJORITY_PROTECTED):
+        votes = json.loads(raw) if raw else {}
+        if not votes:
+            continue
+        top = majority_type(votes, kind)
+        if top != kind:
+            keep = subtype if subtype in SUBTYPE_GLOSSARY.get(top, {}) else None
+            store.update_entities_in_apply_majority_types(con, top, keep, entity_id)
+            changed += 1
+    return changed
 
 
 def clear_entities(con: duckdb.DuckDBPyConnection) -> None:
@@ -547,6 +587,7 @@ def restore_llm(con: duckdb.DuckDBPyConnection,
             raise
         runs.add(stored["run_id"])
         pages += 1
+    apply_majority_types(con)
     for run_id in sorted(runs):
         _refresh(con, run_id)
     return Restored(pages, dict(sorted(skipped.items())), tuple(sorted(runs)))
