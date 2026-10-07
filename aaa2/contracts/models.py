@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.10"
+SCHEMA_VERSION = "1.11"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -345,6 +345,8 @@ class Entity(Contract):
     type_suggested: str | None = None
     type_votes: Any = _json()
     type_changed_from: str | None = None
+    label_type: str | None = None
+    label_subtype: str | None = None
     created_at: datetime | None = None
 
     @field_validator("aliases", "flags", mode="before")

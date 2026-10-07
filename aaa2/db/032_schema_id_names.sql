@@ -1,5 +1,9 @@
--- 032: új megállapítás-típus.
+-- 032: új megállapítás-típus, és a kiírt entitástípus címkéje.
 --
+-- entities.label_type, label_subtype: a kiírt típus és altípus, ha eltér a tárolttól (a kinyerés
+--   szavazatainak többsége; a feloldás végén kerül ide). NULL: nincs címke, a kiírt típus a
+--   tárolt. A kinyerés visszaírása és a feloldó a `type` / `subtype` mezőt olvassa és írja, a
+--   címkét nem látja; a gráf, a megállapítások és a kimenet a címkézett típust használja.
 -- findings.type új értéke: 'schema_id_names' (a site strukturált adatában ugyanaz az azonosító,
 --   `@id`, több névvel szerepel).
 -- A CHECK megszorítás nem módosítható helyben, ezért a tábla az új megszorítással épül újra, a
@@ -27,3 +31,6 @@ FROM findings ORDER BY finding_id;
 DROP TABLE findings;
 
 ALTER TABLE findings_032 RENAME TO findings;
+
+ALTER TABLE entities ADD COLUMN IF NOT EXISTS label_type VARCHAR;
+ALTER TABLE entities ADD COLUMN IF NOT EXISTS label_subtype VARCHAR;

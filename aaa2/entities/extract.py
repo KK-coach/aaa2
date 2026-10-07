@@ -23,14 +23,17 @@ determinisztikus kör entitásaival összevonva.
 - Típusjavaslat: minden elfogadott említés egy szavazat az LLM típusára (`entities.type_votes`,
   futásról futásra halmozódva); `type_suggested` a legtöbb szavazatot kapott típus, holtversenyben
   a jelenlegi.
-- Többségi típus (`apply_majority_types`): címke, amelyet a feloldás végén (`api.resolve`, a
-  site-kör és a tudásbázis-kapcsolás után) kap az entitás: a kiírt típus a legtöbb szavazatot
-  kapott típus, függetlenül attól, melyik oldal rekordja hozta létre előbb. Csak ott dönt,
+- Többségi típus (`apply_majority_types`): címke külön mezőben (`entities.label_type`,
+  `label_subtype`), amelyet a feloldás végén (`api.resolve`, a site-kör és a
+  tudásbázis-kapcsolás után) kap az entitás: a kiírt típus a legtöbb szavazatot kapott típus,
+  függetlenül attól, melyik oldal rekordja hozta létre előbb. A tárolt `type` nem változik:
+  a kinyerés visszaírása és a feloldó azt olvassa, így a feloldás újrafuttatva ugyanazt adja;
+  a gráf, a megállapítások és a kimenet a címkézett típust használja (`store.SHOWN_TYPE`). Csak ott dönt,
   ahol az entitás nem strukturált adatból vagy szabályból jön (`MAJORITY_PROTECTED`: a schema
   és a rule forrású típus erősebb a kinyerő modell szavazatainál), és nincs oldalhoz kötve (az
   oldalhoz kötött entitás típusát az oldal szerkezete adja). Holtversenyben a típusok rögzített
-  sorrendje dönt, a fogalommal elöl (`TIE_ORDER`): a konkrétabb típushoz többség kell. A
-  korábbi típus: `type_changed_from`; az új típushoz nem tartozó altípus törlődik.
+  sorrendje dönt, a fogalommal elöl (`TIE_ORDER`): a konkrétabb típushoz többség kell. Az
+  új típushoz nem tartozó altípus a címkében üres.
   Szolgáltatássá a többség nem léptet elő (`MAJORITY_NOT_TO`): azt, hogy egy név a site
   szolgáltatása-e, a feloldó az oldalakból dönti el.
   ISMERT KORLÁT: a címke csak a kiírt típust teszi stabillá. A kinyerés visszaírása és a
@@ -466,9 +469,10 @@ def majority_type(votes: Mapping[str, int], current: str) -> str:
 
 
 def apply_majority_types(con: duckdb.DuckDBPyConnection) -> int:
-    """A szavazatok többsége szerinti típus beírása a nem védett forrású, oldalhoz nem kötött
-    entitásokra (a feloldás végén fut, lásd a modul leírását); visszaad: hány entitás típusa
-    változott."""
+    """A szavazatok többsége szerinti típus címkéje a nem védett forrású, oldalhoz nem kötött
+    entitásokra (a feloldás végén fut, lásd a modul leírását). A korábbi címkék törlődnek, a
+    tárolt típus nem változik; visszaad: hány entitás kapott a tárolttól eltérő címkét."""
+    store.clear_type_labels(con)
     changed = 0
     for entity_id, kind, subtype, raw in store.entities_for_majority_types(
             con, MAJORITY_PROTECTED):
