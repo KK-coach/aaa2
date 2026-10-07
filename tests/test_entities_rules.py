@@ -559,7 +559,7 @@ EXPECTED = {
         # A soron belüli elemek a renderelt szöveg szerint illeszkednek: a site két oldalán a
         # link a szó közepén áll (`Explor<a>GEO — AI Visibility</a>e GEO`), a renderelt szöveg
         # „ExplorGEO — AI Visibilitye GEO”, ezért ez a két anchor-említés nincs meg.
-        "run": (40, 40, 47, 301, {"anchor": 153, "schema": 111, "title": 37}),
+        "run": (40, 40, 42, 301, {"anchor": 153, "schema": 111, "title": 37}),
         "not_in_block": 0,
         "entities": {("org", "kk.coach"), ("person", "Kiss Krisztián"), ("service", "SEO")},
         "absent": {("brand", "kk.coach"), ("brand", "KK"), ("person", "Krisztian Kiss"),

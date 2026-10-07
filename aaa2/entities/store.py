@@ -1214,7 +1214,8 @@ def entity_rows(con: duckdb.DuckDBPyConnection) -> list[dict]:
 def entities_for_display_names(con: duckdb.DuckDBPyConnection) -> list[tuple]:
     """Lekérdezés: entities. Hívja: resolver/display.py: DisplayNames."""
     return con.execute(
-        "SELECT entity_id, name, type, lang, anchor_page_id FROM entities ORDER BY entity_id"
+        "SELECT entity_id, name, type, lang, anchor_page_id, aliases FROM entities ORDER BY "
+        "entity_id"
     ).fetchall()
 
 

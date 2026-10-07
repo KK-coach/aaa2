@@ -10,7 +10,7 @@
   szlogen is lehet.
 - Ha az oldal nyelvén nincs neve az entitásnak, a kimenet ezt jelöli (`note`,
   `MISSING_NAME`), a megtartott név mellett. Nem hiány: a nyelvtől független név (szervezet,
-  személy, márka, technológia, hely: `NEUTRAL_TYPES`; a csupa nagybetűs rövidítés), és az az
+  személy, márka, technológia, hely, termék: `NEUTRAL_TYPES`; a csupa nagybetűs rövidítés), és az az
   oldalhoz nem kötött entitás, amelyet a kinyerés ezen a nyelven látott először.
 - Site-szintű kimenetben a megtartott név marad; a többi nyelvű név (minden nyelvvel jelölt
   alias, amelynek a nyelve nem a site elsődleges nyelve) külön oszlopban áll, nyelvvel és
@@ -31,19 +31,25 @@ from aaa2.resolver.pages import primary_lang, same_page, schema_nodes
 OTHER_NAMES_COLUMN = "más nyelvű nevek"
 NAME_NOTE_COLUMN = "a név az oldal nyelvén"
 MISSING_NAME = "nincs az oldal nyelvén név"
-NEUTRAL_TYPES = ("org", "person", "brand", "tech", "place")
+NEUTRAL_TYPES = ("org", "person", "brand", "tech", "place", "product")
 PAGE_NODE_TYPES = ("WebPage", "WebSite", "CollectionPage", "ItemPage", "AboutPage")
 
 
 def own_schema_names(con: duckdb.DuckDBPyConnection) -> dict[int, dict[str, str]]:
     """Entitás → nyelv → az entitás saját oldalának strukturált adatából jövő név: az adott
     nyelvű oldalon álló, magára az oldalra mutató (`url`, vagy `url` híján `@id`) csomópont
-    neve, ha az entitásnak ez ilyen nyelvű, `schema` forrású aliasa. Az oldalt leíró csomópont
-    (`PAGE_NODE_TYPES`) neve csak akkor, ha más csomópont nem ad nevet."""
+    neve, ha az entitásnak ez ilyen nyelvű, `schema` forrású aliasa, vagy ha az entitás neve
+    vagy aliasa (az azonos `@id` miatt összevont, más nyelvű csomópont neve). Az oldalt leíró
+    csomópont (`PAGE_NODE_TYPES`) neve csak akkor, ha más csomópont nem ad nevet."""
     tagged: dict[tuple[str, str], set[int]] = defaultdict(set)
     for alias in resolver_queries.aliases(con):
         if alias.source == "schema" and primary_lang(alias.lang):
             tagged[(alias.alias, primary_lang(alias.lang))].add(alias.entity_id)
+    named: dict[str, set[int]] = defaultdict(set)
+    for entity_id, name, _, _, _, aliases in store.entities_for_display_names(con):
+        for form in [name, *(aliases or [])]:
+            if form:
+                named[form].add(entity_id)
     pages = {page.page_id: (page.url, primary_lang(page.lang)) for page in crawl.pages(con)}
     found: dict[int, dict[str, str]] = {}
     for page_id, nodes in sorted(schema_nodes(con).items()):
@@ -60,7 +66,7 @@ def own_schema_names(con: duckdb.DuckDBPyConnection) -> dict[int, dict[str, str]
                 generic = any(str(t).rsplit("/", 1)[-1] in PAGE_NODE_TYPES for t in types)
                 own.append((generic, html_lib.unescape(name).strip()))
         for _, name in sorted(own, key=lambda item: item[0]):
-            for entity_id in sorted(tagged.get((name, lang), ())):
+            for entity_id in sorted(tagged.get((name, lang), set()) | named.get(name, set())):
                 found.setdefault(entity_id, {}).setdefault(lang, name)
     return found
 
@@ -70,7 +76,7 @@ class DisplayNames:
         self.site_lang = canonical_language(con, load_site_config(site_domain(con)))
         self.pair = resolver_queries.language_pair_names(con)
         self.own = own_schema_names(con)
-        self.entities = {row[0]: row[1:] for row in store.entities_for_display_names(con)}
+        self.entities = {row[0]: row[1:5] for row in store.entities_for_display_names(con)}
         self.other: dict[int, list[tuple[str, str, str]]] = defaultdict(list)
         for alias in resolver_queries.aliases(con):
             if alias.lang and primary_lang(alias.lang) != self.site_lang:

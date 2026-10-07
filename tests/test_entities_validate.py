@@ -585,6 +585,12 @@ NAMED = {
 # Az M2/6 schema-leképezése óta: az areaServed-hely attribútum, a kezdőoldal-URL-es publisher a
 # site-szervezet aliasa.
 SCHEMA_ATTRIBUTE_GONE = {"Worldwide|place", "Digitális marketing coach|org"}
+# Az azonos `@id`-jú schema-csomópontok egy entitást adnak: ezek a nevek ma aliasok (a
+# szolgáltatás saját oldalán álló név a megtartott).
+SAME_ID_JOINED = {"SEO — Intent Mapping & Organic Search Architecture|service",
+                  "Measurement & Data Architecture|service", "GEO — AI Visibility|service",
+                  "UX & Conversion Optimization|service",
+                  "GEO — Generative Engine Optimization & AI Visibility|service"}
 
 
 @pytest.mark.parametrize("name", REFERENCE_NAMES)
@@ -616,7 +622,8 @@ def test_reference_validation_replays_the_recorded_answers(name, reference_crawl
     assert {key: measured.get(key) for key in NAMED[name]} == NAMED[name]
     assert measured == {key: recorded["measured"][key] for key in measured}
     gone = set(recorded["measured"]) - set(measured)
-    assert {key for key in gone if not key.endswith("|concept")} <= SCHEMA_ATTRIBUTE_GONE
+    assert {key for key in gone if not key.endswith("|concept")} <= (
+        SCHEMA_ATTRIBUTE_GONE | SAME_ID_JOINED)
 
 
 @pytest.mark.live
