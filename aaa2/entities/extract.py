@@ -29,7 +29,10 @@ determinisztikus kör entitásaival összevonva.
   schema és a rule forrású típus erősebb a kinyerő modell szavazatainál). Holtversenyben a
   jelenlegi típus marad, ha a legtöbb szavazatot kapottak között van; különben a típusok
   rögzített sorrendjében az első (`majority_type`). A korábbi típus: `type_changed_from`; az
-  új típushoz nem tartozó altípus törlődik.
+  új típushoz nem tartozó altípus törlődik. Szolgáltatássá a többség nem léptet elő
+  (`MAJORITY_NOT_TO`): azt, hogy egy név a site szolgáltatása-e, a feloldó site-köre az
+  oldalakból dönti el, és a saját oldal nélküli, modell-forrású szolgáltatást fogalommá bontja
+  vissza (az altípusa közben elveszne).
 - Kinyerés utáni lépés (`refine`, a pipeline-ban `v3.V3Step`): a rekord a mentés előtt; a
   bizonyítékai (`v3` mező) a `soft_checks`-be. Ha az ellenőrző hívás hibára fut, az oldal nem
   mentődik (`verify_error`). Ha a lépésnek van `current` vizsgálata, és a tárolt rekord nem
@@ -445,6 +448,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
 
 
 MAJORITY_PROTECTED = ("schema", "rule")
+MAJORITY_NOT_TO = ("service",)
 
 
 def majority_type(votes: Mapping[str, int], current: str) -> str:
@@ -468,7 +472,7 @@ def apply_majority_types(con: duckdb.DuckDBPyConnection) -> int:
         if not votes:
             continue
         top = majority_type(votes, kind)
-        if top != kind:
+        if top != kind and top not in MAJORITY_NOT_TO:
             keep = subtype if subtype in SUBTYPE_GLOSSARY.get(top, {}) else None
             store.update_entities_in_apply_majority_types(con, top, keep, entity_id)
             changed += 1

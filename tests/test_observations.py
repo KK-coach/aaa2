@@ -100,9 +100,12 @@ def test_the_type_of_a_shared_name_is_the_majority_of_the_votes(tmp_path):
     # szavazatainak többsége, nem az első oldal rekordjáé
     assert shared_name_site(tmp_path, "service", "concept") == [
         ("concept", '{"concept": 2, "service": 1}', "service", "llm")]
-    # a sorrend nem számít: ha az első oldal mond fogalmat és a másik kettő szolgáltatást
+    # a sorrend nem számít: ha az első oldal mond technológiát és a másik két említés fogalmat
+    assert shared_name_site(tmp_path, "tech", "concept") == [
+        ("concept", '{"concept": 2, "tech": 1}', "tech", "llm")]
+    # szolgáltatássá a többség nem léptet elő: azt a feloldó dönti el az oldalakból
     assert shared_name_site(tmp_path, "concept", "service") == [
-        ("service", '{"concept": 1, "service": 2}', "concept", "llm")]
+        ("concept", '{"concept": 1, "service": 2}', None, "llm")]
     assert shared_name_site(tmp_path, "concept", "concept") == [
         ("concept", '{"concept": 3}', None, "llm")]
 
