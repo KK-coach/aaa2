@@ -59,7 +59,7 @@
  "marketinglens": {
   "marketinglens-edges.csv": "e202d753ba67e113dc22c7b0d9437cea8529a57c8a21a98a44f7489d167891eb",
   "marketinglens-entities.csv": "0238129122b7e8c5f3e433e8a2bd8bbd8f43c7fec100e4c327245cbc395ad4f5",
-  "marketinglens-findings.csv": "39d3cc7952bb9562fa373137673134b090fbe10bf6fa2d28b1361019f7f83653",
+  "marketinglens-findings.csv": "ae77c9a2c672dff4eeffdd30dec6a8044d9cd6dcacccad559928a080a28f51d3",
   "marketinglens-is-a-rejected.csv": "dd7be4cd7f7ab3821022609ac8ddd039e64a4a67ab18cabb359855b7cb2757ab",
   "marketinglens-main-entity.csv": "a1a8a9e8362733c16f0b17b4e547d44472a7ac9c28bcb33a29584b9e6d222f4e",
   "marketinglens-run.md": "7126578e0eca1ba0a6d07b799baa59de752ae2a5316b22140a9d18e04007c7e5",
@@ -72,7 +72,7 @@
   "marketinglens-view-site.csv": "2b91ff4ac1f1f516f5b5788400c669aac617b040d4400d7c4e3f3b6610d8471b",
   "marketinglens-view-sitemap.csv": "34f8fa4676e97199cb312004474509424f37a7100e477879299235ddb7ce5192",
   "marketinglens-view-structured-data.csv": "bce703edf8d8ce75805b7d91b656d3994a5aa2fc6ebc9367b2ee3a0fd243d5e7",
-  "marketinglens-views.html": "9e0afdec5f1176e0aa44daf0267b167827380078f6fd4d2f83021cfdd78ee042",
+  "marketinglens-views.html": "5492e2e9ded133e4dd805c24524d1444fbb6ed6f388c2798d61a7ed05907d18f",
   "marketinglens-weights.csv": "f22499d20a84b8cccaa54acfc837a5907097a223e97d764cc1b479cd1e524b56"
  },
  "materia": {
