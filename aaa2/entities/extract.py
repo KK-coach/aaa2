@@ -224,6 +224,7 @@ class _PageLog:
     refined: dict | None = None
     raw_html_hash: str | None = None
     input_hash: str | None = None
+    blocks_hash: str | None = None
 
 
 class _CostCap:
@@ -398,6 +399,7 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
                              error=f"a szál {page_timeout:g} mp alatt nem adott eredményt"),
                     "failed", float(page_timeout))
             log.raw_html_hash, log.input_hash = raw_hashes.get(page_id), hashes.get(page_id)
+            log.blocks_hash = block_fingerprint(blocks)
             if cap is not None:
                 before = set((previous.get(page_id) or {}).get("call_ids") or [])
                 cap.settle(page_id, llm_calls.total_cost(
@@ -443,14 +445,14 @@ def stored_records(con: duckdb.DuckDBPyConnection) -> dict[int, dict]:
     """Oldalanként a legutóbbi kész LLM-rekord: a modell, a kinyerés, a kinyerés utáni rekord,
     a darabszám, a rekord bemenet-hash-e és a futása."""
     found: dict[int, dict] = {}
-    for page_id, model, extraction, refined, chunks, input_hash, raw_hash, run_id, fabricated \
-            in store.entity_run_pages_for_stored_records(con):
+    for (page_id, model, extraction, refined, chunks, input_hash, raw_hash, run_id, fabricated,
+         blocks_hash) in store.entity_run_pages_for_stored_records(con):
         if page_id not in found:
             found[page_id] = {"model": model, "extraction": json.loads(extraction),
                               "refined": json.loads(refined) if refined else None,
                               "chunks": chunks or 0, "input_hash": input_hash,
                               "raw_html_hash": raw_hash, "run_id": run_id,
-                              "fabricated": fabricated or 0}
+                              "fabricated": fabricated or 0, "blocks_hash": blocks_hash}
     return found
 
 
@@ -479,8 +481,12 @@ def _unplaced(record: Mapping, blocks: Sequence[dict]) -> int:
 def restore_plan(con: duckdb.DuckDBPyConnection) -> dict[int, tuple[str, dict | None, list]]:
     """Oldalanként, hogy a tárolt kinyerés visszaírható-e: (`restore`, a rekord, a blokkok),
     vagy a kimaradás oka a rekorddal és a blokkokkal. Az érvényességet a blokkok döntik el: a
-    rekord akkor írható vissza, ha az említései a mostani blokkokban ugyanúgy megtalálhatók,
-    mint a kinyeréskor (a nem található említések száma a rekord tárolt `fabricated` értéke).
+    rekord akkor írható vissza, ha az oldal mostani tartalmi blokkjai ugyanazok, amelyekből a
+    kinyerés készült (`blocks_hash`, `block_fingerprint`): az új vagy megváltozott blokk
+    tartalmát a kinyerés nem látta, akkor sem, ha a régi említések a helyükön állnak. A
+    blokk-hash nélküli (031 előtti) rekordnál: ha az említései a mostani blokkokban ugyanúgy
+    megtalálhatók, mint a kinyeréskor (a nem található említések száma a rekord tárolt
+    `fabricated` értéke).
     A modellek és a kinyerés utáni lépés beállítása nem számít: modellváltás után a rekord
     érvényes marad. Okok: `no_content_blocks`, `restore_no_record`, `restore_input_changed` (a
     blokkok megváltoztak, a rekord blokk-azonosítói nem a mostani blokkokra mutatnak)."""
@@ -493,7 +499,10 @@ def restore_plan(con: duckdb.DuckDBPyConnection) -> dict[int, tuple[str, dict | 
             plan[page_id] = ("no_content_blocks", stored, blocks)
         elif stored is None:
             plan[page_id] = ("restore_no_record", None, blocks)
-        elif _unplaced(stored["refined"] or stored["extraction"], blocks) != stored["fabricated"]:
+        elif (stored["blocks_hash"] != block_fingerprint(blocks)
+              if stored["blocks_hash"] is not None
+              else _unplaced(stored["refined"] or stored["extraction"], blocks)
+              != stored["fabricated"]):
             plan[page_id] = ("restore_input_changed", stored, blocks)
         else:
             plan[page_id] = ("restore", stored, blocks)
@@ -557,6 +566,15 @@ def input_models(model: str, refine_fingerprint: str | None) -> tuple[str | None
     középső hely a megszűnt elnevezési lépésé; None marad, hogy a tárolt `input_hash`-ek
     érvényesek maradjanak."""
     return (model, None, refine_fingerprint)
+
+
+def block_fingerprint(blocks: Sequence[Mapping]) -> str:
+    """A kinyerés bemenetének blokkjai (azonosító, fajta, heading-útvonal, szöveg, cellák)
+    hash-e, a prompt, a site-leíró mondat és a modellek nélkül: modellváltás nem érinti."""
+    payload = json.dumps([[b.get("id"), b.get("kind"), b.get("heading_path"), b.get("text"),
+                           b.get("cells")] for b in blocks],
+                         ensure_ascii=False, sort_keys=True, default=str)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def input_fingerprint(site: str, blocks: Sequence[Mapping],
@@ -752,12 +770,12 @@ def _log(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int, log: _PageLo
     con.execute(
         "INSERT OR REPLACE INTO entity_run_pages (run_id, page_id, status, reasons, call_ids, "
         "chunks, fabricated, seconds, error, extraction, refined, finished_at, raw_html_hash, "
-        "input_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "input_hash, blocks_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [run_id, page_id, log.status, dumps(dict(log.reasons)), log.call_ids, log.chunks,
          log.fabricated, seconds, log.error,
          json.dumps(log.extraction, ensure_ascii=False) if log.extraction else None,
          json.dumps(log.refined, ensure_ascii=False) if log.refined else None, clock(),
-         log.raw_html_hash, log.input_hash])
+         log.raw_html_hash, log.input_hash, log.blocks_hash])
 
 
 def _stop(con: duckdb.DuckDBPyConnection, run_id: int, pages: Sequence[tuple[int, str | None]],

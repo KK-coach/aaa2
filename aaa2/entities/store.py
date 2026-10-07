@@ -53,7 +53,8 @@ def entity_run_pages_for_stored_records(con: duckdb.DuckDBPyConnection) -> list[
     """Lekérdezés: entity_run_pages, entity_runs. Hívja: entities/extract.py: stored_records."""
     return con.execute(
         "SELECT p.page_id, r.model, p.extraction, p.refined, p.chunks, p.input_hash, "
-        "p.raw_html_hash, p.run_id, p.fabricated FROM entity_run_pages p JOIN entity_runs r USING (run_id) WHERE "
+        "p.raw_html_hash, p.run_id, p.fabricated, p.blocks_hash FROM entity_run_pages p "
+        "JOIN entity_runs r USING (run_id) WHERE "
         "r.method = 'llm' AND p.status = 'done' AND p.extraction IS NOT NULL ORDER BY "
         "p.run_id DESC, p.finished_at DESC, p.page_id").fetchall()
 
