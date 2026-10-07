@@ -25,14 +25,22 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   csak a H1-ből.
 - `cannibalization` és `shared_topic`: ugyanaz az erős megbízhatóságú fő entitás legalább két
   oldalcsoportban, egy nyelven belül. Egy csoport a hreflang-pár és a fül nélküli URL
-  (`page_nodes.group_key`). Nem számít: a canonical-duplikátum, a lapozó oldal (`PAGINATION`),
-  a nem indexelhető oldal (`noindex`), a szülő–gyermek viszony (az egyik oldal útvonala a
-  másiké alatt áll), és a site saját entitása (a cégről több oldal is szólhat). Kannibalizáció
-  csak akkor, ha a fő entitáson túl két oldal másodlagos entitásai is átfednek, vagy a
-  title-jük nagyon hasonló (`title_similarity` ≥ `TITLE_SIMILAR`: a title szavainak
-  Jaccard-hasonlósága a site-nevet hordozó utolsó szelet nélkül); súlyosság: high, ha
-  legalább `HIGH_GROUPS` oldal érintett, különben medium. Egyébként közös téma
-  (`shared_topic`, low): az oldalak ugyanarról az entitásról szólnak, más-más szögből.
+  (`page_nodes.group_key`); különböző nyelvű oldalak nem alkotnak párt. Nem számít: a
+  canonical-duplikátum, a lapozó oldal (`PAGINATION`), a nem indexelhető oldal (`noindex`), és
+  a site saját entitása (a cégről több oldal is szólhat). Lehetséges kannibalizáció
+  (`cannibalization`; jelölés, nem ítélet) akkor, ha a fő entitáson túl két oldal másodlagos
+  entitásai is átfednek, vagy a title-jük nagyon hasonló (`title_similarity` ≥ `TITLE_SIMILAR`:
+  a title szavainak Jaccard-hasonlósága; az utolsó szelet csak akkor marad el, ha a site
+  azonos nyelvű oldalainak legalább `SUFFIX_SHARE` részén ismétlődik, `common_suffixes`). Minden
+  oldalpárt összevetünk: a testvéroldalakat akkor is, ha van fölöttük témaközpont, és a
+  témaközpontot a gyermekével is; az átfedés mellett áll a pár viszonya (`relation`:
+  szülő–gyermek, testvér, más ág), a köztük lévő tartalmi (törzsbeli) linkek iránya
+  (`content_links`), és hogy van-e köztük bármilyen belső link, a menüt és a láblécet is
+  számítva (`any_link`). A megállapítás oldallistájában csak az
+  átfedésben részt vevő oldalak állnak (a többi darabszáma: `other_pages`). Súlyosság: high, ha
+  legalább `HIGH_GROUPS` oldal érintett, különben medium. Ha egy pár sem fed át: közös téma
+  (`shared_topic`, low): az oldalak ugyanarról az entitásról szólnak, más-más szögből; itt a
+  szülő–gyermek viszony nem számít (a gyermek kimarad, ha a szülője is a listában áll).
 - `uncovered_topic` és `missing_page`: az entitás súlya a site felső tizedében van
   (`TOP_SHARE`), legalább `MIN_PAGES` oldalcsoport említi (a fülek, pl. `?tab=api`, és a
   hreflang-pár egy csoport), és egyik oldalnak sem fő entitása. További feltételek: a site
@@ -82,7 +90,7 @@ import json
 import math
 import re
 from collections import Counter, defaultdict
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from itertools import combinations
 from pathlib import Path
@@ -109,7 +117,8 @@ from aaa2.resolver.pages import LEGAL_KINDS, canonical_key, legal_kind, page_typ
 TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
          "uncovered_topic", "unclear_topic", *heading_tree.STRUCTURE_TYPES,
          "canonical_issue", "legal_page", "soft_404")
-TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés", "cannibalization": "Kannibalizáció",
+TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
+               "cannibalization": "Lehetséges kannibalizáció",
                "shared_topic": "Közös téma", "missing_page": "Hiányzó oldal",
                "uncovered_topic": "Lefedetlen téma", "unclear_topic": "Nem egyértelmű téma",
                "missing_h1": "Hiányzó H1", "h1_outside_content": "H1 a fő tartalmon kívül",
@@ -171,6 +180,8 @@ HIGH_PAGES = 10
 HIGH_GROUPS = 3
 CONTEXT_SHARE = 0.5                     # az említések ekkora része sablon vagy chrome
 TITLE_SIMILAR = 0.6
+SUFFIX_SHARE = 0.5              # a title utolsó szelete ennyi oldalon ismétlődve site-utótag
+CONTENT_LINK = "body"           # a tartalmi link pozíciója (`Link.position`)
 TITLE_SPLIT = re.compile(r"\s+[-–—|·:]\s+")
 CONJUNCTIONS = frozenset({"and", "es"})
 CUT_MIN_CHARS = 20                      # a levágott title-ben a névnek legalább ennyi jele áll
@@ -486,15 +497,38 @@ def _parent_child(a: str, b: str) -> bool:
     return first != second and (first.startswith(second) or second.startswith(first))
 
 
-def title_similarity(first: str | None, second: str | None) -> float:
-    """A két title szavainak Jaccard-hasonlósága, az utolsó (a site nevét hordozó) szelet
-    nélkül, ha a title több szeletből áll (`TITLE_SPLIT`)."""
+def common_suffixes(titles: Iterable[str | None]) -> frozenset[str]:
+    """A site-szerte ismétlődő title-utótagok (kulcs alakban): a title utolsó szelete
+    (`TITLE_SPLIT`), ha a címmel bíró oldalak legalább `SUFFIX_SHARE` részén ugyanez áll ott.
+    A hívó egy nyelv oldalainak címeit adja át: a más nyelvű oldalak utótagja más lehet."""
+    known = [title for title in titles if title]
+    counts = Counter(alias_key(pieces[-1]) for pieces in map(TITLE_SPLIT.split, known)
+                     if len(pieces) > 1)
+    return frozenset(suffix for suffix, count in counts.items()
+                     if suffix and count >= SUFFIX_SHARE * len(known))
+
+
+def title_similarity(first: str | None, second: str | None,
+                     suffixes: frozenset[str] = frozenset()) -> float:
+    """A két title szavainak Jaccard-hasonlósága. Az utolsó szelet csak akkor marad el, ha
+    site-szerte ismétlődő utótag (`suffixes`, lásd `common_suffixes`): a „SEO – Kezdőknek” és a
+    „SEO – Haladóknak” utolsó szelete maga a különbség."""
     sets = []
     for title in (first, second):
         pieces = TITLE_SPLIT.split(title or "")
-        sets.append(set(_tokens(" ".join(pieces[:-1] if len(pieces) > 1 else pieces))))
+        if len(pieces) > 1 and alias_key(pieces[-1]) in suffixes:
+            pieces = pieces[:-1]
+        sets.append(set(_tokens(" ".join(pieces))))
     union = sets[0] | sets[1]
     return len(sets[0] & sets[1]) / len(union) if union else 0.0
+
+
+def _relation(a: str, b: str) -> str:
+    """A két oldal viszonya az útvonaluk szerint."""
+    if _parent_child(a, b):
+        return "szülő–gyermek"
+    first, second = (urlsplit(u).path.rstrip("/").rsplit("/", 1)[0] for u in (a, b))
+    return "testvér" if first == second else "más ág"
 
 
 def _shared_topics(site: _Site) -> list[tuple]:
@@ -507,28 +541,52 @@ def _shared_topics(site: _Site) -> list[tuple]:
                 or main[0] in site.site_entities:
             continue
         by_entity[(main[0], page["lang"])][page["group"]].append({**page, "confidence": main[2]})
+    titles: dict[str | None, list[str | None]] = defaultdict(list)
+    for page in site.nodes():
+        titles[page["lang"]].append(page["title"])
+    suffixes = {lang: common_suffixes(found) for lang, found in titles.items()}
+    linked: set[tuple[int, int]] = set()
+    in_content: set[tuple[int, int]] = set()
+    for link in crawl.links(site.con):
+        if link.to_page_id is not None:
+            linked.add((link.from_page_id, link.to_page_id))
+            if link.position == CONTENT_LINK:
+                in_content.add((link.from_page_id, link.to_page_id))
     found = []
     for (entity_id, lang), groups in sorted(by_entity.items(),
                                             key=lambda item: (item[0][0], item[0][1] or "")):
         reps = [min(members, key=lambda p: p["url"]) for _, members in sorted(groups.items())]
-        kept = [p for p in reps if not any(
-            _parent_child(p["url"], other["url"]) and len(urlsplit(other["url"]).path)
-            < len(urlsplit(p["url"]).path) for other in reps)]
-        if len(kept) < 2:
+        if len(reps) < 2:
             continue
-        kept.sort(key=lambda p: p["url"])
+        reps.sort(key=lambda p: p["url"])
         secondary = {p["page_id"]: {c[0] for c in site.chosen.get(p["page_id"], [])
-                                    if c[1] == "secondary"} for p in kept}
+                                    if c[1] == "secondary"} for p in reps}
         overlaps = []
-        for first, second in combinations(kept, 2):
+        for first, second in combinations(reps, 2):
             common = sorted(site.name(e) for e in
                             secondary[first["page_id"]] & secondary[second["page_id"]])
-            similarity = round(title_similarity(first["title"], second["title"]), 2)
+            similarity = round(title_similarity(first["title"], second["title"],
+                                                suffixes[lang]), 2)
             if common or similarity >= TITLE_SIMILAR:
+                pair, reverse = ((first["page_id"], second["page_id"]),
+                                 (second["page_id"], first["page_id"]))
+                there, back = pair in in_content, reverse in in_content
                 overlaps.append({"pages": [first["url"], second["url"]], "secondary": common,
-                                 "title_similarity": similarity})
+                                 "title_similarity": similarity,
+                                 "relation": _relation(first["url"], second["url"]),
+                                 "content_links": "kölcsönös" if there and back
+                                 else "első → második" if there
+                                 else "második → első" if back else "nincs",
+                                 "any_link": pair in linked or reverse in linked})
         involved = {url for overlap in overlaps for url in overlap["pages"]}
         tail = f" ({lang})" if lang else ""
+        # közös témánál a gyermek kimarad, ha a szülője is a listában áll
+        kept = [p for p in reps if p["url"] in involved] if overlaps else [
+            p for p in reps if not any(
+                _parent_child(p["url"], other["url"]) and len(urlsplit(other["url"]).path)
+                < len(urlsplit(p["url"]).path) for other in reps)]
+        if len(kept) < 2:
+            continue
         evidence = {"main_entity": site.name(entity_id), "lang": lang, "overlaps": overlaps,
                     "pages": [{"url": p["url"], "role": p["role"], "h1": p["h1"],
                                "title": p["title"], "confidence": p["confidence"],
@@ -536,10 +594,12 @@ def _shared_topics(site: _Site) -> list[tuple]:
                                                    for e in secondary[p["page_id"]])}
                               for p in kept]}
         if overlaps:
+            evidence["other_pages"] = len(reps) - len(kept)
             found.append(("cannibalization",
                           "high" if len(involved) >= HIGH_GROUPS else "medium", None, entity_id,
-                          (f"{site.name(entity_id)}: {len(involved)} oldal fő entitása, átfedő "
-                          f"másodlagos entitással vagy hasonló title-lel{tail}"), evidence))
+                          (f"{site.name(entity_id)}: lehetséges kannibalizáció: {len(involved)} "
+                           "oldal fő entitása, átfedő másodlagos entitással vagy hasonló "
+                           f"title-lel{tail}"), evidence))
         else:
             found.append(("shared_topic", "low", None, entity_id,
                           (f"{site.name(entity_id)}: {len(kept)} oldal közös témája, átfedés "
@@ -1334,7 +1394,10 @@ def _finding_html(finding: dict) -> str:
             ("átfedés", "<br>".join(
                 f"{_e(' ↔ '.join(o['pages']))}: közös másodlagos: "
                 f"{_e('; '.join(o['secondary']) or '—')}, title-hasonlóság "
-                f"{o['title_similarity']}" for o in evidence["overlaps"]))]
+                f"{o['title_similarity']}"
+                + (f", viszony: {_e(o['relation'])}, tartalmi link: {_e(o['content_links'])}, "
+                   f"bármilyen belső link: {'van' if o['any_link'] else 'nincs'}"
+                   if "relation" in o else "") for o in evidence["overlaps"]))]
     elif finding["type"] in ("missing_page", "uncovered_topic"):
         pairs = [("teendő", _e(evidence["action"])),
                  ("alcsaládjai", _e("; ".join(f"{c['entity']} ({c['page_count']} oldal)"
