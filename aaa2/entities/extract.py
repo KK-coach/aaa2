@@ -22,7 +22,24 @@ determinisztikus kör entitásaival összevonva.
   nyelvével.
 - Típusjavaslat: minden elfogadott említés egy szavazat az LLM típusára (`entities.type_votes`,
   futásról futásra halmozódva); `type_suggested` a legtöbb szavazatot kapott típus, holtversenyben
-  a jelenlegi. A típust ez nem írja át.
+  a jelenlegi.
+- Többségi típus (`apply_majority_types`): címke külön mezőben (`entities.label_type`,
+  `label_subtype`), amelyet a feloldás végén (`api.resolve`, a site-kör és a
+  tudásbázis-kapcsolás után) kap az entitás: a kiírt típus a legtöbb szavazatot kapott típus,
+  függetlenül attól, melyik oldal rekordja hozta létre előbb. A tárolt `type` nem változik:
+  a kinyerés visszaírása és a feloldó azt olvassa, így a feloldás újrafuttatva ugyanazt adja;
+  a gráf, a megállapítások és a kimenet a címkézett típust használja (`store.SHOWN_TYPE`). Csak ott dönt,
+  ahol az entitás nem strukturált adatból vagy szabályból jön (`MAJORITY_PROTECTED`: a schema
+  és a rule forrású típus erősebb a kinyerő modell szavazatainál), és nincs oldalhoz kötve (az
+  oldalhoz kötött entitás típusát az oldal szerkezete adja). Holtversenyben a típusok rögzített
+  sorrendje dönt, a fogalommal elöl (`TIE_ORDER`): a konkrétabb típushoz többség kell. Az
+  új típushoz nem tartozó altípus a címkében üres.
+  Szolgáltatássá a többség nem léptet elő (`MAJORITY_NOT_TO`): azt, hogy egy név a site
+  szolgáltatása-e, a feloldó az oldalakból dönti el.
+  ISMERT KORLÁT: a címke csak a kiírt típust teszi stabillá. A kinyerés visszaírása és a
+  feloldó összevonásai továbbra is az entitás első rekordjának típusával dolgoznak, tehát
+  függnek az oldalak feldolgozási sorrendjétől (melyik entitáshoz csatol egy említés, mi
+  olvad össze). Ezt az azonos jelentésű nevek összevonása oldja meg, nem a címke.
 - Kinyerés utáni lépés (`refine`, a pipeline-ban `v3.V3Step`): a rekord a mentés előtt; a
   bizonyítékai (`v3` mező) a `soft_checks`-be. Ha az ellenőrző hívás hibára fut, az oldal nem
   mentődik (`verify_error`). Ha a lépésnek van `current` vizsgálata, és a tárolt rekord nem
@@ -94,7 +111,7 @@ from aaa2.entities.v3 import (
 from aaa2.llm import calls as llm_calls
 from aaa2.llm.client import BudgetExceeded, LLMClient, LLMError, SchemaMismatch
 from aaa2.llm.config import LLMConfig, Usage
-from aaa2.llm.schemas import ENTITY_TYPES, BlockExtraction
+from aaa2.llm.schemas import ENTITY_TYPES, SUBTYPE_GLOSSARY, BlockExtraction
 
 
 @dataclass(frozen=True)
@@ -433,6 +450,41 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
         _stop(con, run_id, waiting, previous, stop_reason, clock)
     store.delete_entities_in_run_llm(con)
     return _finish(con, run_id, client.model, monotonic() - began, clock)
+
+
+MAJORITY_PROTECTED = ("schema", "rule")
+MAJORITY_NOT_TO = ("service",)
+TIE_ORDER = ("concept", *(kind for kind in ENTITY_TYPES if kind != "concept"))
+
+
+def majority_type(votes: Mapping[str, int], current: str) -> str:
+    """A legtöbb szavazatot kapott típus; holtversenyben a típusok rögzített sorrendjében az
+    első, a fogalommal elöl (`TIE_ORDER`). A jelenlegi típus nem számít: az attól függ, melyik
+    oldal rekordja hozta létre az entitást."""
+    del current
+    top = max(votes.values())
+    tied = [kind for kind, count in votes.items() if count == top]
+    return min(tied, key=lambda kind: TIE_ORDER.index(kind) if kind in TIE_ORDER
+               else len(TIE_ORDER))
+
+
+def apply_majority_types(con: duckdb.DuckDBPyConnection) -> int:
+    """A szavazatok többsége szerinti típus címkéje a nem védett forrású, oldalhoz nem kötött
+    entitásokra (a feloldás végén fut, lásd a modul leírását). A korábbi címkék törlődnek, a
+    tárolt típus nem változik; visszaad: hány entitás kapott a tárolttól eltérő címkét."""
+    store.clear_type_labels(con)
+    changed = 0
+    for entity_id, kind, subtype, raw in store.entities_for_majority_types(
+            con, MAJORITY_PROTECTED):
+        votes = json.loads(raw) if raw else {}
+        if not votes:
+            continue
+        top = majority_type(votes, kind)
+        if top != kind and top not in MAJORITY_NOT_TO:
+            keep = subtype if subtype in SUBTYPE_GLOSSARY.get(top, {}) else None
+            store.update_entities_in_apply_majority_types(con, top, keep, entity_id)
+            changed += 1
+    return changed
 
 
 def clear_entities(con: duckdb.DuckDBPyConnection) -> None:

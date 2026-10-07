@@ -1,0 +1,36 @@
+-- 032: új megállapítás-típus, és a kiírt entitástípus címkéje.
+--
+-- entities.label_type, label_subtype: a kiírt típus és altípus, ha eltér a tárolttól (a kinyerés
+--   szavazatainak többsége; a feloldás végén kerül ide). NULL: nincs címke, a kiírt típus a
+--   tárolt. A kinyerés visszaírása és a feloldó a `type` / `subtype` mezőt olvassa és írja, a
+--   címkét nem látja; a gráf, a megállapítások és a kimenet a címkézett típust használja.
+-- findings.type új értéke: 'schema_id_names' (a site strukturált adatában ugyanaz az azonosító,
+--   `@id`, több névvel szerepel).
+-- A CHECK megszorítás nem módosítható helyben, ezért a tábla az új megszorítással épül újra, a
+--   sorai változatlanok.
+
+CREATE TABLE findings_032 (
+    finding_id  INTEGER PRIMARY KEY,
+    type        VARCHAR NOT NULL CHECK (type IN (
+                    'h1_title_mismatch', 'cannibalization', 'shared_topic', 'missing_page',
+                    'uncovered_topic', 'unclear_topic', 'missing_h1', 'h1_outside_content',
+                    'multiple_h1', 'empty_section', 'skipped_level', 'missing_h2',
+                    'paragraph_heading', 'canonical_issue', 'legal_page', 'soft_404',
+                    'schema_id_names')),
+    severity    VARCHAR NOT NULL CHECK (severity IN ('high', 'medium', 'low')),
+    page_id     INTEGER,
+    entity_id   INTEGER,
+    summary     VARCHAR NOT NULL,
+    evidence    JSON NOT NULL
+);
+
+INSERT INTO findings_032
+SELECT finding_id, type, severity, page_id, entity_id, summary, evidence
+FROM findings ORDER BY finding_id;
+
+DROP TABLE findings;
+
+ALTER TABLE findings_032 RENAME TO findings;
+
+ALTER TABLE entities ADD COLUMN IF NOT EXISTS label_type VARCHAR;
+ALTER TABLE entities ADD COLUMN IF NOT EXISTS label_subtype VARCHAR;

@@ -272,6 +272,7 @@ class Candidate:
     names: list[str] = field(default_factory=list)      # a site-név elsőbbségi sora (brand)
     role: str | None = None                              # org, amely a site neve is: brand
     urls: set[str] = field(default_factory=set)          # schema: a csomópontok url-je
+    preferred: str | None = None                         # schema: a saját oldal csomópontjának neve
     forms: Counter[str] = field(default_factory=Counter)
     ranks: dict[str, int] = field(default_factory=dict)  # alak → a legerősebb forrása
     mentions: list[Mention] = field(default_factory=list)
@@ -290,6 +291,8 @@ class Candidate:
     def canonical(self) -> str:
         if (self.type == "brand" or self.role == "brand") and self.names:
             return self.names[0]
+        if self.preferred is not None and self.preferred in self.forms:
+            return self.preferred
         best = min(self.ranks.values())
         order = list(self.ranks)
         return max((form for form, rank in self.ranks.items() if rank == best),
@@ -342,7 +345,8 @@ def run_rules(con: duckdb.DuckDBPyConnection,
     skipped: dict[str, object] = {}
     candidates: dict[tuple[str, str], Candidate] = {}
 
-    _schema(con, page_ids, dom, mapping, candidates, skipped)
+    _schema(con, page_ids, dom, mapping, candidates, skipped,
+            {page_id: url for page_id, url, *_ in pages})
     _merge_person_names(candidates)
     _site_names(con, pages, dom, candidates, skipped)
     _anchors(con, page_ids, dom, candidates, skipped, entity_pages)
@@ -421,11 +425,16 @@ def _store_mention(con: duckdb.DuckDBPyConnection, mention: Mention, entity_id: 
 # ---------------------------------------------------------------------------
 
 
-def _schema(con, page_ids, dom, mapping, candidates, skipped) -> None:
+def _schema(con, page_ids, dom, mapping, candidates, skipped, urls=None) -> None:
+    """A schema.org-csomópontok jelöltjei. Az azonos `@id`-jú, azonos típusra képződő
+    csomópontok egy jelöltet adnak akkor is, ha a nevük oldalanként más (`_join_same_ids`)."""
     unmapped: Counter[str] = Counter()
     nameless: Counter[str] = Counter()
     per_page: dict[tuple[int, str, str], Mention] = {}
     wanted = set(page_ids)
+    urls = urls or {}
+    # (@id, típus) → a csomópont nevei: (kulcs, név, a saját oldalán áll-e, az oldal címe)
+    by_id: dict[tuple[str, str], list[tuple[str, str, bool, str]]] = defaultdict(list)
     for item in crawl.schema_items(con):
         page_id, block = item.page_id, item.data
         if page_id not in wanted:
@@ -445,6 +454,12 @@ def _schema(con, page_ids, dom, mapping, candidates, skipped) -> None:
             candidate.add_form(html_lib.unescape(name).strip(), "schema")
             if isinstance(node.get("url"), str):
                 candidate.urls.add(page_url(node["url"]))
+            if isinstance(node.get("@id"), str) and node["@id"].strip():
+                here = page_url(urls.get(page_id) or "")
+                target = node.get("url") if isinstance(node.get("url"), str) else node["@id"]
+                by_id[(node["@id"].strip(), kind)].append(
+                    (key, html_lib.unescape(name).strip(), bool(here)
+                     and page_url(target) == here, here))
             mention = per_page.get((page_id, key, kind))
             if mention is None:
                 context = json.dumps(node, ensure_ascii=False, separators=(",", ":"))
@@ -453,10 +468,37 @@ def _schema(con, page_ids, dom, mapping, candidates, skipped) -> None:
                 per_page[(page_id, key, kind)] = mention
                 candidate.mentions.append(mention)
             mention.count += 1
+    _join_same_ids(candidates, by_id)
     if unmapped:
         skipped["unmapped_schema_types"] = dict(unmapped.most_common())
     if nameless:
         skipped["schema_without_name"] = dict(nameless.most_common())
+
+
+def _join_same_ids(candidates, by_id) -> None:
+    """Az azonos `@id`-jú, azonos típusú csomópontok egy entitás: a különböző nevű jelöltek
+    egybeolvadnak, a nevek aliasok. A megtartott név a csomópont saját oldalán álló név (az
+    az oldal, amelyre a csomópont `url`-je, vagy `url` híján az `@id`-je mutat); ha több ilyen
+    oldal van, a leghosszabb útvonalúé (a kezdőoldalra mutató hivatkozás a legkevésbé
+    konkrét); ha egy sincs, a jelölt szokásos névválasztása dönt."""
+    for (_, kind), found in sorted(by_id.items()):
+        keys = list(dict.fromkeys(key for key, *_ in found))
+        if len(keys) < 2:
+            continue
+        own = sorted((item for item in found if item[2]),
+                     key=lambda item: (-len(item[3]), item[3], item[1]))
+        first = own[0][0] if own else keys[0]
+        target = candidates[(first, kind)]
+        for key in keys:
+            other = candidates[(key, kind)]
+            if other is not target:
+                target.absorb(other)
+                target.urls |= other.urls
+                for pair, candidate in list(candidates.items()):
+                    if candidate is other:
+                        candidates[pair] = target
+        if own:
+            target.preferred = own[0][1]
 
 
 def _merge_person_names(candidates) -> None:

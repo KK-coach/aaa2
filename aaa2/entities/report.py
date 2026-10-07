@@ -32,18 +32,26 @@ from aaa2.llm import calls as llm_calls
 from aaa2.resolver import queries as resolver_queries
 
 PLACES = ("title", "heading", "nav", "card", "table_row")
-TABLE_FIELDS = ("entity", "type", "subtype", "tier", "flags", "source", "pages", "mentions",
+TABLE_FIELDS = ("entity", "type", "type_votes", "subtype", "tier", "flags", "source", "pages", "mentions",
                 *PLACES, "anchor_page", "wikidata_qid", "wikidata_status", "wikipedia",
                 "from_service_pages")
 
 
 # a CSV fejléce (a sorok kulcsai a kódban angolok maradnak)
-TABLE_HEADERS = {"entity": "entitás", "type": "típus", "subtype": "altípus", "tier": "szint",
+TABLE_HEADERS = {"entity": "entitás", "type": "típus", "type_votes": "típus-szavazatok",
+                 "subtype": "altípus", "tier": "szint",
                  "flags": "jelzők", "source": "forrás", "pages": "oldalak",
                  "mentions": "említések", "title": "title", "heading": "heading", "nav": "menü",
                  "card": "kártya", "table_row": "táblázatsor", "anchor_page": "kötött oldal",
                  "wikidata_qid": "Wikidata QID", "wikidata_status": "Wikidata státusz",
                  "wikipedia": "Wikipedia", "from_service_pages": "szolgáltatásból lett fogalom"}
+
+
+def votes_text(raw: str | None) -> str:
+    """A kinyerés típus-szavazatai egy cellában, a legtöbbel elöl: `concept: 3; service: 1`."""
+    votes = json.loads(raw) if raw else {}
+    return "; ".join(f"{kind}: {count}" for kind, count in sorted(
+        votes.items(), key=lambda item: (-item[1], item[0])))
 
 
 def wikipedia_url(value: str | None) -> str:
@@ -72,15 +80,16 @@ def entity_table(con: duckdb.DuckDBPyConnection) -> list[dict]:
             places[entity_id][place].add(page_id)
     rows = []
     urls = {page.page_id: page.url for page in crawl.pages(con)}
-    for entity_id, name, kind, subtype, tier, flags, source, anchor_id, qid, status, wiki in \
-            store.entities_for_entity_table(con):
+    for (entity_id, name, kind, subtype, tier, flags, source, anchor_id, qid, status, wiki,
+         votes) in store.entities_for_entity_table(con):
         anchor = urls.get(anchor_id)
         if entity_id not in pages:
             continue
         nav = places[entity_id]["nav"]
         nav |= {page_id for page_id in pages[entity_id] - nav
                 if any(occurs(name, text) for text in chrome[page_id])}
-        rows.append({"entity": name, "type": kind, "subtype": subtype or "", "tier": tier or "",
+        rows.append({"entity": name, "type": kind, "type_votes": votes_text(votes),
+                     "subtype": subtype or "", "tier": tier or "",
                      "flags": " ".join(flags or []), "source": source,
                      "pages": len(pages[entity_id]), "mentions": count[entity_id],
                      **{place: len(places[entity_id][place]) for place in PLACES},

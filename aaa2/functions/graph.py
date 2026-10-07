@@ -99,7 +99,7 @@ from aaa2.entities.gate import occurs
 from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import alias_key
 from aaa2.resolver import queries as resolver_queries
-from aaa2.resolver.display import OTHER_NAMES_COLUMN, DisplayNames
+from aaa2.resolver.display import NAME_NOTE_COLUMN, OTHER_NAMES_COLUMN, DisplayNames
 from aaa2.resolver.listing import CATEGORY_SEGMENTS, LIST_MIN_SHARE, ListShape
 from aaa2.resolver.names import normal_key, without_legal_form
 from aaa2.resolver.overrides import canonical_language
@@ -968,6 +968,7 @@ def export_csv(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str
             "canonical": note,
             "fő entitás": display.on_page(main[0][0], names.get(main[0][0], ""), lang)
             if main else "",
+            NAME_NOTE_COLUMN: display.note(main[0][0], lang) if main else "",
             "típus": "/".join(filter(None, kinds.get(main[0][0], ("", "")))) if main else "",
             "megbízhatóság": main[0][2] if main else "",
             "bizonyítékok": evidence_text(main[0][3]) if main else "",

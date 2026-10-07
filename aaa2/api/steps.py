@@ -29,6 +29,7 @@ from aaa2.entities.dom import build_blocks
 from aaa2.entities.extract import (
     Restored,
     Worker,
+    apply_majority_types,
     clear_entities,
     estimate_llm,
     input_models,
@@ -351,10 +352,21 @@ class ResolveResult:
 def resolve(site: Site, *, knowledge: bool | None = None) -> ResolveResult:
     """Feloldás LLM nélkül: a site-szintű entitások (oldalhoz kötés, csomagok, lépések,
     összevonás, demó- és sablonjelölés), utána a tudásbázis-kapcsolás (`knowledge`, alapból a
-    `pipeline.toml` `knowledge`)."""
+    `pipeline.toml` `knowledge`), a végén a többségi típus címkéje
+    (`extract.apply_majority_types`)."""
     steps = load_pipeline().steps
     site_run = run_site(site.con) if steps.site else None
-    return ResolveResult(site_run, _link(site, steps, knowledge))
+    return _resolved(site, steps, knowledge, site_run)
+
+
+def _resolved(site: Site, steps, knowledge: bool | None, site_run) -> ResolveResult:
+    """A feloldás vége: a tudásbázis-kapcsolás, utána a többségi típus címkéje. A címke akkor
+    is rákerül az entitásokra, ha a kapcsolás hibával áll meg."""
+    try:
+        linked = _link(site, steps, knowledge)
+    finally:
+        apply_majority_types(site.con)
+    return ResolveResult(site_run, linked)
 
 
 def _link(site: Site, steps, knowledge: bool | None) -> KnowledgeRun | None:
@@ -399,8 +411,7 @@ def rebuild_entities(site: Site, *, knowledge: bool | None = None) -> RebuildRes
             build_blocks(con)
         rules_run, restored = _project(con, steps)
         site_run = run_site(con) if steps.site else None
-    return RebuildResult(rules_run, restored,
-                         ResolveResult(site_run, _link(site, steps, knowledge)))
+    return RebuildResult(rules_run, restored, _resolved(site, steps, knowledge, site_run))
 
 
 def entity_report(site: Site, out: Path, baseline: Path | None = None) -> tuple[Path, Path, int]:

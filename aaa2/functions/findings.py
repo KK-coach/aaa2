@@ -107,16 +107,16 @@ from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
 from aaa2.functions import graph_queries
 from aaa2.functions import headings as heading_tree
-from aaa2.functions.graph import evidence_text
+from aaa2.functions.graph import _walk, evidence_text
 from aaa2.resolver import queries as resolver_queries
-from aaa2.resolver.display import OTHER_NAMES_COLUMN, DisplayNames
+from aaa2.resolver.display import NAME_NOTE_COLUMN, OTHER_NAMES_COLUMN, DisplayNames
 from aaa2.resolver.names import normal_key
 from aaa2.resolver.overrides import load_site_config, site_domain
 from aaa2.resolver.pages import LEGAL_KINDS, canonical_key, legal_kind, page_types
 
 TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
          "uncovered_topic", "unclear_topic", *heading_tree.STRUCTURE_TYPES,
-         "canonical_issue", "legal_page", "soft_404")
+         "canonical_issue", "legal_page", "soft_404", "schema_id_names")
 TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "cannibalization": "Lehetséges kannibalizáció",
                "shared_topic": "Közös téma", "missing_page": "Hiányzó oldal",
@@ -125,6 +125,7 @@ TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "multiple_h1": "Több H1", "empty_section": "Üres szakasz",
                "skipped_level": "Kihagyott heading-szint", "missing_h2": "Hiányzó H2",
                "paragraph_heading": "Bekezdés headingként jelölve",
+               "schema_id_names": "Azonosító több névvel a strukturált adatban",
                "canonical_issue": "Hibás canonical", "legal_page": "Jogi oldal",
                "soft_404": "Nem található oldal 200-as státusszal"}
 # többes szám jele a kulcsban (ékezet nélkül): a kategória neve és a H1 / title összevetéséhez
@@ -222,7 +223,8 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
     rows = [*_mismatches(site), *_shared_topics(site), *_uncovered(site, run),
             *_unclear_topics(site),
             *heading_tree.structure_findings(site.pages, site.headings, ROLE_LABELS),
-            *_canonical_issues(site), *_legal_pages(site), *_soft_404(site)]
+            *_canonical_issues(site), *_legal_pages(site), *_soft_404(site),
+            *_schema_id_names(site)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -926,6 +928,33 @@ def _legal_pages(site: _Site) -> list[tuple]:
     return found
 
 
+def _schema_id_names(site: _Site) -> list[tuple]:
+    """A site strukturált adatának következetlensége: ugyanaz az azonosító (`@id`) oldalanként
+    más névvel szerepel (a kis- és nagybetű, az írásjelek eltérése nem számít). Egy
+    megállapítás a site-ra, az érintett azonosítókkal, a neveikkel és nevenként minden oldallal,
+    ahol a csomópont így szerepel (`urls`); alacsony. Az entitásokat
+    ez nem érinti: az azonos azonosítójú csomópontok egy entitást adnak, a nevek aliasok."""
+    names: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+    for item in crawl.schema_items(site.con):
+        page = site.pages.get(item.page_id)
+        if page is None:
+            continue
+        for node in _walk(item.data):
+            if "@type" in node and isinstance(node.get("@id"), str) \
+                    and isinstance(node.get("name"), str) and node["name"].strip():
+                names[node["@id"].strip()][node["name"].strip()].add(page["url"])
+    ids = [{"id": ref, "names": [{"name": name, "pages": len(urls), "urls": sorted(urls)}
+                                 for name, urls in sorted(
+                                     forms.items(), key=lambda kv: (-len(kv[1]), kv[0]))]}
+           for ref, forms in sorted(names.items())
+           if len({alias_key(name) for name in forms}) > 1]
+    if not ids:
+        return []
+    return [("schema_id_names", "low", None, None,
+             f"a strukturált adatban {len(ids)} azonosító (@id) több névvel szerepel",
+             {"group": "schema_id_names", "ids": ids})]
+
+
 def _soft_404(site: _Site) -> list[tuple]:
     """A 200-as státusszal kiszolgált „nem található” oldalak (`pages.page_types`: not_found;
     ma a Shoprenter `not_found_body` jele ismeri fel) egy közepes megállapításban, az oldalak
@@ -1234,6 +1263,8 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
             "canonical": f"duplikátum: {page['duplicate_of']}" if page["duplicate_of"] is not None
             else page["canonical_issue"] or "",
             "fő entitás": page["main_entity"] if has_main else "",
+            NAME_NOTE_COLUMN: site.display.note(page["main_entity_id"], page["lang"])
+            if has_main else "",
             "típus": page["main_entity_type"] if has_main else "",
             "megbízhatóság": page["confidence"] if has_main else "",
             "bizonyítékok": page["evidence_text"] if has_main else "",
@@ -1315,8 +1346,8 @@ def export_views(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[s
             "entitás", OTHER_NAMES_COLUMN, "típus", "rang", "súly", "élek", "fő oldalak",
             "csak említő oldalak száma", "csak említő oldalak"]),
         "pages": _write(out / f"{name}-view-pages.csv", pages, [
-            "url", "szerep", "segédoldal", "nyelv", "canonical", "fő entitás", "típus",
-            "megbízhatóság", "bizonyítékok", "másodlagos", "H1", "a H1-ben", "title",
+            "url", "szerep", "segédoldal", "nyelv", "canonical", "fő entitás",
+            NAME_NOTE_COLUMN, "típus", "megbízhatóság", "bizonyítékok", "másodlagos", "H1", "a H1-ben", "title",
             "a title-ben", "további említett entitások", "megállapítások", "jelzések",
             *PAGE_FACT_COLUMNS]),
         "headings": _write(out / f"{name}-view-headings.csv",
@@ -1417,6 +1448,12 @@ def _finding_html(finding: dict) -> str:
                  ("ok", _e(CANONICAL_LABELS.get(evidence["issue"], evidence["issue"])))]
     elif finding["type"] == "soft_404":
         pairs = [("oldalak", "<br>".join(_link(page["url"]) for page in evidence["pages"]))]
+    elif finding["type"] == "schema_id_names":
+        pairs = [("azonosítók", "<br>".join(
+            f"{_e(item['id'])}: " + "; ".join(
+                f"„{_e(n['name'])}” ({n['pages']} oldal: "
+                + ", ".join(_link(url) for url in n["urls"]) + ")"
+                for n in item["names"]) for item in evidence["ids"]))]
     elif finding["type"] == "legal_page":
         pairs = [("fajta", _e(evidence["label"])),
                  ("oldalak", "<br>".join(_link(page["url"]) for page in evidence["pages"])),

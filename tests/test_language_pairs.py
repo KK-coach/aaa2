@@ -205,9 +205,10 @@ def test_page_outputs_show_the_name_in_the_language_of_the_page(tmp_path):
         "alap": "következtetett: a hreflang-pár két oldalának fő témája (language_pair)"}]
 
 
-def test_other_language_labels_of_a_page_entity_are_listed_but_never_shown(tmp_path):
-    # az ajánlatoldal angol H1-e és title-je `hreflang` forrású alias, de nem a nyelvi
-    # összevonásból jön: az angol oldalon is a megtartott név áll, a címkék csak az oszlopban
+def test_a_page_entity_is_shown_by_the_schema_name_of_its_own_page_in_that_language(tmp_path):
+    # az ajánlat angol oldalának saját strukturált adata megnevezi a szolgáltatást: az angol
+    # oldalon ez a név áll. Az angol H1 és title (`hreflang` forrású alias), a menüpont és a
+    # horgonyszöveg nem megjelenített név, csak az oszlopban szerepel
     from tests.test_entities_site import business_site
 
     con = business_site()
@@ -219,6 +220,9 @@ def test_other_language_labels_of_a_page_entity_are_listed_but_never_shown(tmp_p
                        "lang = 'en'").fetchone()[0] > 0
     out = exported(con, tmp_path)
     names = {row["url"]: row["fő entitás"] for row in out["pages"]}
-    assert names[f"{BASE}/en/measurement/"] == names[f"{BASE}/hu/meres/"] == kept
+    assert names[f"{BASE}/hu/meres/"] == kept
+    assert names[f"{BASE}/en/measurement/"] == "Measurement & Data Architecture"
+    notes = {row["url"]: row["a név az oldal nyelvén"] for row in out["pages"]}
+    assert notes[f"{BASE}/en/measurement/"] == notes[f"{BASE}/hu/meres/"] == ""
     row = next(row for row in out["site"] if row["entitás"] == kept)
     assert "(hreflang)" in row["más nyelvű nevek"] and row["más nyelvű nevek"].startswith("en: ")
