@@ -23,16 +23,20 @@ determinisztikus kör entitásaival összevonva.
 - Típusjavaslat: minden elfogadott említés egy szavazat az LLM típusára (`entities.type_votes`,
   futásról futásra halmozódva); `type_suggested` a legtöbb szavazatot kapott típus, holtversenyben
   a jelenlegi.
-- Többségi típus (`apply_majority_types`, a kör végén): az entitás típusa a legtöbb szavazatot
+- Többségi típus (`apply_majority_types`): címke, amelyet a feloldás végén (`api.resolve`, a
+  site-kör és a tudásbázis-kapcsolás után) kap az entitás: a kiírt típus a legtöbb szavazatot
   kapott típus, függetlenül attól, melyik oldal rekordja hozta létre előbb. Csak ott dönt,
-  ahol az entitás nem strukturált adatból vagy szabályból jön (`MAJORITY_PROTECTED`: a
-  schema és a rule forrású típus erősebb a kinyerő modell szavazatainál). Holtversenyben a
-  jelenlegi típus marad, ha a legtöbb szavazatot kapottak között van; különben a típusok
-  rögzített sorrendjében az első (`majority_type`). A korábbi típus: `type_changed_from`; az
-  új típushoz nem tartozó altípus törlődik. Szolgáltatássá a többség nem léptet elő
-  (`MAJORITY_NOT_TO`): azt, hogy egy név a site szolgáltatása-e, a feloldó site-köre az
-  oldalakból dönti el, és a saját oldal nélküli, modell-forrású szolgáltatást fogalommá bontja
-  vissza (az altípusa közben elveszne).
+  ahol az entitás nem strukturált adatból vagy szabályból jön (`MAJORITY_PROTECTED`: a schema
+  és a rule forrású típus erősebb a kinyerő modell szavazatainál), és nincs oldalhoz kötve (az
+  oldalhoz kötött entitás típusát az oldal szerkezete adja). Holtversenyben a típusok rögzített
+  sorrendje dönt, a fogalommal elöl (`TIE_ORDER`): a konkrétabb típushoz többség kell. A
+  korábbi típus: `type_changed_from`; az új típushoz nem tartozó altípus törlődik.
+  Szolgáltatássá a többség nem léptet elő (`MAJORITY_NOT_TO`): azt, hogy egy név a site
+  szolgáltatása-e, a feloldó az oldalakból dönti el.
+  ISMERT KORLÁT: a címke csak a kiírt típust teszi stabillá. A kinyerés visszaírása és a
+  feloldó összevonásai továbbra is az entitás első rekordjának típusával dolgoznak, tehát
+  függnek az oldalak feldolgozási sorrendjétől (melyik entitáshoz csatol egy említés, mi
+  olvad össze). Ezt az azonos jelentésű nevek összevonása oldja meg, nem a címke.
 - Kinyerés utáni lépés (`refine`, a pipeline-ban `v3.V3Step`): a rekord a mentés előtt; a
   bizonyítékai (`v3` mező) a `soft_checks`-be. Ha az ellenőrző hívás hibára fut, az oldal nem
   mentődik (`verify_error`). Ha a lépésnek van `current` vizsgálata, és a tárolt rekord nem
@@ -442,29 +446,29 @@ def run_llm(con: duckdb.DuckDBPyConnection, client: LLMClient, *,
     if stop_reason is not None:
         _stop(con, run_id, waiting, previous, stop_reason, clock)
     store.delete_entities_in_run_llm(con)
-    if save and not records_only:
-        apply_majority_types(con)
     return _finish(con, run_id, client.model, monotonic() - began, clock)
 
 
 MAJORITY_PROTECTED = ("schema", "rule")
 MAJORITY_NOT_TO = ("service",)
+TIE_ORDER = ("concept", *(kind for kind in ENTITY_TYPES if kind != "concept"))
 
 
 def majority_type(votes: Mapping[str, int], current: str) -> str:
-    """A legtöbb szavazatot kapott típus; holtversenyben a jelenlegi, ha a legjobbak között
-    van, különben a típusok rögzített sorrendjében (`ENTITY_TYPES`) az első."""
+    """A legtöbb szavazatot kapott típus; holtversenyben a típusok rögzített sorrendjében az
+    első, a fogalommal elöl (`TIE_ORDER`). A jelenlegi típus nem számít: az attól függ, melyik
+    oldal rekordja hozta létre az entitást."""
+    del current
     top = max(votes.values())
     tied = [kind for kind, count in votes.items() if count == top]
-    if current in tied:
-        return current
-    return min(tied, key=lambda kind: ENTITY_TYPES.index(kind) if kind in ENTITY_TYPES
-               else len(ENTITY_TYPES))
+    return min(tied, key=lambda kind: TIE_ORDER.index(kind) if kind in TIE_ORDER
+               else len(TIE_ORDER))
 
 
 def apply_majority_types(con: duckdb.DuckDBPyConnection) -> int:
-    """A szavazatok többsége szerinti típus beírása a nem védett forrású entitásokra;
-    visszaad: hány entitás típusa változott."""
+    """A szavazatok többsége szerinti típus beírása a nem védett forrású, oldalhoz nem kötött
+    entitásokra (a feloldás végén fut, lásd a modul leírását); visszaad: hány entitás típusa
+    változott."""
     changed = 0
     for entity_id, kind, subtype, raw in store.entities_for_majority_types(
             con, MAJORITY_PROTECTED):
@@ -591,7 +595,6 @@ def restore_llm(con: duckdb.DuckDBPyConnection,
             raise
         runs.add(stored["run_id"])
         pages += 1
-    apply_majority_types(con)
     for run_id in sorted(runs):
         _refresh(con, run_id)
     return Restored(pages, dict(sorted(skipped.items())), tuple(sorted(runs)))

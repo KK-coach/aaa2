@@ -73,10 +73,13 @@ def test_a_stored_extraction_is_not_restored_onto_a_page_that_gained_a_block(tmp
     assert len(adapter.calls) == 1
 
 
-def shared_name_site(tmp_path, offer_kind, article_kind, head=""):
+def shared_name_site(tmp_path, offer_kind, article_kind, head="", bound=False):
     """Két oldal ugyanazzal a névvel: az ajánlatoldal egyszer, a cikk kétszer említi a
-    „mérés”-t; a kinyerés oldalanként más típust mond rá."""
-    folder = tmp_path / f"{offer_kind}-{article_kind}-{bool(head)}"
+    „mérés”-t; a kinyerés oldalanként más típust mond rá. A végén a feloldás utáni címke
+    (`apply_majority_types`); `bound`: előtte az entitás oldalhoz kötve."""
+    from aaa2.entities.extract import apply_majority_types
+
+    folder = tmp_path / f"{offer_kind}-{article_kind}-{bool(head)}-{bound}"
     folder.mkdir()
     con = site({"/": html("Ajánlat", "<main><h1>Ajánlat</h1><p>A mérés a szolgáltatásunk.</p>"
                           "</main>", head=head),
@@ -89,42 +92,51 @@ def shared_name_site(tmp_path, offer_kind, article_kind, head=""):
         reply(mention("b2", "mérés", "mérés", article_kind),
               mention("b3", "mérés", "mérés", article_kind))], folder)
     run_llm(con, client)
-    return con.execute(
-        "SELECT DISTINCT e.type, e.type_votes, e.type_changed_from, e.source FROM "
-        "page_entities pe JOIN entities e USING (entity_id) WHERE lower(e.name) = 'mérés'"
-    ).fetchall()
+    query = ("SELECT DISTINCT e.type, e.type_votes, e.type_changed_from, e.source FROM "
+             "page_entities pe JOIN entities e USING (entity_id) WHERE lower(e.name) = 'mérés'")
+    before = con.execute(query).fetchall()
+    if bound:
+        con.execute("UPDATE entities SET anchor_page_id = 1 WHERE lower(name) = 'mérés'")
+    apply_majority_types(con)
+    return before, con.execute(query).fetchall()
 
 
-def test_the_type_of_a_shared_name_is_the_majority_of_the_votes(tmp_path):
-    # 3. megfigyelés: az azonos nevű említések egy entitásba kerülnek; a típus a kinyerés
-    # szavazatainak többsége, nem az első oldal rekordjáé
-    assert shared_name_site(tmp_path, "service", "concept") == [
-        ("concept", '{"concept": 2, "service": 1}', "service", "llm")]
-    # a sorrend nem számít: ha az első oldal mond technológiát és a másik két említés fogalmat
-    assert shared_name_site(tmp_path, "tech", "concept") == [
-        ("concept", '{"concept": 2, "tech": 1}', "tech", "llm")]
-    # szolgáltatássá a többség nem léptet elő: azt a feloldó dönti el az oldalakból
-    assert shared_name_site(tmp_path, "concept", "service") == [
-        ("concept", '{"concept": 1, "service": 2}', None, "llm")]
-    assert shared_name_site(tmp_path, "concept", "concept") == [
+def test_the_type_of_a_shared_name_is_labelled_by_the_majority_of_the_votes(tmp_path):
+    # 3. megfigyelés: az azonos nevű említések egy entitásba kerülnek, a típusa az első oldal
+    # rekordjáé; a feloldás utáni címke a szavazatok többségét írja ki
+    before, after = shared_name_site(tmp_path, "tech", "concept")
+    assert before == [("tech", '{"concept": 2, "tech": 1}', None, "llm")]
+    assert after == [("concept", '{"concept": 2, "tech": 1}', "tech", "llm")]
+    # a sorrend nem számít: ha az első oldal mond fogalmat és a másik két említés technológiát
+    assert shared_name_site(tmp_path, "concept", "tech")[1] == [
+        ("tech", '{"concept": 1, "tech": 2}', "concept", "llm")]
+    assert shared_name_site(tmp_path, "concept", "concept")[1] == [
         ("concept", '{"concept": 3}', None, "llm")]
+    # szolgáltatássá a többség nem léptet elő: azt a feloldó dönti el az oldalakból
+    assert shared_name_site(tmp_path, "concept", "service")[1] == [
+        ("concept", '{"concept": 1, "service": 2}', None, "llm")]
 
 
-def test_a_type_from_structured_data_is_not_overridden_by_the_votes(tmp_path):
+def test_the_label_leaves_structured_data_types_and_page_bound_entities_alone(tmp_path):
     from tests.test_entities_rules import ld
 
     service = ld({"@type": "Service", "name": "Mérés", "url": "https://pelda.hu/"})
-    found = shared_name_site(tmp_path, "concept", "concept", head=service)
+    _, found = shared_name_site(tmp_path, "concept", "concept", head=service)
     assert [(kind, source) for kind, _, _, source in found] == [("service", "schema")]
     assert found[0][1] == '{"concept": 3}' and found[0][2] is None
+    # az oldalhoz kötött entitás típusát az oldal szerkezete adja
+    assert shared_name_site(tmp_path, "tech", "concept", bound=True)[1] == [
+        ("tech", '{"concept": 2, "tech": 1}', None, "llm")]
 
 
-def test_a_tie_keeps_the_current_type_and_otherwise_the_fixed_order_decides():
+def test_a_tie_is_decided_by_the_fixed_order_with_the_concept_first():
     from aaa2.entities.extract import majority_type
 
-    assert majority_type({"concept": 2, "service": 2}, "service") == "service"
-    assert majority_type({"concept": 2, "service": 2}, "concept") == "concept"
-    # a jelenlegi típus nincs a legjobbak között: a típusok rögzített sorrendje dönt
-    first = majority_type({"tech": 2, "service": 2, "org": 1}, "org")
-    assert first == majority_type({"service": 2, "tech": 2, "org": 1}, "org")
-    assert first in ("service", "tech")
+    # a konkrétabb típushoz többség kell; a jelenlegi típus nem számít
+    assert majority_type({"concept": 2, "tech": 2}, "tech") == "concept"
+    assert majority_type({"tech": 2, "concept": 2}, "concept") == "concept"
+    assert majority_type({"product": 1, "concept": 1}, "product") == "concept"
+    # fogalom nélkül a típusok rögzített sorrendje, a szavazatok sorrendjétől függetlenül
+    first = majority_type({"tech": 2, "org": 2, "place": 1}, "place")
+    assert first == majority_type({"org": 2, "tech": 2, "place": 1}, "tech")
+    assert majority_type({"concept": 1, "tech": 3}, "concept") == "tech"

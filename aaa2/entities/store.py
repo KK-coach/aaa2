@@ -169,7 +169,8 @@ def entities_for_majority_types(con: duckdb.DuckDBPyConnection, protected) -> li
     """Lekérdezés: entities. Hívja: entities/extract.py: apply_majority_types."""
     return con.execute(
         "SELECT entity_id, type, subtype, type_votes FROM entities WHERE type_votes IS NOT NULL "
-        "AND NOT list_contains(?, source) ORDER BY entity_id", [list(protected)]).fetchall()
+        "AND NOT list_contains(?, source) AND anchor_page_id IS NULL ORDER BY entity_id",
+        [list(protected)]).fetchall()
 
 
 def update_entities_in_apply_majority_types(con: duckdb.DuckDBPyConnection, kind, subtype,

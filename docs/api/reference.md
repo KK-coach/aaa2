@@ -116,7 +116,8 @@ resolve(site: 'Site', *, knowledge: 'bool | None' = None) -> 'ResolveResult'
 
 Feloldás LLM nélkül: a site-szintű entitások (oldalhoz kötés, csomagok, lépések,
 összevonás, demó- és sablonjelölés), utána a tudásbázis-kapcsolás (`knowledge`, alapból a
-`pipeline.toml` `knowledge`).
+`pipeline.toml` `knowledge`), a végén a többségi típus címkéje
+(`extract.apply_majority_types`).
 
 ### `rebuild_entities`
 
