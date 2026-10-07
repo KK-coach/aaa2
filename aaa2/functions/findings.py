@@ -931,7 +931,8 @@ def _legal_pages(site: _Site) -> list[tuple]:
 def _schema_id_names(site: _Site) -> list[tuple]:
     """A site strukturált adatának következetlensége: ugyanaz az azonosító (`@id`) oldalanként
     más névvel szerepel (a kis- és nagybetű, az írásjelek eltérése nem számít). Egy
-    megállapítás a site-ra, az érintett azonosítókkal és neveikkel; alacsony. Az entitásokat
+    megállapítás a site-ra, az érintett azonosítókkal, a neveikkel és nevenként minden oldallal,
+    ahol a csomópont így szerepel (`urls`); alacsony. Az entitásokat
     ez nem érinti: az azonos azonosítójú csomópontok egy entitást adnak, a nevek aliasok."""
     names: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
     for item in crawl.schema_items(site.con):
@@ -942,7 +943,7 @@ def _schema_id_names(site: _Site) -> list[tuple]:
             if "@type" in node and isinstance(node.get("@id"), str) \
                     and isinstance(node.get("name"), str) and node["name"].strip():
                 names[node["@id"].strip()][node["name"].strip()].add(page["url"])
-    ids = [{"id": ref, "names": [{"name": name, "pages": len(urls), "example": min(urls)}
+    ids = [{"id": ref, "names": [{"name": name, "pages": len(urls), "urls": sorted(urls)}
                                  for name, urls in sorted(
                                      forms.items(), key=lambda kv: (-len(kv[1]), kv[0]))]}
            for ref, forms in sorted(names.items())
@@ -1450,7 +1451,8 @@ def _finding_html(finding: dict) -> str:
     elif finding["type"] == "schema_id_names":
         pairs = [("azonosítók", "<br>".join(
             f"{_e(item['id'])}: " + "; ".join(
-                f"„{_e(n['name'])}” ({n['pages']} oldal, pl. {_link(n['example'])})"
+                f"„{_e(n['name'])}” ({n['pages']} oldal: "
+                + ", ".join(_link(url) for url in n["urls"]) + ")"
                 for n in item["names"]) for item in evidence["ids"]))]
     elif finding["type"] == "legal_page":
         pairs = [("fajta", _e(evidence["label"])),

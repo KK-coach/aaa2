@@ -53,8 +53,8 @@ def test_the_same_id_with_several_names_is_a_finding_about_the_structured_data()
     assert severity == "low"
     assert summary == "a strukturált adatban 1 azonosító (@id) több névvel szerepel"
     assert evidence["ids"] == [{"id": SYSTEM_ID, "names": [
-        {"name": "A növekedési rendszer", "pages": 2, "example": f"{BASE}/"},
-        {"name": "Organikus növekedési rendszer", "pages": 1, "example": f"{BASE}/rendszer/"}]}]
+        {"name": "A növekedési rendszer", "pages": 2, "urls": [f"{BASE}/", f"{BASE}/seo/"]},
+        {"name": "Organikus növekedési rendszer", "pages": 1, "urls": [f"{BASE}/rendszer/"]}]}]
     # a saját oldalán a megállapítás nem keresi a másik nevet: a H1 és a title megnevezi
     assert not [f for f in rows(con, "h1_title_mismatch")
                 if "rendszer" in str(f[2].get("url", "")) or "rendszer" in f[1]]
