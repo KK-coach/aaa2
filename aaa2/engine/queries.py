@@ -134,7 +134,13 @@ def link_targets(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     közül: az `/en/<slug>` más nyelvű oldal, nem a `/<slug>` változata). A rögzített két bolt
     felvételén a szabály minden találata egyezik a bővített cím canonicaljával (napvirág 225,
     serafim 271 cím). Amit a szabály nem fed le (más szegmensű canonical), az feloldatlan
-    marad. A `links` tábla nem változik."""
+    marad. A `links` tábla nem változik.
+
+    A feloldás csak sitemap-módú bejárásnál fut (`completeness`): ott a crawl a linkeket nem
+    követi, a bővített cím ezért nincs bejárva. Linkeket követő bejárásnál a be nem járt belső
+    cél valóban nincs a készletben (a bővített cím oldalát a crawl bejárta volna, a
+    canonicaljával együtt): egy ismeretlen `/blog/consulting` link nem a `/consulting` oldal
+    változata, feloldatlan marad."""
     return _link_targets(con, _stored_links(con))
 
 
@@ -149,6 +155,8 @@ def _languages(con: duckdb.DuckDBPyConnection) -> set[str]:
 
 
 def _link_targets(con: duckdb.DuckDBPyConnection, rows: list[dict]) -> dict[str, int]:
+    if not completeness(con).sitemap_mode:
+        return {}
     slugs: dict[tuple[str, str], list[int]] = {}
     for page in pages(con):
         parts = urlsplit(page.url)
