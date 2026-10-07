@@ -931,10 +931,15 @@ def _legal_pages(site: _Site) -> list[tuple]:
 def _schema_id_names(site: _Site) -> list[tuple]:
     """A site strukturált adatának következetlensége: ugyanaz az azonosító (`@id`) oldalanként
     más névvel szerepel (a kis- és nagybetű, az írásjelek eltérése nem számít). Egy
-    megállapítás a site-ra, az érintett azonosítókkal, a neveikkel és nevenként minden oldallal,
-    ahol a csomópont így szerepel (`urls`); alacsony. Az entitásokat
-    ez nem érinti: az azonos azonosítójú csomópontok egy entitást adnak, a nevek aliasok."""
-    names: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+    megállapítás a site-ra, alacsony. Azonosítónként a nevek az oldal nyelve szerint bontva
+    (`names`: név, nyelv, és minden oldal, ahol a csomópont így szerepel), és két külön jelzés:
+    `several_languages`, ha az azonosító alatt több nyelv oldalain más-más név áll (a két
+    nyelvi alak nem ugyanaz a hiba, mint egy nyelven belül két név); `url_mismatch`, ha a
+    csomópont `url`-je nem mindenütt ugyanarra az oldalra mutat, vagy nem arra, amelyikre az
+    azonosító (`node_urls`: a csomópont `url` értékei). Az entitásokat ez nem érinti: az azonos
+    azonosítójú csomópontok egy entitást adnak, a nevek aliasok."""
+    names: dict[str, dict[tuple[str, str], set[str]]] = defaultdict(lambda: defaultdict(set))
+    targets: dict[str, set[str]] = defaultdict(set)
     for item in crawl.schema_items(site.con):
         page = site.pages.get(item.page_id)
         if page is None:
@@ -942,16 +947,40 @@ def _schema_id_names(site: _Site) -> list[tuple]:
         for node in _walk(item.data):
             if "@type" in node and isinstance(node.get("@id"), str) \
                     and isinstance(node.get("name"), str) and node["name"].strip():
-                names[node["@id"].strip()][node["name"].strip()].add(page["url"])
-    ids = [{"id": ref, "names": [{"name": name, "pages": len(urls), "urls": sorted(urls)}
-                                 for name, urls in sorted(
-                                     forms.items(), key=lambda kv: (-len(kv[1]), kv[0]))]}
-           for ref, forms in sorted(names.items())
-           if len({alias_key(name) for name in forms}) > 1]
+                ref = node["@id"].strip()
+                names[ref][(page["lang"] or "", node["name"].strip())].add(page["url"])
+                if isinstance(node.get("url"), str) and node["url"].strip():
+                    targets[ref].add(node["url"].strip())
+    ids = []
+    for ref, forms in sorted(names.items()):
+        if len({alias_key(name) for _, name in forms}) < 2:
+            continue
+        by_lang: dict[str, set[str]] = defaultdict(set)
+        for lang, name in forms:
+            by_lang[lang].add(alias_key(name))
+        home = canonical_key(ref.split("#", 1)[0])
+        ids.append({
+            "id": ref,
+            "names": [{"name": name, "lang": lang, "pages": len(urls), "urls": sorted(urls)}
+                      for (lang, name), urls in sorted(
+                          forms.items(), key=lambda kv: (kv[0][0], -len(kv[1]), kv[0][1]))],
+            "languages": sorted(by_lang),
+            # egy nyelven belül is több név áll-e (ez a tényleges következetlenség)
+            "within_language": sorted(lang for lang, keys in by_lang.items() if len(keys) > 1),
+            "several_languages": len(by_lang) > 1,
+            "node_urls": sorted(targets[ref]),
+            "url_mismatch": len({canonical_key(url) for url in targets[ref]}) > 1 or any(
+                canonical_key(url) != home for url in targets[ref])})
     if not ids:
         return []
+    several = sum(1 for item in ids if item["several_languages"])
+    mismatch = sum(1 for item in ids if item["url_mismatch"])
+    notes = [text for count, text in (
+        (several, f"{several} alatt több nyelv neve áll"),
+        (mismatch, f"{mismatch} csomópontjának url-je nem a saját oldalára mutat")) if count]
     return [("schema_id_names", "low", None, None,
-             f"a strukturált adatban {len(ids)} azonosító (@id) több névvel szerepel",
+             f"a strukturált adatban {len(ids)} azonosító (@id) több névvel szerepel"
+             + (f" ({'; '.join(notes)})" if notes else ""),
              {"group": "schema_id_names", "ids": ids})]
 
 
@@ -1450,8 +1479,14 @@ def _finding_html(finding: dict) -> str:
         pairs = [("oldalak", "<br>".join(_link(page["url"]) for page in evidence["pages"]))]
     elif finding["type"] == "schema_id_names":
         pairs = [("azonosítók", "<br>".join(
-            f"{_e(item['id'])}: " + "; ".join(
-                f"„{_e(n['name'])}” ({n['pages']} oldal: "
+            f"{_e(item['id'])}"
+            + (" [több nyelv neve áll alatta: " + _e(", ".join(item["languages"])) + "]"
+               if item.get("several_languages") else "")
+            + (" [a csomópont url-je nem a saját oldalára mutat: "
+               + _e(", ".join(item["node_urls"])) + "]" if item.get("url_mismatch") else "")
+            + ": " + "; ".join(
+                (f"{_e(n['lang'])}: " if n.get("lang") else "")
+                + f"„{_e(n['name'])}” ({n['pages']} oldal: "
                 + ", ".join(_link(url) for url in n["urls"]) + ")"
                 for n in item["names"]) for item in evidence["ids"]))]
     elif finding["type"] == "legal_page":

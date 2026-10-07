@@ -51,13 +51,49 @@ def test_the_same_id_with_several_names_is_a_finding_about_the_structured_data()
     build_findings(con)
     ((severity, summary, evidence),) = rows(con, "schema_id_names")
     assert severity == "low"
-    assert summary == "a strukturált adatban 1 azonosító (@id) több névvel szerepel"
-    assert evidence["ids"] == [{"id": SYSTEM_ID, "names": [
-        {"name": "A növekedési rendszer", "pages": 2, "urls": [f"{BASE}/", f"{BASE}/seo/"]},
-        {"name": "Organikus növekedési rendszer", "pages": 1, "urls": [f"{BASE}/rendszer/"]}]}]
+    assert summary == ("a strukturált adatban 1 azonosító (@id) több névvel szerepel (1 "
+                       "csomópontjának url-je nem a saját oldalára mutat)")
+    assert evidence["ids"] == [{
+        "id": SYSTEM_ID,
+        "names": [
+            {"name": "A növekedési rendszer", "lang": "hu", "pages": 2,
+             "urls": [f"{BASE}/", f"{BASE}/seo/"]},
+            {"name": "Organikus növekedési rendszer", "lang": "hu", "pages": 1,
+             "urls": [f"{BASE}/rendszer/"]}],
+        "languages": ["hu"], "within_language": ["hu"], "several_languages": False,
+        # a csomópont url-je a saját oldalán a /rendszer/, máshol a kezdőoldal
+        "node_urls": [f"{BASE}/", f"{BASE}/rendszer/"], "url_mismatch": True}]
     # a saját oldalán a megállapítás nem keresi a másik nevet: a H1 és a title megnevezi
     assert not [f for f in rows(con, "h1_title_mismatch")
                 if "rendszer" in str(f[2].get("url", "")) or "rendszer" in f[1]]
+
+
+def test_names_in_two_languages_under_one_id_are_marked_as_such():
+    # ugyanaz az azonosító a magyar oldalon magyar, az angolon angol néven: ez nem ugyanaz,
+    # mint egy nyelven belül két név; a megállapítás megmarad, a jelzés külön áll
+    def node(name):
+        return ld({"@type": "Service", "@id": f"{BASE}/meres/#service", "name": name,
+                   "url": f"{BASE}/meres/"})
+    con = site({"/": html("Pelda", "<main><h1>Pelda</h1><p>Üdv.</p></main>"),
+                "/meres/": html("Mérés · Pelda", "<main><h1>Mérés</h1><p>Szöveg.</p></main>",
+                                head=node("Mérés")),
+                "/en/": html("Pelda", "<main><h1>Pelda</h1><p>Text.</p></main>", lang="en",
+                             head=node("Measurement"))}, languages=("hu", "en"))
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    build_graph(con)
+    build_findings(con)
+    ((severity, summary, evidence),) = rows(con, "schema_id_names")
+    assert severity == "low"
+    assert summary == ("a strukturált adatban 1 azonosító (@id) több névvel szerepel (1 alatt "
+                       "több nyelv neve áll)")
+    (item,) = evidence["ids"]
+    assert [(n["lang"], n["name"], n["urls"]) for n in item["names"]] == [
+        ("en", "Measurement", [f"{BASE}/en/"]), ("hu", "Mérés", [f"{BASE}/meres/"])]
+    assert (item["languages"], item["within_language"], item["several_languages"]) == (
+        ["en", "hu"], [], True)
+    # a csomópont url-je mindenütt az azonosító oldalára mutat
+    assert (item["node_urls"], item["url_mismatch"]) == ([f"{BASE}/meres/"], False)
 
 
 def test_a_consistent_id_is_not_a_finding():
