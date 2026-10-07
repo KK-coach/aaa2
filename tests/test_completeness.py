@@ -111,7 +111,10 @@ def test_a_missing_legal_page_on_a_partial_crawl_is_marked_unchecked():
 COMPLETE_SCOPED = ("INSERT INTO crawl_runs (started_at, finished_at, max_pages, mode, include, "
                    "exclude, skipped_by_limit) VALUES (current_timestamp, current_timestamp, "
                    "5000, 'links', '', '/kosar/', 0)")
+COMPLETE = COMPLETE_SCOPED.replace("'/kosar/'", "''")
 PARTIAL_RUNS = {
+    # hatókörrel szűkített, egyébként teljes bejárás: a hatókörön kívüli rész nincs bejárva
+    "scope": COMPLETE_SCOPED,
     "limit": "INSERT INTO crawl_runs (started_at, finished_at, max_pages, skipped_by_limit, "
              "stopped) VALUES (current_timestamp, current_timestamp, 5, 3, 'oldalkorlát')",
     "sitemap": "INSERT INTO crawl_runs (started_at, finished_at, max_pages, mode, "
@@ -120,11 +123,21 @@ PARTIAL_RUNS = {
 }
 
 
+def test_a_missing_legal_page_on_a_scoped_crawl_is_marked_unchecked():
+    # site-szintű hiány: a hatókörön kívül lehet ilyen oldal, a hiány nem bizonyított
+    con = stored_site({"/levendula-szappan-100g": product(
+        "Levendula szappan 100g", "/levendula-szappan-100g")})
+    con.execute(COMPLETE_SCOPED)
+    state = queries.completeness(con)
+    assert state.scoped and state.site_partial and not state.partial
+    assert legal_findings(con)["warranty"][2] == "hiányzó jogi oldal: garancia (részleges "                                                  "bejárás: nem ellenőrzött)"
+
+
 def test_a_missing_legal_page_in_sitemap_mode_is_marked_unchecked():
     con = stored_site({"/levendula-szappan-100g": product(
         "Levendula szappan 100g", "/levendula-szappan-100g")})
-    # teljes, linkeket követő bejárás hatókör-szűkítéssel: a hiány tény, nincs jelölés
-    con.execute(COMPLETE_SCOPED)
+    # teljes, linkeket követő bejárás szűkítés nélkül: a hiány tény, nincs jelölés
+    con.execute(COMPLETE)
     assert legal_findings(con)["warranty"][2] == "hiányzó jogi oldal: garancia"
     # sitemap-módban a sitemapen kívüli oldalak nincsenek bejárva: a hiány nem bizonyított
     con.execute("UPDATE crawl_runs SET mode = 'sitemap'")
@@ -138,7 +151,7 @@ def test_uncovered_topic_and_missing_page_stay_facts_on_a_complete_crawl(monkeyp
 
     con, _ = built(monkeypatch)
     before = {kind: rows(con, kind) for kind in ("uncovered_topic", "missing_page")}
-    con.execute(COMPLETE_SCOPED)
+    con.execute(COMPLETE)
     build_findings(con)
     assert {kind: rows(con, kind) for kind in before} == before
 

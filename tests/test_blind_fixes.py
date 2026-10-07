@@ -330,6 +330,8 @@ def crawl_frame(con, mode="links", exclude="", skipped=0):
 @pytest.mark.parametrize(("frame", "url", "target", "expected"), [
     ({}, "/blog/meresi-terv/", "/nincs/", ["not_crawled"]),                    # teljes crawl
     ({"exclude": "/nincs/"}, "/blog/meresi-terv/", "/nincs/", []),             # a keret kizárta
+    # oldalszintű hiány: a célt nem érintő hatókör-szűkítés önmagában nem teszi részlegessé
+    ({"exclude": "/mas/"}, "/blog/meresi-terv/", "/nincs/", ["not_crawled"]),
     ({"mode": "sitemap"}, "/blog/meresi-terv/", "/nincs/", []),                # sitemap-mód
     ({"skipped": 3}, "/blog/meresi-terv/", "/nincs/", []),                     # a korláton megállt
     ({}, "/blog/meresi-terv/", "https://masik.hu/x/", []),                     # más host

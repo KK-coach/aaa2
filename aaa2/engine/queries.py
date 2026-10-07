@@ -297,6 +297,13 @@ class Completeness:
         return self.limited or self.sitemap_mode
 
     @property
+    def site_partial(self) -> bool:
+        """A site egészére vonatkozó hiány (nincs ilyen oldala) nem bizonyított: a bejárás
+        részleges, vagy a hatókör szűkített (a hatókörön kívüli rész nincs bejárva). Egy-egy
+        oldalra vonatkozó megállapításnál a hatókör-szűkítés önmagában nem számít (`partial`)."""
+        return self.partial or self.scoped
+
+    @property
     def complete(self) -> bool:
         return self.crawled and not (self.limited or self.scoped or self.sitemap_mode)
 
