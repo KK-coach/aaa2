@@ -125,7 +125,8 @@ def test_shared_topic_and_cannibalization(monkeypatch):
     assert severity == "medium" and summary.startswith("Mérési terv: lehetséges kannibalizáció: 2 oldal")
     assert evidence["overlaps"] == [{"pages": [f"{BASE}/blog/c/", f"{BASE}/blog/d/"],
                                      "secondary": [], "title_similarity": 0.75,
-                                     "relation": "testvér", "links": "nincs"}]
+                                     "relation": "testvér", "content_links": "nincs",
+                                     "any_link": False}]
     assert title_similarity("A – B C · Pelda", "A – B C · Pelda") == 1.0
     assert title_similarity("Alfa béta", "Gamma delta") == 0.0
     assert findings._parent_child(f"{BASE}/blog/a/", f"{BASE}/blog/a/reszletek/")

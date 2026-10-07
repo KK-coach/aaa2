@@ -31,10 +31,12 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   (`cannibalization`; jelölés, nem ítélet) akkor, ha a fő entitáson túl két oldal másodlagos
   entitásai is átfednek, vagy a title-jük nagyon hasonló (`title_similarity` ≥ `TITLE_SIMILAR`:
   a title szavainak Jaccard-hasonlósága; az utolsó szelet csak akkor marad el, ha a site
-  oldalainak legalább `SUFFIX_SHARE` részén ismétlődik, `common_suffixes`). Minden oldalpárt
-  összevetünk: a testvéroldalakat akkor is, ha van fölöttük témaközpont, és a témaközpontot a
-  gyermekével is; a pár viszonya (`relation`: szülő–gyermek, testvér, más ág) és a köztük lévő
-  belső link iránya (`links`) az átfedés mellett áll. A megállapítás oldallistájában csak az
+  azonos nyelvű oldalainak legalább `SUFFIX_SHARE` részén ismétlődik, `common_suffixes`). Minden
+  oldalpárt összevetünk: a testvéroldalakat akkor is, ha van fölöttük témaközpont, és a
+  témaközpontot a gyermekével is; az átfedés mellett áll a pár viszonya (`relation`:
+  szülő–gyermek, testvér, más ág), a köztük lévő tartalmi (törzsbeli) linkek iránya
+  (`content_links`), és hogy van-e köztük bármilyen belső link, a menüt és a láblécet is
+  számítva (`any_link`). A megállapítás oldallistájában csak az
   átfedésben részt vevő oldalak állnak (a többi darabszáma: `other_pages`). Súlyosság: high, ha
   legalább `HIGH_GROUPS` oldal érintett, különben medium. Ha egy pár sem fed át: közös téma
   (`shared_topic`, low): az oldalak ugyanarról az entitásról szólnak, más-más szögből; itt a
@@ -179,6 +181,7 @@ HIGH_GROUPS = 3
 CONTEXT_SHARE = 0.5                     # az említések ekkora része sablon vagy chrome
 TITLE_SIMILAR = 0.6
 SUFFIX_SHARE = 0.5              # a title utolsó szelete ennyi oldalon ismétlődve site-utótag
+CONTENT_LINK = "body"           # a tartalmi link pozíciója (`Link.position`)
 TITLE_SPLIT = re.compile(r"\s+[-–—|·:]\s+")
 CONJUNCTIONS = frozenset({"and", "es"})
 CUT_MIN_CHARS = 20                      # a levágott title-ben a névnek legalább ennyi jele áll
@@ -496,7 +499,8 @@ def _parent_child(a: str, b: str) -> bool:
 
 def common_suffixes(titles: Iterable[str | None]) -> frozenset[str]:
     """A site-szerte ismétlődő title-utótagok (kulcs alakban): a title utolsó szelete
-    (`TITLE_SPLIT`), ha a címmel bíró oldalak legalább `SUFFIX_SHARE` részén ugyanez áll ott."""
+    (`TITLE_SPLIT`), ha a címmel bíró oldalak legalább `SUFFIX_SHARE` részén ugyanez áll ott.
+    A hívó egy nyelv oldalainak címeit adja át: a más nyelvű oldalak utótagja más lehet."""
     known = [title for title in titles if title]
     counts = Counter(alias_key(pieces[-1]) for pieces in map(TITLE_SPLIT.split, known)
                      if len(pieces) > 1)
@@ -537,9 +541,17 @@ def _shared_topics(site: _Site) -> list[tuple]:
                 or main[0] in site.site_entities:
             continue
         by_entity[(main[0], page["lang"])][page["group"]].append({**page, "confidence": main[2]})
-    suffixes = common_suffixes(page["title"] for page in site.nodes())
-    linked = {(link.from_page_id, link.to_page_id) for link in crawl.links(site.con)
-              if link.to_page_id is not None}
+    titles: dict[str | None, list[str | None]] = defaultdict(list)
+    for page in site.nodes():
+        titles[page["lang"]].append(page["title"])
+    suffixes = {lang: common_suffixes(found) for lang, found in titles.items()}
+    linked: set[tuple[int, int]] = set()
+    in_content: set[tuple[int, int]] = set()
+    for link in crawl.links(site.con):
+        if link.to_page_id is not None:
+            linked.add((link.from_page_id, link.to_page_id))
+            if link.position == CONTENT_LINK:
+                in_content.add((link.from_page_id, link.to_page_id))
     found = []
     for (entity_id, lang), groups in sorted(by_entity.items(),
                                             key=lambda item: (item[0][0], item[0][1] or "")):
@@ -553,15 +565,19 @@ def _shared_topics(site: _Site) -> list[tuple]:
         for first, second in combinations(reps, 2):
             common = sorted(site.name(e) for e in
                             secondary[first["page_id"]] & secondary[second["page_id"]])
-            similarity = round(title_similarity(first["title"], second["title"], suffixes), 2)
+            similarity = round(title_similarity(first["title"], second["title"],
+                                                suffixes[lang]), 2)
             if common or similarity >= TITLE_SIMILAR:
-                there = (first["page_id"], second["page_id"]) in linked
-                back = (second["page_id"], first["page_id"]) in linked
+                pair, reverse = ((first["page_id"], second["page_id"]),
+                                 (second["page_id"], first["page_id"]))
+                there, back = pair in in_content, reverse in in_content
                 overlaps.append({"pages": [first["url"], second["url"]], "secondary": common,
                                  "title_similarity": similarity,
                                  "relation": _relation(first["url"], second["url"]),
-                                 "links": "kölcsönös" if there and back else "első → második"
-                                 if there else "második → első" if back else "nincs"})
+                                 "content_links": "kölcsönös" if there and back
+                                 else "első → második" if there
+                                 else "második → első" if back else "nincs",
+                                 "any_link": pair in linked or reverse in linked})
         involved = {url for overlap in overlaps for url in overlap["pages"]}
         tail = f" ({lang})" if lang else ""
         # közös témánál a gyermek kimarad, ha a szülője is a listában áll
@@ -1379,7 +1395,8 @@ def _finding_html(finding: dict) -> str:
                 f"{_e(' ↔ '.join(o['pages']))}: közös másodlagos: "
                 f"{_e('; '.join(o['secondary']) or '—')}, title-hasonlóság "
                 f"{o['title_similarity']}"
-                + (f", viszony: {_e(o['relation'])}, belső link: {_e(o['links'])}"
+                + (f", viszony: {_e(o['relation'])}, tartalmi link: {_e(o['content_links'])}, "
+                   f"bármilyen belső link: {'van' if o['any_link'] else 'nincs'}"
                    if "relation" in o else "") for o in evidence["overlaps"]))]
     elif finding["type"] in ("missing_page", "uncovered_topic"):
         pairs = [("teendő", _e(evidence["action"])),
