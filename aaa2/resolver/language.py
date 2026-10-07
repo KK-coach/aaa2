@@ -8,7 +8,9 @@ Két entitás akkor olvad össze, ha mind teljesül:
    a saját címe nincs benne: nem pár-tag);
 2. mindkét entitás a saját oldalának fő témája: az oldal kinyerésének első megnevezett fő
    entitása (`primary_entities[0]`), név szerint feloldva (`_Topics`);
-3. a típusuk és az altípusuk azonos;
+3. a típusuk és az altípusuk azonos, és a típus fogalom, szolgáltatás vagy technológia
+   (`PAIR_TYPES`): a termék (minden altípusával) és a mű (cikk, kurzus) nem olvad össze, mert
+   ott a két nyelvi oldal első fő entitása gyakran más-más tétel;
 4. egyik oldal sem kezdőoldal (a csoportnak nincs kezdőoldal tagja) vagy listaoldal
    (`listing.ListShape.list_page`);
 5. mindkét oldalnak van szövegtörzse: legalább egy tartalmi bekezdés (a csupa címsorból álló
@@ -19,7 +21,10 @@ nyelv, majd az oldalszám szerinti első), a neve változatlan; a másik név al
 nyelvével és `hreflang` forrással. Az összevonás a `merge_log`-ba kerül a szabály nevével és a
 két oldal URL-jével. A két oldal külön oldal marad. Nem olvad össze, amit a `merge._mergeable`
 kizár (két más-más oldalhoz kötött entitás, eltérő szint), és az sem, ahol csak a nem megtartott
-entitás van oldalhoz kötve (a kötés elveszne)."""
+entitás van oldalhoz kötve (a kötés elveszne).
+
+Az összevonás megfeleltetés a két nyelvi alak között, következtetésből: a kimenet külön
+fájlban sorolja fel (`queries.language_pair_merges`, `<név>-view-language-pairs.csv`)."""
 from __future__ import annotations
 
 import json
@@ -41,6 +46,7 @@ from aaa2.resolver.overrides import SiteConfig
 from aaa2.resolver.pages import PageInfo, home_urls, page_types
 
 RULE = "language_pair"
+PAIR_TYPES = ("concept", "service", "tech")
 EXCLUDED_FLAGS = ("demo", "navigational")
 
 
@@ -133,7 +139,8 @@ def _language_pairs(ctx: _Context, merger: Merger, config: SiteConfig) -> None:
                     or not (_exists(con, keep) and _exists(con, other)):
                 continue
             kept, gone = topics.entities[keep], topics.entities[other]
-            if (kept[2], kept[3]) != (gone[2], gone[3]) or not _mergeable(rows[keep], rows[other]) \
+            if kept[2] not in PAIR_TYPES or (kept[2], kept[3]) != (gone[2], gone[3]) \
+                    or not _mergeable(rows[keep], rows[other]) \
                     or (rows[other][1] is not None and rows[keep][1] is None):
                 continue
             merger.merge(keep, other, RULE, {

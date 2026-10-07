@@ -65,16 +65,47 @@ def test_the_main_topics_of_a_language_pair_become_one_entity():
         "WHERE pe.entity_id = ? AND p.url LIKE '%/blog/serp/'", [kept]).fetchone() == (2,)
 
 
-@pytest.mark.parametrize("body, merged", [("", 0), ("<p>A pince válogatása.</p>", 1)])
+@pytest.mark.parametrize("body, merged", [("", 0), ("<p>A mérés leírása.</p>", 1)])
 def test_a_page_without_body_text_is_a_list_and_its_first_item_is_not_its_topic(body, merged):
-    # a borlap csupa címsor: a két nyelven más-más bor áll az első helyen; ugyanez az oldalpár
-    # szövegtörzzsel összeolvadna (a szabály 5. feltétele dönt, nem más)
+    # a csupa címsorból álló oldal felsorolás: az első tétele nem az oldal témája; ugyanez az
+    # oldalpár szövegtörzzsel összeolvad (a szabály 5. feltétele dönt, nem más)
+    con = pair_site({
+        "/hu/meres/": page("hu", "Mérés", f"{body}<h3>Webanalitika</h3><h3>Jelentés</h3>"),
+        "/en/measurement/": page("en", "Measurement",
+                                 f"{body}<h3>Web analytics</h3><h3>Reporting</h3>"),
+    }, [{"hu": "/hu/meres/", "en": "/en/measurement/"}])
+    topic(con, "/hu/meres/", "Webanalitika", "concept", "discipline")
+    topic(con, "/en/measurement/", "Web analytics", "concept", "discipline")
+    run_site(con, clock=lambda: NOON)
+    assert len(merges(con)) == merged
+
+
+@pytest.mark.parametrize("body", ["", "<p>A pince válogatása.</p>"])
+def test_the_wine_list_never_merges_its_first_items_even_with_a_paragraph(body):
+    # a borlap két nyelvén más-más bor áll az első helyen: termék nem olvad össze nyelvi
+    # párként akkor sem, ha az oldalnak van bekezdése
     con = pair_site({
         "/hu/borlap/": page("hu", "Borlap", f"{body}<h3>Riserva 2011</h3><h3>Saten</h3>"),
         "/en/wine-list/": page("en", "Wine list", f"{body}<h3>Amarone 2017</h3><h3>Saten</h3>"),
     }, [{"hu": "/hu/borlap/", "en": "/en/wine-list/"}])
     topic(con, "/hu/borlap/", "Riserva 2011", "product", "wine")
     topic(con, "/en/wine-list/", "Amarone 2017", "product", "wine")
+    run_site(con, clock=lambda: NOON)
+    assert merges(con) == []
+
+
+@pytest.mark.parametrize(("kind", "subtype", "merged"), [
+    ("concept", "discipline", 1), ("service", None, 1), ("tech", "software", 1),
+    ("product", None, 0), ("product", "variant", 0), ("work", "article", 0),
+    ("work", "course", 0), ("org", "company", 0)])
+def test_only_concepts_services_and_technologies_merge_as_a_language_pair(kind, subtype,
+                                                                          merged):
+    con = pair_site({
+        "/hu/tema/": page("hu", "Magyar cím", "<p>Magyar megnevezés a témáról.</p>"),
+        "/en/topic/": page("en", "English title", "<p>English naming of the topic.</p>"),
+    }, [{"hu": "/hu/tema/", "en": "/en/topic/"}])
+    topic(con, "/hu/tema/", "Magyar megnevezés", kind, subtype)
+    topic(con, "/en/topic/", "English naming", kind, subtype)
     run_site(con, clock=lambda: NOON)
     assert len(merges(con)) == merged
 
@@ -165,6 +196,13 @@ def test_page_outputs_show_the_name_in_the_language_of_the_page(tmp_path):
         row = next(row for row in out[key] if row["entitás"] == "SERP-figyelő")
         assert row["más nyelvű nevek"] == "en: SERP tracker (hreflang)", key
         assert not any(row["entitás"] == "SERP tracker" for row in out[key]), key
+    # az összevonás a kimenetben is megjelenik, következtetésként, a két oldallal
+    assert out["language_pairs"] == [{
+        "entitás": "SERP-figyelő", "a megtartott név": "SERP-figyelő", "nyelv": "hu",
+        "oldal": f"{BASE}/hu/blog/serp/", "a másik nyelvű név": "SERP tracker",
+        "a másik nyelv": "en", "a másik oldal": f"{BASE}/en/blog/serp/", "típus": "tech",
+        "altípus": "software",
+        "alap": "következtetett: a hreflang-pár két oldalának fő témája (language_pair)"}]
 
 
 def test_other_language_labels_of_a_page_entity_are_listed_but_never_shown(tmp_path):

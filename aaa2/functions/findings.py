@@ -1220,10 +1220,29 @@ def _yes(main: object | None, named: bool) -> str:
     return "" if main is None else "igen" if named else "nem"
 
 
+LANGUAGE_PAIR_COLUMNS = ["entitás", "a megtartott név", "nyelv", "oldal", "a másik nyelvű név",
+                         "a másik nyelv", "a másik oldal", "típus", "altípus", "alap"]
+LANGUAGE_PAIR_BASIS = ("következtetett: a hreflang-pár két oldalának fő témája "
+                       "(language_pair)")
+
+
+def language_pair_rows(site: _Site) -> list[dict]:
+    """A nyelvi összevonások soronként, az összevonások naplójából: melyik két nyelvi alak
+    lett egy entitás, és melyik két oldal alapján. Minden sor következtetés, nem tárolt tény."""
+    return [{"entitás": site.name(merge["entity_id"]) if merge["entity_id"] in site.entities
+             else merge["kept_name"], "a megtartott név": merge["kept_name"],
+             "nyelv": merge["kept_lang"], "oldal": merge["kept_page"],
+             "a másik nyelvű név": merge["removed_name"],
+             "a másik nyelv": merge["removed_lang"], "a másik oldal": merge["removed_page"],
+             "típus": merge["type"] or "", "altípus": merge["subtype"] or "",
+             "alap": LANGUAGE_PAIR_BASIS}
+            for merge in resolver_queries.language_pair_merges(site.con)]
+
+
 def export_views(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str, Path]:
     """A négy nézet CSV-ben (`<név>-view-site.csv`, `-view-entities.csv`, `-view-pages.csv`,
-    `-view-headings.csv`) és egy lenyitható HTML-oldalon (`<név>-views.html`) a
-    megállapításokkal együtt."""
+    `-view-headings.csv`), a nyelvi összevonások listája (`-view-language-pairs.csv`) és egy
+    lenyitható HTML-oldal (`<név>-views.html`) a megállapításokkal együtt."""
     out.mkdir(parents=True, exist_ok=True)
     site = _Site(con)
     overview, neighbourhood, pages = _views(site)
@@ -1243,7 +1262,9 @@ def export_views(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[s
         "headings": _write(out / f"{name}-view-headings.csv",
                            heading_rows(list(trees.values())), [
             "url", "mélység", "szint", "heading", "entitások", "kapcsolat a fő entitáshoz",
-            "szavak", "szavak összesen", "megjegyzés"])}
+            "szavak", "szavak összesen", "megjegyzés"]),
+        "language_pairs": _write(out / f"{name}-view-language-pairs.csv",
+                                 language_pair_rows(site), LANGUAGE_PAIR_COLUMNS)}
     paths["html"] = out / f"{name}-views.html"
     paths["html"].write_text(
         _html(name, _findings(con), site, overview, neighbourhood, pages, trees),
