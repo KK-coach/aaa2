@@ -122,9 +122,10 @@ def test_shared_topic_and_cannibalization(monkeypatch):
     assert severity == "low" and summary.startswith("Adatarchitektúra: 2 oldal közös témája")
     assert [p["url"] for p in evidence["pages"]] == [f"{BASE}/blog/a/", f"{BASE}/blog/b/"]
     ((severity, summary, evidence),) = rows(con, "cannibalization")   # nagyon hasonló title
-    assert severity == "medium" and summary.startswith("Mérési terv: 2 oldal")
+    assert severity == "medium" and summary.startswith("Mérési terv: lehetséges kannibalizáció: 2 oldal")
     assert evidence["overlaps"] == [{"pages": [f"{BASE}/blog/c/", f"{BASE}/blog/d/"],
-                                     "secondary": [], "title_similarity": 0.75}]
+                                     "secondary": [], "title_similarity": 0.75,
+                                     "relation": "testvér", "links": "nincs"}]
     assert title_similarity("A – B C · Pelda", "A – B C · Pelda") == 1.0
     assert title_similarity("Alfa béta", "Gamma delta") == 0.0
     assert findings._parent_child(f"{BASE}/blog/a/", f"{BASE}/blog/a/reszletek/")
@@ -229,7 +230,7 @@ def test_views_and_findings_export(monkeypatch, tmp_path):
     with path.open(encoding="utf-8-sig", newline="") as handle:
         exported = list(csv.DictReader(handle))
     assert {r["típus"] for r in exported} == {
-        "H1/title-eltérés", "Kannibalizáció", "Közös téma", "Hiányzó oldal", "Lefedetlen téma",
+        "H1/title-eltérés", "Lehetséges kannibalizáció", "Közös téma", "Hiányzó oldal", "Lefedetlen téma",
         "Nem egyértelmű téma"}
     grouped = next(r for r in exported if "2 ajánlatoldal" in r["összefoglaló"])
     assert grouped["oldalak"] == f"{BASE}/geo/ | {BASE}/ux/"
@@ -240,7 +241,7 @@ def test_views_and_findings_export(monkeypatch, tmp_path):
     assert pages[f"{BASE}/ux/"]["a title-ben"] == "igen"
     assert "H1/title-eltérés" in pages[f"{BASE}/ux/"]["megállapítások"]
     assert "Közös téma" in pages[f"{BASE}/blog/a/"]["megállapítások"]
-    assert "Kannibalizáció" in pages[f"{BASE}/blog/c/"]["megállapítások"]
+    assert "Lehetséges kannibalizáció" in pages[f"{BASE}/blog/c/"]["megállapítások"]
     with paths["entities"].open(encoding="utf-8-sig", newline="") as handle:
         entities = {r["entitás"]: r for r in csv.DictReader(handle)}
     assert f"{BASE}/blog/a/" in entities["Adatarchitektúra"]["fő oldalak"]
