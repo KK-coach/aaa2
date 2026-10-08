@@ -40,7 +40,7 @@
       "type": "string"
     },
     "schema_version": {
-      "default": "1.14",
+      "default": "1.16",
       "title": "Schema Version",
       "type": "string"
     }
@@ -55,5 +55,5 @@
   "title": "MainEntity",
   "type": "object",
   "x-module": "graph",
-  "x-schema-version": "1.14"
+  "x-schema-version": "1.16"
 }

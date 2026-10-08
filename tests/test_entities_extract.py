@@ -903,3 +903,83 @@ def test_legacy_blocks_are_adopted_without_rebuilding():
     assert build_blocks(con) == 0
     assert con.execute("SELECT block_id FROM blocks ORDER BY block_id").fetchall() == before
     assert con.execute("SELECT count(*) FROM blocks_built").fetchone() == (6,)
+
+
+# ---------------------------------------------------------------------------
+# a szomszéd blokkra mutató azonosító
+# ---------------------------------------------------------------------------
+
+def test_a_mention_pointing_at_the_neighbouring_block_is_moved_and_marked(tmp_path):
+    con = one_page()
+    client, _ = client_for(con, [reply(
+        mention("b2", "Példa Kávézó", "Példa Kávézó", "org"),
+        mention("b3", "Kiss Anna", "Kiss Anna", "person"),      # a címsor alatti bekezdésben áll
+        mention("b4", "Csapat", "Csapat", "concept"),           # a bekezdés fölötti címsorban áll
+        mention("b3", "Budapest", "Budapest", "place"),         # mindkét szomszédban megvan
+        mention("b1", "Kiss Anna", "Kiss Anna", "person"),      # egyik szomszédban sincs
+    )], tmp_path)
+    run = run_llm(con, client)
+    assert (run.rows, run.fabricated) == (3, 2)
+    assert con.execute(
+        "SELECT e.name, b.ordinal, pe.position, pe.block_corrected, pe.block_given "
+        "FROM page_entities pe JOIN entities e USING (entity_id) JOIN blocks b USING (block_id) "
+        "ORDER BY b.ordinal").fetchall() == [
+        ("Példa Kávézó", 2, "body", None, None),
+        ("Csapat", 3, "heading", "-1", "b4"),
+        ("Kiss Anna", 4, "body", "+1", "b3")]
+    # a tárolt rekord a modell eredeti azonosítóját őrzi
+    (extraction,) = con.execute("SELECT extraction FROM entity_run_pages").fetchone()
+    assert [e["block_id"] for e in json.loads(extraction)["entities"]] == [
+        "b2", "b3", "b4", "b3", "b1"]
+
+
+def test_place_accepts_exactly_one_neighbour():
+    from aaa2.entities.blocks import place
+
+    blocks = [{"id": f"b{n}", "text": text} for n, text in enumerate(
+        ["Cím", "Meta és Google", "Mindkét platform", "Meta újra"])]
+    index = {block["id"]: at for at, block in enumerate(blocks)}
+
+    def has(word):
+        return lambda block: word in block["text"]
+
+    assert place("b1", blocks, index, has("Google")) == (blocks[1], None)
+    assert place("b2", blocks, index, has("Google")) == (blocks[1], "-1")
+    assert place("b0", blocks, index, has("Google")) == (blocks[1], "+1")
+    assert place("b2", blocks, index, has("Meta")) is None          # mindkét szomszédban
+    assert place("b3", blocks, index, has("Google")) is None        # két blokkal arrébb
+    assert place("b9", blocks, index, has("Google")) is None        # ismeretlen azonosító
+    assert place(None, blocks, index, has("Google")) is None
+
+
+def test_a_corrected_service_without_a_decision_stays_dropped():
+    from aaa2.entities.extract import _placed
+    from aaa2.entities.gate import soft_items
+
+    blocks = [{"id": "b0", "kind": "heading", "text": "Jogi marketing"},
+              {"id": "b1", "kind": "paragraph", "text": "Szöveg a szolgáltatásról."}]
+    index = {"b0": 0, "b1": 1}
+    raw = mention("b1", "Jogi marketing", "Jogi marketing", "service")
+    # a rekord nem ment át a kinyerés utáni lépésen: javítható
+    assert _placed(raw, {}, blocks, index, None)[2] == "-1"
+    # átment, és a tételről van döntés: javítható; nincs döntés: eldobva marad
+    assert _placed(raw, {}, blocks, index, {"jogi marketing"})[2] == "-1"
+    assert _placed(raw, {}, blocks, index, set()) is None
+    assert _placed({**raw, "type": "concept"}, {}, blocks, index, set())[2] == "-1"
+    # a kinyerés utáni lépés a javított blokkal látja a tételt
+    (item,) = soft_items([raw], {block["id"]: block for block in blocks})
+    assert item.blocks == ["b0"] and item.mentions[0]["block_corrected"] == "-1" \
+        and item.mentions[0]["block_given"] == "b1"
+
+
+def test_the_mark_goes_only_on_a_mention_that_the_correction_alone_gave(tmp_path):
+    con = one_page()
+    client, _ = client_for(con, [reply(
+        mention("b2", "Példa Kávézó", "Példa Kávézó", "org"),
+        mention("b3", "Kiss Anna", "Kiss Anna", "person"),      # javítva a b4-re
+        mention("b4", "Kiss Anna", "Kiss Anna", "person"),      # ugyanaz az említés, helyes blokkal
+    )], tmp_path)
+    run = run_llm(con, client)
+    assert (run.rows, run.fabricated) == (2, 0)
+    assert con.execute("SELECT count(*) FROM page_entities WHERE block_corrected IS NOT NULL"
+                       ).fetchone() == (0,)

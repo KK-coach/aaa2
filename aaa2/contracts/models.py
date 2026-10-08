@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.14"
+SCHEMA_VERSION = "1.16"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -278,7 +278,10 @@ class MentionSource(Contract):
 
 
 class Mention(Contract):
-    """Egy entitás egy említése egy oldalon (`page_entities`), a forrásaival."""
+    """Egy entitás egy említése egy oldalon (`page_entities`), a forrásaival.
+    `block_corrected`: a kinyerés a szomszéd blokkra javította a modell azonosítóját („-1”: az
+    előző, „+1”: a következő blokk; None: nem volt javítás); `block_given`: a modell eredeti
+    blokkazonosítója a javított említésnél."""
 
     module: ClassVar[str] = "extract"
     mention_id: int
@@ -292,6 +295,8 @@ class Mention(Contract):
     description: str | None = None
     context: str | None = None
     flags: list[str] = Field(default_factory=list)
+    block_corrected: str | None = None
+    block_given: str | None = None
     sources: list[MentionSource] = Field(default_factory=list)
 
     @field_validator("flags", mode="before")

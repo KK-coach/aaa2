@@ -30,7 +30,7 @@ def test_defaults():
         "claude-opus-5-5", "gpt-6-luna", "gemini-3.8-flash"]
     assert providers["openai"].models == ("gpt-6-luna", "gpt-5.6-terra", "gpt-6-sol")
     assert providers["anthropic"].models == (
-        "claude-opus-5-5", "claude-sonnet-5", "claude-haiku-4-5-20251001")
+        "claude-opus-5-5", "claude-sonnet-5", "claude-haiku-4-5-20251001", "claude-haiku-5-5")
     assert providers["gemini"].thinking_level == "low"
     assert [(p.budget_usd, p.stop_usd) for p in providers.values()] == [
         (10.0, 10.0), (10.0, 9.5), (5.0, 4.0)]
@@ -123,7 +123,8 @@ def test_invalid_config_is_refused(tmp_path, old, new, message):
 
 def test_every_price_row_names_its_source():
     assert all(p.source.startswith("https://")
-               and p.checked in (date(2026, 9, 26), date(2026, 9, 27)) for p in CONFIG.prices)
+               and p.checked in (date(2026, 9, 26), date(2026, 9, 27), date(2026, 10, 8))
+               for p in CONFIG.prices)
 
 
 @pytest.mark.parametrize(("model", "rates"), [
@@ -230,3 +231,64 @@ def test_key_sources_name_the_key_set_without_its_value(tmp_path):
     assert own == [
         f"LLM-kulcs: anthropic: {config.providers['anthropic'].key_env} (alapkulcs)",
         "LLM-kulcs: openai: OPENAI_API_KEY_X (a site-fájl kulcsa), projekt proj_x"]
+
+
+def test_haiku_5_5_is_priced_by_prompt_length():
+    day = date(2026, 10, 8)
+    short = Usage(input=90_000, cached_input=10_000, output=10_000)       # 100 000: még rövid
+    long = Usage(input=90_001, cached_input=10_000, output=10_000, cache_write=1_000)
+    assert CONFIG.cost_usd("claude-haiku-5-5", short, day) == pytest.approx(
+        (90_000 * 0.10 + 10_000 * 0.01 + 10_000 * 0.50) / 1e6)
+    assert CONFIG.cost_usd("claude-haiku-5-5", long, day) == pytest.approx(
+        (90_001 * 0.50 + 10_000 * 0.05 + 1_000 * 0.625 + 10_000 * 2.50) / 1e6)
+    assert "claude-haiku-5-5" in CONFIG.providers["anthropic"].alternatives
+    assert CONFIG.providers["anthropic"].model == "claude-opus-5-5"       # a pipeline nem változik
+
+
+def test_request_options_default_to_nothing_and_can_be_set_per_model(tmp_path):
+    from aaa2.llm.config import CONFIG_PATH, load_config
+
+    assert CONFIG.providers["anthropic"].options("claude-haiku-5-5") == {}
+    text = CONFIG_PATH.read_text(encoding="utf-8").replace(
+        '[anthropic]\n', '[anthropic]\neffort = "high"\n', 1) + (
+        '\n[anthropic.model_options."claude-haiku-5-5"]\neffort = "low"\n'
+        'thinking = "disabled"\n')
+    path = tmp_path / "models.toml"
+    path.write_text(text, encoding="utf-8")
+    provider = load_config(path).providers["anthropic"]
+    assert provider.options("claude-opus-5-5") == {"effort": "high"}
+    assert provider.options("claude-haiku-5-5") == {"effort": "low", "thinking": "disabled"}
+
+
+@pytest.mark.parametrize("addition, message", [
+    ('\n[anthropic.model_options."claude-haiku-5-5"]\neffort = "tiny"\n', "effort = 'tiny'"),
+    ('\n[anthropic.model_options."claude-haiku-5-5"]\ntemperature = "0"\n', "temperature"),
+    ('\n[anthropic.model_options."claude-haiku-9"]\neffort = "low"\n', "claude-haiku-9"),
+    (('\n[anthropic.model_options."claude-haiku-5-5"]\neffort = "xhigh"\n'
+     'thinking = "disabled"\n'), "thinking = 'disabled' nem érvényes effort = 'xhigh'"),
+    (('\n[anthropic.model_options."claude-haiku-5-5"]\neffort = "max"\n'
+     'thinking = "disabled"\n'), "thinking = 'disabled' nem érvényes effort = 'max'"),
+])
+def test_invalid_request_options_are_refused(tmp_path, addition, message):
+    from aaa2.llm.config import CONFIG_PATH, load_config
+
+    path = tmp_path / "models.toml"
+    path.write_text(CONFIG_PATH.read_text(encoding="utf-8") + addition, encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        load_config(path)
+
+
+def test_disabled_thinking_is_refused_with_an_effort_inherited_from_the_provider(tmp_path):
+    from aaa2.llm.config import CONFIG_PATH, load_config
+
+    text = CONFIG_PATH.read_text(encoding="utf-8").replace(
+        '[anthropic]\n', '[anthropic]\neffort = "max"\n', 1)
+    path = tmp_path / "models.toml"
+    path.write_text(text + '\n[anthropic.model_options."claude-haiku-5-5"]\n'
+                    'thinking = "disabled"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="claude-haiku-5-5: thinking = 'disabled' nem érvényes"):
+        load_config(path)
+    path.write_text(text + '\n[anthropic.model_options."claude-haiku-5-5"]\n'
+                    'effort = "high"\nthinking = "disabled"\n', encoding="utf-8")
+    assert load_config(path).providers["anthropic"].options("claude-haiku-5-5") == {
+        "effort": "high", "thinking": "disabled"}
