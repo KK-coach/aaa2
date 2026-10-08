@@ -63,13 +63,21 @@ class AnthropicAdapter:
 
     def call(self, model: str, schema: type[BaseModel], prompt: str, input: str,
              max_output_tokens: int | None = None) -> Reply:
+        # az effort és a thinking csak akkor megy a kérésbe, ha a konfig megadja (különben a
+        # modell alapértéke él); mintavételi paramétert (temperature, top_p, top_k) nem küldünk
+        options = self.config.options(model)
+        output_config: dict = {"format": {"type": "json_schema",
+                                          "schema": anthropic.transform_schema(schema)}}
+        if "effort" in options:
+            output_config["effort"] = options["effort"]
+        extra = {"thinking": {"type": options["thinking"]}} if "thinking" in options else {}
         message = self.client.messages.create(
             model=model,
             max_tokens=max_output_tokens or self.config.max_output_tokens,
             system=prompt,
             messages=[{"role": "user", "content": input}],
-            output_config={"format": {"type": "json_schema",
-                                      "schema": anthropic.transform_schema(schema)}},
+            output_config=output_config,
+            **extra,
         )
         text = "".join(block.text for block in message.content if block.type == "text")
         usage = message.usage

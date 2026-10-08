@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import tomllib
+from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
 from datetime import date
 from itertools import pairwise
@@ -11,6 +12,9 @@ from aaa2.core.site_files import SITES_DIR
 
 CONFIG_PATH = Path(__file__).with_name("models.toml")
 PROVIDERS = ("anthropic", "openai", "gemini")
+# a kérés elhagyható beállításai és megengedett értékeik (lásd a models.toml fejét)
+REQUEST_OPTIONS = {"effort": ("low", "medium", "high", "xhigh", "max"),
+                   "thinking": ("adaptive", "disabled")}
 
 
 class PriceError(ValueError):
@@ -79,10 +83,22 @@ class ProviderConfig:
     use_fallback: bool = False
     thinking_level: str | None = None
     alternatives: tuple[str, ...] = ()     # kérésre hívható további modellek (összevetéshez)
+    effort: str | None = None              # `output_config.effort`; None: az adapter nem küldi
+    thinking: str | None = None            # a `thinking` típusa; None: az adapter nem küldi
+    # modellenkénti felülírás: modell → {effort, thinking}
+    model_options: Mapping[str, Mapping[str, str]] = field(default_factory=dict)
 
     @property
     def active_model(self) -> str:
         return self.fallback if self.use_fallback and self.fallback else self.model
+
+    def options(self, model: str) -> dict[str, str]:
+        """A modell kérés-beállításai (`effort`, `thinking`): a szolgáltató szintű érték, a
+        modell saját értékével felülírva; ami nincs megadva, az kimarad."""
+        found = {key: value for key, value in (("effort", self.effort),
+                                               ("thinking", self.thinking)) if value}
+        found.update(self.model_options.get(model, {}))
+        return found
 
     @property
     def models(self) -> tuple[str, ...]:
@@ -175,6 +191,20 @@ def load_config(path: Path = CONFIG_PATH) -> LLMConfig:
             raise ValueError(f"{path.name} [{name}]: ismeretlen kulcs: {', '.join(extra)}")
         section["alternatives"] = tuple(section.get("alternatives", ()))
         provider = ProviderConfig(name=name, **section)
+        for where, found in ((name, {k: section[k] for k in REQUEST_OPTIONS if k in section}),
+                             *((f"{name}.model_options.{model}", dict(found))
+                               for model, found in provider.model_options.items())):
+            extra = sorted(set(found) - set(REQUEST_OPTIONS))
+            if extra:
+                raise ValueError(f"{path.name} [{where}]: ismeretlen kulcs: {', '.join(extra)}")
+            for key, value in found.items():
+                if value not in REQUEST_OPTIONS[key]:
+                    raise ValueError(f"{path.name} [{where}]: {key} = {value!r}; lehet: "
+                                     f"{', '.join(REQUEST_OPTIONS[key])}")
+        strangers = sorted(set(provider.model_options) - set(provider.models))
+        if strangers:
+            raise ValueError(f"{path.name} [{name}.model_options]: nem konfigurált modell: "
+                             f"{', '.join(strangers)}")
         if not 0 < provider.stop_usd <= provider.budget_usd:
             raise ValueError(f"[{name}]: a leállási küszöb 0 és a keret közé esik")
         if provider.use_fallback and not provider.fallback:
