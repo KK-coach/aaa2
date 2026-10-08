@@ -171,7 +171,11 @@ def test_site_facts_are_key_value_rows_and_missing_values_stay_empty():
     assert facts["nyelvek"] == "hu" and facts["célország"] == "HU"
     assert facts["célország megbízhatósága"] == "medium"
     assert facts["piaci hatókör"] == "local (Budapest)"
-    assert facts["technológia"] == "" and facts["technológiai jelek"] == "generator:WordPress 7"
+    # a technológia a tárolt jelekből áll elő, ha a mező üres
+    assert facts["technológia"] == "WordPress 7" \
+        and facts["technológia: forrás"] == "a tárolt jelekből felismert" \
+        and facts["technológiai jelek"] == "generator:WordPress 7"
+    assert facts["nem HTML válaszok száma"] == 0 and facts["nem HTML válasz hibás státusszal"] == 0
     assert facts["HTTPS-átirányítás"] == "igen (301)" and facts["záró perjel"] == "igen"
     assert facts["robots.txt státusz"] == 200 and facts["robots.txt"] == "User-agent: *"
     assert facts["oldalak száma"] == 3 and facts["oldalak státusz szerint: 200"] == 3
@@ -185,7 +189,8 @@ def test_page_facts_and_the_page_view_columns(tmp_path):
         "státusz": 200, "végső URL": f"{BASE}/meres/", "meta description": "A mérésről szól.",
         "noindex": "nem", "szószám": 42, "külső linkek": 3,
         "hreflang": "hu|https://pelda.hu/meres/ | en|https://pelda.hu/en/measurement/",
-        "bejövő belső linkek": 2, "hivatkozó oldalak": 1, "kimenő belső linkek": 3}
+        "bejövő belső linkek": 2, "hivatkozó oldalak": 1, "kimenő belső linkek": 3,
+        "önlinkek": 0, "csak sitemapből ismert": ""}
     # a kezdőoldalról három link megy ki (kettő a mérésre, egy a hiányzó oldalra)
     assert facts[ids[f"{BASE}/"]]["kimenő belső linkek"] == 3
     # a kategóriaúttal bővített címen érkező két link a készletbeli oldalé, egy forrásoldalról
@@ -207,3 +212,56 @@ def test_page_facts_and_the_page_view_columns(tmp_path):
         "pelda-view-structured-data.csv"]
     with paths["site_facts"].open(encoding="utf-8-sig", newline="") as handle:
         assert next(csv.reader(handle)) == ["tény", "érték"]
+
+
+def test_non_html_responses_are_counted_apart_from_failed_pages():
+    con = facts_site()
+    ids = [page_id for (page_id,) in con.execute("SELECT page_id FROM pages ORDER BY page_id"
+                                                 ).fetchall()]
+    con.execute("UPDATE pages SET error = 'non_html: image/webp' WHERE page_id = ?", [ids[0]])
+    con.execute("UPDATE pages SET error = 'non_html: application/pdf; charset=x', status = 404 "
+                "WHERE page_id = ?", [ids[1]])
+    facts = {row["tény"]: row["érték"] for row in site_fact_rows(con)}
+    assert facts["nem HTML válaszok száma"] == 2
+    assert facts["nem HTML válasz: image/webp"] == 1
+    assert facts["nem HTML válasz: application/pdf"] == 1
+    assert facts["nem HTML válasz hibás státusszal"] == 1
+    assert facts.get("crawl: hibás oldal", 0) == 0          # a nem HTML válasz nem hibás oldal
+
+
+def test_target_country_text_and_tech_from_signals():
+    from aaa2.engine.tech import tech_from_signals
+    from aaa2.functions.facts import target_country_text
+
+    assert target_country_text("HU", []) == "HU"
+    assert target_country_text(None, []) == "nincs jel"
+    assert target_country_text(None, [
+        {"country": "GB", "score": 0.5, "signals": ["og_locale"]},
+        {"country": "HU", "score": 0.5, "signals": ["currency"]}]) == (
+        "nem eldönthető (GB 0.5: og_locale; HU 0.5: currency)")
+    assert tech_from_signals([
+        "generator:WordPress 7.1.2", "generator:Egyedi téma v.1", "path:/wp-includes/",
+        "path:/wp-content/themes/Divi/", "path:/wp-content/plugins/contact-form-7/",
+        "script:www.googletagmanager.com", "script:pelda.cdn.shoprenter.hu",
+        "script:ismeretlen.example", "dom:ng-version=22.0.2"]) == [
+        "Angular 22.0.2", "Google Tag Manager", "Shoprenter", "WordPress 7.1.2",
+        "WordPress bővítmény: contact-form-7", "WordPress téma: Divi"]
+    assert tech_from_signals(["path:/_astro/"]) == ["Astro"]
+    assert tech_from_signals([]) == [] and tech_from_signals(None) == []
+
+
+def test_self_links_and_sitemap_only_pages():
+    con = facts_site()
+    ids = dict(con.execute("SELECT url, page_id FROM pages").fetchall())
+    meres = ids[f"{BASE}/meres/"]
+    con.execute("INSERT INTO links (from_page_id, to_url, to_page_id, anchor, position, "
+                "nofollow, ordinal) VALUES (?, ?, ?, 'ide', 'body', false, 900)",
+                [meres, f"{BASE}/meres/", meres])
+    con.execute("DELETE FROM links WHERE to_page_id = ? AND from_page_id <> ?", [meres, meres])
+    con.execute("INSERT INTO sitemap_urls (snapshot, ordinal, raw_url, url, internal, source) "
+                "VALUES ('crawl', 1, ?, ?, true, 'default')",
+                [f"{BASE}/meres/", f"{BASE}/meres/"])
+    facts = page_facts(con)
+    assert (facts[meres]["önlinkek"], facts[meres]["bejövő belső linkek"]) == (1, 0)
+    assert facts[meres]["csak sitemapből ismert"] == "igen"
+    assert facts[ids[f"{BASE}/"]]["csak sitemapből ismert"] == "nem"

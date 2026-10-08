@@ -116,8 +116,17 @@ def test_candidate_only_where_neither_title_nor_visible_title_names_the_main_ent
     found = candidates(con)
     # a cím nem nevezi meg: cikk; a ragozott alak megnevezés; a „Meta” a „Meta Ads”-ben nem az
     assert {path: page["case"] for path, page in found.items()} == {
-        "/blog/gorbe/": "neither", "/blog/hirdetes/": "neither",
+        "/blog/gorbe/": "no_entity", "/blog/hirdetes/": "other_entity",
         "/blog/konyha/": "title_only"}
+    # a cím más entitást nevez meg: a hosszabb nevűt, nem a benne álló rövidebbet
+    ads = found["/blog/hirdetes/"]
+    assert [(t["entity"], t["type"], t["in"]) for t in ads["title_entities"]] == [
+        ("Meta Ads", "tech", ["title", "látható cím"])]
+    assert found["/blog/gorbe/"]["title_entities"] == []
+    summaries = {s for (s,) in con.execute(
+        "SELECT summary FROM findings WHERE type = 'title_without_main_entity'").fetchall()}
+    assert "a cím ezt nevezi meg: Meta Ads; a fő entitás: Meta" in summaries
+    assert "a cím nem nevez meg entitást; a fő entitás: Keresőoptimalizálás" in summaries
     gorbe = found["/blog/gorbe/"]
     assert gorbe["main_entity"] == "Keresőoptimalizálás" and not gorbe["in_title"] \
         and gorbe["article_basis"] == "cikkoldal (szerep)" \
@@ -144,7 +153,7 @@ def test_candidate_only_where_neither_title_nor_visible_title_names_the_main_ent
     severities = {s for (s,) in con.execute(
         "SELECT severity FROM findings WHERE type = 'title_without_main_entity'").fetchall()}
     assert severities == {"low"}
-    assert run.by_type()["title_without_main_entity"] == 2      # két cikk egy megállapításban
+    assert run.by_type()["title_without_main_entity"] == 3
 
 
 def test_title_fields_in_the_page_view(tmp_path):
@@ -188,3 +197,11 @@ def test_title_fields_in_the_page_view(tmp_path):
         f"@id {BASE}/#jogi (nevei: Jogi marketing | Jogi marketing szolgáltatás)")
     assert rows["/blog/olaj/"]["az about és a fő entitás"] == "nem oldható fel"
     assert "A cím nem nevezi meg a fő entitást" in rows["/blog/gorbe/"]["megállapítások"]
+    # a szerep és a jelölés: az ajánlatoldal saját Service csomóponttal nem ellentmondás
+    assert rows["/szolgaltatas/"]["schema típusok"] == "Service" \
+        and rows["/szolgaltatas/"]["szerep és jelölés"] == ""
+    assert findings.role_markup_note("offer", ["Article", "WebPage"]) == (
+        "a szerep ajánlatoldal, a jelölés cikk (Article)")
+    assert findings.role_markup_note("article", ["Service"]) == (
+        "a szerep cikkoldal, a jelölés Service")
+    assert findings.role_markup_note("article", ["BlogPosting"]) is None
