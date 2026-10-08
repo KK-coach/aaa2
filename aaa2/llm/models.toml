@@ -5,6 +5,10 @@
 # költségére vonatkozik (data/llm_ledger.jsonl, minden site-ról); e fölött az adapter nem hív.
 # `alternatives`: kérésre hívható további modellek (összevetéshez); áruk kötelező, a keretbe
 # beszámítanak.
+# `effort`, `thinking` (elhagyható; ma az Anthropic-adapter küldi): az `effort` a kérés
+# `output_config.effort` mezője (low / medium / high / xhigh / max), a `thinking` a `thinking`
+# mező típusa (adaptive / disabled). Ha nincs megadva, az adapter nem küldi, a modell alapértéke
+# él. Modellenként felülírható: `[<szolgáltató>.model_options."<modell>"]`.
 #
 # Árak: USD / 1M token, standard feldolgozás. A hívás napja (UTC) választja ki a sort. A kliens
 # nem kér prompt-gyorsítótárat; az automatikus gyorsítótár olvasása (OpenAI, Gemini) és írása
@@ -21,7 +25,7 @@ verify = "gpt-6-sol"           # a saját ajánlatok (service) ellenőrzése (en
 
 [anthropic]
 model = "claude-opus-5-5"
-alternatives = ["claude-sonnet-5", "claude-haiku-4-5-20251001"]
+alternatives = ["claude-sonnet-5", "claude-haiku-4-5-20251001", "claude-haiku-5-5"]
 key_env = "ANTHROPIC_API_KEY"
 max_output_tokens = 16000
 budget_usd = 10.0
@@ -46,7 +50,10 @@ budget_usd = 5.0
 stop_usd = 4.0
 
 # --- Anthropic ---------------------------------------------------------------------------------
-# 1M kontextusig egységes ár. Gyorsítótár-írás: az 5 perces ár.
+# Az Opus és a Sonnet ára 1M kontextusig egységes; a Haiku 5.5 a prompt hossza szerint áraz
+# (100K bemeneti token felett a teljes kérés a magasabb áron). Gyorsítótár-írás: az 5 perces
+# ár; az 1 órás írás ára (Haiku 5.5: $0.20, 100K felett $1.00) szándékosan nincs felvéve, mert a
+# kliens nem kér prompt-gyorsítótárat.
 
 [[prices]]
 model = "claude-opus-5-5"
@@ -74,6 +81,25 @@ cache_write = 1.25
 output = 5.00
 source = "https://platform.claude.com/docs/en/about-claude/pricing"
 checked = 2026-09-27
+
+# A Haiku 5.5 alapból adaptívan gondolkodik (az effort alapértéke medium); a gondolkodási
+# tokenek kimeneti áron számolnak, és a `max_tokens`-be beleszámítanak. Az új tokenizáló
+# ugyanarra a szövegre kb. 30%-kal több tokent ad, mint a Haiku 4.5-é.
+[[prices]]
+model = "claude-haiku-5-5"
+input = 0.10
+cached_input = 0.01
+cache_write = 0.125
+output = 0.50
+source = "https://platform.claude.com/docs/en/about-claude/pricing"
+checked = 2026-10-08
+
+[prices.long_context]
+above_input_tokens = 100000
+input = 0.50
+cached_input = 0.05
+cache_write = 0.625
+output = 2.50
 
 # --- OpenAI ------------------------------------------------------------------------------------
 # 272K bemeneti token felett a teljes kérés a hosszú-kontextus áron.

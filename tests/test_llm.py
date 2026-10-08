@@ -462,7 +462,7 @@ def test_check_models_against_provider_lists(api, env, tmp_path, monkeypatch):
                                                base_urls=dict.fromkeys(PROVIDERS, api.base))}
     assert {m: c.found for m, c in checks.items()} == {
         "claude-opus-5-5": True, "claude-sonnet-5": True, "claude-haiku-4-5-20251001": False,
-        "gpt-6-luna": True, "gpt-5.6-terra": False, "gpt-6-sol": False,
+        "claude-haiku-5-5": False, "gpt-6-luna": True, "gpt-5.6-terra": False, "gpt-6-sol": False,
         "gemini-3.8-flash": True}
     assert checks["gemini-3.8-flash"].note == "2 modell a listán"
     api.replies["openai-models"] = (200, {"object": "list", "data": [
@@ -528,3 +528,31 @@ def test_duckdb_rejects_unknown_call_id(con):
     with pytest.raises(duckdb.ConstraintException, match="foreign key"):
         con.execute("INSERT INTO mention_sources (mention_id, source, run_id, llm_call_id) "
                     "VALUES (1, 'llm', 1, 99)")
+
+
+def test_anthropic_effort_and_thinking_are_sent_only_when_configured(con, api, env, ledger_path):
+    from dataclasses import replace
+
+    from aaa2.llm.config import load_config
+
+    def body_with(options):
+        config = load_config()
+        own = replace(config.providers["anthropic"],
+                      model_options={"claude-haiku-5-5": options} if options else {})
+        clients, _ = open_clients(
+            con, config=replace(config, providers={**config.providers, "anthropic": own}),
+            env_file=env, ledger_path=ledger_path, base_urls=dict.fromkeys(PROVIDERS, api.base),
+            clock=lambda: NOON, retry=Retry(sleep=lambda _: None),
+            models={"anthropic": "claude-haiku-5-5"})
+        clients["anthropic"].extract(PageEntities, "UTASÍTÁS", "OLDAL", domain="entity")
+        return [body for route, _, body in api.requests if route == "anthropic"][-1]
+
+    plain = body_with({})
+    assert plain["model"] == "claude-haiku-5-5"
+    assert set(plain["output_config"]) == {"format"} and "thinking" not in plain
+    assert not {"temperature", "top_p", "top_k"} & set(plain)
+    low = body_with({"effort": "low"})
+    assert low["output_config"]["effort"] == "low" and "thinking" not in low
+    assert low["output_config"]["format"]["type"] == "json_schema"
+    off = body_with({"effort": "low", "thinking": "disabled"})
+    assert off["output_config"]["effort"] == "low" and off["thinking"] == {"type": "disabled"}
