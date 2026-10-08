@@ -25,7 +25,7 @@
           "type": "integer"
         },
         "schema_version": {
-          "default": "1.13",
+          "default": "1.14",
           "title": "Schema Version",
           "type": "string"
         },
@@ -49,8 +49,32 @@
     }
   },
   "additionalProperties": false,
-  "description": "Egy entitás egy említése egy oldalon (`page_entities`), a forrásaival.",
+  "description": "Egy entitás egy említése egy oldalon (`page_entities`), a forrásaival.\n`block_corrected`: a kinyerés a szomszéd blokkra javította a modell azonosítóját („-1”: az\nelőző, „+1”: a következő blokk; None: nem volt javítás); `block_given`: a modell eredeti\nblokkazonosítója a javított említésnél.",
   "properties": {
+    "block_corrected": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Block Corrected"
+    },
+    "block_given": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Block Given"
+    },
     "block_id": {
       "anyOf": [
         {
@@ -135,7 +159,7 @@
       "type": "string"
     },
     "schema_version": {
-      "default": "1.13",
+      "default": "1.14",
       "title": "Schema Version",
       "type": "string"
     },
@@ -161,5 +185,5 @@
   "title": "Mention",
   "type": "object",
   "x-module": "extract",
-  "x-schema-version": "1.13"
+  "x-schema-version": "1.14"
 }
