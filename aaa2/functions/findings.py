@@ -80,7 +80,9 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   meg a fő entitást: `no_entity` (a cím az oldalon említett entitások egyikét sem nevezi meg)
   vagy `other_entity` (más entitást nevez meg; `title_entities`: melyeket, az oldalhoz kötött
   és a site saját entitása nélkül; a hosszabb névben álló rövidebb helyett a hosszabb nevű
-  áll); mindkettő csak cikk jellegű oldalon (`article_like`: `article` szerepű
+  áll; ha a megnevezettek mind mérőszámok, `metric` altípusúak, `title_metrics_only` igaz,
+  és az összefoglaló ezt mondja: az eset ettől még `other_entity`); mindkettő csak cikk
+  jellegű oldalon (`article_like`: `article` szerepű
   oldal; vagy segédfajta nélküli `support` oldal `og:type` = `article` jelöléssel és legalább
   `ARTICLE_MIN_WORDS` szóval); `title_only`: a title megnevezi, a látható cím nem, szereptől
   függetlenül; ha az oldalon már van `h1_title_mismatch`, nem külön megállapítás, hanem
@@ -216,6 +218,7 @@ ARTICLE_MIN_WORDS = 300                 # a jelölés alapján cikknek vett egy�
 TITLE_CASES = {"no_entity": "sem a title, sem a látható cím nem nevez meg entitást",
                "other_entity": "a cím más entitást nevez meg, mint a fő entitás",
                "title_only": "a title tartalmazza a fő entitás nevét, a látható cím nem"}
+TITLE_METRICS = "a cím mérőszámot nevez meg, a fő entitás más"
 VISIBLE_TITLE_NOTE = "a látható cím nem nevezi meg a fő entitást, a title igen"
 TITLE_CLAIM = {"fact": "a title és a látható cím szövege (tárolt adat)",
                "inference": "az oldal fő entitása (a gráf döntése)"}
@@ -1135,6 +1138,12 @@ def title_naming(site: _Site, page: Mapping, main: tuple) -> tuple[bool, bool, l
     return in_title, in_visible, forms
 
 
+def metrics_only(named: list[dict]) -> bool:
+    """A cím által megnevezett entitások mind mérőszámok-e (`metric` altípus); üres listára
+    hamis."""
+    return bool(named) and all(item["type"].partition("/")[2] == "metric" for item in named)
+
+
 def _title_naming(site: _Site, mismatches: list[tuple] = ()) -> list[tuple]:
     """A `title_without_main_entity` jelöltek (lásd a modul leírását). `mismatches`: a
     `h1_title_mismatch` megállapítások sorai; amelyik oldalon már van ilyen, ott a `title_only`
@@ -1176,27 +1185,32 @@ def _title_naming(site: _Site, mismatches: list[tuple] = ()) -> list[tuple]:
             "case": case, "title": fields.title, "raw_title": fields.raw_title,
             "visible_title": fields.visible, "visible_title_element": fields.visible_element,
             "in_title": in_title, "in_visible_title": in_visible, "names": forms[:8],
-            "title_entities": named, "article_basis": basis, "claim": TITLE_CLAIM}))
+            "title_entities": named, "title_metrics_only": metrics_only(named),
+            "article_basis": basis, "claim": TITLE_CLAIM}))
     groups: dict[tuple, list[tuple]] = defaultdict(list)
     for record in records:
-        groups[(record[2]["case"], record[0]["role"])].append(record)
+        groups[(record[2]["case"], record[0]["role"],
+                record[2]["title_metrics_only"])].append(record)
     found = []
-    for (case, role), members in sorted(groups.items()):
+    for (case, role, metrics), members in sorted(groups.items()):
         page, entity_id, evidence = members[0]
+        named = "; ".join(item["entity"] for item in evidence["title_entities"])
         if len(members) == 1:
             summary = {
                 "no_entity": f"a cím nem nevez meg entitást; a fő entitás: "
                              f"{site.name(entity_id)}",
-                "other_entity": "a cím ezt nevezi meg: " + "; ".join(
-                    item["entity"] for item in evidence["title_entities"])
-                + f"; a fő entitás: {site.name(entity_id)}",
+                "other_entity": ("a cím mérőszámot nevez meg: " if metrics
+                                 else "a cím ezt nevezi meg: ")
+                + f"{named}; a fő entitás: {site.name(entity_id)}",
                 "title_only": f"{site.name(entity_id)}: {TITLE_CASES[case]}"}[case]
             found.append(("title_without_main_entity", "low", page["page_id"], entity_id,
                           summary, evidence))
             continue
         found.append(("title_without_main_entity", "low", None, None,
-                      f"{TITLE_CASES[case]}: {len(members)} {ROLE_LABELS.get(role, role)}",
-                      {"group": f"{case} | {role}", "role": role, "case": case,
+                      (f"{TITLE_METRICS if metrics else TITLE_CASES[case]}: {len(members)} "
+                       f"{ROLE_LABELS.get(role, role)}"),
+                      {"group": f"{case} | {role}" + (" | metric" if metrics else ""),
+                       "role": role, "case": case, "title_metrics_only": metrics,
                        "claim": TITLE_CLAIM,
                        "pages": [m[2] for m in sorted(members, key=lambda m: m[0]["url"])]}))
     return found
@@ -1502,6 +1516,8 @@ def page_facts(con: duckdb.DuckDBPyConnection) -> dict[int, dict]:
     párok), szószám, a külső linkek száma, a bejövő belső linkek száma (linksor), a
     hivatkozó oldalak száma (különböző forrásoldalak; a menü miatt a linksor-szám sokszoros
     lehet), és a kimenő belső linkek száma (linksor; a készleten kívüli belső cél is számít).
+    A linksorok a menümásolatok nélkül számítanak (`crawl.counted_links`: menüterületen
+    ugyanaz a forrás, cél és horgonyszöveg egyszer).
     A cél a feloldott céloldal (`crawl.links`, `link_targets`: a kategóriaúttal bővített cím is a
     készletbeli oldalnak számít); az oldal önmagára mutató linkjei ezekből kimaradnak, a
     számuk külön oszlop (`önlinkek`). `csak sitemapből ismert`: az oldalra nem mutat belső
@@ -1523,7 +1539,7 @@ def page_facts(con: duckdb.DuckDBPyConnection) -> dict[int, dict]:
             return ""
         return "igen" if not inbound[page_id] and canonical_key(url) in in_sitemap else "nem"
 
-    for link in crawl.links(con):
+    for link in crawl.counted_links(con):
         target = link.to_page_id
         if target == link.from_page_id:
             own[link.from_page_id] += 1

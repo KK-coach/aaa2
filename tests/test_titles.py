@@ -205,3 +205,29 @@ def test_title_fields_in_the_page_view(tmp_path):
     assert findings.role_markup_note("article", ["Service"]) == (
         "a szerep cikkoldal, a jelölés Service")
     assert findings.role_markup_note("article", ["BlogPosting"]) is None
+
+
+def test_a_title_naming_only_metrics_is_marked():
+    assert findings.metrics_only([{"entity": "clicks", "type": "concept/metric", "in": []}])
+    assert not findings.metrics_only([{"entity": "clicks", "type": "concept/metric", "in": []},
+                                      {"entity": "B2B", "type": "concept", "in": []}])
+    assert not findings.metrics_only([])
+    con = titles_site()
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    llm_entity(con, f"{BASE}/blog/gorbe/", "keresőoptimalizálás", "Keresőoptimalizálás",
+               "concept")
+    primary(con, f"{BASE}/blog/gorbe/", ["Keresőoptimalizálás"])
+    # a cím egy mérőszámot nevez meg („hónap”, metric altípussal), a fő entitás más
+    llm_entity(con, f"{BASE}/blog/gorbe/", "hónapig", "hónap", "concept", "metric")
+    build_graph(con)
+    build_findings(con)
+    page = candidates(con)["/blog/gorbe/"]
+    assert page["case"] == "other_entity" and page["title_metrics_only"] is True
+    assert [(t["entity"], t["type"]) for t in page["title_entities"]] == [
+        ("hónap", "concept/metric")]
+    (summary,) = [s for (s,) in con.execute(
+        "SELECT summary FROM findings WHERE type = 'title_without_main_entity'").fetchall()
+        if "mérőszám" in s]
+    assert summary == ("a cím mérőszámot nevez meg: hónap; a fő entitás: "
+                       "Keresőoptimalizálás")
