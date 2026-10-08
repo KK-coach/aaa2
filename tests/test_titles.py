@@ -231,3 +231,65 @@ def test_a_title_naming_only_metrics_is_marked():
         if "mérőszám" in s]
     assert summary == ("a cím mérőszámot nevez meg: hónap; a fő entitás: "
                        "Keresőoptimalizálás")
+
+
+def markup_site(article_everywhere=True):
+    """Hat oldal; a cikk-jelölés a blogon BlogPosting, a többin Article (ha `article_everywhere`)."""
+    def page(title, h1, extra=None, post=False):
+        nodes = [{"@type": "BlogPosting" if post else "Article", "headline": h1}] \
+            if post or article_everywhere else []
+        head = "".join(ld(node) for node in [*nodes, *([extra] if extra else [])])
+        return html(f"{title} · Pelda", f"<main><h1>{h1}</h1><p>Szöveg a témáról.</p></main>",
+                    head=head)
+
+    return site({
+        "/": page("Pelda", "Üdvözlünk", {"@type": "Organization", "name": "Pelda",
+                                         "url": f"{BASE}/"}),
+        "/szolgaltatas/": page("Jogi marketing", "Jogi marketing",
+                               {"@type": "Service", "name": "Jogi marketing",
+                                "url": f"{BASE}/szolgaltatas/"}),
+        "/kapcsolat/": page("Kapcsolat", "Kapcsolat"),
+        "/blog/egy/": page("Első cikk", "Első cikk", post=True),
+        "/blog/ketto/": page("Második cikk", "Második cikk", post=True),
+        "/blog/harom/": page("Harmadik cikk", "Harmadik cikk", post=True)})
+
+
+def markup_findings(con):
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    build_graph(con)
+    build_findings(con)
+    return [(severity, summary, json.loads(evidence)) for severity, summary, evidence in
+            con.execute("SELECT severity, summary, evidence FROM findings WHERE type = "
+                        "'article_markup_on_other_pages'").fetchall()]
+
+
+def test_article_markup_on_pages_that_are_not_articles(tmp_path):
+    con = markup_site()
+    ((severity, summary, evidence),) = markup_findings(con)
+    assert severity == "medium"
+    assert summary == ("6 HTML oldalból 6 cikk-jelölésű (Article 3, BlogPosting 3); köztük 3 "
+                       "biztosan nem cikk (1 ajánlat / termék / kategória, 1 kapcsolat, "
+                       "1 kezdőoldal)")
+    assert (evidence["html_pages"], evidence["marked"], evidence["share"]) == (6, 6, 1.0)
+    assert evidence["by_type"] == {"Article": 3, "BlogPosting": 3}
+    assert evidence["counts"] == {"ajánlat / termék / kategória": 1, "rólunk / karrier": 0,
+                                  "kapcsolat": 1, "kezdőoldal": 1}
+    assert evidence["not_articles"]["ajánlat / termék / kategória"] == [
+        {"url": f"{BASE}/szolgaltatas/", "schema_types": ["Article"], "role": "offer"}]
+    assert [p["url"] for p in evidence["not_articles"]["kapcsolat"]] == [f"{BASE}/kapcsolat/"]
+    assert sorted(p["url"] for p in evidence["maybe_articles"]) == [
+        f"{BASE}/blog/egy/", f"{BASE}/blog/harom/", f"{BASE}/blog/ketto/"]
+    assert all(p["schema_types"] == ["BlogPosting"] for p in evidence["maybe_articles"])
+    paths = export_views(con, tmp_path, "pelda")
+    with paths["pages"].open(encoding="utf-8-sig", newline="") as handle:
+        rows = {r["url"].removeprefix(BASE): r for r in csv.DictReader(handle)}
+    assert "Cikk-jelölés nem cikk oldalakon" in rows["/szolgaltatas/"]["megállapítások"]
+    assert "Cikk-jelölés nem cikk oldalakon" not in rows["/blog/egy/"]["megállapítások"]
+    page = paths["html"].read_text(encoding="utf-8")
+    assert "biztosan nem cikk: kapcsolat (1)" in page and "cikk lehet (3)" in page
+
+
+def test_no_article_markup_finding_when_only_the_posts_are_marked():
+    # a cikk-jelölés csak a három bejegyzésen áll (6-ból 3: a küszöb alatt)
+    assert markup_findings(markup_site(article_everywhere=False)) == []
