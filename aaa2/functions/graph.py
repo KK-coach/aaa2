@@ -98,6 +98,7 @@ from aaa2.entities import store
 from aaa2.entities.gate import occurs
 from aaa2.entities.placeholder import placeholder_pages
 from aaa2.entities.rules import alias_key
+from aaa2.functions.structure import build_menu
 from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.display import NAME_NOTE_COLUMN, OTHER_NAMES_COLUMN, DisplayNames
 from aaa2.resolver.listing import CATEGORY_SEGMENTS, LIST_MIN_SHARE, ListShape
@@ -179,7 +180,8 @@ def load_graph_config(path: Path = CONFIG_FILE) -> GraphConfig:
 # ---------------------------------------------------------------------------
 
 
-GRAPH_TABLES = ("page_nodes", "edges", "page_main_entity", "entity_weights")
+GRAPH_TABLES = ("page_nodes", "edges", "page_main_entity", "entity_weights",
+                "menu_page_differences", "menu_items")
 
 
 def clear_graph(con: duckdb.DuckDBPyConnection) -> None:
@@ -199,6 +201,7 @@ class GraphRun:
     confidence: Counter = field(default_factory=Counter)
     edges: Counter = field(default_factory=Counter)
     weights: int = 0
+    menu_items: int = 0                                   # a site-szintű menüfa menüpontjai
     class_lookups: int = 0
     class_failures: int = 0
     is_a_rejected: list = field(default_factory=list)    # (honnan, hová, tulajdonság, ok)
@@ -280,6 +283,7 @@ def build_graph(con: duckdb.DuckDBPyConnection, config: GraphConfig | None = Non
         _store_page(con, graph, info, decision)
     _edges(con, graph, config, decisions, superclasses, run)
     run.weights = _weights(con, graph, config)
+    run.menu_items = sum(build_menu(con).items.values())
     run.edges = Counter(dict(con.execute("SELECT type, count(*) FROM edges GROUP BY 1 ORDER BY ALL")
                              .fetchall()))
     return run

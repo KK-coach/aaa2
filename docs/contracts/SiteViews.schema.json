@@ -1,5 +1,44 @@
 {
   "$defs": {
+    "DepthDistribution": {
+      "additionalProperties": false,
+      "description": "Egy nyelv oldalainak kattintási mélysége a nyelv kezdőoldalától (`home`), vödrönként\n(0, 1, 2, 3, 4+, elérhetetlen).",
+      "properties": {
+        "counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Counts",
+          "type": "object"
+        },
+        "home": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Home"
+        },
+        "lang": {
+          "title": "Lang",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1.17",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "lang"
+      ],
+      "title": "DepthDistribution",
+      "type": "object"
+    },
     "EntityRelation": {
       "additionalProperties": false,
       "description": "Egy entitás egy kapcsolata a nézetben: az él típusa, iránya (`→` kifelé, `←` befelé) és\na másik entitás.",
@@ -21,7 +60,7 @@
           "type": "integer"
         },
         "schema_version": {
-          "default": "1.16",
+          "default": "1.17",
           "title": "Schema Version",
           "type": "string"
         },
@@ -92,7 +131,7 @@
           "type": "array"
         },
         "schema_version": {
-          "default": "1.16",
+          "default": "1.17",
           "title": "Schema Version",
           "type": "string"
         },
@@ -189,7 +228,7 @@
           "title": "Recommendation"
         },
         "schema_version": {
-          "default": "1.16",
+          "default": "1.17",
           "title": "Schema Version",
           "type": "string"
         },
@@ -245,7 +284,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.16",
+          "default": "1.17",
           "title": "Schema Version",
           "type": "string"
         }
@@ -263,7 +302,7 @@
       "description": "Egy H1 a fő tartalmon kívül: `cookie` (cookie- vagy consent-elem), `dialog` (popup,\nmodális ablak), `chrome` (fejléc, menü, lábléc, oldalsáv).",
       "properties": {
         "schema_version": {
-          "default": "1.16",
+          "default": "1.17",
           "title": "Schema Version",
           "type": "string"
         },
@@ -332,7 +371,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.16",
+          "default": "1.17",
           "title": "Schema Version",
           "type": "string"
         },
@@ -383,7 +422,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.16",
+          "default": "1.17",
           "title": "Schema Version",
           "type": "string"
         },
@@ -404,6 +443,133 @@
       "title": "HubChild",
       "type": "object"
     },
+    "MenuItemView": {
+      "additionalProperties": false,
+      "description": "A site menüfájának egy menüpontja a nézetben: a nyelv, a terület, a szint, a\nhorgonyszöveg, a cím, a szülő menüpont (horgonyszöveg), a céloldal fő entitása és szerepe\n(ha a cél a készlet oldala), a céloldal kattintási mélysége a saját nyelvű kezdőoldaltól,\nés hogy hány oldalon áll a területet hordozó oldalak közül.",
+      "properties": {
+        "anchor": {
+          "title": "Anchor",
+          "type": "string"
+        },
+        "area": {
+          "enum": [
+            "header",
+            "footer",
+            "sidebar"
+          ],
+          "title": "Area",
+          "type": "string"
+        },
+        "area_pages": {
+          "title": "Area Pages",
+          "type": "integer"
+        },
+        "click_depth": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Click Depth"
+        },
+        "in_set": {
+          "default": false,
+          "title": "In Set",
+          "type": "boolean"
+        },
+        "lang": {
+          "title": "Lang",
+          "type": "string"
+        },
+        "level": {
+          "title": "Level",
+          "type": "integer"
+        },
+        "main_entity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Main Entity"
+        },
+        "marker": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Marker"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role"
+        },
+        "schema_version": {
+          "default": "1.17",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        }
+      },
+      "required": [
+        "lang",
+        "area",
+        "level",
+        "anchor",
+        "pages",
+        "area_pages"
+      ],
+      "title": "MenuItemView",
+      "type": "object"
+    },
     "OtherName": {
       "additionalProperties": false,
       "description": "Az entitás egy neve a site elsődleges nyelvétől eltérő nyelven, a forrásával.",
@@ -417,7 +583,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.16",
+          "default": "1.17",
           "title": "Schema Version",
           "type": "string"
         },
@@ -447,7 +613,7 @@
           "type": "integer"
         },
         "schema_version": {
-          "default": "1.16",
+          "default": "1.17",
           "title": "Schema Version",
           "type": "string"
         },
@@ -468,6 +634,30 @@
       "additionalProperties": false,
       "description": "Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a\nmásodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a címmezők tényként\n(`title_cut`: a title a site-utótag nélkül; `visible_title`: a tartalmi régió első címsora\naz elemével; `h1_count`; `og_title`; `schema_titles`; `title_differences`: mely mezők\nszövege tér el), a schema `about` (`schema_about`), a legfelső szintű schema-típusok\n(`schema_types`) és a szerep és a jelölés ellentmondása (`role_markup_note`), a további\nemlített entitások előtt a hub-címke (`hub`: menü-hub, tartalmi hub vagy kategória-hub;\nNone, ha az oldal nem hub) a gyerekeivel (`hub_children`), a további említett\nentitások, az oldal megállapításai, a jelzések (`notes`: a kinyerés nem nevezett meg fő\ntémát; a nyelvi pár fő entitása eltér), és a heading-fa (a sablon- és chrome-headingek nélkül;\n`h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél).",
       "properties": {
+        "breadcrumb_level": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Breadcrumb Level"
+        },
+        "breadcrumb_parent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Breadcrumb Parent"
+        },
         "canonical_issue": {
           "anyOf": [
             {
@@ -479,6 +669,42 @@
           ],
           "default": null,
           "title": "Canonical Issue"
+        },
+        "click_depth": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Click Depth"
+        },
+        "click_depth_content": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Click Depth Content"
+        },
+        "click_depth_menu": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Click Depth Menu"
         },
         "confidence": {
           "anyOf": [
@@ -594,6 +820,18 @@
           "title": "Hub Children",
           "type": "array"
         },
+        "in_footer_menu": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "In Footer Menu"
+        },
         "in_h1": {
           "anyOf": [
             {
@@ -605,6 +843,18 @@
           ],
           "default": null,
           "title": "In H1"
+        },
+        "in_sidebar_menu": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "In Sidebar Menu"
         },
         "in_title": {
           "anyOf": [
@@ -666,6 +916,30 @@
           "default": null,
           "title": "Main Entity Type"
         },
+        "menu_level": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Menu Level"
+        },
+        "menu_parent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Menu Parent"
+        },
         "notes": {
           "items": {
             "type": "string"
@@ -695,6 +969,18 @@
         "page_id": {
           "title": "Page Id",
           "type": "integer"
+        },
+        "parents_agree": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parents Agree"
         },
         "role": {
           "title": "Role",
@@ -734,7 +1020,7 @@
           "type": "array"
         },
         "schema_version": {
-          "default": "1.16",
+          "default": "1.17",
           "title": "Schema Version",
           "type": "string"
         },
@@ -788,9 +1074,57 @@
           "title": "Title Differences",
           "type": "array"
         },
+        "unreachable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unreachable"
+        },
         "url": {
           "title": "Url",
           "type": "string"
+        },
+        "url_level": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url Level"
+        },
+        "url_parent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url Parent"
+        },
+        "url_parent_applicable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url Parent Applicable"
         },
         "visible_title": {
           "anyOf": [
@@ -897,7 +1231,7 @@
           "title": "Same As Main"
         },
         "schema_version": {
-          "default": "1.16",
+          "default": "1.17",
           "title": "Schema Version",
           "type": "string"
         },
@@ -917,6 +1251,60 @@
       "title": "SchemaAbout",
       "type": "object"
     },
+    "SiteStructureView": {
+      "additionalProperties": false,
+      "description": "A site belső struktúrája a nézetben: a menüfa, a mélység-eloszlás nyelvenként, a\nkezdőoldalról elérhetetlen oldalak, és az URL-hierarchia mért feltétele (`url_pages`: a nem\nkezdőoldalak száma, `url_deep`: ebből legalább két útvonal-szakaszon áll, `url_with_parent`:\nezekből a szülő útvonalon létező oldal áll; `url_hierarchical`: az URL-szülő értelmezhető).",
+      "properties": {
+        "depth": {
+          "items": {
+            "$ref": "#/$defs/DepthDistribution"
+          },
+          "title": "Depth",
+          "type": "array"
+        },
+        "menu": {
+          "items": {
+            "$ref": "#/$defs/MenuItemView"
+          },
+          "title": "Menu",
+          "type": "array"
+        },
+        "schema_version": {
+          "default": "1.17",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "unreachable": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unreachable",
+          "type": "array"
+        },
+        "url_deep": {
+          "default": 0,
+          "title": "Url Deep",
+          "type": "integer"
+        },
+        "url_hierarchical": {
+          "default": false,
+          "title": "Url Hierarchical",
+          "type": "boolean"
+        },
+        "url_pages": {
+          "default": 0,
+          "title": "Url Pages",
+          "type": "integer"
+        },
+        "url_with_parent": {
+          "default": 0,
+          "title": "Url With Parent",
+          "type": "integer"
+        }
+      },
+      "title": "SiteStructureView",
+      "type": "object"
+    },
     "TitleField": {
       "additionalProperties": false,
       "description": "Az oldal egy schema.org címmezője: a mező és a típus (`field`, pl. „headline (Article)”)\nés a szövege a site-utótag nélkül.",
@@ -926,7 +1314,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.16",
+          "default": "1.17",
           "title": "Schema Version",
           "type": "string"
         },
@@ -980,13 +1368,24 @@
       "type": "array"
     },
     "schema_version": {
-      "default": "1.16",
+      "default": "1.17",
       "title": "Schema Version",
       "type": "string"
     },
     "site": {
       "title": "Site",
       "type": "string"
+    },
+    "structure": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SiteStructureView"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     }
   },
   "required": [
@@ -995,5 +1394,5 @@
   "title": "SiteViews",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.16"
+  "x-schema-version": "1.17"
 }

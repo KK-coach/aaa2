@@ -38,6 +38,10 @@ SOURCES: dict[type[Contract], tuple[str, str]] = {
     contracts.MainEntity: ("page_main_entity",
                            "SELECT * FROM page_main_entity ORDER BY page_id, rank"),
     contracts.EntityWeight: ("entity_weights", "SELECT * FROM entity_weights ORDER BY entity_id"),
+    contracts.MenuItem: ("menu_items", "SELECT * FROM menu_items ORDER BY item_id"),
+    contracts.MenuDifference: ("menu_page_differences",
+                               ("SELECT * FROM menu_page_differences ORDER BY page_id, "
+                                "area, kind, url, anchor")),
     contracts.Finding: ("findings", "SELECT * FROM findings ORDER BY finding_id"),
 }
 

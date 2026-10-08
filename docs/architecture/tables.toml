@@ -169,6 +169,14 @@ contracts = ["MainEntity"]
 owner = "graph"
 contracts = ["EntityWeight"]
 
+[tables.menu_items]
+owner = "graph"
+contracts = ["MenuItem"]
+
+[tables.menu_page_differences]
+owner = "graph"
+contracts = ["MenuDifference"]
+
 # --- findings --------------------------------------------------------------------------------
 
 [tables.findings]

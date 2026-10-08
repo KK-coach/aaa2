@@ -1,0 +1,68 @@
+{
+  "additionalProperties": false,
+  "description": "Egy oldal eltérése a site-szintű menüfától (`menu_page_differences`): `extra` (az oldalon\náll, a fában nem) vagy `missing` (a fában áll, az oldalon nem). `url`: a menüpont címe vagy\na link nélküli címke; `parent`: a szülő címe vagy címkéje.",
+  "properties": {
+    "anchor": {
+      "title": "Anchor",
+      "type": "string"
+    },
+    "area": {
+      "enum": [
+        "header",
+        "footer",
+        "sidebar"
+      ],
+      "title": "Area",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "extra",
+        "missing"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "lang": {
+      "title": "Lang",
+      "type": "string"
+    },
+    "page_id": {
+      "title": "Page Id",
+      "type": "integer"
+    },
+    "parent": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parent"
+    },
+    "schema_version": {
+      "default": "1.17",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "url": {
+      "title": "Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "page_id",
+    "lang",
+    "area",
+    "kind",
+    "url",
+    "anchor"
+  ],
+  "title": "MenuDifference",
+  "type": "object",
+  "x-module": "graph",
+  "x-schema-version": "1.17"
+}

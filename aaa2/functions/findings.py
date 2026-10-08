@@ -100,6 +100,14 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   `not_articles` (fajtánként; oldalanként az URL, a cikk típusú jelölés és a mai szerep) és
   `maybe_articles` (a többi cikk-jelölésű oldal), a számokkal (`html_pages`, `marked`,
   `share`, `by_type`, `counts`). A szerepet nem változtatja; a jelölési hibát mondja ki.
+- `breadcrumb_foreign_home` (low): a morzsa első eleme egy másik nyelv kezdőoldalára mutat
+  (`site.home_urls`: a kezdőoldal és a nyelvi párjai), miközben az oldal nyelvének is van
+  kezdőoldala. Egy megállapítás az oldal nyelve és a megcélzott kezdőoldal szerint, a
+  bizonyítékban oldalanként az URL, a morzsa első elemének címe és szövege.
+- `menu_home_target` (medium): a nyelv fejléc-fájának „Home” / „Főoldal” / „Kezdőlap” horgonyú
+  (`HOME_ANCHORS`) vagy kezdőoldal-ikonnal jelölt menüpontja nem kezdőoldalra mutat. A logólink
+  külön áll a bizonyítékban: ha a logó a kezdőoldalra mutat, a menüpont pedig máshova, a
+  site-nak két kezdőoldala van (`two_homes`).
 - A heading-fa szerkezeti megállapításai (`headings.structure_findings`): `missing_h1`,
   `h1_outside_content`, `multiple_h1`, `empty_section`, `skipped_level`, `missing_h2`; a
   szabályaik a `functions/headings.py` leírásában.
@@ -107,9 +115,8 @@ a canonical-duplikátum oldal egyikben sem szerepel:
 Hub-címke (`_Site.hubs`; címke, nem szerep és nem megállapítás), oldalanként legfeljebb egy:
 
 - `menü-hub`: az oldal menüpontja alatt legalább `HUB_MIN_MENU_CHILDREN` gyerek-menüpont áll
-  (`crawl.menu_pairs`: a tárolt renderelt DOM menüjéből, a kimenet építésekor számolva; a
-  pár akkor a site menüje, ha a szülő nyelvének oldalai legalább `MENU_PAIR_SHARE` részén
-  megvan), és az oldal tartalmából legalább `HUB_MIN_CONTENT_CHILDREN` tartalmi link mutat
+  a tárolt site-szintű menüfa fejléc-területén (`structure.menu_items`), és az oldal
+  tartalmából legalább `HUB_MIN_CONTENT_CHILDREN` tartalmi link mutat
   ezekre a gyerekekre. A kezdőoldal nem hub.
 - `tartalmi hub`: nem menü-hub; a tartalmából legalább `HUB_MIN_CONTENT_TARGETS` tartalmi link
   mutat azonos szerepű oldalakra, amelyek a tartalmukból visszalinkelnek rá, és ezek szerepe
@@ -123,8 +130,14 @@ A gyerekek (`children`): oldalanként az URL, a szerep, honnan ismert (menü / t
 mindkettő), és visszalinkel-e a tartalmából a hubra; mellette, hány gyerekre mutat a hub
 tartalma (`content_linked`) és hány linkel vissza (`linking_back`).
 
+Belső struktúra (`_Site.structure`, `functions/structure.py`): oldalanként a kattintási mélység
+a saját nyelvű kezdőoldaltól (minden link / csak menü / csak tartalom), a menüszint, a morzsa-
+és az URL-szint, a szülő a menüfa, a morzsa és az URL szerint, és hogy egyeznek-e; site-szinten
+a menüfa nyelvenként és területenként, a mélység-eloszlás és a kezdőoldalról elérhetetlen
+oldalak (`structure_view`).
+
 Nézetek (`export_views`), ellenőrzéshez: site-áttekintő (a legfontosabb entitások típus szerint,
-a szülővel, a kategóriával és a fő oldalaikkal), entitás környezete (az entitás élei egy
+a szülővel, a kategóriával és a fő oldalaikkal; mellette a belső struktúra), entitás környezete (az entitás élei egy
 lépésnyire, a fő és a csak említő oldalai), oldalnézet (a fő entitás a bizonyítékaival, a H1 és a
 title összevetése, a címmezők tényként (`titles.title_fields`: a title utótag nélkül, a
 látható cím az elemével, a H1-ek száma, og:title, schema name / headline, az eltérő mezők; a
@@ -150,7 +163,14 @@ from urllib.parse import urljoin, urlsplit
 
 import duckdb
 
-from aaa2.contracts import EntityView, Finding, FindingView, PageView, SiteViews
+from aaa2.contracts import (
+    EntityView,
+    Finding,
+    FindingView,
+    PageView,
+    SiteStructureView,
+    SiteViews,
+)
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
 from aaa2.entities import queries as extract_queries
@@ -159,6 +179,7 @@ from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
 from aaa2.functions import graph_queries, titles
 from aaa2.functions import headings as heading_tree
+from aaa2.functions import structure as site_structure
 from aaa2.functions.graph import _walk, evidence_text, url_has_word
 from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.display import NAME_NOTE_COLUMN, OTHER_NAMES_COLUMN, DisplayNames
@@ -169,7 +190,8 @@ from aaa2.resolver.pages import LEGAL_KINDS, canonical_key, legal_kind, page_typ
 TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
          "uncovered_topic", "unclear_topic", *heading_tree.STRUCTURE_TYPES,
          "canonical_issue", "legal_page", "soft_404", "schema_id_names",
-         "title_without_main_entity", "article_markup_on_other_pages")
+         "title_without_main_entity", "article_markup_on_other_pages",
+         "breadcrumb_foreign_home", "menu_home_target")
 TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "cannibalization": "Lehetséges kannibalizáció",
                "shared_topic": "Közös téma", "missing_page": "Hiányzó oldal",
@@ -181,6 +203,8 @@ TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "schema_id_names": "Azonosító több névvel a strukturált adatban",
                "title_without_main_entity": "A cím nem nevezi meg a fő entitást",
                "article_markup_on_other_pages": "Cikk-jelölés nem cikk oldalakon",
+               "breadcrumb_foreign_home": "A morzsa kezdőpontja más nyelvű kezdőoldalra mutat",
+               "menu_home_target": "A menü Home pontja nem a kezdőoldalra mutat",
                "canonical_issue": "Hibás canonical", "legal_page": "Jogi oldal",
                "soft_404": "Nem található oldal 200-as státusszal"}
 # többes szám jele a kulcsban (ékezet nélkül): a kategória neve és a H1 / title összevetéséhez
@@ -245,7 +269,9 @@ CUT_MIN_SHARE = 0.6
 OVERVIEW_TOP = 100                      # a site-áttekintő ennyi legnagyobb súlyú entitást mutat
 PAGE_MENTIONS = 10                      # az oldalnézet ennyi további említett entitást sorol
 EVIDENCE_PAGES = 5
-MENU_PAIR_SHARE = 0.5                   # a menüpár a nyelv oldalainak ekkora részén áll
+# a kezdőoldalt megnevező menüpont horgonyszövege (`alias_key` alakban)
+HOME_ANCHORS = frozenset({"home", "homepage", "home page", "fooldal", "kezdolap", "kezdooldal",
+                          "nyitolap", "nyitooldal", "cimlap"})
 HUB_MIN_MENU_CHILDREN = 2
 HUB_MIN_CONTENT_CHILDREN = 2
 HUB_MIN_CONTENT_TARGETS = 3
@@ -299,7 +325,7 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
             *heading_tree.structure_findings(site.pages, site.headings, ROLE_LABELS),
             *_canonical_issues(site), *_legal_pages(site), *_soft_404(site),
             *_schema_id_names(site), *_title_naming(site, mismatches),
-            *_article_markup(site)]
+            *_article_markup(site), *_breadcrumb_home(site), *_menu_home(site)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -357,8 +383,26 @@ class _Site:
         self._headings: dict[int, dict] | None = None
         self._titles: dict[int, titles.TitleFields] | None = None
         self._forms: dict[str, list[int]] | None = None
+        self._by_key: dict[str, int] | None = None
         self._hubs: dict[int, dict] | None = None
+        self._structure: site_structure.SiteStructure | None = None
         self.display = DisplayNames(con)
+
+    @property
+    def structure(self) -> site_structure.SiteStructure:
+        """Az oldalak mélységei és szülői, a tárolt menüfával (`structure.page_structure`)."""
+        if self._structure is None:
+            self._structure = site_structure.page_structure(self.con, self.pages)
+        return self._structure
+
+    def page_of(self, url: str | None) -> int | None:
+        """A cím oldala a készletben (a canonical-duplikátum helyett az eredeti), vagy None."""
+        if not url:
+            return None
+        if self._by_key is None:
+            self._by_key = {canonical_key(page["url"]): page["canonical"] or page["page_id"]
+                            for page in self.pages.values()}
+        return self._by_key.get(canonical_key(url))
 
     @property
     def headings(self) -> dict[int, dict]:
@@ -420,21 +464,13 @@ class _Site:
         if self._hubs is not None:
             return self._hubs
         nodes = {page["page_id"]: page for page in self.nodes()}
-        by_key = {canonical_key(page["url"]): page["canonical"] or page["page_id"]
-                  for page in self.pages.values()}
-        per_lang = Counter(page["lang"] for page in nodes.values())
-        seen: Counter[tuple[int, int]] = Counter()
-        for page_id, pairs in crawl.menu_pairs(self.con).items():
-            if page_id not in nodes:
-                continue
-            for pair in {(by_key.get(canonical_key(parent)), by_key.get(canonical_key(child)))
-                         for parent, child, _ in pairs}:
-                if pair[0] in nodes and pair[1] in nodes and pair[0] != pair[1]:
-                    seen[pair] += 1
+        items = {item.item_id: item for item in self.structure.menu}
         menu: dict[int, set[int]] = defaultdict(set)
-        for (parent, child), count in seen.items():
-            if count >= MENU_PAIR_SHARE * per_lang[nodes[parent]["lang"]]:
-                menu[parent].add(child)
+        for item in items.values():
+            parent = items.get(item.parent_id) if item.parent_id is not None else None
+            if item.area == "header" and parent is not None and item.page_id in nodes \
+                    and parent.page_id in nodes and item.page_id != parent.page_id:
+                menu[parent.page_id].add(item.page_id)
         body: dict[int, set[int]] = defaultdict(set)
         for link in crawl.counted_links(self.con):
             target = link.to_page_id
@@ -1387,6 +1423,71 @@ def _article_markup(site: _Site) -> list[tuple]:
               "maybe_articles": maybe})]
 
 
+def _breadcrumb_home(site: _Site) -> list[tuple]:
+    """A `breadcrumb_foreign_home` megállapítás (lásd a modul leírását)."""
+    structure = site.structure
+    home_lang = {page_id: lang for lang, page_id in structure.homes.items()}
+    groups: dict[tuple[str, int], list[dict]] = defaultdict(list)
+    for page in site.nodes():
+        lang = page["lang"] or ""
+        crumb = structure.crumbs.get(page["page_id"])
+        if crumb is None or lang not in structure.homes or page["page_id"] in home_lang:
+            continue
+        first_url, first_name = crumb[1][0]
+        target = site.page_of(first_url)
+        if target in home_lang and home_lang[target] != lang:
+            groups[(lang, target)].append({"url": page["url"], "first_url": first_url,
+                                           "first_anchor": first_name})
+    rows = []
+    for (lang, target), pages in sorted(groups.items()):
+        own = site.pages[structure.homes[lang]]["url"]
+        foreign = site.pages[target]["url"]
+        rows.append(("breadcrumb_foreign_home", "low", None, None,
+                     (f"{len(pages)} {lang} nyelvű oldalon a morzsa első eleme a(z) "
+                      f"{home_lang[target]} nyelvű kezdőoldalra mutat ({foreign}); a(z) {lang} "
+                      f"kezdőoldal: {own}"),
+                     {"group": "breadcrumb_foreign_home", "lang": lang, "home": own,
+                      "foreign_lang": home_lang[target], "foreign_home": foreign,
+                      "pages": sorted(pages, key=lambda item: item["url"])}))
+    return rows
+
+
+def _menu_home(site: _Site) -> list[tuple]:
+    """A `menu_home_target` megállapítás (lásd a modul leírását)."""
+    structure = site.structure
+    home_ids = set(structure.homes.values()) | ({structure.start} if structure.start is not None
+                                                else set())
+    rows = []
+    for lang in sorted({item.lang for item in structure.menu}):
+        header = [item for item in structure.menu if item.lang == lang and item.area == "header"]
+        home_id = structure.homes.get(lang, structure.start)
+        if home_id is None:
+            continue
+        home_url = site.pages[home_id]["url"]
+        logo = next((item for item in header if item.marker == "logo" and item.url), None)
+        for item in header:
+            named = item.marker == "home_icon" or alias_key(item.anchor) in HOME_ANCHORS
+            if not named or item.url is None or item.marker == "logo" \
+                    or site.page_of(item.url) in home_ids:
+                continue
+            logo_home = logo is not None and site.page_of(logo.url) in home_ids
+            in_set = item.page_id in site.pages
+            rows.append((
+                "menu_home_target", "medium", item.page_id if in_set else None, None,
+                (f"A(z) {lang} menü „{item.anchor or 'kezdőoldal-ikon'}” pontja nem a "
+                 f"kezdőoldalra mutat: {item.url} (a kezdőoldal: {home_url})"
+                 + ("; a logó a kezdőoldalra mutat, így a site-nak két kezdőoldala van"
+                    if logo_home else "")),
+                {"group": "menu_home", "lang": lang, "home": home_url,
+                 "menu_item": {"anchor": item.anchor, "url": item.url, "pages": item.pages,
+                               "area_pages": item.area_pages, "in_set": in_set},
+                 "logo": {"anchor": logo.anchor, "url": logo.url, "points_home": logo_home}
+                 if logo is not None else None,
+                 "two_homes": logo_home,
+                 "pages": [{"url": site.pages[item.page_id]["url"]}] if in_set else []}))
+    return rows
+
+
 def _soft_404(site: _Site) -> list[tuple]:
     """A 200-as státusszal kiszolgált „nem található” oldalak (`pages.page_types`: not_found;
     ma a Shoprenter `not_found_body` jele ismeri fel) egy közepes megállapításban, az oldalak
@@ -1549,6 +1650,7 @@ def view_data(site: _Site) -> tuple[list[dict], list[dict]]:
             "hub": (site.hubs.get(page["page_id"]) or {}).get("label"),
             "hub_children": [dict(child) for child in (
                 site.hubs.get(page["page_id"]) or {}).get("children", [])],
+            **page_structure_fields(site.structure.pages.get(page["page_id"])),
             "other_mentions": [{"entity_id": e, "entity": site.shown(e, page), "weight": w}
                                for e, w, _ in site.mention_edges[page["page_id"]]
                                if e not in picked and w > 0][:PAGE_MENTIONS],
@@ -1686,6 +1788,119 @@ PAGE_FACT_COLUMNS = ("státusz", "végső URL", "meta description", "noindex", "
                      "kimenő belső linkek", "önlinkek", "csak sitemapből ismert")
 
 
+STRUCTURE_COLUMNS = ("mélység (minden link)", "mélység (csak menü)", "mélység (csak tartalom)",
+                     "elérhetetlen a kezdőoldalról", "menüszint (fejléc)", "lábléc-menüben",
+                     "oldalsáv-menüben", "morzsa-szint", "URL-szint", "szülő (menüfa)",
+                     "szülő (morzsa)", "szülő (URL)", "a szülők egyeznek")
+URL_PARENT_FLAT = "nem értelmezhető"
+MENU_COLUMNS = ["nyelv", "terület", "szint", "menüpont", "URL", "szülő menüpont",
+                "a készlet oldala", "fő entitás", "szerep", "kattintási mélység",
+                "hány oldalon áll", "a területet hordozó oldalak", "jelölés"]
+MENU_DIFFERENCE_COLUMNS = ["oldal", "nyelv", "terület", "eltérés", "menüpont", "horgonyszöveg",
+                           "szülő"]
+DIFFERENCE_LABELS = {"extra": "többlet", "missing": "hiány"}
+
+
+def page_structure_fields(found: Mapping | None) -> dict:
+    """Az oldal struktúra-mezői az oldalnézethez (`PageView`); a canonical-duplikátumnál és
+    struktúra-adat nélkül mind None."""
+    if found is None:
+        return dict.fromkeys(
+            ("click_depth", "click_depth_menu", "click_depth_content", "unreachable",
+             "menu_level", "in_footer_menu", "in_sidebar_menu", "breadcrumb_level", "url_level",
+             "menu_parent", "breadcrumb_parent", "url_parent", "url_parent_applicable",
+             "parents_agree"))
+    return {"click_depth": found["depth"]["all"], "click_depth_menu": found["depth"]["menu"],
+            "click_depth_content": found["depth"]["body"], "unreachable": found["unreachable"],
+            "menu_level": found["menu_level"], "in_footer_menu": found["in_footer"],
+            "in_sidebar_menu": found["in_sidebar"], "breadcrumb_level": found["crumb_level"],
+            "url_level": found["url_level"], "menu_parent": found["menu_parent"],
+            "breadcrumb_parent": found["crumb_parent"], "url_parent": found["url_parent"],
+            "url_parent_applicable": found["url_parent_applicable"],
+            "parents_agree": found["parents_agree"]}
+
+
+def structure_columns(page: Mapping) -> dict:
+    """Az oldalnézet struktúra-oszlopai (`STRUCTURE_COLUMNS`). Ahol az URL-szülő nem számít
+    (lapos URL-szerkezetű site, vagy egyszakaszos oldal), ott „nem értelmezhető”; a
+    canonical-duplikátum sorai üresek."""
+    def shown(value: object) -> object:
+        return "" if value is None else value
+
+    def yes(value: bool | None) -> str:
+        return "" if value is None else "igen" if value else "nem"
+
+    return {"mélység (minden link)": shown(page["click_depth"]),
+            "mélység (csak menü)": shown(page["click_depth_menu"]),
+            "mélység (csak tartalom)": shown(page["click_depth_content"]),
+            "elérhetetlen a kezdőoldalról": "igen" if page["unreachable"] else "",
+            "menüszint (fejléc)": shown(page["menu_level"]),
+            "lábléc-menüben": yes(page["in_footer_menu"]),
+            "oldalsáv-menüben": yes(page["in_sidebar_menu"]),
+            "morzsa-szint": shown(page["breadcrumb_level"]),
+            "URL-szint": shown(page["url_level"]),
+            "szülő (menüfa)": shown(page["menu_parent"]),
+            "szülő (morzsa)": shown(page["breadcrumb_parent"]),
+            "szülő (URL)": URL_PARENT_FLAT if page["url_parent_applicable"] is False
+            else shown(page["url_parent"]),
+            "a szülők egyeznek": yes(page["parents_agree"])}
+
+
+def structure_view(site: _Site) -> dict:
+    """A site belső struktúrája a nézetekhez (`SiteStructureView`): a menüfa menüpontjai a
+    céloldal fő entitásával, szerepével és kattintási mélységével, a mélység-eloszlás
+    nyelvenként, a kezdőoldalról elérhetetlen oldalak és az URL-hierarchia mért feltétele."""
+    structure = site.structure
+    by_id = {item.item_id: item for item in structure.menu}
+    menu = []
+    for item in structure.menu:
+        page = site.pages.get(item.page_id) if item.page_id is not None else None
+        main = site.main(item.page_id) if page is not None else None
+        above = by_id.get(item.parent_id) if item.parent_id is not None else None
+        found = structure.pages.get(item.page_id) if page is not None else None
+        menu.append({
+            "lang": item.lang, "area": item.area, "level": item.level, "anchor": item.anchor,
+            "url": item.url, "parent": (above.anchor or above.url) if above is not None else None,
+            "in_set": page is not None,
+            "main_entity": site.shown(main[0], page) if main is not None else None,
+            "role": page["role"] if page is not None else None,
+            "click_depth": found["depth"]["all"] if found is not None else None,
+            "pages": item.pages, "area_pages": item.area_pages, "marker": item.marker})
+    hierarchy = structure.url_hierarchy
+    return {"menu": menu,
+            "depth": [{"lang": row["lang"],
+                       "home": site.pages[row["home"]]["url"] if row["home"] is not None
+                       else None, "counts": row["counts"]} for row in structure.distribution()],
+            "unreachable": sorted(site.pages[page_id]["url"]
+                                  for page_id, found in structure.pages.items()
+                                  if found["unreachable"]),
+            "url_hierarchical": hierarchy["hierarchical"], "url_pages": hierarchy["pages"],
+            "url_deep": hierarchy["deep"], "url_with_parent": hierarchy["with_parent"]}
+
+
+def menu_rows(view: Mapping) -> list[dict]:
+    """A menüfa a CSV-nézethez (`MENU_COLUMNS`), a tárolt sorrendben."""
+    return [{"nyelv": item["lang"], "terület": site_structure.AREA_LABELS[item["area"]],
+             "szint": item["level"], "menüpont": item["anchor"], "URL": item["url"] or "",
+             "szülő menüpont": item["parent"] or "",
+             "a készlet oldala": "igen" if item["in_set"] else "nem",
+             "fő entitás": item["main_entity"] or "", "szerep": item["role"] or "",
+             "kattintási mélység": "" if item["click_depth"] is None else item["click_depth"],
+             "hány oldalon áll": item["pages"],
+             "a területet hordozó oldalak": item["area_pages"],
+             "jelölés": item["marker"] or ""} for item in view["menu"]]
+
+
+def menu_difference_rows(site: _Site) -> list[dict]:
+    """Az oldalfüggő menü-eltérések a CSV-nézethez (`MENU_DIFFERENCE_COLUMNS`)."""
+    return [{"oldal": site.pages[item.page_id]["url"] if item.page_id in site.pages
+             else item.page_id, "nyelv": item.lang,
+             "terület": site_structure.AREA_LABELS[item.area],
+             "eltérés": DIFFERENCE_LABELS[item.kind], "menüpont": item.url,
+             "horgonyszöveg": item.anchor, "szülő": item.parent or ""}
+            for item in site_structure.menu_differences(site.con)]
+
+
 def page_facts(con: duckdb.DuckDBPyConnection) -> dict[int, dict]:
     """Oldalanként a crawl tényei az oldalnézethez (`PAGE_FACT_COLUMNS`), a crawl-modul
     szerződésein át: státuszkód, végső URL, meta description, noindex, hreflang (nyelv|URL
@@ -1796,6 +2011,7 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
             "hub": page["hub"] or "",
             "hub gyerekei": " | ".join(f"{child['url']} ({child['source']})"
                                        for child in page["hub_children"]),
+            **structure_columns(page),
             "további említett entitások": "; ".join(
                 f"{m['entity']} ({m['weight']:g})" for m in page["other_mentions"]),
             "megállapítások": " || ".join(page["findings"]),
@@ -1817,7 +2033,8 @@ def site_views(con: duckdb.DuckDBPyConnection, name: str, domain: str | None = N
             entity_id=f["entity_id"], entity=f["entity"], pages=f["pages"],
             summary=f["summary"], evidence=f["evidence"]) for f in finding_items(site)],
         entities=[EntityView(**entity) for entity in entities],
-        pages=[PageView(**page) for page in pages])
+        pages=[PageView(**page) for page in pages],
+        structure=SiteStructureView(**structure_view(site)))
 
 
 def _page_tree_html(page: dict | None) -> str:
@@ -1856,11 +2073,13 @@ def language_pair_rows(site: _Site) -> list[dict]:
 
 def export_views(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[str, Path]:
     """A négy nézet CSV-ben (`<név>-view-site.csv`, `-view-entities.csv`, `-view-pages.csv`,
-    `-view-headings.csv`), a nyelvi összevonások listája (`-view-language-pairs.csv`) és egy
+    `-view-headings.csv`), a nyelvi összevonások listája (`-view-language-pairs.csv`), a menüfa
+    (`-view-menu.csv`) az oldalfüggő eltéréseivel (`-view-menu-differences.csv`) és egy
     lenyitható HTML-oldal (`<név>-views.html`) a megállapításokkal együtt."""
     out.mkdir(parents=True, exist_ok=True)
     site = _Site(con)
     overview, neighbourhood, pages = _views(site)
+    structure = structure_view(site)
     trees = {page["url"]: page for page in view_data(site)[1]}
     paths = {
         "site": _write(out / f"{name}-view-site.csv", overview, [
@@ -1872,7 +2091,7 @@ def export_views(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[s
         "pages": _write(out / f"{name}-view-pages.csv", pages, [
             "url", "szerep", "segédoldal", "nyelv", "canonical", "fő entitás",
             NAME_NOTE_COLUMN, "típus", "megbízhatóság", "bizonyítékok", "másodlagos", "H1", "a H1-ben", "title",
-            "a title-ben", *TITLE_COLUMNS, "hub", "hub gyerekei",
+            "a title-ben", *TITLE_COLUMNS, "hub", "hub gyerekei", *STRUCTURE_COLUMNS,
             "további említett entitások", "megállapítások",
             "jelzések",
             *PAGE_FACT_COLUMNS]),
@@ -1881,10 +2100,13 @@ def export_views(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[s
             "url", "mélység", "szint", "heading", "entitások", "kapcsolat a fő entitáshoz",
             "szavak", "szavak összesen", "megjegyzés"]),
         "language_pairs": _write(out / f"{name}-view-language-pairs.csv",
-                                 language_pair_rows(site), LANGUAGE_PAIR_COLUMNS)}
+                                 language_pair_rows(site), LANGUAGE_PAIR_COLUMNS),
+        "menu": _write(out / f"{name}-view-menu.csv", menu_rows(structure), MENU_COLUMNS),
+        "menu_differences": _write(out / f"{name}-view-menu-differences.csv",
+                                   menu_difference_rows(site), MENU_DIFFERENCE_COLUMNS)}
     paths["html"] = out / f"{name}-views.html"
     paths["html"].write_text(
-        _html(name, _findings(con), site, overview, neighbourhood, pages, trees),
+        _html(name, _findings(con), site, overview, neighbourhood, pages, trees, structure),
         encoding="utf-8")
     return paths
 
@@ -2016,6 +2238,21 @@ def _finding_html(finding: dict) -> str:
             for p in evidence.get("pages") or [evidence]]
         pairs.append(("állítás", _e(f"tény: {evidence['claim']['fact']}; következtetés: "
                                     f"{evidence['claim']['inference']}")))
+    elif finding["type"] == "breadcrumb_foreign_home":
+        pairs = [("a nyelv kezdőoldala", _link(evidence["home"])),
+                 ("a morzsa első eleme ide mutat", _link(evidence["foreign_home"])),
+                 ("oldalak", "<br>".join(
+                     f"{_link(page['url'])} — morzsa: „{_e(page['first_anchor'])}” → "
+                     f"{_link(page['first_url'])}" for page in evidence["pages"]))]
+    elif finding["type"] == "menu_home_target":
+        item, logo = evidence["menu_item"], evidence["logo"]
+        pairs = [("menüpont", (f"„{_e(item['anchor'])}” → {_link(item['url'])} "
+                               f"({item['pages']} / {item['area_pages']} oldalon)")),
+                 ("kezdőoldal", _link(evidence["home"])),
+                 ("logó", (f"„{_e(logo['anchor'])}” → {_link(logo['url'])} — a kezdőoldalra "
+                           f"mutat: {'igen' if logo['points_home'] else 'nem'}")
+                  if logo else "nincs logólink a fejléc-menüben"),
+                 ("két kezdőoldal", "igen" if evidence["two_homes"] else "nem")]
     elif finding["type"] == "legal_page":
         pairs = [("fajta", _e(evidence["label"])),
                  ("oldalak", "<br>".join(_link(page["url"]) for page in evidence["pages"])),
@@ -2071,9 +2308,53 @@ def _tree_html(nodes: list[dict]) -> str:
     return f"<ul>{''.join(items)}</ul>"
 
 
+def _structure_html(structure: Mapping) -> str:
+    """A belső struktúra a site-áttekintőben: a menüfa nyelvenként és területenként behúzva, a
+    mélység-eloszlás és a kezdőoldalról elérhetetlen oldalak."""
+    groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    for item in structure["menu"]:
+        groups[(item["lang"], item["area"])].append(item)
+    trees = []
+    for (lang, area), items in groups.items():
+        lines = "".join(
+            f'<div style="margin-left:{1.5 * item["level"]:g}em">'
+            f"{_e(item['anchor'] or '(szöveg nélkül)')} — "
+            + (_link(item["url"]) if item["url"] else "link nélküli címke")
+            + (f" <span>— fő entitás: {_e(item['main_entity'] or '—')}; szerep: "
+               f"{_e(item['role'])}; mélység: "
+               f"{'elérhetetlen' if item['click_depth'] is None else item['click_depth']}</span>"
+               if item["in_set"] else
+               (" <span>— nincs a készlet oldalai között</span>" if item["url"] else ""))
+            + f" <span>({item['pages']} / {item['area_pages']} oldalon)</span></div>"
+            for item in items)
+        trees.append(f"<details><summary>{_e(lang or 'nyelv nélkül')} — "
+                     f"{site_structure.AREA_LABELS[area]} <span>({len(items)} menüpont)</span>"
+                     f"</summary>{lines}</details>")
+    buckets = site_structure.DEPTH_BUCKETS
+    depth = "".join(
+        f"<tr><td>{_e(row['lang'] or 'nyelv nélkül')}</td><td>{_link(row['home'] or '')}</td>"
+        + "".join(f"<td>{row['counts'].get(bucket, 0)}</td>" for bucket in buckets) + "</tr>"
+        for row in structure["depth"])
+    hierarchy = (
+        f"URL-szerkezet: {'hierarchikus' if structure['url_hierarchical'] else 'lapos'} "
+        f"({structure['url_pages']} nem kezdőoldalból {structure['url_deep']} áll legalább két "
+        f"útvonal-szakaszon, ezekből {structure['url_with_parent']} szülő útvonalán áll létező "
+        f"oldal); lapos szerkezetnél az URL-szülő nem értelmezhető.")
+    return (
+        f"<details><summary>Menüfa <span>({len(structure['menu'])} menüpont)</span></summary>"
+        + "".join(trees) + "</details>"
+        "<details><summary>Kattintási mélység <span>(a saját nyelvű kezdőoldaltól, minden "
+        'link)</span></summary><div class="wrap"><table><tr><td>nyelv</td><td>kezdőoldal</td>'
+        + "".join(f"<td>{_e(bucket)}</td>" for bucket in buckets) + f"</tr>{depth}</table></div>"
+        f"<p>{_e(hierarchy)}</p></details>"
+        f"<details><summary>A kezdőoldalról elérhetetlen oldalak <span>"
+        f"({len(structure['unreachable'])})</span></summary>"
+        + "<br>".join(_link(url) for url in structure["unreachable"]) + "</details>")
+
+
 def _html(name: str, findings: list[dict], site: _Site, overview: list[dict],
           neighbourhood: list[dict], pages: list[dict],
-          trees: dict[str, dict] | None = None) -> str:
+          trees: dict[str, dict] | None = None, structure: Mapping | None = None) -> str:
     parts = [(f'<!doctype html><html lang="hu"><head><meta charset="utf-8">'
               f'<meta name="viewport" content="width=device-width,initial-scale=1">'
               f"<title>{_e(name)} — entitásgráf-nézetek</title><style>{STYLE}</style></head>"
@@ -2095,6 +2376,8 @@ def _html(name: str, findings: list[dict], site: _Site, overview: list[dict],
             (f"{_e(row['hub'])}: {_link(row['url'])}",
              "<br>".join(_e(child) for child in row["hub gyerekei"].split(" | ")))
             for row in hub_rows]) + "</details>")
+    if structure is not None:
+        parts.append(_structure_html(structure))
     by_type: dict[str, list[dict]] = defaultdict(list)
     for row in overview:
         by_type[row["típus"]].append(row)
@@ -2139,6 +2422,9 @@ def _html(name: str, findings: list[dict], site: _Site, overview: list[dict],
                 ("hub", _e(row["hub"]) + ("<br>" + "<br>".join(
                     _e(child) for child in row["hub gyerekei"].split(" | "))
                     if row["hub"] else "")),
+                ("struktúra", "<br>".join(
+                    f"{_e(column)}: {_e(row[column])}" for column in STRUCTURE_COLUMNS
+                    if row[column] not in ("", None))),
                 ("címmezők", "<br>".join(
                     f"{_e(column)}: {_e(row[column])}" for column in TITLE_COLUMNS
                     if row[column] not in ("", None))),

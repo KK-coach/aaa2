@@ -48,7 +48,7 @@
       "type": "integer"
     },
     "schema_version": {
-      "default": "1.16",
+      "default": "1.17",
       "title": "Schema Version",
       "type": "string"
     }
@@ -65,5 +65,5 @@
   "title": "MergeRecord",
   "type": "object",
   "x-module": "resolve",
-  "x-schema-version": "1.16"
+  "x-schema-version": "1.17"
 }

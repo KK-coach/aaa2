@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass
 from urllib.parse import urljoin, urlsplit
 
@@ -27,7 +28,8 @@ from aaa2.contracts import (
     SitemapUrl,
     StructuredData,
 )
-from aaa2.engine.menu import menu_pairs as page_menu_pairs
+from aaa2.engine.menu import MenuEntry, visible_breadcrumb
+from aaa2.engine.menu import menu_entries as page_menu_entries
 
 # Az aktuális audit oldalkészlete: amit a legutóbbi crawl látott (feldolgozott, vagy a változatlan
 # tartalom miatt kihagyott; a folytatás ugyanaz a crawl). A jelölés nélküli sor (nem crawlból
@@ -95,20 +97,39 @@ OPEN_GRAPH = ("og:title", "og:type")
 _HEAD_END = re.compile(r"</head\s*>", re.IGNORECASE)
 
 
-def menu_pairs(con: duckdb.DuckDBPyConnection) -> dict[int, list[tuple[str, str, str]]]:
-    """Oldalanként a menü szülő–gyerek párjai a tárolt renderelt DOM-ból (`engine.menu`):
-    (a szülő menüpont címe, a gyerek menüpont címe, a gyerek horgonyszövege), abszolút
-    címekkel. Az aktuális készlet oldalai, amelyeknek van tárolt DOM-ja; a pár nélküli oldal
-    kimarad."""
-    found: dict[int, list[tuple[str, str, str]]] = {}
+def menu_entries(con: duckdb.DuckDBPyConnection) -> dict[int, list[MenuEntry]]:
+    """Oldalanként a menüpontok a tárolt renderelt DOM-ból (`engine.menu`: fejléc, lábléc,
+    oldalsáv; a morzsa, a lapozó és a tartalmon belüli navigáció nélkül), abszolút címekkel. Az
+    aktuális készlet oldalai, amelyeknek van tárolt DOM-ja (a menü nélküli oldal üres
+    listával)."""
+    row = con.execute("SELECT seed_url, home_urls FROM site").fetchone()
+    homes = frozenset(filter(None, [row[0], *(row[1] or [])])) if row else frozenset()
+    found: dict[int, list[MenuEntry]] = {}
     decompressor = zstandard.ZstdDecompressor()
     for page_id, url, final_url, blob in con.execute(
             f"SELECT page_id, url, final_url, rendered_html FROM pages WHERE {CURRENT} AND "
             "rendered_html IS NOT NULL ORDER BY page_id").fetchall():
         html = decompressor.decompress(blob).decode("utf-8", "replace")
-        pairs = page_menu_pairs(html, final_url or url)
-        if pairs:
-            found[page_id] = pairs
+        found[page_id] = page_menu_entries(html, final_url or url, homes)
+    return found
+
+
+def visible_breadcrumbs(con: duckdb.DuckDBPyConnection, page_ids: Sequence[int]
+                        ) -> dict[int, list[tuple[str | None, str]]]:
+    """A megadott oldalak látható morzsája a tárolt renderelt DOM-ból (`engine.menu.
+    visible_breadcrumb`): (cím vagy None, szöveg) elemek sorrendben; a morzsa nélküli oldal
+    kimarad."""
+    found: dict[int, list[tuple[str | None, str]]] = {}
+    decompressor = zstandard.ZstdDecompressor()
+    wanted = set(page_ids)
+    for page_id, url, final_url, blob in con.execute(
+            f"SELECT page_id, url, final_url, rendered_html FROM pages WHERE {CURRENT} AND "
+            "rendered_html IS NOT NULL ORDER BY page_id").fetchall():
+        if page_id in wanted:
+            trail = visible_breadcrumb(decompressor.decompress(blob).decode("utf-8", "replace"),
+                                       final_url or url)
+            if trail:
+                found[page_id] = trail
     return found
 
 

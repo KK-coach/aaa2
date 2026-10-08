@@ -146,7 +146,7 @@
       "title": "Robots Txt"
     },
     "schema_version": {
-      "default": "1.16",
+      "default": "1.17",
       "title": "Schema Version",
       "type": "string"
     },
@@ -232,5 +232,5 @@
   "title": "Site",
   "type": "object",
   "x-module": "crawl",
-  "x-schema-version": "1.16"
+  "x-schema-version": "1.17"
 }
