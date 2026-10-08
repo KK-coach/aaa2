@@ -27,9 +27,8 @@ import re
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 
-from aaa2.entities.blocks import check_surface
+from aaa2.entities.blocks import place, surface_spans
 from aaa2.entities.rules import alias_key
-from aaa2.llm.schemas import BlockEntity
 
 SOFT_TYPES = ("concept", "service")
 STRUCTURAL_KINDS = ("title", "heading", "card", "table_row")
@@ -58,11 +57,21 @@ class SoftItem:
 
 
 def soft_items(entities: Iterable[Mapping], blocks: Mapping[str, Mapping]) -> list[SoftItem]:
-    """A concept- és service-tételek az első említésük sorrendjében."""
+    """A concept- és service-tételek az első említésük sorrendjében. A szomszéd blokkra
+    mutató említés a szomszéd blokkjával számít (`blocks.place`; a tételen `block_corrected`
+    és `block_given`), a máshol sem található kimarad."""
     groups: dict[str, SoftItem] = {}
+    ordered = list(blocks.values())
+    index = {block["id"]: at for at, block in enumerate(ordered)}
     for raw in entities:
-        if not check_surface(BlockEntity.model_construct(**raw), blocks):
+        surface = raw.get("surface_form") or ""
+        found = place(raw.get("block_id"), ordered, index,
+                      lambda block, surface=surface: bool(surface_spans(surface, block)))
+        if found is None:
             continue
+        if found[1] is not None:
+            raw = {**raw, "block_id": found[0]["id"], "block_corrected": found[1],
+                   "block_given": raw.get("block_id")}
         key = alias_key(raw["canonical_name"])
         item = groups.setdefault(key, SoftItem(key, raw["canonical_name"], raw["type"]))
         item.mentions.append(raw)

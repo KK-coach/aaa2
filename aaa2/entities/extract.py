@@ -9,9 +9,15 @@ determinisztikus kör entitásaival összevonva.
   blokk, mindegyik a title-lel és a site-leíró mondattal); a darabok említései és főtémái
   összefésülve (`extract_page`).
 - Ellenőrzés: a `surface_form` a megadott blokk szövegében áll-e, szóhatárral, kis-nagybetű- és
-  whitespace-érzéketlenül (`surface_offsets`); ha nem, kitalált: eldobva, és az
-  `llm_calls.fabricated_count`, az `entity_runs.fabricated` számolja. Az első előfordulás adja a
-  pozíciót.
+  whitespace-érzéketlenül (`surface_offsets`). Ha ott nem, de pontosan az egyik közvetlen
+  szomszédjában (az előző vagy a következő tartalmi blokkban) megvan, az említés a szomszéd
+  blokkhoz kerül, jelöléssel (`page_entities.block_corrected`: „-1” / „+1”, `block_given`: a
+  modell eredeti azonosítója; `blocks.place`). Ha mindkét szomszédban megvan, vagy egyikben
+  sem: kitalált, eldobva, és az `llm_calls.fabricated_count`, az `entity_runs.fabricated`
+  számolja. A javítás nem hoz be ellenőrizetlen saját ajánlatot: ha a rekord a kinyerés utáni
+  lépésen már átment, és a javított service-tételről abban nincs döntés, az említés eldobva
+  marad. A tárolt rekord a modell eredeti azonosítóját őrzi; a javítás a visszaíráskor
+  számolódik. Az első előfordulás adja a pozíciót.
 - position: title (a title-blokk), h1 / heading (heading-blokk, a szintje szerint), különben body.
 - Említés: oldal, blokk, pozíció és entitás szerint egyszer; a forrása a `mention_sources`-ban
   (source = llm, a futás, a kinyerő hívás). A `description` az LLM rövid leírása.
@@ -96,7 +102,7 @@ from aaa2.db import transaction
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
 from aaa2.entities import store
-from aaa2.entities.blocks import BLOCK_PROMPT, block_input, chunk_blocks
+from aaa2.entities.blocks import BLOCK_PROMPT, block_input, chunk_blocks, place
 from aaa2.entities.dom import build_blocks, page_blocks
 from aaa2.entities.llm import site_line
 from aaa2.entities.rules import ATTACH_ORDER, SOURCE_STRENGTH, alias_key
@@ -530,6 +536,36 @@ def _unplaced(record: Mapping, blocks: Sequence[dict]) -> int:
     return missing
 
 
+def _unplaced_counts(record: Mapping, blocks: Sequence[dict]) -> set[int]:
+    """A rekord el nem helyezhető említéseinek száma a szomszéd-javítás nélkül és azzal: a
+    blokk-hash nélküli régi rekord tárolt `fabricated` értéke bármelyik lehet (a javítás előtt
+    vagy után íródott)."""
+    order = {block["id"]: at for at, block in enumerate(blocks)}
+    judged = {alias_key(item["canonical"]) for item in record["v3"].get("services") or []} \
+        if record.get("v3") is not None else None
+    corrected = sum(1 for raw in record["entities"] or []
+                    if _placed(raw, record, blocks, order, judged) is None)
+    return {_unplaced(record, blocks), corrected}
+
+
+def _placed(raw: Mapping, record: Mapping, blocks: Sequence[dict], index: Mapping[str, int],
+            judged: set[str] | None) -> tuple[dict, list[tuple[int, int]], str | None] | None:
+    """Az említés helye a visszaíráshoz: (a blokk, az előfordulások, a javítás jele) vagy None
+    (eldobva). `judged`: a kinyerés utáni lépésben megítélt service-tételek kulcsai (None: a
+    rekord nem ment át a lépésen); a javított, ott meg nem ítélt service-említés eldobva marad
+    (lásd a modul leírását)."""
+    surface = raw.get("surface_form", "")
+    found = place(raw.get("block_id"), blocks, index,
+                  lambda block: bool(surface_offsets(surface, block["text"])))
+    if found is None:
+        return None
+    block, sign = found
+    if sign is not None and raw.get("type") == "service" and judged is not None \
+            and alias_key(raw.get("canonical_name") or "") not in judged:
+        return None
+    return block, surface_offsets(surface, block["text"]), sign
+
+
 def restore_plan(con: duckdb.DuckDBPyConnection) -> dict[int, tuple[str, dict | None, list]]:
     """Oldalanként, hogy a tárolt kinyerés visszaírható-e: (`restore`, a rekord, a blokkok),
     vagy a kimaradás oka a rekorddal és a blokkokkal. Az érvényességet a blokkok döntik el: a
@@ -553,8 +589,8 @@ def restore_plan(con: duckdb.DuckDBPyConnection) -> dict[int, tuple[str, dict | 
             plan[page_id] = ("restore_no_record", None, blocks)
         elif (stored["blocks_hash"] != block_fingerprint(blocks)
               if stored["blocks_hash"] is not None
-              else _unplaced(stored["refined"] or stored["extraction"], blocks)
-              != stored["fabricated"]):
+              else stored["fabricated"] not in _unplaced_counts(
+                  stored["refined"] or stored["extraction"], blocks)):
             plan[page_id] = ("restore_input_changed", stored, blocks)
         else:
             plan[page_id] = ("restore", stored, blocks)
@@ -781,7 +817,9 @@ def _store(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int, lang: str 
     """Az oldal említései (a korábbi, azonos modelltől származó llm-források helyett), a
     típus-szavazatok és a `v3` bizonyítékai; `save` nélkül csak a kitaláltak száma. Visszaad:
     a kitalált említések száma."""
-    by_id = {block["id"]: block for block in blocks}
+    order = {block["id"]: at for at, block in enumerate(blocks)}
+    judged = {alias_key(item["canonical"]) for item in record["v3"].get("services") or []} \
+        if record.get("v3") is not None else None
     extract_call = record.get("call_id")
     if save:
         store.delete_mention_sources_in_store(con, page_id, llm_calls.model_call_ids(con, model))
@@ -790,20 +828,21 @@ def _store(con: duckdb.DuckDBPyConnection, run_id: int, page_id: int, lang: str 
     written: set[int] = set()
     entity_of: dict[str, int] = {}
     for raw in record["entities"] or []:
-        block = by_id.get(raw.get("block_id"))
-        offsets = surface_offsets(raw.get("surface_form", ""), block["text"]) if block else []
-        if not offsets:
+        found = _placed(raw, record, blocks, order, judged)
+        if found is None:
             fabricated += 1
             continue
         if not save:
             continue
+        block, offsets, sign = found
         start, end = offsets[0]
         entity_id = index.resolve(con, raw["canonical_name"], raw["type"], raw.get("subtype"),
                                   _primary(lang), started)
         entity_of.setdefault(alias_key(raw["canonical_name"]), entity_id)
         index.vote(entity_id, raw["type"])
         mention_id = _store_mention(con, page_id, entity_id, block, start, end,
-                                    _position(block), raw.get("description"))
+                                    _position(block), raw.get("description"),
+                                    (sign, raw.get("block_id")) if sign else None)
         if mention_id in written:
             continue
         written.add(mention_id)
@@ -968,14 +1007,22 @@ def _position(block: dict) -> str:
 
 
 def _store_mention(con: duckdb.DuckDBPyConnection, page_id: int, entity_id: int, block: dict,
-                   start: int, end: int, position: str, description: str | None) -> int:
+                   start: int, end: int, position: str, description: str | None,
+                   corrected: tuple[str, str | None] | None = None) -> int:
     """A meglévő említés (azonos oldal, blokk, pozíció, entitás) azonosítója, a leírással
-    kiegészítve, ha még nincs; vagy egy új sor."""
+    kiegészítve, ha még nincs; vagy egy új sor. `corrected`: a szomszéd blokkra javított
+    említés jele és a modell eredeti blokkazonosítója (az új soron tárolva). Ha ugyanazt az
+    említést a modell a helyes blokkal is megadta, a jelölés lekerül: csak az az említés
+    jelölt, amelyet kizárólag a javítás adott."""
     found = store.page_entities_for_store_mention(con, page_id, block["block_id"], start, end, entity_id)
     if found:
         store.update_page_entities_in_store_mention(con, description, found[0])
+        if corrected is None:
+            store.clear_block_correction(con, found[0])
         return found[0]
-    (mention_id,) = store.insert_page_entities_in_store_mention(con, page_id, entity_id, block["block_id"], start, end, block["text"][start:end], position, description)
+    (mention_id,) = store.insert_page_entities_in_store_mention(
+        con, page_id, entity_id, block["block_id"], start, end, block["text"][start:end],
+        position, description, *(corrected or (None, None)))
     return mention_id
 
 
