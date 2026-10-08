@@ -30,8 +30,30 @@ def _subtype_lines() -> str:
     return "\n".join(lines)
 
 
-def block_prompt() -> str:
-    """A blokkos prompt (a mesterséges oldalak 3a változata, rögzítve)."""
+# A bemenet formája: `lines` (az alapérték: az azonosító külön sorban, alatta a szöveg) vagy
+# `inline` (mérési változat: az azonosító a szöveggel egy sorban, a címsor a szintjével jelölve).
+INPUT_FORMS = ("lines", "inline")
+INPUT_FORM = "lines"
+_FORM_SENTENCE = {
+    "lines": ("each starts with its id in "
+              "square brackets on its own line, followed by the block text.\n\n"),
+    "inline": ("each block is one line: its id in square brackets, then, for a heading, its "
+               "level in parentheses (H1 to H6), then the block text. An id always refers to "
+               "the text on its own line.\n\n")}
+
+
+def block_prompt(form: str = "lines") -> str:
+    """A blokkos prompt (a mesterséges oldalak 3a változata, rögzítve); `form`: a bemenet
+    formáját leíró mondat változata (`INPUT_FORMS`)."""
+    return _block_prompt().replace(_FORM_SENTENCE["lines"], _FORM_SENTENCE[form])
+
+
+def prompt_for(form: str | None = None) -> str:
+    """A prompt a megadott (vagy a beállított, `INPUT_FORM`) bemeneti formához."""
+    return block_prompt(form or INPUT_FORM)
+
+
+def _block_prompt() -> str:
     return (
         "Extract every entity the page is about or mentions: named things, offered products or "
         "services, and definable professional concepts. A single mention is enough. Generic "
@@ -170,8 +192,17 @@ def _sections(blocks: list[Mapping], size: int, below: int) -> list[list[Mapping
 
 def block_input(site_description: str, blocks: Sequence[Mapping]) -> str:
     """A hívás bemenete: a site-leíró sor, utána blokkonként az `[id]` sor és a szöveg, üres
-    sorral elválasztva, a dokumentum sorrendjében; heading-útvonal és blokktípus nélkül."""
+    sorral elválasztva, a dokumentum sorrendjében; heading-útvonal és blokktípus nélkül. Az
+    `inline` formánál (`INPUT_FORM`, mérési változat) egy blokk egy sor: `[id] szöveg`, a
+    címsornál a szintjével (`[id] (H2) szöveg`; a szint a blokk `level` mezője, ennek híján a
+    heading-útvonal mélysége), a szöveg sortörései szóközzé válnak."""
     parts = [site_description.strip()]
+    if INPUT_FORM == "inline":
+        for block in blocks:
+            level = block.get("level") or len(block.get("heading_path") or []) or 1
+            mark = f"(H{min(level, 6)}) " if block.get("kind") == "heading" else ""
+            parts.append(f"[{block['id']}] {mark}{' '.join(block_text(block).split())}")
+        return "\n\n".join(parts)
     parts += [f"[{block['id']}]\n{block_text(block)}" for block in blocks]
     return "\n\n".join(parts)
 

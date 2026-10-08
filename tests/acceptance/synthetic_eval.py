@@ -800,6 +800,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--model", default=None,
                         help="a kinyerés modellje (alapból a [pipeline] extraction)")
     parser.add_argument("--tag", default="", help="a kör címkéje (r1, r2, …)")
+    parser.add_argument("--input-form", default=None, choices=("lines", "inline"),
+                        help="run: a kinyerés bemeneti formája ehhez a futáshoz")
     parser.add_argument("--single", default="", help="compare: egyszeri körök címkéi, vesszővel")
     parser.add_argument("--repeated", action="append", default=[],
                         help="compare: név=címke1,címke2,… (ismételt futások)")
@@ -838,6 +840,9 @@ def main(argv: list[str] | None = None) -> None:
         print(out)
         return
     if args.command == "run":
+        if args.input_form:
+            import aaa2.entities.blocks as block_module
+            block_module.INPUT_FORM = args.input_form
         run(args.model, args.data_dir, pages, args.tag)
     args.out.mkdir(parents=True, exist_ok=True)
     out = args.out / f"{args.model}{'-' + args.tag if args.tag else ''}-report.md"

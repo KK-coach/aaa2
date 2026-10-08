@@ -102,7 +102,7 @@ from aaa2.db import transaction
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
 from aaa2.entities import store
-from aaa2.entities.blocks import BLOCK_PROMPT, block_input, chunk_blocks, place
+from aaa2.entities.blocks import BLOCK_PROMPT, block_input, chunk_blocks, place, prompt_for
 from aaa2.entities.dom import build_blocks, page_blocks
 from aaa2.entities.llm import site_line
 from aaa2.entities.rules import ATTACH_ORDER, SOURCE_STRENGTH, alias_key
@@ -173,7 +173,7 @@ def extract_page(client: LLMClient, site: str, blocks: Sequence[dict],
         if only is not None and index not in only:
             continue
         try:
-            reply = client.extract(BlockExtraction, BLOCK_PROMPT, block_input(site, chunk),
+            reply = client.extract(BlockExtraction, prompt_for(), block_input(site, chunk),
                                    domain="entity", page_id=page_id)
         except SchemaMismatch as exc:
             result.call_ids.append(exc.call_id)

@@ -983,3 +983,21 @@ def test_the_mark_goes_only_on_a_mention_that_the_correction_alone_gave(tmp_path
     assert (run.rows, run.fabricated) == (2, 0)
     assert con.execute("SELECT count(*) FROM page_entities WHERE block_corrected IS NOT NULL"
                        ).fetchone() == (0,)
+
+
+def test_the_inline_input_form_is_optional_and_the_default_is_unchanged(monkeypatch):
+    import aaa2.entities.blocks as blocks_module
+    from aaa2.entities.blocks import BLOCK_PROMPT, block_input, block_prompt, prompt_for
+
+    blocks = [{"id": "b0", "kind": "title", "text": "Cím"},
+              {"id": "b1", "kind": "heading", "level": 2, "text": "UX & Konverzió"},
+              {"id": "b2", "kind": "paragraph", "text": "Döntési útvonalak\nkialakítása."}]
+    assert block_input("Site.", blocks) == (
+        "Site.\n\n[b0]\nCím\n\n[b1]\nUX & Konverzió\n\n[b2]\nDöntési útvonalak\nkialakítása.")
+    assert prompt_for() == BLOCK_PROMPT == block_prompt()
+    assert "on its own line, followed by the block text" in BLOCK_PROMPT
+    monkeypatch.setattr(blocks_module, "INPUT_FORM", "inline")
+    assert block_input("Site.", blocks) == (
+        "Site.\n\n[b0] Cím\n\n[b1] (H2) UX & Konverzió\n\n[b2] Döntési útvonalak kialakítása.")
+    assert "An id always refers to the text on its own line." in prompt_for()
+    assert "on its own line, followed by the block text" not in prompt_for()
