@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.13"
+SCHEMA_VERSION = "1.14"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -588,6 +588,17 @@ class SchemaAbout(Contract):
     same_as_main: bool | None = None
 
 
+class HubChild(Contract):
+    """Egy hub-oldal egy gyereke: az URL-je, a szerepe, honnan ismert (`source`: menü,
+    tartalom vagy mindkettő), és visszalinkel-e a tartalmából a hubra."""
+
+    module: ClassVar[str] = "findings"
+    url: str
+    role: str
+    source: str
+    links_back: bool = False
+
+
 HeadingRelation = Literal["main", "related", "unrelated", "no_entity", "no_main"]
 
 
@@ -641,7 +652,8 @@ class PageView(Contract):
     az elemével; `h1_count`; `og_title`; `schema_titles`; `title_differences`: mely mezők
     szövege tér el), a schema `about` (`schema_about`), a legfelső szintű schema-típusok
     (`schema_types`) és a szerep és a jelölés ellentmondása (`role_markup_note`), a további
-    említett
+    említett entitások előtt a hub-címke (`hub`: menü-hub, tartalmi hub vagy kategória-hub;
+    None, ha az oldal nem hub) a gyerekeivel (`hub_children`), a további említett
     entitások, az oldal megállapításai, a jelzések (`notes`: a kinyerés nem nevezett meg fő
     témát; a nyelvi pár fő entitása eltér), és a heading-fa (a sablon- és chrome-headingek nélkül;
     `h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél)."""
@@ -675,6 +687,8 @@ class PageView(Contract):
     schema_about: list[SchemaAbout] = Field(default_factory=list)
     schema_types: list[str] = Field(default_factory=list)
     role_markup_note: str | None = None
+    hub: str | None = None
+    hub_children: list[HubChild] = Field(default_factory=list)
     other_mentions: list[PageMention] = Field(default_factory=list)
     findings: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
@@ -697,7 +711,7 @@ class SiteViews(Contract):
 
 # a több táblából összeállított szerződések (nincs egyetlen forrástáblájuk)
 DERIVED: tuple[type[Contract], ...] = (
-    FindingView, EntityRelation, OtherName, EntityView, PageMention, TitleField, SchemaAbout, HeadingEntity, HeadingOutside,
+    FindingView, EntityRelation, OtherName, EntityView, PageMention, TitleField, SchemaAbout, HubChild, HeadingEntity, HeadingOutside,
     HeadingView, PageView, SiteViews)
 
 CONTRACTS: tuple[type[Contract], ...] = (

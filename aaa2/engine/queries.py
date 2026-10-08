@@ -27,6 +27,7 @@ from aaa2.contracts import (
     SitemapUrl,
     StructuredData,
 )
+from aaa2.engine.menu import menu_pairs as page_menu_pairs
 
 # Az aktuális audit oldalkészlete: amit a legutóbbi crawl látott (feldolgozott, vagy a változatlan
 # tartalom miatt kihagyott; a folytatás ugyanaz a crawl). A jelölés nélküli sor (nem crawlból
@@ -92,6 +93,23 @@ def rendered(con: duckdb.DuckDBPyConnection, page_id: int) -> tuple[str | None, 
 
 OPEN_GRAPH = ("og:title", "og:type")
 _HEAD_END = re.compile(r"</head\s*>", re.IGNORECASE)
+
+
+def menu_pairs(con: duckdb.DuckDBPyConnection) -> dict[int, list[tuple[str, str, str]]]:
+    """Oldalanként a menü szülő–gyerek párjai a tárolt renderelt DOM-ból (`engine.menu`):
+    (a szülő menüpont címe, a gyerek menüpont címe, a gyerek horgonyszövege), abszolút
+    címekkel. Az aktuális készlet oldalai, amelyeknek van tárolt DOM-ja; a pár nélküli oldal
+    kimarad."""
+    found: dict[int, list[tuple[str, str, str]]] = {}
+    decompressor = zstandard.ZstdDecompressor()
+    for page_id, url, final_url, blob in con.execute(
+            f"SELECT page_id, url, final_url, rendered_html FROM pages WHERE {CURRENT} AND "
+            "rendered_html IS NOT NULL ORDER BY page_id").fetchall():
+        html = decompressor.decompress(blob).decode("utf-8", "replace")
+        pairs = page_menu_pairs(html, final_url or url)
+        if pairs:
+            found[page_id] = pairs
+    return found
 
 
 def open_graph(con: duckdb.DuckDBPyConnection) -> dict[int, dict[str, str]]:

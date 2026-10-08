@@ -24,7 +24,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.13",
+          "default": "1.14",
           "title": "Schema Version",
           "type": "string"
         }
@@ -42,7 +42,7 @@
       "description": "Egy H1 a fő tartalmon kívül: `cookie` (cookie- vagy consent-elem), `dialog` (popup,\nmodális ablak), `chrome` (fejléc, menü, lábléc, oldalsáv).",
       "properties": {
         "schema_version": {
-          "default": "1.13",
+          "default": "1.14",
           "title": "Schema Version",
           "type": "string"
         },
@@ -111,7 +111,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.13",
+          "default": "1.14",
           "title": "Schema Version",
           "type": "string"
         },
@@ -148,6 +148,41 @@
       "title": "HeadingView",
       "type": "object"
     },
+    "HubChild": {
+      "additionalProperties": false,
+      "description": "Egy hub-oldal egy gyereke: az URL-je, a szerepe, honnan ismert (`source`: menü,\ntartalom vagy mindkettő), és visszalinkel-e a tartalmából a hubra.",
+      "properties": {
+        "links_back": {
+          "default": false,
+          "title": "Links Back",
+          "type": "boolean"
+        },
+        "role": {
+          "title": "Role",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1.14",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "role",
+        "source"
+      ],
+      "title": "HubChild",
+      "type": "object"
+    },
     "PageMention": {
       "additionalProperties": false,
       "description": "Egy oldalon említett további entitás a súlyával.",
@@ -161,7 +196,7 @@
           "type": "integer"
         },
         "schema_version": {
-          "default": "1.13",
+          "default": "1.14",
           "title": "Schema Version",
           "type": "string"
         },
@@ -250,7 +285,7 @@
           "title": "Same As Main"
         },
         "schema_version": {
-          "default": "1.13",
+          "default": "1.14",
           "title": "Schema Version",
           "type": "string"
         },
@@ -279,7 +314,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.13",
+          "default": "1.14",
           "title": "Schema Version",
           "type": "string"
         },
@@ -297,7 +332,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a\nmásodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a címmezők tényként\n(`title_cut`: a title a site-utótag nélkül; `visible_title`: a tartalmi régió első címsora\naz elemével; `h1_count`; `og_title`; `schema_titles`; `title_differences`: mely mezők\nszövege tér el), a schema `about` (`schema_about`), a legfelső szintű schema-típusok\n(`schema_types`) és a szerep és a jelölés ellentmondása (`role_markup_note`), a további\nemlített\nentitások, az oldal megállapításai, a jelzések (`notes`: a kinyerés nem nevezett meg fő\ntémát; a nyelvi pár fő entitása eltér), és a heading-fa (a sablon- és chrome-headingek nélkül;\n`h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél).",
+  "description": "Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a\nmásodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a címmezők tényként\n(`title_cut`: a title a site-utótag nélkül; `visible_title`: a tartalmi régió első címsora\naz elemével; `h1_count`; `og_title`; `schema_titles`; `title_differences`: mely mezők\nszövege tér el), a schema `about` (`schema_about`), a legfelső szintű schema-típusok\n(`schema_types`) és a szerep és a jelölés ellentmondása (`role_markup_note`), a további\nemlített entitások előtt a hub-címke (`hub`: menü-hub, tartalmi hub vagy kategória-hub;\nNone, ha az oldal nem hub) a gyerekeivel (`hub_children`), a további említett\nentitások, az oldal megállapításai, a jelzések (`notes`: a kinyerés nem nevezett meg fő\ntémát; a nyelvi pár fő entitása eltér), és a heading-fa (a sablon- és chrome-headingek nélkül;\n`h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél).",
   "properties": {
     "canonical_issue": {
       "anyOf": [
@@ -404,6 +439,25 @@
         "$ref": "#/$defs/HeadingView"
       },
       "title": "Headings",
+      "type": "array"
+    },
+    "hub": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Hub"
+    },
+    "hub_children": {
+      "items": {
+        "$ref": "#/$defs/HubChild"
+      },
+      "title": "Hub Children",
       "type": "array"
     },
     "in_h1": {
@@ -546,7 +600,7 @@
       "type": "array"
     },
     "schema_version": {
-      "default": "1.13",
+      "default": "1.14",
       "title": "Schema Version",
       "type": "string"
     },
@@ -637,5 +691,5 @@
   "title": "PageView",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.13"
+  "x-schema-version": "1.14"
 }
