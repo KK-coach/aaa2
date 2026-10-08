@@ -2,7 +2,7 @@
 site-on, hálózat és LLM nélkül."""
 import csv
 
-from aaa2.engine.menu import menu_pairs
+from aaa2.engine.menu import menu_entries
 from aaa2.entities.rules import run_rules
 from aaa2.functions.findings import build_findings, export_views, site_views
 from aaa2.functions.graph import build_graph
@@ -11,6 +11,14 @@ from tests.test_entities_rules import html, ld, site
 from tests.test_entities_site import NOON
 
 BASE = "https://pelda.hu"
+
+
+def menu_pairs(page_html, base_url):
+    """A fejléc-menü szülő–gyerek párjai: (a szülő címe, a gyerek címe, a gyerek horgonya)."""
+    return sorted((entry.parent, entry.url, entry.anchor)
+                  for entry in menu_entries(page_html, base_url)
+                  if entry.area == "header" and entry.parent and not entry.parent_is_label)
+
 LIST_MENU = ('<nav><ul><li><a href="/szolgaltatasok/">Szolgáltatások</a><ul>'
              '<li><a href="/seo/">SEO</a><ul><li><a href="/seo/technikai/">Technikai</a></li>'
              '</ul></li><li><a href="/meres/">Mérés</a></li></ul></li>'
@@ -26,13 +34,13 @@ DIV_MENU = ('<header><a href="/">Pelda</a><nav class="asztali"><div class="hub">
 
 def test_menu_pairs_from_nested_lists_and_from_plain_containers():
     assert menu_pairs(f"<html><body>{LIST_MENU}</body></html>", f"{BASE}/x/") == [
-        (f"{BASE}/szolgaltatasok/", f"{BASE}/seo/", "SEO"),
+        (f"{BASE}/seo/", f"{BASE}/seo/technikai/", "Technikai"),      # az unoka a gyerek alatt
         (f"{BASE}/szolgaltatasok/", f"{BASE}/meres/", "Mérés"),
-        (f"{BASE}/seo/", f"{BASE}/seo/technikai/", "Technikai")]      # az unoka a gyerek alatt
+        (f"{BASE}/szolgaltatasok/", f"{BASE}/seo/", "SEO")]
     # listák nélküli lenyíló; a logó nem szülő, a lapos mobilmenü nem ad párt és nem dupláz
     assert menu_pairs(f"<html><body>{DIV_MENU}</body></html>", f"{BASE}/x/") == [
-        (f"{BASE}/szolgaltatasok/", f"{BASE}/seo/", "SEO"),
-        (f"{BASE}/szolgaltatasok/", f"{BASE}/meres/", "Mérés")]
+        (f"{BASE}/szolgaltatasok/", f"{BASE}/meres/", "Mérés"),
+        (f"{BASE}/szolgaltatasok/", f"{BASE}/seo/", "SEO")]
     # egy szint két menüpontja nem szülő és gyerek
     flat = '<nav><ul><li><a href="/a/">A</a></li><li><a href="/b/">B</a></li></ul></nav>'
     assert menu_pairs(f"<html><body>{flat}</body></html>", f"{BASE}/x/") == []
@@ -73,20 +81,20 @@ def test_a_flat_submenu_item_under_a_sibling_address_belongs_to_that_sibling():
             '<a href="/seo-eszkozok/">SEO-eszközök</a><a href="/meres/">Mérés</a>'
             '<a href="/rendszer/megvalositas/">Megvalósítás</a></div></div></nav>')
     assert menu_pairs(f"<html><body>{flat}</body></html>", f"{BASE}/x/") == [
-        (f"{BASE}/rendszer/", f"{BASE}/seo/", "SEO"),
-        (f"{BASE}/seo/", f"{BASE}/seo/technikai/", "Technikai SEO"),     # a testvér címe alatt
-        (f"{BASE}/rendszer/", f"{BASE}/seo-eszkozok/", "SEO-eszközök"),  # nem `/`-határ
         (f"{BASE}/rendszer/", f"{BASE}/meres/", "Mérés"),
         # a szülő címe alatti menüpont a szülő gyereke marad
-        (f"{BASE}/rendszer/", f"{BASE}/rendszer/megvalositas/", "Megvalósítás")]
+        (f"{BASE}/rendszer/", f"{BASE}/rendszer/megvalositas/", "Megvalósítás"),
+        (f"{BASE}/rendszer/", f"{BASE}/seo-eszkozok/", "SEO-eszközök"),  # nem `/`-határ
+        (f"{BASE}/rendszer/", f"{BASE}/seo/", "SEO"),
+        (f"{BASE}/seo/", f"{BASE}/seo/technikai/", "Technikai SEO")]     # a testvér címe alatt
     # a kezdőlap egy szinten a többivel: nem szülője mindennek; másik host alá nem kerül
     home = ('<nav><div><a href="/rendszer/">Szolgáltatások</a><div><a href="/">Kezdőlap</a>'
             '<a href="/seo/">SEO</a><a href="https://masik.hu/seo/technikai/">Külső</a>'
             '</div></div></nav>')
     assert menu_pairs(f"<html><body>{home}</body></html>", f"{BASE}/x/") == [
+        (f"{BASE}/rendszer/", "https://masik.hu/seo/technikai/", "Külső"),
         (f"{BASE}/rendszer/", f"{BASE}/", "Kezdőlap"),
-        (f"{BASE}/rendszer/", f"{BASE}/seo/", "SEO"),
-        (f"{BASE}/rendszer/", "https://masik.hu/seo/technikai/", "Külső")]
+        (f"{BASE}/rendszer/", f"{BASE}/seo/", "SEO")]
 
 
 def test_hub_labels_and_children_in_the_page_view(tmp_path):

@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "description": "Egy nyelv oldalainak kattintási mélysége a nyelv kezdőoldalától (`home`), vödrönként\n(0, 1, 2, 3, 4+, elérhetetlen).",
+  "properties": {
+    "counts": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Counts",
+      "type": "object"
+    },
+    "home": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Home"
+    },
+    "lang": {
+      "title": "Lang",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.17",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "lang"
+  ],
+  "title": "DepthDistribution",
+  "type": "object",
+  "x-module": "findings",
+  "x-schema-version": "1.17"
+}

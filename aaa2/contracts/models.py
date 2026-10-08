@@ -3,7 +3,8 @@
 
 - Modulonként: `llm` → `LLMCall`; `crawl` → `Site`, `CrawlRun`, `Page`, `Link`, `PageMeta`, `StructuredData`; `extract` → `Block`,
   `Mention`, `Candidate`; `resolve` → `Entity`, `Alias`, `Relation`, `MergeRecord`, `KbLink`;
-  `graph` → `PageNode`, `Edge`, `MainEntity`, `EntityWeight`; `findings` → `Finding`, és a
+  `graph` → `PageNode`, `Edge`, `MainEntity`, `EntityWeight`, `MenuItem`, `MenuDifference`;
+  `findings` → `Finding`, és a
   riport bemenete: `SiteViews` (`FindingView`, `EntityView`, `PageView`).
 - Minden modell `schema_version` mezőt hordoz (`SCHEMA_VERSION`); a szerződés változása
   verzióemelés.
@@ -22,7 +23,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.16"
+SCHEMA_VERSION = "1.17"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -469,6 +470,45 @@ class MainEntity(Contract):
     external_confirmation: Any = _json()
 
 
+MenuArea = Literal["header", "footer", "sidebar"]
+
+
+class MenuItem(Contract):
+    """A site-szintű menüfa egy menüpontja (`menu_items`): nyelv és terület (fejléc / lábléc /
+    oldalsáv) szerint. `url`: None a link nélküli szülő-címkénél; `page_id`: a készletbeli oldal;
+    `level`: 0 = felső szint; `marker`: `logo` / `home_icon`; `pages`: hány oldalon áll;
+    `area_pages`: a nyelv hány oldalán áll a terület."""
+
+    module: ClassVar[str] = "graph"
+    item_id: int
+    lang: str
+    area: MenuArea
+    ordinal: int
+    url: str | None = None
+    page_id: int | None = None
+    anchor: str
+    parent_id: int | None = None
+    level: int
+    marker: Literal["logo", "home_icon"] | None = None
+    pages: int
+    area_pages: int
+
+
+class MenuDifference(Contract):
+    """Egy oldal eltérése a site-szintű menüfától (`menu_page_differences`): `extra` (az oldalon
+    áll, a fában nem) vagy `missing` (a fában áll, az oldalon nem). `url`: a menüpont címe vagy
+    a link nélküli címke; `parent`: a szülő címe vagy címkéje."""
+
+    module: ClassVar[str] = "graph"
+    page_id: int
+    lang: str
+    area: MenuArea
+    kind: Literal["extra", "missing"]
+    url: str
+    anchor: str
+    parent: str | None = None
+
+
 class EntityWeight(Contract):
     """Egy entitás súlya a site-on (`entity_weights`)."""
 
@@ -604,6 +644,54 @@ class HubChild(Contract):
     links_back: bool = False
 
 
+class MenuItemView(Contract):
+    """A site menüfájának egy menüpontja a nézetben: a nyelv, a terület, a szint, a
+    horgonyszöveg, a cím, a szülő menüpont (horgonyszöveg), a céloldal fő entitása és szerepe
+    (ha a cél a készlet oldala), a céloldal kattintási mélysége a saját nyelvű kezdőoldaltól,
+    és hogy hány oldalon áll a területet hordozó oldalak közül."""
+
+    module: ClassVar[str] = "findings"
+    lang: str
+    area: MenuArea
+    level: int
+    anchor: str
+    url: str | None = None
+    parent: str | None = None
+    in_set: bool = False
+    main_entity: str | None = None
+    role: str | None = None
+    click_depth: int | None = None
+    pages: int
+    area_pages: int
+    marker: str | None = None
+
+
+class DepthDistribution(Contract):
+    """Egy nyelv oldalainak kattintási mélysége a nyelv kezdőoldalától (`home`), vödrönként
+    (0, 1, 2, 3, 4+, elérhetetlen)."""
+
+    module: ClassVar[str] = "findings"
+    lang: str
+    home: str | None = None
+    counts: dict[str, int] = Field(default_factory=dict)
+
+
+class SiteStructureView(Contract):
+    """A site belső struktúrája a nézetben: a menüfa, a mélység-eloszlás nyelvenként, a
+    kezdőoldalról elérhetetlen oldalak, és az URL-hierarchia mért feltétele (`url_pages`: a nem
+    kezdőoldalak száma, `url_deep`: ebből legalább két útvonal-szakaszon áll, `url_with_parent`:
+    ezekből a szülő útvonalon létező oldal áll; `url_hierarchical`: az URL-szülő értelmezhető)."""
+
+    module: ClassVar[str] = "findings"
+    menu: list[MenuItemView] = Field(default_factory=list)
+    depth: list[DepthDistribution] = Field(default_factory=list)
+    unreachable: list[str] = Field(default_factory=list)
+    url_hierarchical: bool = False
+    url_pages: int = 0
+    url_deep: int = 0
+    url_with_parent: int = 0
+
+
 HeadingRelation = Literal["main", "related", "unrelated", "no_entity", "no_main"]
 
 
@@ -694,6 +782,19 @@ class PageView(Contract):
     role_markup_note: str | None = None
     hub: str | None = None
     hub_children: list[HubChild] = Field(default_factory=list)
+    click_depth: int | None = None
+    click_depth_menu: int | None = None
+    click_depth_content: int | None = None
+    unreachable: bool | None = None
+    menu_level: int | None = None
+    in_footer_menu: bool | None = None
+    in_sidebar_menu: bool | None = None
+    breadcrumb_level: int | None = None
+    url_level: int | None = None
+    menu_parent: str | None = None
+    breadcrumb_parent: str | None = None
+    url_parent: str | None = None
+    parents_agree: bool | None = None
     other_mentions: list[PageMention] = Field(default_factory=list)
     findings: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
@@ -712,14 +813,16 @@ class SiteViews(Contract):
     findings: list[FindingView] = Field(default_factory=list)
     entities: list[EntityView] = Field(default_factory=list)
     pages: list[PageView] = Field(default_factory=list)
+    structure: SiteStructureView | None = None
 
 
 # a több táblából összeállított szerződések (nincs egyetlen forrástáblájuk)
 DERIVED: tuple[type[Contract], ...] = (
-    FindingView, EntityRelation, OtherName, EntityView, PageMention, TitleField, SchemaAbout, HubChild, HeadingEntity, HeadingOutside,
-    HeadingView, PageView, SiteViews)
+    FindingView, EntityRelation, OtherName, EntityView, PageMention, TitleField, SchemaAbout, HubChild, MenuItemView, DepthDistribution,
+    SiteStructureView, HeadingEntity, HeadingOutside, HeadingView, PageView, SiteViews)
 
 CONTRACTS: tuple[type[Contract], ...] = (
     LLMCall, Site, CrawlRun, SitemapFile, SitemapUrl, Page, Link, PageMeta, StructuredData, Block, Mention, MentionSource, Candidate, Entity, Alias,
-    Relation, MergeRecord, KbLink, PageNode, Edge, MainEntity, EntityWeight, Finding,
+    Relation, MergeRecord, KbLink, PageNode, Edge, MainEntity, EntityWeight, MenuItem,
+    MenuDifference, Finding,
     *DERIVED)

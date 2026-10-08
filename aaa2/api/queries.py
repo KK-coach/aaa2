@@ -19,6 +19,8 @@ from aaa2.contracts import (
     Link,
     LLMCall,
     MainEntity,
+    MenuDifference,
+    MenuItem,
     Page,
     PageMeta,
     PageNode,
@@ -31,6 +33,7 @@ from aaa2.engine import queries as crawl_queries
 from aaa2.entities import store
 from aaa2.functions import findings as findings_module
 from aaa2.functions import graph_queries
+from aaa2.functions import structure as structure_module
 from aaa2.llm import calls as llm_calls
 from aaa2.llm import ledger
 from aaa2.llm.config import load_config
@@ -110,6 +113,16 @@ def edges(site: Site, kind: str | None = None) -> list[Edge]:
 def main_entities(site: Site) -> list[MainEntity]:
     """Az oldalak fő és másodlagos entitásai a bizonyítékokkal, az oldal és a rangsor szerint."""
     return graph_queries.main_entities(site.con)
+
+
+def menu_items(site: Site) -> list[MenuItem]:
+    """A site-szintű menüfa nyelvenként és területenként (fejléc, lábléc, oldalsáv)."""
+    return structure_module.menu_items(site.con)
+
+
+def menu_differences(site: Site) -> list[MenuDifference]:
+    """Az oldalfüggő eltérések a site-szintű menüfától (többlet és hiányzó menüpontok)."""
+    return structure_module.menu_differences(site.con)
 
 
 def weights(site: Site) -> list[EntityWeight]:

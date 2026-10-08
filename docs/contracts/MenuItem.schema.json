@@ -1,0 +1,114 @@
+{
+  "additionalProperties": false,
+  "description": "A site-szintű menüfa egy menüpontja (`menu_items`): nyelv és terület (fejléc / lábléc /\noldalsáv) szerint. `url`: None a link nélküli szülő-címkénél; `page_id`: a készletbeli oldal;\n`level`: 0 = felső szint; `marker`: `logo` / `home_icon`; `pages`: hány oldalon áll;\n`area_pages`: a nyelv hány oldalán áll a terület.",
+  "properties": {
+    "anchor": {
+      "title": "Anchor",
+      "type": "string"
+    },
+    "area": {
+      "enum": [
+        "header",
+        "footer",
+        "sidebar"
+      ],
+      "title": "Area",
+      "type": "string"
+    },
+    "area_pages": {
+      "title": "Area Pages",
+      "type": "integer"
+    },
+    "item_id": {
+      "title": "Item Id",
+      "type": "integer"
+    },
+    "lang": {
+      "title": "Lang",
+      "type": "string"
+    },
+    "level": {
+      "title": "Level",
+      "type": "integer"
+    },
+    "marker": {
+      "anyOf": [
+        {
+          "enum": [
+            "logo",
+            "home_icon"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Marker"
+    },
+    "ordinal": {
+      "title": "Ordinal",
+      "type": "integer"
+    },
+    "page_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Page Id"
+    },
+    "pages": {
+      "title": "Pages",
+      "type": "integer"
+    },
+    "parent_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parent Id"
+    },
+    "schema_version": {
+      "default": "1.17",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Url"
+    }
+  },
+  "required": [
+    "item_id",
+    "lang",
+    "area",
+    "ordinal",
+    "anchor",
+    "level",
+    "pages",
+    "area_pages"
+  ],
+  "title": "MenuItem",
+  "type": "object",
+  "x-module": "graph",
+  "x-schema-version": "1.17"
+}

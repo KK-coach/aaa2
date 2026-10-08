@@ -19,6 +19,7 @@ GROUPS = (
     ("Lekérdezések (szerződések)", ("site_profile", "pages", "page_metas", "links",
                                     "structured_data", "latest_crawl_run", "entities",
                                     "kb_links", "page_nodes", "edges", "main_entities",
+                                    "menu_items", "menu_differences",
                                     "weights", "findings", "llm_calls_of")),
     ("A riport bemenete", ("views", "views_json", "export_views_json")),
     ("Állapot és költség", ("status", "SiteStatus", "entity_run", "entity_run_skipped",

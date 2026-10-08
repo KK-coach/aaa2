@@ -56,6 +56,12 @@ def test_contracts_build_from_the_current_data(monkeypatch):
     con.execute("INSERT INTO merge_log (run_id, kept_id, removed_id, kept_name, removed_name, "
                 "rule, evidence, merged_at) VALUES (?, ?, NULL, ?, 'x', 'alias', ?, ?)",
                 [run_id, entity_id, name, json.dumps({"alias": "x"}), NOON])
+    con.execute("INSERT INTO menu_items (item_id, lang, area, ordinal, url, page_id, anchor, "
+                "parent_id, level, marker, pages, area_pages) VALUES (1, 'hu', 'header', 0, ?, "
+                "?, 'Mérés', NULL, 0, NULL, 2, 2)", [f"{BASE}/meres/", other_page])
+    con.execute("INSERT INTO menu_page_differences (page_id, lang, area, kind, url, anchor, "
+                "parent) VALUES (?, 'hu', 'header', 'extra', ?, 'Blog', NULL)",
+                [page_id, f"{BASE}/blog/"])
     result = build_all(con)
     # a pipeline minden táblájából minden sor szerződéssé válik
     for model, (table, _) in SOURCES.items():

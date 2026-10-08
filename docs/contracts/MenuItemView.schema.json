@@ -1,0 +1,129 @@
+{
+  "additionalProperties": false,
+  "description": "A site menüfájának egy menüpontja a nézetben: a nyelv, a terület, a szint, a\nhorgonyszöveg, a cím, a szülő menüpont (horgonyszöveg), a céloldal fő entitása és szerepe\n(ha a cél a készlet oldala), a céloldal kattintási mélysége a saját nyelvű kezdőoldaltól,\nés hogy hány oldalon áll a területet hordozó oldalak közül.",
+  "properties": {
+    "anchor": {
+      "title": "Anchor",
+      "type": "string"
+    },
+    "area": {
+      "enum": [
+        "header",
+        "footer",
+        "sidebar"
+      ],
+      "title": "Area",
+      "type": "string"
+    },
+    "area_pages": {
+      "title": "Area Pages",
+      "type": "integer"
+    },
+    "click_depth": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Click Depth"
+    },
+    "in_set": {
+      "default": false,
+      "title": "In Set",
+      "type": "boolean"
+    },
+    "lang": {
+      "title": "Lang",
+      "type": "string"
+    },
+    "level": {
+      "title": "Level",
+      "type": "integer"
+    },
+    "main_entity": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Main Entity"
+    },
+    "marker": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Marker"
+    },
+    "pages": {
+      "title": "Pages",
+      "type": "integer"
+    },
+    "parent": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parent"
+    },
+    "role": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Role"
+    },
+    "schema_version": {
+      "default": "1.17",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Url"
+    }
+  },
+  "required": [
+    "lang",
+    "area",
+    "level",
+    "anchor",
+    "pages",
+    "area_pages"
+  ],
+  "title": "MenuItemView",
+  "type": "object",
+  "x-module": "findings",
+  "x-schema-version": "1.17"
+}
