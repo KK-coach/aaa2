@@ -39,6 +39,7 @@ from aaa2.engine.target_country import (
     tld_country,
     vote,
 )
+from aaa2.engine.tech import tech_from_signals
 
 TECH_PATHS_FILE = Path(__file__).parent / "config" / "tech_paths.txt"
 MAX_SEED_REDIRECTS = 5
@@ -74,11 +75,12 @@ def update_site_profile(con: duckdb.DuckDBPyConnection) -> SiteProfile:
     con.execute(
         "UPDATE site SET target_country = ?, target_country_confidence = ?, "
         "target_country_candidates = ?, market_scope = ?, market_scope_city = ?, "
-        "languages = ?, page_count = ?, tech_signals = ?, home_urls = ?",
+        "languages = ?, page_count = ?, tech_signals = ?, tech = ?, home_urls = ?",
         [profile.target_country, profile.target_country_confidence,
          json.dumps([candidate.as_dict() for candidate in profile.target_country_candidates]),
          profile.market_scope, profile.market_scope_city, list(profile.languages),
-         profile.page_count, list(profile.tech_signals), list(profile.home_urls)],
+         profile.page_count, list(profile.tech_signals),
+         tech_from_signals(profile.tech_signals) or None, list(profile.home_urls)],
     )
     return profile
 

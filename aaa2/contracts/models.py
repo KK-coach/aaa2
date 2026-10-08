@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.12"
+SCHEMA_VERSION = "1.13"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -639,7 +639,9 @@ class PageView(Contract):
     másodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a címmezők tényként
     (`title_cut`: a title a site-utótag nélkül; `visible_title`: a tartalmi régió első címsora
     az elemével; `h1_count`; `og_title`; `schema_titles`; `title_differences`: mely mezők
-    szövege tér el), a schema `about` (`schema_about`), a további említett
+    szövege tér el), a schema `about` (`schema_about`), a legfelső szintű schema-típusok
+    (`schema_types`) és a szerep és a jelölés ellentmondása (`role_markup_note`), a további
+    említett
     entitások, az oldal megállapításai, a jelzések (`notes`: a kinyerés nem nevezett meg fő
     témát; a nyelvi pár fő entitása eltér), és a heading-fa (a sablon- és chrome-headingek nélkül;
     `h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél)."""
@@ -671,6 +673,8 @@ class PageView(Contract):
     schema_titles: list[TitleField] = Field(default_factory=list)
     title_differences: list[str] = Field(default_factory=list)
     schema_about: list[SchemaAbout] = Field(default_factory=list)
+    schema_types: list[str] = Field(default_factory=list)
+    role_markup_note: str | None = None
     other_mentions: list[PageMention] = Field(default_factory=list)
     findings: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)

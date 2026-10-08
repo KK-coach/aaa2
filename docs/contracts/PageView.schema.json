@@ -24,7 +24,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.12",
+          "default": "1.13",
           "title": "Schema Version",
           "type": "string"
         }
@@ -42,7 +42,7 @@
       "description": "Egy H1 a fő tartalmon kívül: `cookie` (cookie- vagy consent-elem), `dialog` (popup,\nmodális ablak), `chrome` (fejléc, menü, lábléc, oldalsáv).",
       "properties": {
         "schema_version": {
-          "default": "1.12",
+          "default": "1.13",
           "title": "Schema Version",
           "type": "string"
         },
@@ -111,7 +111,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.12",
+          "default": "1.13",
           "title": "Schema Version",
           "type": "string"
         },
@@ -161,7 +161,7 @@
           "type": "integer"
         },
         "schema_version": {
-          "default": "1.12",
+          "default": "1.13",
           "title": "Schema Version",
           "type": "string"
         },
@@ -250,7 +250,7 @@
           "title": "Same As Main"
         },
         "schema_version": {
-          "default": "1.12",
+          "default": "1.13",
           "title": "Schema Version",
           "type": "string"
         },
@@ -279,7 +279,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.12",
+          "default": "1.13",
           "title": "Schema Version",
           "type": "string"
         },
@@ -297,7 +297,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a\nmásodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a címmezők tényként\n(`title_cut`: a title a site-utótag nélkül; `visible_title`: a tartalmi régió első címsora\naz elemével; `h1_count`; `og_title`; `schema_titles`; `title_differences`: mely mezők\nszövege tér el), a schema `about` (`schema_about`), a további említett\nentitások, az oldal megállapításai, a jelzések (`notes`: a kinyerés nem nevezett meg fő\ntémát; a nyelvi pár fő entitása eltér), és a heading-fa (a sablon- és chrome-headingek nélkül;\n`h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél).",
+  "description": "Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a\nmásodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a címmezők tényként\n(`title_cut`: a title a site-utótag nélkül; `visible_title`: a tartalmi régió első címsora\naz elemével; `h1_count`; `og_title`; `schema_titles`; `title_differences`: mely mezők\nszövege tér el), a schema `about` (`schema_about`), a legfelső szintű schema-típusok\n(`schema_types`) és a szerep és a jelölés ellentmondása (`role_markup_note`), a további\nemlített\nentitások, az oldal megállapításai, a jelzések (`notes`: a kinyerés nem nevezett meg fő\ntémát; a nyelvi pár fő entitása eltér), és a heading-fa (a sablon- és chrome-headingek nélkül;\n`h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél).",
   "properties": {
     "canonical_issue": {
       "anyOf": [
@@ -512,6 +512,18 @@
       "title": "Role",
       "type": "string"
     },
+    "role_markup_note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Role Markup Note"
+    },
     "schema_about": {
       "items": {
         "$ref": "#/$defs/SchemaAbout"
@@ -526,8 +538,15 @@
       "title": "Schema Titles",
       "type": "array"
     },
+    "schema_types": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Schema Types",
+      "type": "array"
+    },
     "schema_version": {
-      "default": "1.12",
+      "default": "1.13",
       "title": "Schema Version",
       "type": "string"
     },
@@ -618,5 +637,5 @@
   "title": "PageView",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.12"
+  "x-schema-version": "1.13"
 }

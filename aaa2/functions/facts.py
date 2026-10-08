@@ -10,8 +10,12 @@ A crawl begyűjtött, de eddig ki nem írt tényei négy fájlban (`export_facts
   (JSON-LD, microdata, RDFa, Open Graph), típus. Egy sor egy tárolt elem (a JSON-LD `@graph`
   csomópontjai külön elemek); értékelés nincs.
 - `<név>-view-site-facts.csv`: a site tényei kulcs–érték sorokban: nyelvek, célország és
-  megbízhatósága, piaci hatókör, technológia és a nyers technológiai jelek, robots.txt,
-  HTTPS-átirányítás, záró perjel, crawl-számok (oldalak, státuszok megoszlása), a crawl módja,
+  megbízhatósága (holtversenynél „nem eldönthető” a jelöltek és a jeleik felsorolásával, jel
+  nélkül „nincs jel”), piaci hatókör, technológia (a tárolt érték, ennek híján a nyers jelekből
+  felismert, `engine.tech`; a forrása külön sor) és a nyers technológiai jelek, robots.txt,
+  HTTPS-átirányítás, záró perjel, crawl-számok (oldalak, státuszok megoszlása; a nem HTML
+  válaszok, pl. kép vagy PDF, külön számlálóban, típusonként, és nem számítanak hibás
+  oldalnak; a hibás státuszú nem HTML válasz külön tétel), a crawl módja,
   és a sitemap tényei (van-e, honnan került elő, hivatkozza-e a robots.txt, hány címet ad,
   hány különböző oldal lett belőle, a lekérés ideje).
 - `<név>-view-sitemap.csv`: normalizált címenként egy sor: a sitemap és a crawl összevetése
@@ -30,6 +34,7 @@ from pathlib import Path
 import duckdb
 
 from aaa2.engine import queries as crawl
+from aaa2.engine.tech import tech_from_signals
 from aaa2.resolver.pages import canonical_key
 
 SYNTAX_LABELS = {"json-ld": "JSON-LD", "microdata": "microdata", "rdfa": "RDFa",
@@ -104,15 +109,20 @@ def site_fact_rows(con: duckdb.DuckDBPyConnection) -> list[dict]:
         if site.market_scope_city:
             scope += f" ({site.market_scope_city})"
         redirect = yes_no(site.https_redirect)
+        tech = site.tech or tech_from_signals(site.tech_signals)
+        tech_source = "tárolt" if site.tech else "a tárolt jelekből felismert" if tech \
+            else "nincs felismert jel"
         if site.https_redirect_status is not None:
             redirect += f" ({site.https_redirect_status})"
         facts += [
             ("domain", site.domain), ("kezdő URL", site.seed_url),
             ("nyelvek", ", ".join(site.languages or [])),
-            ("célország", site.target_country or ""),
+            ("célország", target_country_text(site.target_country,
+                                              site.target_country_candidates)),
             ("célország megbízhatósága", site.target_country_confidence or ""),
             ("piaci hatókör", scope),
-            ("technológia", ", ".join(site.tech or [])),
+            ("technológia", ", ".join(tech)),
+            ("technológia: forrás", tech_source),
             ("technológiai jelek", ", ".join(site.tech_signals or [])),
             ("megjelenítés módja", site.render_mode or ""),
             ("robots.txt státusz", "" if site.robots_status is None else site.robots_status),
@@ -127,14 +137,48 @@ def site_fact_rows(con: duckdb.DuckDBPyConnection) -> list[dict]:
               ("noindex oldalak száma", sum(1 for page in pages if page.noindex))]
     facts += [(f"oldalak státusz szerint: {status}", count)
               for status, count in sorted(statuses.items())]
+    other = [page for page in pages if non_html_type(page.error)]
+    kinds = Counter(non_html_type(page.error) for page in other)
+    facts += [("nem HTML válaszok száma", len(other))]
+    facts += [(f"nem HTML válasz: {kind}", count) for kind, count in sorted(kinds.items())]
+    facts += [("nem HTML válasz hibás státusszal",
+               sum(1 for page in other if failed_status(page.status)))]
     if run is not None:
+        failed = sum(1 for page in pages if not non_html_type(page.error)
+                     and (page.error or failed_status(page.status)))
         facts += [("crawl: oldalkorlát", "" if run.max_pages is None else run.max_pages),
                   ("crawl: kész oldal", "" if run.pages_done is None else run.pages_done),
-                  ("crawl: hibás oldal", "" if run.pages_failed is None else run.pages_failed),
+                  ("crawl: hibás oldal", failed),
                   ("crawl: kihagyott oldal",
                    "" if run.pages_skipped is None else run.pages_skipped)]
     facts += sitemap_facts(con)
     return [{"tény": key, "érték": value} for key, value in facts]
+
+
+def non_html_type(error: str | None) -> str | None:
+    """A nem HTML válasz tartalomtípusa a tárolt hibaszövegből (`non_html: image/webp`);
+    None, ha az oldal nem ilyen."""
+    if not error or not error.startswith("non_html"):
+        return None
+    return error.partition(":")[2].strip().split(";")[0].strip() or "ismeretlen típus"
+
+
+def failed_status(status: int | None) -> bool:
+    return status is None or status >= 400
+
+
+def target_country_text(country: str | None, candidates: object) -> str:
+    """A célország a tényekhez: a tárolt ország; ha nincs, de vannak jelöltek (holtverseny az
+    élen), „nem eldönthető” a jelöltekkel, a pontszámukkal és a jeleikkel; jel nélkül „nincs
+    jel”."""
+    if country:
+        return country
+    found = [item for item in candidates or [] if isinstance(item, dict)]
+    if not found:
+        return "nincs jel"
+    return "nem eldönthető (" + "; ".join(
+        f"{item.get('country')} {item.get('score')}: {', '.join(item.get('signals') or [])}"
+        for item in found) + ")"
 
 
 def crawl_state(con: duckdb.DuckDBPyConnection) -> tuple[str | None, bool]:
