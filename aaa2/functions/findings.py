@@ -89,6 +89,17 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   annak a bizonyítékában áll (`visible_title_note`). Kimarad a kezdőoldal, és ahol a fő
   entitás a site saját entitása. Az azonos
   esetű és szerepű oldalak egy megállapítást adnak.
+- `article_markup_on_other_pages` (medium, egy megállapítás a site-ra): a site cikk-jelölést
+  (`titles.ARTICLE_TYPES`: Article, BlogPosting, NewsArticle, TechArticle legfelső szintű
+  csomópont) tesz olyan oldalakra is, amelyek nem cikkek. Feltétel: a HTML oldalak (az
+  oldal-csomópontok a canonical-duplikátumok nélkül) legalább `ARTICLE_MARKUP_SHARE` részén
+  áll cikk típusú jelölés (a típusok együtt számítanak), és a jelölt oldalak között van
+  biztosan nem cikk: ajánlat-, termék- vagy kategória-szerepű oldal; rólunk- vagy
+  karrieroldal (`ABOUT_URL_WORDS` az URL-ben, és a fő entitás a site saját entitása);
+  kapcsolatoldal (a `contact` segédfajta); a kezdőoldal. A bizonyíték a teljes oldallista:
+  `not_articles` (fajtánként; oldalanként az URL, a cikk típusú jelölés és a mai szerep) és
+  `maybe_articles` (a többi cikk-jelölésű oldal), a számokkal (`html_pages`, `marked`,
+  `share`, `by_type`, `counts`). A szerepet nem változtatja; a jelölési hibát mondja ki.
 - A heading-fa szerkezeti megállapításai (`headings.structure_findings`): `missing_h1`,
   `h1_outside_content`, `multiple_h1`, `empty_section`, `skipped_level`, `missing_h2`; a
   szabályaik a `functions/headings.py` leírásában.
@@ -129,7 +140,7 @@ from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
 from aaa2.functions import graph_queries, titles
 from aaa2.functions import headings as heading_tree
-from aaa2.functions.graph import _walk, evidence_text
+from aaa2.functions.graph import _walk, evidence_text, url_has_word
 from aaa2.resolver import queries as resolver_queries
 from aaa2.resolver.display import NAME_NOTE_COLUMN, OTHER_NAMES_COLUMN, DisplayNames
 from aaa2.resolver.names import normal_key
@@ -139,7 +150,7 @@ from aaa2.resolver.pages import LEGAL_KINDS, canonical_key, legal_kind, page_typ
 TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
          "uncovered_topic", "unclear_topic", *heading_tree.STRUCTURE_TYPES,
          "canonical_issue", "legal_page", "soft_404", "schema_id_names",
-         "title_without_main_entity")
+         "title_without_main_entity", "article_markup_on_other_pages")
 TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "cannibalization": "Lehetséges kannibalizáció",
                "shared_topic": "Közös téma", "missing_page": "Hiányzó oldal",
@@ -150,6 +161,7 @@ TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "paragraph_heading": "Bekezdés headingként jelölve",
                "schema_id_names": "Azonosító több névvel a strukturált adatban",
                "title_without_main_entity": "A cím nem nevezi meg a fő entitást",
+               "article_markup_on_other_pages": "Cikk-jelölés nem cikk oldalakon",
                "canonical_issue": "Hibás canonical", "legal_page": "Jogi oldal",
                "soft_404": "Nem található oldal 200-as státusszal"}
 # többes szám jele a kulcsban (ékezet nélkül): a kategória neve és a H1 / title összevetéséhez
@@ -214,6 +226,10 @@ CUT_MIN_SHARE = 0.6
 OVERVIEW_TOP = 100                      # a site-áttekintő ennyi legnagyobb súlyú entitást mutat
 PAGE_MENTIONS = 10                      # az oldalnézet ennyi további említett entitást sorol
 EVIDENCE_PAGES = 5
+ARTICLE_MARKUP_SHARE = 0.6              # a HTML oldalak ekkora részén áll cikk-jelölés
+ABOUT_URL_WORDS = ("about", "rolunk", "rolam", "career", "karrier", "allas", "jobs")
+NOT_ARTICLE_LABELS = {"offer": "ajánlat / termék / kategória", "about": "rólunk / karrier",
+                      "contact": "kapcsolat", "home": "kezdőoldal"}
 ARTICLE_MIN_WORDS = 300                 # a jelölés alapján cikknek vett egyéb oldal alsó hossza
 TITLE_CASES = {"no_entity": "sem a title, sem a látható cím nem nevez meg entitást",
                "other_entity": "a cím más entitást nevez meg, mint a fő entitás",
@@ -257,7 +273,8 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
             *_unclear_topics(site),
             *heading_tree.structure_findings(site.pages, site.headings, ROLE_LABELS),
             *_canonical_issues(site), *_legal_pages(site), *_soft_404(site),
-            *_schema_id_names(site), *_title_naming(site, mismatches)]
+            *_schema_id_names(site), *_title_naming(site, mismatches),
+            *_article_markup(site)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -1216,6 +1233,60 @@ def _title_naming(site: _Site, mismatches: list[tuple] = ()) -> list[tuple]:
     return found
 
 
+def not_article_kind(site: _Site, page: Mapping) -> str | None:
+    """Biztosan nem cikk-e az oldal, és melyik fajta (`NOT_ARTICLE_LABELS` kulcsa): a
+    kezdőoldal; a kapcsolatoldal; ajánlat-, termék- vagy kategória-szerepű oldal; rólunk- vagy
+    karrieroldal (URL-szó, és a fő entitás a site saját entitása). None: cikk lehet."""
+    if page["role"] == "home":
+        return "home"
+    if page["support"] == "contact":
+        return "contact"
+    if page["role"] in OWN_THING_PAGE_ROLES:
+        return "offer"
+    main = site.main(page["page_id"])
+    if main is not None and main[0] in site.site_entities \
+            and url_has_word(page["url"], ABOUT_URL_WORDS):
+        return "about"
+    return None
+
+
+def _article_markup(site: _Site) -> list[tuple]:
+    """Az `article_markup_on_other_pages` megállapítás (lásd a modul leírását)."""
+    nodes = site.nodes()
+    marked = []
+    for page in nodes:
+        fields = site.title_fields.get(page["page_id"])
+        kinds = sorted(set(fields.schema_types) & titles.ARTICLE_TYPES) if fields else []
+        if kinds:
+            marked.append((page, kinds))
+    if not nodes or len(marked) < ARTICLE_MARKUP_SHARE * len(nodes):
+        return []
+    groups: dict[str, list[dict]] = {key: [] for key in NOT_ARTICLE_LABELS}
+    maybe = []
+    for page, kinds in marked:
+        entry = {"url": page["url"], "schema_types": kinds,
+                 "role": page["role"] + (f" ({page['support']})" if page["support"] else "")}
+        kind = not_article_kind(site, page)
+        (groups[kind] if kind else maybe).append(entry)
+    wrong = sum(len(found) for found in groups.values())
+    if not wrong:
+        return []
+    by_type = Counter(kind for _, kinds in marked for kind in kinds)
+    types = ", ".join(f"{kind} {count}" for kind, count in sorted(by_type.items()))
+    parts = ", ".join(f"{len(found)} {NOT_ARTICLE_LABELS[key]}"
+                      for key, found in groups.items() if found)
+    return [("article_markup_on_other_pages", "medium", None, None,
+             (f"{len(nodes)} HTML oldalból {len(marked)} cikk-jelölésű ({types}); köztük "
+              f"{wrong} biztosan nem cikk ({parts})"),
+             {"group": "article_markup", "html_pages": len(nodes), "marked": len(marked),
+              "share": round(len(marked) / len(nodes), 2), "by_type": dict(sorted(
+                  by_type.items())),
+              "counts": {NOT_ARTICLE_LABELS[key]: len(found) for key, found in groups.items()},
+              "not_articles": {NOT_ARTICLE_LABELS[key]: found
+                               for key, found in groups.items() if found},
+              "maybe_articles": maybe})]
+
+
 def _soft_404(site: _Site) -> list[tuple]:
     """A 200-as státusszal kiszolgált „nem található” oldalak (`pages.page_types`: not_found;
     ma a Shoprenter `not_found_body` jele ismeri fel) egy közepes megállapításban, az oldalak
@@ -1255,6 +1326,8 @@ def _affected(finding: dict) -> list[str]:
     evidence = finding["evidence"]
     if "url" in evidence:
         return [evidence["url"]]
+    if "not_articles" in evidence:              # a biztosan nem cikk oldalak, fajtánként
+        return [p["url"] for found in evidence["not_articles"].values() for p in found]
     return [p["url"] for p in evidence.get("pages") or evidence.get("top_pages") or []]
 
 
@@ -1795,6 +1868,21 @@ def _finding_html(finding: dict) -> str:
     elif finding["type"] == "canonical_issue":
         pairs = [("oldal", _link(evidence["url"])), ("canonical", _e(evidence["canonical"])),
                  ("ok", _e(CANONICAL_LABELS.get(evidence["issue"], evidence["issue"])))]
+    elif finding["type"] == "article_markup_on_other_pages":
+        def listed(found: list[dict]) -> str:
+            return "<br>".join(f"{_link(p['url'])} — {_e(', '.join(p['schema_types']))}; "
+                               f"mai szerep: {_e(p['role'])}" for p in found)
+
+        pairs = [("számok", _e(
+            f"{evidence['html_pages']} HTML oldal, {evidence['marked']} cikk-jelölésű "
+            f"({evidence['share']:.0%}); típusonként: "
+            + ", ".join(f"{kind} {count}" for kind, count in evidence["by_type"].items())))]
+        pairs += [(f"biztosan nem cikk: {label} ({len(found)})",
+                   f"<details><summary>{len(found)} oldal</summary>{listed(found)}</details>")
+                  for label, found in evidence["not_articles"].items()]
+        pairs.append((f"cikk lehet ({len(evidence['maybe_articles'])})",
+                      (f"<details><summary>{len(evidence['maybe_articles'])} oldal</summary>"
+                       f"{listed(evidence['maybe_articles'])}</details>")))
     elif finding["type"] == "soft_404":
         pairs = [("oldalak", "<br>".join(_link(page["url"]) for page in evidence["pages"]))]
     elif finding["type"] == "schema_id_names":

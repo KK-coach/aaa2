@@ -527,7 +527,7 @@ Egy tábla minden sora (a BLOB-oszlopok nélkül) az oszlopnevekkel; `table` az
 
 ### `FINDING_TYPE_LABELS`
 
-`{'h1_title_mismatch': 'H1/title-eltérés', 'cannibalization': 'Lehetséges kannibalizáció', 'shared_topic': 'Közös téma', 'missing_page': 'Hiányzó oldal', 'uncovered_topic': 'Lefedetlen téma', 'unclear_topic': 'Nem egyértelmű téma', 'missing_h1': 'Hiányzó H1', 'h1_outside_content': 'H1 a fő tartalmon kívül', 'multiple_h1': 'Több H1', 'empty_section': 'Üres szakasz', 'skipped_level': 'Kihagyott heading-szint', 'missing_h2': 'Hiányzó H2', 'paragraph_heading': 'Bekezdés headingként jelölve', 'schema_id_names': 'Azonosító több névvel a strukturált adatban', 'title_without_main_entity': 'A cím nem nevezi meg a fő entitást', 'canonical_issue': 'Hibás canonical', 'legal_page': 'Jogi oldal', 'soft_404': 'Nem található oldal 200-as státusszal'}`
+`{'h1_title_mismatch': 'H1/title-eltérés', 'cannibalization': 'Lehetséges kannibalizáció', 'shared_topic': 'Közös téma', 'missing_page': 'Hiányzó oldal', 'uncovered_topic': 'Lefedetlen téma', 'unclear_topic': 'Nem egyértelmű téma', 'missing_h1': 'Hiányzó H1', 'h1_outside_content': 'H1 a fő tartalmon kívül', 'multiple_h1': 'Több H1', 'empty_section': 'Üres szakasz', 'skipped_level': 'Kihagyott heading-szint', 'missing_h2': 'Hiányzó H2', 'paragraph_heading': 'Bekezdés headingként jelölve', 'schema_id_names': 'Azonosító több névvel a strukturált adatban', 'title_without_main_entity': 'A cím nem nevezi meg a fő entitást', 'article_markup_on_other_pages': 'Cikk-jelölés nem cikk oldalakon', 'canonical_issue': 'Hibás canonical', 'legal_page': 'Jogi oldal', 'soft_404': 'Nem található oldal 200-as státusszal'}`
 
 ### `KG_DAILY_QUOTA`
 

@@ -15,7 +15,7 @@
   "duex-view-site.csv": "fce7728f8a8e135faeaa8268f910132290a6a02e65303cda58f4c1fede7e01d4",
   "duex-view-sitemap.csv": "1c6265711e6e78e7234e6c5c8e3541835f12bc4d80deb9e3d360b9fe2547bf3c",
   "duex-view-structured-data.csv": "da85c54c155cbafbc57a8e6e063adc10da22994f7f785b006bb42d6cb903a297",
-  "duex-views.html": "8d13acdc46a1f50c037e0f1df90fd85317f4e91cd9feb0b9de7043ea8f3037b5",
+  "duex-views.html": "2bdb0f5ef3bce4fa6099ae75e01c8f452b60ae311f2b4f5028ce10872624092c",
   "duex-weights.csv": "41e7811c1685e8124a91484a6d21bf3b7235210a90f5ce8436cd670fc30c680c"
  },
  "kk-coach": {
@@ -34,7 +34,7 @@
   "kk-coach-view-site.csv": "5a2929f27d0cdfc97c803e2c723832d405507d163c44083c8d0504f92ce81fc6",
   "kk-coach-view-sitemap.csv": "15c6697cc4c0ffd56cce4105f4c31f323f5e1dbacb96001e1f03c972ffbe8894",
   "kk-coach-view-structured-data.csv": "2fd3cce62d63d16a2f353e522791ad412134c4a7481896a24fab3bbd20a4930e",
-  "kk-coach-views.html": "d704bbadd9e853113485036f0624086f35e7b53ee1da694e5e262ad96179aba0",
+  "kk-coach-views.html": "f6667e902664eef01e9d3000552983578fa0cee2fdebc69538a3b8a0e17e341b",
   "kk-coach-weights.csv": "96fa055a32b891f1cc94f8ee5fc1591f487441b47ef81fda8ad88ab548c63cb0"
  },
  "kk-coach-2026-10": {
@@ -53,13 +53,13 @@
   "kk-coach-2026-10-view-site.csv": "e4098d70b4bc43ec9b9c2874a27626b9ff4864ad995bdd094fe2559a6a4a149f",
   "kk-coach-2026-10-view-sitemap.csv": "45f69c0231e8554e5da8d4045016c6c3146c8e8cf45bf62b13da197da0f0d11f",
   "kk-coach-2026-10-view-structured-data.csv": "a506158b610658cfb0ec47ceeee2bec5ac07209bbad59c2e655726e1deb65b85",
-  "kk-coach-2026-10-views.html": "071a7776707d665493833d54217a2831b1586db60ecd251b52f917134ab251e2",
+  "kk-coach-2026-10-views.html": "2044ab3d05168eccafb2cb9f7c5317d3d3ffc54e58fd68feb2a81e3903604912",
   "kk-coach-2026-10-weights.csv": "ae0a50d99ceae2594a7bdc7d2bb9a15622e6a5cf721782159413ffad7d31960b"
  },
  "marketinglens": {
   "marketinglens-edges.csv": "857f1c91ebc14a42ff7be35034d1b59f59700c777b9f64397b85a871a3ab4b43",
   "marketinglens-entities.csv": "c25c560eecfcc3197f61ce68035bad58e54e5d945cec1cda8dd5f8a61c383b5c",
-  "marketinglens-findings.csv": "67e702d3d98a6b7188b833d3cdbdae7baa6ca9358b53e510e67f5dfc5ee4de50",
+  "marketinglens-findings.csv": "496c344dc74272cce696240fb1c7678ff0d1dbdcd22682bf0bc5f87967e8763e",
   "marketinglens-is-a-rejected.csv": "59fa901adf0e9817ebc977ae3baff0908b2de85879dd8f5fe62148b635d09faf",
   "marketinglens-main-entity.csv": "e336ed86aee7b2523ecb4960296a7ee74df4f7d54a0d98457df8ec1e18b7e456",
   "marketinglens-run.md": "fde1837fb76a8045da4e263d3250f3e332bffb2e0e9dc2e7cabe7a03d1aaab07",
@@ -67,12 +67,12 @@
   "marketinglens-view-headings.csv": "3a58dffee51b442f62a30f042a55b3a9a6a9f4ee82c4feb089d4cd867e1934b8",
   "marketinglens-view-language-pairs.csv": "e79b3238a66746ccf5ab2aaae3bfd3de10d88cc14e7c0fb067c88e8696ac9fb0",
   "marketinglens-view-links.csv": "7cc8936f8394307626e85efc44813e49c8d759c878c08a7fd7517c7b16ce04ab",
-  "marketinglens-view-pages.csv": "11aa605ab935a0107fc47817b652e7318053218ae14847de21bc18dbb2048671",
+  "marketinglens-view-pages.csv": "25a07e426c346e4485bc891ae8a78ea59484f92cf2b82635d3e12645016ef36c",
   "marketinglens-view-site-facts.csv": "34728e132c21481faa798e59d0ccdbb2ddff76d0733bf1094589e7e02f418187",
   "marketinglens-view-site.csv": "384182689fafd8bc86fc879576ab40d639cc59ffabccb67e1d6217a8e630b698",
   "marketinglens-view-sitemap.csv": "34f8fa4676e97199cb312004474509424f37a7100e477879299235ddb7ce5192",
   "marketinglens-view-structured-data.csv": "bce703edf8d8ce75805b7d91b656d3994a5aa2fc6ebc9367b2ee3a0fd243d5e7",
-  "marketinglens-views.html": "947ed84163e0c25cde5075f2c6eb49317b132f0abead99bcc1c8d08213e0628f",
+  "marketinglens-views.html": "6ee0fcc909cd76b07402a2fa7a4a7bbfb06b614ea1c6d300d7ac949d36569b8a",
   "marketinglens-weights.csv": "c4318db3522f27d619cdafe637acfcd78deff5b9cd1ce1f0e74776e3a85f3f22"
  },
  "materia": {
@@ -91,7 +91,7 @@
   "materia-view-site.csv": "5c54bec14b3a4ae437a9fad6b4f029159bc9fad312149dbe5a7bc5a5543461b5",
   "materia-view-sitemap.csv": "1d3446746d2641e60f4a1f6045340c72d9535edd0af4563e98b2d90eac078780",
   "materia-view-structured-data.csv": "287c4323c7c7029ec1a649a093541e268fa4844025e680bf84787156b3e65abc",
-  "materia-views.html": "124e71c6442c36f0eccccca606d6c3c2db353d78c491c6327af0e52795df8b95",
+  "materia-views.html": "49544d549e665d4fe8b9817213783deb2387fce941db26c5771afe8078145552",
   "materia-weights.csv": "f1e6d72e9cc586fec40057ad5fc8fe87d5751508de6760217bd1f9782dc51991"
  },
  "ngx-bootstrap": {
@@ -110,7 +110,7 @@
   "ngx-bootstrap-view-site.csv": "1ffdc7de908c53c5cef8bdf3a4b73dd683461c2fcc531754a609b91bd063e1be",
   "ngx-bootstrap-view-sitemap.csv": "f2e2c73333594891222aa8f35e15d3a5890c51d2122106d9d9fe42a5bab3058c",
   "ngx-bootstrap-view-structured-data.csv": "287c4323c7c7029ec1a649a093541e268fa4844025e680bf84787156b3e65abc",
-  "ngx-bootstrap-views.html": "47414161162a9b747c11de3d623f6b3c1a520cb76c6f4e454a51d14c13518c2a",
+  "ngx-bootstrap-views.html": "3893c2c3da11b5ff37ddd0712778fec632af361d7e03dbc7d191e3c3920c7b11",
   "ngx-bootstrap-weights.csv": "68597d553ea7e533573fd823958365cbf0689bce8ae15a467fb148f587354f4e"
  }
 }
