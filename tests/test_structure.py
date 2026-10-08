@@ -73,6 +73,11 @@ def test_label_parents_logo_and_home_links():
         ("/hu/", "HU", None, None), ("/hu/rolunk/", "Rólunk", None, None),
         ("/hu/blog/", "Blog", None, None),
         ("/kezdo/", "", None, "home_icon")]
+    # szöveg nélküli link nem almenü szülője (a hibás jelölés üres linkje sem)
+    empty = ('<footer><div><a href="https://partner.hu/"></a></div>'
+             '<p><a href="/adat/">Adatvédelem</a></p></footer>')
+    assert entries(empty, "footer") == [("https://partner.hu/", "", None, None),
+                                        ("/adat/", "Adatvédelem", None, None)]
     # a `<base href>` a relatív címek alapja, az alapértelmezett port nélkül
     based = ('<html><head><base href="https://pelda.hu:443/"></head><body><header>'
              '<a href="index.php?route=fiok">Fiók</a></header></body></html>')

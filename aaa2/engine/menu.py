@@ -36,7 +36,8 @@ menüpont, nem az almenü szülője (a lapos almenü, ahol az alszintet csak a m
 Több ilyen testvér közül a leghosszabb című a szülő. A felső szinten ez a szabály nem fut, és
 kezdőoldal nem lehet így szülő (a `/hu/` minden magyar menüpont címének előtagja).
 
-A kezdőoldalra mutató link (logó, nyelvi kezdőoldal) és a logóként jelölt link nem almenü
+A kezdőoldalra mutató link (logó, nyelvi kezdőoldal), a logóként jelölt link és a szöveg
+nélküli link (se szövege, se `aria-label`-je, `title`-je vagy képének `alt`-ja) nem almenü
 szülője. A szülő lehet link
 nélküli címke is (`href="#"` vagy `javascript:`): ilyenkor a szülő a címke szövege, oldal
 nélkül. A `tel:`, `mailto:`, `javascript:` és a puszta `#` link nem menüpont. Ha ugyanaz a cím
@@ -281,8 +282,11 @@ def menu_entries(html: str, base_url: str, homes: frozenset[str] | set[str] = fr
         if _parent_and_submenu(carrying):
             head = carrying[0][1][0]
             raw = (head.attributes.get("href") or "").strip()
-            target = url_key(_absolute(base_url, raw)) if raw and not raw.startswith("#")                 else None
-            if (target is None or target not in home_keys) and _marker(head) != "logo":
+            target = None
+            if raw and not raw.startswith("#"):
+                target = url_key(_absolute(base_url, raw))
+            if (target is None or target not in home_keys) and _anchor(head) \
+                    and _marker(head) != "logo":
                 own = emit(area, head, parent, as_parent=True)
                 step(area, carrying[1][0], own if own is not None else parent)
                 return
@@ -323,6 +327,9 @@ def visible_breadcrumb(html: str, base_url: str) -> list[tuple[str | None, str]]
     """A látható morzsa egy oldal DOM-jából: az első morzsa-elem (`is_breadcrumb`), amelyben
     link áll; a linkjei sorrendben (cím, szöveg), a végén a link nélküli záró szöveg (az
     aktuális oldal, cím nélkül). None, ha nincs ilyen elem."""
+    lowered = html.lower()
+    if not any(word in lowered for word in _CRUMB_WORDS):
+        return None
     tree = HTMLParser(html)
     base = tree.css_first("base[href]")
     href = (base.attributes.get("href") or "").strip() if base is not None else ""
