@@ -23,7 +23,7 @@
       "type": "string"
     },
     "schema_version": {
-      "default": "1.13",
+      "default": "1.15",
       "title": "Schema Version",
       "type": "string"
     },
@@ -83,5 +83,5 @@
   "title": "Edge",
   "type": "object",
   "x-module": "graph",
-  "x-schema-version": "1.13"
+  "x-schema-version": "1.15"
 }

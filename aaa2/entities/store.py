@@ -151,12 +151,21 @@ def page_entities_for_store_mention(con: duckdb.DuckDBPyConnection, page_id, val
         "char_start = ? AND char_end = ? AND entity_id = ? ORDER BY ALL", [page_id, value, start, end, entity_id]).fetchone()
 
 
-def insert_page_entities_in_store_mention(con: duckdb.DuckDBPyConnection, page_id, entity_id, value, start, end, value_2, position, description) -> tuple | None:
+def insert_page_entities_in_store_mention(con: duckdb.DuckDBPyConnection, page_id, entity_id, value, start, end, value_2, position, description, block_corrected=None, block_given=None) -> tuple | None:
     """Beszúrás: page_entities. Hívja: entities/extract.py: store_mention."""
     return con.execute(
         "INSERT INTO page_entities (page_id, entity_id, block_id, char_start, "
-        "char_end, surface_form, position, description) VALUES (?, ?, ?, ?, ?, ?, ?, "
-        "?) RETURNING mention_id", [page_id, entity_id, value, start, end, value_2, position, description]).fetchone()
+        "char_end, surface_form, position, description, block_corrected, block_given) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING mention_id",
+        [page_id, entity_id, value, start, end, value_2, position, description,
+         block_corrected, block_given]).fetchone()
+
+
+def clear_block_correction(con: duckdb.DuckDBPyConnection, mention_id) -> None:
+    """Módosítás: page_entities. Hívja: entities/extract.py: store_mention."""
+    con.execute(
+        "UPDATE page_entities SET block_corrected = NULL, block_given = NULL WHERE "
+        "mention_id = ? AND block_corrected IS NOT NULL", [mention_id])
 
 
 def update_entities_in_entityindex_write_votes(con: duckdb.DuckDBPyConnection, value, suggested, entity_id):

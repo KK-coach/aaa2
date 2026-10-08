@@ -9,13 +9,14 @@ lista) és egy rövid leírás, továbbá a `primary_entities` lista.
 - A prompt állandó; ismert entitás (a site vagy más kör találata) nem kerül bele, és a példái
   nem a tesztoldalakról valók.
 - Ellenőrzés: a `surface_form` (whitespace-normalizálva, kis-nagybetű-érzéketlenül) szóhatárral
-  szerepel-e a megadott blokk szövegében; ami nem, az kitalált (`check_surface`).
+  szerepel-e a megadott blokk szövegében; ami nem, az kitalált (`check_surface`). A
+  kinyerés kapuja a közvetlen szomszédra mutató azonosítót javítja (`place`).
 """
 from __future__ import annotations
 
 import re
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from aaa2.entities.llm import TYPE_DEFINITIONS, normalize_text
 from aaa2.llm.schemas import SUBTYPE_GLOSSARY, BlockEntity
@@ -184,6 +185,26 @@ def surface_spans(surface: str, block: Mapping) -> list[tuple[int, int]]:
         return []
     pattern = rf"(?<![^\W\d_]){re.escape(needle)}(?![^\W\d_])"
     return [m.span() for m in re.finditer(pattern, _searchable(block))]
+
+
+def place(block_id: str | None, blocks: Sequence[Mapping], index: Mapping[str, int],
+          has: Callable[[Mapping], bool]) -> tuple[Mapping, str | None] | None:
+    """Melyik blokkban áll az említés: (a blokk, a javítás jele) vagy None (elutasítva).
+    `blocks`: a bemenet blokkjai a küldés sorrendjében, `index`: azonosító → sorszám, `has`: a
+    szöveg szerinti alak áll-e egy blokkban (a hívó saját ellenőrzése, a megadott blokkra és a
+    szomszédra ugyanaz). Ha a megadott blokkban áll: az, javítás nélkül. Ha ott nem, de
+    pontosan az egyik közvetlen szomszédjában (az előző vagy a következő blokkban) megvan: a
+    szomszéd, a javítás jelével („-1”: az előző, „+1”: a következő blokk). Ha mindkét
+    szomszédban megvan, egyikben sem, vagy az azonosító ismeretlen: None. A modell a rövid
+    címsor és az alatta álló bekezdés azonosítóját cseréli fel jellemzően."""
+    at = index.get(block_id) if block_id is not None else None
+    if at is None:
+        return None
+    if has(blocks[at]):
+        return blocks[at], None
+    near = [(blocks[other], sign) for other, sign in ((at - 1, "-1"), (at + 1, "+1"))
+            if 0 <= other < len(blocks) and has(blocks[other])]
+    return near[0] if len(near) == 1 else None
 
 
 def check_surface(entity: BlockEntity, blocks: Mapping[str, Mapping]) -> bool:
