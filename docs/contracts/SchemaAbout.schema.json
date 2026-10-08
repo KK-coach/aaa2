@@ -1,0 +1,87 @@
+{
+  "additionalProperties": false,
+  "description": "Az oldal schema.org `about` értéke: a neve (név nélküli hivatkozásnál az `@id`\nkészletbeli neve), az `@id`, és mire mutat: az entitás, a neve az oldal nyelvén, a típusa,\nés azonos-e az oldal fő entitásával (None: nem oldható fel, vagy nincs fő entitás).",
+  "properties": {
+    "entity": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Entity"
+    },
+    "entity_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Entity Id"
+    },
+    "id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Id"
+    },
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Name"
+    },
+    "same_as_main": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Same As Main"
+    },
+    "schema_version": {
+      "default": "1.12",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Type"
+    }
+  },
+  "title": "SchemaAbout",
+  "type": "object",
+  "x-module": "findings",
+  "x-schema-version": "1.12"
+}

@@ -232,7 +232,7 @@ def test_views_and_findings_export(monkeypatch, tmp_path):
         exported = list(csv.DictReader(handle))
     assert {r["típus"] for r in exported} == {
         "H1/title-eltérés", "Lehetséges kannibalizáció", "Közös téma", "Hiányzó oldal", "Lefedetlen téma",
-        "Nem egyértelmű téma"}
+        "Nem egyértelmű téma", "A cím nem nevezi meg a fő entitást"}
     grouped = next(r for r in exported if "2 ajánlatoldal" in r["összefoglaló"])
     assert grouped["oldalak"] == f"{BASE}/geo/ | {BASE}/ux/"
     paths = export_views(con, tmp_path, "pelda")

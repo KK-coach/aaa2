@@ -15,6 +15,7 @@ from urllib.parse import urljoin, urlsplit
 
 import duckdb
 import zstandard
+from selectolax.parser import HTMLParser
 
 from aaa2.contracts import (
     CrawlRun,
@@ -87,6 +88,32 @@ def rendered(con: duckdb.DuckDBPyConnection, page_id: int) -> tuple[str | None, 
     row = con.execute("SELECT title, rendered_html FROM pages WHERE page_id = ?",
                       [page_id]).fetchone()
     return (row[0], row[1]) if row else (None, None)
+
+
+OPEN_GRAPH = ("og:title", "og:type")
+_HEAD_END = re.compile(r"</head\s*>", re.IGNORECASE)
+
+
+def open_graph(con: duckdb.DuckDBPyConnection) -> dict[int, dict[str, str]]:
+    """Oldalanként a tárolt renderelt DOM fejlécének Open Graph mezői (`OPEN_GRAPH`: og:title,
+    og:type), az üresek nélkül; a mező első előfordulása számít. Az aktuális készlet oldalai,
+    amelyeknek van tárolt DOM-ja."""
+    found: dict[int, dict[str, str]] = {}
+    decompressor = zstandard.ZstdDecompressor()
+    for page_id, blob in con.execute(
+            f"SELECT page_id, rendered_html FROM pages WHERE {CURRENT} AND rendered_html IS NOT "
+            "NULL ORDER BY page_id").fetchall():
+        html = decompressor.decompress(blob).decode("utf-8", "replace")
+        end = _HEAD_END.search(html)
+        fields: dict[str, str] = {}
+        for node in HTMLParser(html[: end.end()] if end else html).css("meta[property]"):
+            key = (node.attributes.get("property") or "").strip().lower()
+            value = (node.attributes.get("content") or "").strip()
+            if key in OPEN_GRAPH and value and key not in fields:
+                fields[key] = value
+        if fields:
+            found[page_id] = fields
+    return found
 
 
 LANGUAGE_SEGMENT = re.compile(r"^[a-z]{2,3}(?:-[a-z0-9]{2,4})?$", re.IGNORECASE)

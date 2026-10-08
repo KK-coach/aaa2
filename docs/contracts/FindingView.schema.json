@@ -58,7 +58,7 @@
       "title": "Recommendation"
     },
     "schema_version": {
-      "default": "1.11",
+      "default": "1.12",
       "title": "Schema Version",
       "type": "string"
     },
@@ -90,5 +90,5 @@
   "title": "FindingView",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.11"
+  "x-schema-version": "1.12"
 }
