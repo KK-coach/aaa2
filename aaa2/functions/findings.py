@@ -388,9 +388,11 @@ class _Site:
                                                ("látható cím", fields.visible))
                      if titles.names_whole(own, text, page["lang"], longer)]
             if where:
-                found.append({"entity_id": other, "entity": self.shown(other, page),
-                              "type": self.kind(other), "in": where})
-        return sorted(found, key=lambda item: (item["entity"].lower(), item["entity_id"]))
+                # azonosító nélkül: az entitások azonosítói újraépítésenként mások
+                found.append({"entity": self.shown(other, page), "type": self.kind(other),
+                              "in": where})
+        return sorted(found, key=lambda item: (item["entity"].lower(), item["entity"],
+                                               item["type"]))
 
     def other_forms(self, page: Mapping, entity_id: int) -> list[str]:
         """Az oldalon említett többi entitás megnevezései (az oldalhoz vagy a nyelvi párjához
