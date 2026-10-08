@@ -80,7 +80,9 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   látható cím nem nevezi meg, csak cikk jellegű oldalon (`article_like`: `article` szerepű
   oldal; vagy segédfajta nélküli `support` oldal `og:type` = `article` jelöléssel és legalább
   `ARTICLE_MIN_WORDS` szóval); `title_only`: a title megnevezi, a látható cím nem, szereptől
-  függetlenül. Kimarad a kezdőoldal, és ahol a fő entitás a site saját entitása. Az azonos
+  függetlenül; ha az oldalon már van `h1_title_mismatch`, nem külön megállapítás, hanem
+  annak a bizonyítékában áll (`visible_title_note`). Kimarad a kezdőoldal, és ahol a fő
+  entitás a site saját entitása. Az azonos
   esetű és szerepű oldalak egy megállapítást adnak.
 - A heading-fa szerkezeti megállapításai (`headings.structure_findings`): `missing_h1`,
   `h1_outside_content`, `multiple_h1`, `empty_section`, `skipped_level`, `missing_h2`; a
@@ -211,6 +213,7 @@ ARTICLE_MIN_WORDS = 300                 # a jelölés alapján cikknek vett egy�
 TITLE_CASES = {"neither": "sem a title, sem a látható cím szövege nem tartalmazza a fő "
                           "entitás nevét",
                "title_only": "a title tartalmazza a fő entitás nevét, a látható cím nem"}
+VISIBLE_TITLE_NOTE = "a látható cím nem nevezi meg a fő entitást, a title igen"
 TITLE_CLAIM = {"fact": "a title és a látható cím szövege (tárolt adat)",
                "inference": "az oldal fő entitása (a gráf döntése)"}
 
@@ -243,11 +246,12 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
     con.execute("DELETE FROM findings")
     site = _Site(con)
     run = FindingsRun()
-    rows = [*_mismatches(site), *_shared_topics(site), *_uncovered(site, run),
+    mismatches = _mismatches(site)
+    rows = [*mismatches, *_shared_topics(site), *_uncovered(site, run),
             *_unclear_topics(site),
             *heading_tree.structure_findings(site.pages, site.headings, ROLE_LABELS),
             *_canonical_issues(site), *_legal_pages(site), *_soft_404(site),
-            *_schema_id_names(site), *_title_naming(site)]
+            *_schema_id_names(site), *_title_naming(site, mismatches)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -341,30 +345,23 @@ class _Site:
         return self._titles
 
     def about_target(self, item: Mapping, page: Mapping) -> int | None:
-        """A schema `about` értékének entitása: a név szerint (az előbb, amelyiknek ez a neve,
-        nem csak aliasa; az oldalon említett; a több említésű; a régebbi), név nélkül az `@id`
-        oldalához kötött entitás. A gráf feloldásának sorrendjét követi."""
+        """A schema `about` értékének entitása, ha egyértelmű: a hivatkozásnak egy neve van (a
+        saját neve, vagy név nélküli `@id`-nél a csomópontjainak egyetlen neve; a kis- és
+        nagybetű, az írásjelek eltérése nem számít), és ez a név pontosan egy entitás neve vagy
+        aliasa. Különben None (nem oldható fel): a több nevű `@id` és a több entitáshoz illő
+        név nem dől el sorrend alapján."""
         if self._forms is None:
             self._forms = defaultdict(list)
             for entity_id, entity in self.entities.items():
                 for form in dict.fromkeys([entity["name"], *(entity["aliases"] or [])]):
                     if form and alias_key(form):
                         self._forms[alias_key(form)].append(entity_id)
-        if item.get("name"):
-            key = alias_key(item["name"])
-            on_page = {e for e, _, _ in self.mention_edges[page["page_id"]]}
-            pool = self._forms.get(key, [])
-            return min(pool, key=lambda e: (
-                alias_key(self.name(e)) != key, e not in on_page,
-                -(self.weights.get(e) or {}).get("mentions", 0), e)) if pool else None
-        if item.get("id"):
-            target = canonical_key(item["id"].split("#", 1)[0])
-            groups = {p["group"] for p in self.pages.values()
-                      if canonical_key(p["url"]) == target}
-            members = {p["page_id"] for p in self.pages.values() if p["group"] in groups}
-            anchored = [e for e, entity in self.entities.items() if entity["anchor"] in members]
-            return min(anchored) if anchored else None
-        return None
+        names = [item["name"]] if item.get("name") else item.get("names") or []
+        keys = {alias_key(name) for name in names} - {""}
+        if len(keys) != 1:
+            return None
+        pool = set(self._forms.get(next(iter(keys)), []))
+        return next(iter(pool)) if len(pool) == 1 else None
 
     def other_forms(self, page: Mapping, entity_id: int) -> list[str]:
         """Az oldalon említett többi entitás megnevezései (az oldalhoz vagy a nyelvi párjához
@@ -1107,8 +1104,15 @@ def title_naming(site: _Site, page: Mapping, main: tuple) -> tuple[bool, bool, l
     return in_title, in_visible, forms
 
 
-def _title_naming(site: _Site) -> list[tuple]:
-    """A `title_without_main_entity` jelöltek (lásd a modul leírását)."""
+def _title_naming(site: _Site, mismatches: list[tuple] = ()) -> list[tuple]:
+    """A `title_without_main_entity` jelöltek (lásd a modul leírását). `mismatches`: a
+    `h1_title_mismatch` megállapítások sorai; amelyik oldalon már van ilyen, ott a `title_only`
+    eset nem külön megállapítás, hanem annak a bizonyítékába kerül (`visible_title_note`,
+    `visible_title`)."""
+    covered: dict[str, dict] = {}
+    for row in mismatches:
+        for evidence in row[5].get("pages") or [row[5]]:
+            covered[evidence["url"]] = evidence
     word_counts = {page.page_id: page.word_count for page in crawl.pages(site.con)}
     records = []
     seen: set[tuple] = set()
@@ -1129,6 +1133,10 @@ def _title_naming(site: _Site) -> list[tuple]:
         elif in_title and fields.visible and not in_visible:
             case = "title_only"
         else:
+            continue
+        if case == "title_only" and page["url"] in covered:
+            covered[page["url"]].update({"visible_title_note": VISIBLE_TITLE_NOTE,
+                                         "visible_title": fields.visible})
             continue
         records.append((page, main[0], {
             "url": page["url"], "main_entity": site.name(main[0]), "confidence": main[2],
@@ -1392,9 +1400,16 @@ TITLE_COLUMNS = ("title utótag nélkül", "látható cím", "a látható cím e
 
 
 def title_columns(page: Mapping) -> dict:
-    """Az oldal címmezői az oldalnézet oszlopaiként (`TITLE_COLUMNS`). Az about-nál: mire
+    """Az oldal címmezői az oldalnézet oszlopaiként (`TITLE_COLUMNS`). Az about-nál: a
+    hivatkozás neve, név nélküli `@id`-nél az `@id` és a csomópontjainak összes neve; mire
     mutat (entitás és típus), és azonos-e a fő entitással."""
     about = page["schema_about"]
+
+    def named(item: Mapping) -> str:
+        if item["name"]:
+            return item["name"]
+        names = " | ".join(item["names"]) or "nincs neve a készletben"
+        return f"@id {item['id']} (nevei: {names})"
 
     def target(item: Mapping) -> str:
         if item["entity"] is None:
@@ -1410,7 +1425,7 @@ def title_columns(page: Mapping) -> dict:
         "schema name / headline": "; ".join(f"{item['field']}: {item['text']}"
                                             for item in page["schema_titles"]),
         "eltérő címmezők": "; ".join(page["title_differences"]),
-        "schema about": "; ".join(item["name"] or item["id"] or "" for item in about),
+        "schema about": "; ".join(named(item) for item in about),
         "az about és a fő entitás": "; ".join(target(item) for item in about)}
 
 
@@ -1647,13 +1662,16 @@ def _finding_html(finding: dict) -> str:
     evidence = finding["evidence"]
     pairs: list[tuple[str, str]] = []
     if finding["type"] == "h1_title_mismatch" and "pages" in evidence:
-        pairs = [(p["main_entity"], (f"{_link(p['url'])}<br>H1: {_e(p['h1']) or '(nincs)'}<br>"
-                                    f"title: {_e(p['title'])}")) for p in evidence["pages"]]
+        pairs = [(p["main_entity"], (
+            f"{_link(p['url'])}<br>H1: {_e(p['h1']) or '(nincs)'}<br>title: {_e(p['title'])}"
+            + (f"<br>{_e(p['visible_title_note'])}" if p.get("visible_title_note") else "")))
+            for p in evidence["pages"]]
     elif finding["type"] == "h1_title_mismatch":
         pairs = [("oldal", _link(evidence["url"])), ("fő entitás", _e(evidence["main_entity"])),
                  ("H1", _e(evidence["h1"]) or "(nincs)"), ("title", _e(evidence["title"])),
                  ("a H1 más entitásai", _e("; ".join(evidence["h1_entities"]))),
-                 ("elfogadott megnevezések", _e("; ".join(evidence["names"])))]
+                 ("elfogadott megnevezések", _e("; ".join(evidence["names"]))),
+                 ("látható cím", _e(evidence.get("visible_title_note", "")))]
     elif finding["type"] in ("cannibalization", "shared_topic"):
         pairs = [("oldalak", "<br>".join(
             f"{_link(p['url'])} — {_e(p['role'])}; title: {_e(p['title'])}; másodlagos: "

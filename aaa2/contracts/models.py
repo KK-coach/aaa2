@@ -573,13 +573,15 @@ class TitleField(Contract):
 
 
 class SchemaAbout(Contract):
-    """Az oldal schema.org `about` értéke: a neve (név nélküli hivatkozásnál az `@id`
-    készletbeli neve), az `@id`, és mire mutat: az entitás, a neve az oldal nyelvén, a típusa,
-    és azonos-e az oldal fő entitásával (None: nem oldható fel, vagy nincs fő entitás)."""
+    """Az oldal schema.org `about` értéke: a hivatkozás saját neve, az `@id`, név nélküli
+    `@id`-hivatkozásnál a csomópontjainak összes neve a készletben (`names`), és mire mutat, ha
+    egyértelmű: az entitás, a neve az oldal nyelvén, a típusa, és azonos-e az oldal fő
+    entitásával (None: nem oldható fel, vagy nincs fő entitás)."""
 
     module: ClassVar[str] = "findings"
     name: str | None = None
     id: str | None = None
+    names: list[str] = Field(default_factory=list)
     entity_id: int | None = None
     entity: str | None = None
     type: str | None = None

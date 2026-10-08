@@ -18,37 +18,49 @@ BASE = "https://pelda.hu"
 SPLIT = re.compile(r"\s+[-–—|·:]\s+")
 
 
-def article(title, h1, text, about=None, og_title=None):
+def article(title, h1, text, about=None, og_title=None, about_id=None, level=1):
     node = {"@type": "BlogPosting", "headline": h1}
     if about:
         node["about"] = {"@type": "Thing", "name": about}
+    if about_id:
+        node["about"] = {"@id": about_id}
     head = ld(node) + '<meta property="og:type" content="article">' + (
         f'<meta property="og:title" content="{og_title}">' if og_title else "")
-    return html(f"{title} · Pelda", f"<main><h1>{h1}</h1><p>{text}</p></main>", head=head)
+    return html(f"{title} · Pelda", f"<main><h{level}>{h1}</h{level}><p>{text}</p></main>",
+                head=head)
 
 
 def titles_site():
     return site({
-        "/": html("Pelda", "<main><h1>Üdvözlünk</h1><p>Üdv.</p></main>"),
+        # a #jogi azonosító két néven szerepel a készletben
+        "/": html("Pelda", "<main><h1>Üdvözlünk</h1><p>Üdv.</p></main>",
+                  head=ld({"@type": "Service", "@id": f"{BASE}/#jogi",
+                           "name": "Jogi marketing szolgáltatás"})),
         "/blog/sebesseg/": article(
             "Amikor az oldalsebesség üzleti kérdés lett", "Amikor az oldalsebesség üzleti "
             "kérdés lett", "Az oldalsebesség számít.", about="Oldalsebesség",
             og_title="Amikor az oldalsebesség üzleti kérdés lett · Pelda"),
         "/blog/gorbe/": article("Négy hónapig semmi, aztán több", "Négy hónapig semmi, aztán "
-                                "több", "A keresőoptimalizálás lassan hat."),
+                                "több", "A keresőoptimalizálás lassan hat.",
+                                about_id=f"{BASE}/#kulso"),
         "/blog/olaj/": article("Mire jó a kókuszolajat használni?", "Mire jó a kókuszolajat "
-                               "használni?", "A kókuszolaj sokoldalú."),
+                               "használni?", "A kókuszolaj sokoldalú.",
+                               about_id=f"{BASE}/#jogi"),
+        # H1 nélküli cikk: a title megnevezi a fő entitást, a látható cím (h2) nem
+        "/blog/konyha/": article("Pálmaolaj a konyhában", "Mit tegyél a serpenyőbe?",
+                                 "A pálmaolaj vitatott.", level=2),
         "/blog/hirdetes/": article("Meta Ads tippek & trükkök", "Meta Ads tippek és trükkök",
                                    "A Meta sokat változott. A Meta Ads is."),
         "/szolgaltatas/": html(
             "Jogi marketing · Pelda", "<main><h1>A legjobbat érdemled</h1><p>Szöveg.</p></main>",
-            head=ld({"@type": "Service", "name": "Jogi marketing",
+            head=ld({"@type": "Service", "@id": f"{BASE}/#jogi", "name": "Jogi marketing",
                      "url": f"{BASE}/szolgaltatas/"})),
         # a H1 a fő tartalmon kívül áll, a tartalmi régió első címsora egy kisebb címsor
         "/kulso/": html(
             "Külső marketing · Pelda", "<header><h1>Külső marketing</h1></header><main>"
             "<h3>Videók</h3><p>Szöveg.</p></main>",
-            head=ld({"@type": "Service", "name": "Külső marketing", "url": f"{BASE}/kulso/"}))})
+            head=ld({"@type": "Service", "@id": f"{BASE}/#kulso", "name": "Külső marketing",
+                     "url": f"{BASE}/kulso/"}))})
 
 
 def built():
@@ -58,6 +70,7 @@ def built():
     for path, text, name in (("/blog/sebesseg/", "oldalsebesség számít", "Oldalsebesség"),
                              ("/blog/gorbe/", "keresőoptimalizálás", "Keresőoptimalizálás"),
                              ("/blog/olaj/", "kókuszolaj sokoldalú", "Kókuszolaj"),
+                             ("/blog/konyha/", "pálmaolaj vitatott", "Pálmaolaj"),
                              ("/blog/hirdetes/", "Meta sokat", "Meta")):
         llm_entity(con, f"{BASE}{path}", text, name, "concept")
         primary(con, f"{BASE}{path}", [name])
@@ -104,15 +117,25 @@ def test_candidate_only_where_neither_title_nor_visible_title_names_the_main_ent
     # a cím nem nevezi meg: cikk; a ragozott alak megnevezés; a „Meta” a „Meta Ads”-ben nem az
     assert {path: page["case"] for path, page in found.items()} == {
         "/blog/gorbe/": "neither", "/blog/hirdetes/": "neither",
-        "/szolgaltatas/": "title_only"}
+        "/blog/konyha/": "title_only"}
     gorbe = found["/blog/gorbe/"]
     assert gorbe["main_entity"] == "Keresőoptimalizálás" and not gorbe["in_title"] \
         and gorbe["article_basis"] == "cikkoldal (szerep)" \
         and set(gorbe["claim"]) == {"fact", "inference"}
-    # az ajánlatoldalon a title megnevezi, a látható cím nem: szereptől független eset
-    offer = found["/szolgaltatas/"]
-    assert offer["in_title"] and not offer["in_visible_title"] \
-        and offer["visible_title"] == "A legjobbat érdemled" and offer["article_basis"] is None
+    # a title megnevezi, a látható cím nem: külön eset
+    kitchen = found["/blog/konyha/"]
+    assert kitchen["in_title"] and not kitchen["in_visible_title"] \
+        and (kitchen["visible_title"], kitchen["visible_title_element"]) == (
+            "Mit tegyél a serpenyőbe?", "h2")
+    # ahol az oldalon már van H1/title-eltérés, ott nem külön megállapítás: annak a
+    # bizonyítékában áll
+    mismatch = {page["url"]: page for (evidence,) in con.execute(
+        "SELECT evidence FROM findings WHERE type = 'h1_title_mismatch'").fetchall()
+        for page in json.loads(evidence).get("pages") or [json.loads(evidence)]}
+    offer = mismatch[f"{BASE}/szolgaltatas/"]
+    assert offer["visible_title_note"] == findings.VISIBLE_TITLE_NOTE \
+        and offer["visible_title"] == "A legjobbat érdemled"
+    assert "visible_title_note" not in mismatch.get(f"{BASE}/kulso/", {})
     # a látható cím egy kisebb címsor, de az oldal H1-e megnevezi a fő entitást: nem jelölt
     outside = next(page for page in site_views(con, "pelda").pages
                    if page.url == f"{BASE}/kulso/")
@@ -138,6 +161,14 @@ def test_title_fields_in_the_page_view(tmp_path):
     (about,) = speed.schema_about
     assert about.name == "Oldalsebesség" and about.entity == "Oldalsebesség" \
         and about.type == "concept" and about.same_as_main is True
+    # név nélküli @id egy névvel: a név egyetlen entitásé, feloldható (nem a kezdőoldalé)
+    (one,) = pages["/blog/gorbe/"].schema_about
+    assert (one.name, one.names, one.entity, one.type, one.same_as_main) == (
+        None, ["Külső marketing"], "Külső marketing", "service", False)
+    # név nélküli @id két névvel: minden név látszik, entitásra nem oldódik fel
+    (two,) = pages["/blog/olaj/"].schema_about
+    assert two.names == ["Jogi marketing", "Jogi marketing szolgáltatás"] \
+        and two.entity is None and two.same_as_main is None
     # az „&” és az „és” nem eltérés; a nyers értékek megmaradnak
     ads = pages["/blog/hirdetes/"]
     assert ads.title_cut == "Meta Ads tippek & trükkök" \
@@ -153,4 +184,7 @@ def test_title_fields_in_the_page_view(tmp_path):
     assert rows["/blog/sebesseg/"]["az about és a fő entitás"] == \
         "Oldalsebesség (concept): azonos a fő entitással"
     assert rows["/szolgaltatas/"]["látható cím"] == "A legjobbat érdemled"
+    assert rows["/blog/olaj/"]["schema about"] == (
+        f"@id {BASE}/#jogi (nevei: Jogi marketing | Jogi marketing szolgáltatás)")
+    assert rows["/blog/olaj/"]["az about és a fő entitás"] == "nem oldható fel"
     assert "A cím nem nevezi meg a fő entitást" in rows["/blog/gorbe/"]["megállapítások"]

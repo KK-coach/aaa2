@@ -3,7 +3,9 @@
 Címmezők (`title_fields`), mind a tárolt adatból: a title a site-utótag nélkül és nyersen, a
 látható cím (a tartalmi régió első címsora, az elemével), az oldal H1-einek száma, az og:title,
 és a schema.org `headline` / `name` értékei típusonként. A schema `about` külön áll (nem
-címmező): mire mutat, és azonos-e az oldal fő entitásával. `differing`: mely címmezők szövege
+címmező): mire mutat, és azonos-e az oldal fő entitásával. A név nélküli `@id`-hivatkozásnál
+az `@id` és a hozzá tartozó csomópontok összes neve áll (`names`, a készlet minden oldaláról,
+rendezve; a több név tény): a bejárás sorrendje nem számít. `differing`: mely címmezők szövege
 tér el egymástól; az összevetés előtt a szöveg egységesül (`compare_key`: kis- és nagybetű,
 szóköz, írásjelek, és az „&” ↔ „and” / „és” kötőszó), a nyers értékek megmaradnak.
 
@@ -101,19 +103,21 @@ def title_fields(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping],
                  h1_counts: Mapping[int, int]) -> dict[int, TitleFields]:
     """Oldalanként a címmezők (lásd a modul leírását). `pages`: oldal → {title, lang, role};
     `suffixes`: nyelv → a site-utótagok kulcsai; `h1_counts`: oldal → a H1-ek száma. Az
-    `about` elemei itt még feloldatlanok: {`name`, `id`}."""
+    `about` elemei itt még feloldatlanok: {`name`: a hivatkozás saját neve, `id`, `names`: a
+    név nélküli `@id`-hivatkozás csomópontjainak nevei}."""
     first: dict[int, tuple[str, int | None]] = {}
     for block in extract_queries.blocks(con):
         if block.page_id in pages and block.page_id not in first and block.kind == "heading" \
                 and block.region == "content" and block.text.strip():
             first[block.page_id] = (block.text.strip(), block.level)
     nodes = schema_nodes(con)
-    id_names: dict[str, str] = {}
+    id_names: dict[str, set[str]] = defaultdict(set)
     for found in nodes.values():
         for node in found:
             for item in _walk(node):
-                if isinstance(item.get("@id"), str) and isinstance(item.get("name"), str):
-                    id_names.setdefault(item["@id"], item["name"])
+                if "@type" in item and isinstance(item.get("@id"), str) \
+                        and isinstance(item.get("name"), str) and item["name"].strip():
+                    id_names[item["@id"]].add(item["name"].strip())
     graph = crawl.open_graph(con)
     result: dict[int, TitleFields] = {}
     for page_id, page in pages.items():
@@ -146,9 +150,9 @@ def title_fields(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping],
                     value.get("name") if isinstance(value, dict) else None)
                 ref = value.get("@id") if isinstance(value, dict) else None
                 ref = ref if isinstance(ref, str) else None
-                if not isinstance(name, str):
-                    name = id_names.get(ref) if ref else None
-                item = {"name": name, "id": ref}
+                name = name.strip() if isinstance(name, str) and name.strip() else None
+                item = {"name": name, "id": ref,
+                        "names": sorted(id_names.get(ref, ())) if ref and not name else []}
                 if (name or ref) and item not in fields.about:
                     fields.about.append(item)
         compared = fields.compared()
