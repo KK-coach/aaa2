@@ -1114,6 +1114,18 @@
           "default": null,
           "title": "Url Parent"
         },
+        "url_parent_applicable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url Parent Applicable"
+        },
         "visible_title": {
           "anyOf": [
             {

@@ -205,7 +205,9 @@ def test_page_depths_levels_and_parents_in_the_page_view(tmp_path):
     assert seo.menu_parent == seo.breadcrumb_parent == seo.url_parent == f"{BASE}/hu/szolg/"
     assert seo.parents_agree is True
     services = pages["/hu/szolg/"]
-    assert services.menu_parent == "(felső szint)" and services.url_parent == f"{BASE}/hu/"
+    # az egyszakaszos oldalnál az URL nem mond szülőt
+    assert services.menu_parent == "(felső szint)" and services.url_parent is None
+    assert services.url_parent_applicable is False and seo.url_parent_applicable is True
     assert services.breadcrumb_parent == f"{BASE}/"                 # a másik nyelv kezdőoldala
     assert services.parents_agree is False
     assert pages["/hu/"].parents_agree is None
@@ -227,6 +229,7 @@ def test_page_depths_levels_and_parents_in_the_page_view(tmp_path):
     assert rows["/hu/arva/"]["mélység (minden link)"] == ""
     assert rows["/hu/szolg/seo/"]["szülő (URL)"] == f"{BASE}/hu/szolg/"
     assert rows["/hu/szolg/"]["a szülők egyeznek"] == "nem"
+    assert rows["/hu/szolg/"]["szülő (URL)"] == "nem értelmezhető"
     with paths["menu"].open(encoding="utf-8-sig", newline="") as handle:
         menu = list(csv.DictReader(handle))
     assert [row["menüpont"] for row in menu if row["nyelv"] == "hu"

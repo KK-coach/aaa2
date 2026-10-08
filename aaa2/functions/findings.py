@@ -1808,26 +1808,28 @@ def page_structure_fields(found: Mapping | None) -> dict:
         return dict.fromkeys(
             ("click_depth", "click_depth_menu", "click_depth_content", "unreachable",
              "menu_level", "in_footer_menu", "in_sidebar_menu", "breadcrumb_level", "url_level",
-             "menu_parent", "breadcrumb_parent", "url_parent", "parents_agree"))
+             "menu_parent", "breadcrumb_parent", "url_parent", "url_parent_applicable",
+             "parents_agree"))
     return {"click_depth": found["depth"]["all"], "click_depth_menu": found["depth"]["menu"],
             "click_depth_content": found["depth"]["body"], "unreachable": found["unreachable"],
             "menu_level": found["menu_level"], "in_footer_menu": found["in_footer"],
             "in_sidebar_menu": found["in_sidebar"], "breadcrumb_level": found["crumb_level"],
             "url_level": found["url_level"], "menu_parent": found["menu_parent"],
             "breadcrumb_parent": found["crumb_parent"], "url_parent": found["url_parent"],
+            "url_parent_applicable": found["url_parent_applicable"],
             "parents_agree": found["parents_agree"]}
 
 
-def structure_columns(page: Mapping, hierarchical: bool) -> dict:
-    """Az oldalnézet struktúra-oszlopai (`STRUCTURE_COLUMNS`). Lapos URL-szerkezetű site-on az
-    URL-szülő „nem értelmezhető”; a canonical-duplikátum sorai üresek."""
+def structure_columns(page: Mapping) -> dict:
+    """Az oldalnézet struktúra-oszlopai (`STRUCTURE_COLUMNS`). Ahol az URL-szülő nem számít
+    (lapos URL-szerkezetű site, vagy egyszakaszos oldal), ott „nem értelmezhető”; a
+    canonical-duplikátum sorai üresek."""
     def shown(value: object) -> object:
         return "" if value is None else value
 
     def yes(value: bool | None) -> str:
         return "" if value is None else "igen" if value else "nem"
 
-    known = page["unreachable"] is not None
     return {"mélység (minden link)": shown(page["click_depth"]),
             "mélység (csak menü)": shown(page["click_depth_menu"]),
             "mélység (csak tartalom)": shown(page["click_depth_content"]),
@@ -1839,8 +1841,8 @@ def structure_columns(page: Mapping, hierarchical: bool) -> dict:
             "URL-szint": shown(page["url_level"]),
             "szülő (menüfa)": shown(page["menu_parent"]),
             "szülő (morzsa)": shown(page["breadcrumb_parent"]),
-            "szülő (URL)": shown(page["url_parent"]) if hierarchical or not known
-            else URL_PARENT_FLAT,
+            "szülő (URL)": URL_PARENT_FLAT if page["url_parent_applicable"] is False
+            else shown(page["url_parent"]),
             "a szülők egyeznek": yes(page["parents_agree"])}
 
 
@@ -2009,7 +2011,7 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
             "hub": page["hub"] or "",
             "hub gyerekei": " | ".join(f"{child['url']} ({child['source']})"
                                        for child in page["hub_children"]),
-            **structure_columns(page, site.structure.url_hierarchy["hierarchical"]),
+            **structure_columns(page),
             "további említett entitások": "; ".join(
                 f"{m['entity']} ({m['weight']:g})" for m in page["other_mentions"]),
             "megállapítások": " || ".join(page["findings"]),

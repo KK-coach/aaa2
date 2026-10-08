@@ -43,7 +43,9 @@ Az URL-szülő csak **hierarchikus URL-szerkezetű site-on** számít (`url_hier
 kezdőoldalak legalább `URL_DEEP_SHARE` része áll legalább két útvonal-szakaszon (a nyelvi
 előtag nem számít szakasznak), és ezeknek legalább `URL_PARENT_SHARE` részénél a szülő útvonalon
 létező, nem kezdőoldal áll. Lapos URL-nél az URL-szülő nem értelmezhető, és a szülők
-összevetésébe nem számít.
+összevetésébe nem számít. Hierarchikus site-on is csak annál az oldalnál számít, amely maga
+legalább két útvonal-szakaszon áll (`url_parent_applicable`): a vegyes szerkezetű site
+egyszakaszos oldalainál (a webshop gyökér alatti termékei) az URL nem mond szülőt.
 
 A szülők összevetése (`parents_agree`): a menüfa, a morzsa és (hierarchikus site-on) az URL
 szerinti szülő közül azok, amelyek az oldalra megvannak; ha legalább kettő van, egyeznek vagy
@@ -371,16 +373,19 @@ def page_structure(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping]
     home_set = set(home_ids) | ({start} if start is not None else set())
     counted = deep = with_parent = 0
     url_parents = {}
+    deep_pages: set[int] = set()
     for page_id, page in nodes.items():
         url_parents[page_id] = url_parent(page_id)
-        if page_id in home_set:
-            continue
-        counted += 1
         parts = segments(page["url"])
         if parts and _LANGUAGE_SEGMENT.match(parts[0]) \
                 and parts[0].split("-")[0].lower() in languages:
             parts = parts[1:]
         if len(parts) >= 2:
+            deep_pages.add(page_id)
+        if page_id in home_set:
+            continue
+        counted += 1
+        if page_id in deep_pages:
             deep += 1
             with_parent += url_parents[page_id] is not None \
                 and url_parents[page_id] not in home_set
@@ -427,8 +432,9 @@ def page_structure(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping]
                 else:
                     crumb_parent = parent_url
                     parents["crumb"] = resolve(parent_url) or canonical_key(parent_url)
-        above_url = url_parents[page_id]
-        if hierarchical and above_url is not None:
+        applicable = hierarchical and page_id in deep_pages
+        above_url = url_parents[page_id] if applicable else None
+        if above_url is not None:
             parents["url"] = above_url
         agree = None
         if not is_home and len(parents) >= 2:
@@ -442,8 +448,8 @@ def page_structure(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping]
             "crumb_source": crumb_source, "crumb_level": crumb_level,
             "crumb_parent": crumb_parent,
             "url_level": len(segments(page["url"])),
-            "url_parent": nodes[above_url]["url"] if hierarchical and above_url is not None
-            else None,
+            "url_parent": nodes[above_url]["url"] if above_url is not None else None,
+            "url_parent_applicable": applicable,
             "parent_sources": sorted(parents), "parents_agree": agree}
     return SiteStructure(pages=found, homes=homes, start=start, url_hierarchy=url_hierarchy,
                          crumbs=crumbs, menu=menu)

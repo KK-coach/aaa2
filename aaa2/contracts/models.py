@@ -794,6 +794,7 @@ class PageView(Contract):
     menu_parent: str | None = None
     breadcrumb_parent: str | None = None
     url_parent: str | None = None
+    url_parent_applicable: bool | None = None
     parents_agree: bool | None = None
     other_mentions: list[PageMention] = Field(default_factory=list)
     findings: list[str] = Field(default_factory=list)
