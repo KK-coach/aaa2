@@ -146,6 +146,29 @@ def links(con: duckdb.DuckDBPyConnection) -> list[Link]:
     return found
 
 
+MENU_POSITIONS = ("nav", "aside", "footer")
+
+
+def counted_links(con: duckdb.DuckDBPyConnection) -> list[Link]:
+    """A belső linkek a számláláshoz (`links`, a menümásolatok nélkül): menüterületen
+    (`MENU_POSITIONS`: nav, oldalsáv, lábléc) ugyanarról a forrásoldalról ugyanarra a célra
+    ugyanazzal a horgonyszöveggel csak az első link számít, területenként külön. A renderelt
+    DOM-ban a menü gyakran kétszer áll (az asztali és a mobil másolata); a másolat nem új
+    link. A tartalmi linkek ismétlése megmarad, és a menü két különböző horgonyú linkje is
+    két link."""
+    seen: set[tuple] = set()
+    found = []
+    for link in links(con):
+        if link.position in MENU_POSITIONS:
+            target = link.to_page_id if link.to_page_id is not None else link.to_url
+            key = (link.from_page_id, target, link.position, link.anchor)
+            if key in seen:
+                continue
+            seen.add(key)
+        found.append(link)
+    return found
+
+
 def link_targets(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     """A készleten kívüli belső linkcélok feloldása készletbeli oldalra: linkcél (URL) →
     `page_id`, azokra a linkekre, amelyeknek nincs tárolt céloldaluk.

@@ -265,3 +265,27 @@ def test_self_links_and_sitemap_only_pages():
     assert (facts[meres]["önlinkek"], facts[meres]["bejövő belső linkek"]) == (1, 0)
     assert facts[meres]["csak sitemapből ismert"] == "igen"
     assert facts[ids[f"{BASE}/"]]["csak sitemapből ismert"] == "nem"
+
+
+def test_menu_copies_count_once_and_content_repeats_stay():
+    from aaa2.engine import queries as crawl
+
+    con = facts_site()
+    ids = dict(con.execute("SELECT url, page_id FROM pages").fetchall())
+    home, meres = ids[f"{BASE}/"], ids[f"{BASE}/meres/"]
+    con.execute("DELETE FROM links")
+    rows = [("Mérés", "nav"), ("Mérés", "nav"),          # az asztali menü és a mobil másolata
+            ("Mérési terv", "nav"),                      # más horgony: külön link
+            ("Mérés", "footer"),                         # más terület: külön link
+            ("Mérés", "body"), ("Mérés", "body")]        # a tartalmi ismétlés marad
+    for ordinal, (anchor, position) in enumerate(rows):
+        con.execute("INSERT INTO links (from_page_id, to_url, to_page_id, anchor, position, "
+                    "nofollow, ordinal) VALUES (?, ?, ?, ?, ?, false, ?)",
+                    [home, f"{BASE}/meres/", meres, anchor, position, ordinal])
+    assert len(crawl.links(con)) == 6
+    assert [(link.anchor, link.position) for link in crawl.counted_links(con)] == [
+        ("Mérés", "nav"), ("Mérési terv", "nav"), ("Mérés", "footer"), ("Mérés", "body"),
+        ("Mérés", "body")]
+    facts = page_facts(con)
+    assert (facts[meres]["bejövő belső linkek"], facts[meres]["hivatkozó oldalak"]) == (5, 1)
+    assert facts[home]["kimenő belső linkek"] == 5

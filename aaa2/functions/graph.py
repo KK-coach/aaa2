@@ -332,7 +332,7 @@ class _Graph:
         self.inbound: dict[int, list[tuple[int, str, bool]]] = defaultdict(list)
         for from_id, to_id, anchor, position in sorted(
                 ((link.from_page_id, link.to_page_id, link.anchor, link.position)
-                 for link in crawl.links(con) if link.to_page_id is not None),
+                 for link in crawl.counted_links(con) if link.to_page_id is not None),
                 key=lambda row: (row[0], row[1], row[2] is None, row[2] or "", row[3])):
             to_id = originals.get(to_id, to_id)     # a duplikátumra mutató link az eredetié
             if from_id in self.roles and to_id in self.roles \
