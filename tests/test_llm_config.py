@@ -264,6 +264,10 @@ def test_request_options_default_to_nothing_and_can_be_set_per_model(tmp_path):
     ('\n[anthropic.model_options."claude-haiku-5-5"]\neffort = "tiny"\n', "effort = 'tiny'"),
     ('\n[anthropic.model_options."claude-haiku-5-5"]\ntemperature = "0"\n', "temperature"),
     ('\n[anthropic.model_options."claude-haiku-9"]\neffort = "low"\n', "claude-haiku-9"),
+    (('\n[anthropic.model_options."claude-haiku-5-5"]\neffort = "xhigh"\n'
+     'thinking = "disabled"\n'), "thinking = 'disabled' nem érvényes effort = 'xhigh'"),
+    (('\n[anthropic.model_options."claude-haiku-5-5"]\neffort = "max"\n'
+     'thinking = "disabled"\n'), "thinking = 'disabled' nem érvényes effort = 'max'"),
 ])
 def test_invalid_request_options_are_refused(tmp_path, addition, message):
     from aaa2.llm.config import CONFIG_PATH, load_config
@@ -272,3 +276,19 @@ def test_invalid_request_options_are_refused(tmp_path, addition, message):
     path.write_text(CONFIG_PATH.read_text(encoding="utf-8") + addition, encoding="utf-8")
     with pytest.raises(ValueError, match=message):
         load_config(path)
+
+
+def test_disabled_thinking_is_refused_with_an_effort_inherited_from_the_provider(tmp_path):
+    from aaa2.llm.config import CONFIG_PATH, load_config
+
+    text = CONFIG_PATH.read_text(encoding="utf-8").replace(
+        '[anthropic]\n', '[anthropic]\neffort = "max"\n', 1)
+    path = tmp_path / "models.toml"
+    path.write_text(text + '\n[anthropic.model_options."claude-haiku-5-5"]\n'
+                    'thinking = "disabled"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="claude-haiku-5-5: thinking = 'disabled' nem érvényes"):
+        load_config(path)
+    path.write_text(text + '\n[anthropic.model_options."claude-haiku-5-5"]\n'
+                    'effort = "high"\nthinking = "disabled"\n', encoding="utf-8")
+    assert load_config(path).providers["anthropic"].options("claude-haiku-5-5") == {
+        "effort": "high", "thinking": "disabled"}

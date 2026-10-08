@@ -15,6 +15,8 @@ PROVIDERS = ("anthropic", "openai", "gemini")
 # a kérés elhagyható beállításai és megengedett értékeik (lásd a models.toml fejét)
 REQUEST_OPTIONS = {"effort": ("low", "medium", "high", "xhigh", "max"),
                    "thinking": ("adaptive", "disabled")}
+# a kikapcsolt gondolkodás csak `high` vagy alacsonyabb effort mellett érvényes
+EFFORT_NEEDS_THINKING = ("xhigh", "max")
 
 
 class PriceError(ValueError):
@@ -94,10 +96,14 @@ class ProviderConfig:
 
     def options(self, model: str) -> dict[str, str]:
         """A modell kérés-beállításai (`effort`, `thinking`): a szolgáltató szintű érték, a
-        modell saját értékével felülírva; ami nincs megadva, az kimarad."""
+        modell saját értékével felülírva; ami nincs megadva, az kimarad. A kikapcsolt gondolkodás
+        `xhigh` vagy `max` efforttal nem érvényes: ValueError."""
         found = {key: value for key, value in (("effort", self.effort),
                                                ("thinking", self.thinking)) if value}
         found.update(self.model_options.get(model, {}))
+        if found.get("thinking") == "disabled" and found.get("effort") in EFFORT_NEEDS_THINKING:
+            raise ValueError(f"[{self.name}] {model}: thinking = 'disabled' nem érvényes "
+                             f"effort = {found['effort']!r} mellett (legfeljebb high)")
         return found
 
     @property
@@ -205,6 +211,8 @@ def load_config(path: Path = CONFIG_PATH) -> LLMConfig:
         if strangers:
             raise ValueError(f"{path.name} [{name}.model_options]: nem konfigurált modell: "
                              f"{', '.join(strangers)}")
+        for model in provider.models:
+            provider.options(model)
         if not 0 < provider.stop_usd <= provider.budget_usd:
             raise ValueError(f"[{name}]: a leállási küszöb 0 és a keret közé esik")
         if provider.use_fallback and not provider.fallback:
