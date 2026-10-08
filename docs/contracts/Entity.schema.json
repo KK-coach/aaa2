@@ -126,7 +126,7 @@
       "title": "Role"
     },
     "schema_version": {
-      "default": "1.15",
+      "default": "1.16",
       "title": "Schema Version",
       "type": "string"
     },
@@ -207,5 +207,5 @@
   "title": "Entity",
   "type": "object",
   "x-module": "resolve",
-  "x-schema-version": "1.15"
+  "x-schema-version": "1.16"
 }

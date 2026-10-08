@@ -104,6 +104,25 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   `h1_outside_content`, `multiple_h1`, `empty_section`, `skipped_level`, `missing_h2`; a
   szabályaik a `functions/headings.py` leírásában.
 
+Hub-címke (`_Site.hubs`; címke, nem szerep és nem megállapítás), oldalanként legfeljebb egy:
+
+- `menü-hub`: az oldal menüpontja alatt legalább `HUB_MIN_MENU_CHILDREN` gyerek-menüpont áll
+  (`crawl.menu_pairs`: a tárolt renderelt DOM menüjéből, a kimenet építésekor számolva; a
+  pár akkor a site menüje, ha a szülő nyelvének oldalai legalább `MENU_PAIR_SHARE` részén
+  megvan), és az oldal tartalmából legalább `HUB_MIN_CONTENT_CHILDREN` tartalmi link mutat
+  ezekre a gyerekekre. A kezdőoldal nem hub.
+- `tartalmi hub`: nem menü-hub; a tartalmából legalább `HUB_MIN_CONTENT_TARGETS` tartalmi link
+  mutat azonos szerepű oldalakra, amelyek a tartalmukból visszalinkelnek rá, és ezek szerepe
+  más, mint az oldalé (az egymásra kölcsönösen linkelő testvéroldalak, pl. ajánlat ↔ ajánlat,
+  termék ↔ termék, nem hubok).
+- `kategória-hub`: kategória-szerepű oldal, amely alatt alkategóriák állnak (menügyerek, vagy
+  a tartalmából linkelt kategóriaoldal), vagy a tartalmából legalább `HUB_MIN_PRODUCTS`
+  termékoldalra mutat link.
+
+A gyerekek (`children`): oldalanként az URL, a szerep, honnan ismert (menü / tartalom /
+mindkettő), és visszalinkel-e a tartalmából a hubra; mellette, hány gyerekre mutat a hub
+tartalma (`content_linked`) és hány linkel vissza (`linking_back`).
+
 Nézetek (`export_views`), ellenőrzéshez: site-áttekintő (a legfontosabb entitások típus szerint,
 a szülővel, a kategóriával és a fő oldalaikkal), entitás környezete (az entitás élei egy
 lépésnyire, a fő és a csak említő oldalai), oldalnézet (a fő entitás a bizonyítékaival, a H1 és a
@@ -226,6 +245,12 @@ CUT_MIN_SHARE = 0.6
 OVERVIEW_TOP = 100                      # a site-áttekintő ennyi legnagyobb súlyú entitást mutat
 PAGE_MENTIONS = 10                      # az oldalnézet ennyi további említett entitást sorol
 EVIDENCE_PAGES = 5
+MENU_PAIR_SHARE = 0.5                   # a menüpár a nyelv oldalainak ekkora részén áll
+HUB_MIN_MENU_CHILDREN = 2
+HUB_MIN_CONTENT_CHILDREN = 2
+HUB_MIN_CONTENT_TARGETS = 3
+HUB_MIN_PRODUCTS = 3
+HUB_SOURCES = {(True, True): "mindkettő", (True, False): "menü", (False, True): "tartalom"}
 ARTICLE_MARKUP_SHARE = 0.6              # a HTML oldalak ekkora részén áll cikk-jelölés
 ABOUT_URL_WORDS = ("about", "rolunk", "rolam", "career", "karrier", "allas", "jobs")
 NOT_ARTICLE_LABELS = {"offer": "ajánlat / termék / kategória", "about": "rólunk / karrier",
@@ -332,6 +357,7 @@ class _Site:
         self._headings: dict[int, dict] | None = None
         self._titles: dict[int, titles.TitleFields] | None = None
         self._forms: dict[str, list[int]] | None = None
+        self._hubs: dict[int, dict] | None = None
         self.display = DisplayNames(con)
 
     @property
@@ -385,6 +411,80 @@ class _Site:
             return None
         pool = set(self._forms.get(next(iter(keys)), []))
         return next(iter(pool)) if len(pool) == 1 else None
+
+    @property
+    def hubs(self) -> dict[int, dict]:
+        """Oldal → hub-címke a gyerekeivel (lásd a modul leírását): `label`, `children`
+        ({`url`, `role`, `source`, `links_back`}, URL szerint), `content_linked`,
+        `linking_back`. A hub nélküli oldal nincs benne."""
+        if self._hubs is not None:
+            return self._hubs
+        nodes = {page["page_id"]: page for page in self.nodes()}
+        by_key = {canonical_key(page["url"]): page["canonical"] or page["page_id"]
+                  for page in self.pages.values()}
+        per_lang = Counter(page["lang"] for page in nodes.values())
+        seen: Counter[tuple[int, int]] = Counter()
+        for page_id, pairs in crawl.menu_pairs(self.con).items():
+            if page_id not in nodes:
+                continue
+            for pair in {(by_key.get(canonical_key(parent)), by_key.get(canonical_key(child)))
+                         for parent, child, _ in pairs}:
+                if pair[0] in nodes and pair[1] in nodes and pair[0] != pair[1]:
+                    seen[pair] += 1
+        menu: dict[int, set[int]] = defaultdict(set)
+        for (parent, child), count in seen.items():
+            if count >= MENU_PAIR_SHARE * per_lang[nodes[parent]["lang"]]:
+                menu[parent].add(child)
+        body: dict[int, set[int]] = defaultdict(set)
+        for link in crawl.counted_links(self.con):
+            target = link.to_page_id
+            if link.position == CONTENT_LINK and target is not None:
+                target = self.pages[target]["canonical"] or target if target in self.pages \
+                    else target
+                if link.from_page_id in nodes and target in nodes \
+                        and target != link.from_page_id:
+                    body[link.from_page_id].add(target)
+
+        def role(page_id: int) -> str:
+            page = nodes[page_id]
+            return page["role"] + (f" ({page['support']})" if page["support"] else "")
+
+        found: dict[int, dict] = {}
+        for page_id, page in nodes.items():
+            if page["role"] == "home":
+                continue
+            in_menu, linked = menu.get(page_id, set()), body.get(page_id, set())
+            label, children = None, set()
+            if page["role"] == "category":
+                sub = in_menu | {t for t in linked if nodes[t]["role"] == "category"}
+                products = {t for t in linked if nodes[t]["role"] == "product"}
+                if sub or len(products) >= HUB_MIN_PRODUCTS:
+                    label, children = "kategória-hub", sub | products
+            elif len(in_menu) >= HUB_MIN_MENU_CHILDREN \
+                    and len(in_menu & linked) >= HUB_MIN_CONTENT_CHILDREN:
+                label, children = "menü-hub", set(in_menu)
+            if label is None and page["role"] != "category":
+                back: dict[str, set[int]] = defaultdict(set)
+                for target in linked:
+                    if page_id in body.get(target, set()) and role(target) != role(page_id):
+                        back[role(target)].add(target)
+                best = max(back.items(), key=lambda item: (len(item[1]), item[0]),
+                           default=(None, set()))
+                if len(best[1]) >= HUB_MIN_CONTENT_TARGETS:
+                    label, children = "tartalmi hub", set(best[1])
+            if label is None:
+                continue
+            rows = sorted(({
+                "url": nodes[child]["url"], "role": role(child),
+                "source": HUB_SOURCES[(child in in_menu, child in linked)],
+                "links_back": page_id in body.get(child, set())} for child in children),
+                key=lambda item: item["url"])
+            found[page_id] = {
+                "label": label, "children": rows,
+                "content_linked": sum(1 for child in children if child in linked),
+                "linking_back": sum(1 for item in rows if item["links_back"])}
+        self._hubs = found
+        return found
 
     def title_entities(self, page: Mapping, main_id: int, fields: titles.TitleFields
                        ) -> list[dict]:
@@ -1446,6 +1546,9 @@ def view_data(site: _Site) -> tuple[list[dict], list[dict]]:
             "schema_about": [dict(item) for item in fields.about],
             "schema_types": list(fields.schema_types),
             "role_markup_note": role_markup_note(page["role"], fields.schema_types),
+            "hub": (site.hubs.get(page["page_id"]) or {}).get("label"),
+            "hub_children": [dict(child) for child in (
+                site.hubs.get(page["page_id"]) or {}).get("children", [])],
             "other_mentions": [{"entity_id": e, "entity": site.shown(e, page), "weight": w}
                                for e, w, _ in site.mention_edges[page["page_id"]]
                                if e not in picked and w > 0][:PAGE_MENTIONS],
@@ -1690,6 +1793,9 @@ def _views(site: _Site) -> tuple[list[dict], list[dict], list[dict]]:
             "title": page["title"] or "",
             "a title-ben": _yes(has_main or None, bool(page["in_title"])),
             **title_columns(page),
+            "hub": page["hub"] or "",
+            "hub gyerekei": " | ".join(f"{child['url']} ({child['source']})"
+                                       for child in page["hub_children"]),
             "további említett entitások": "; ".join(
                 f"{m['entity']} ({m['weight']:g})" for m in page["other_mentions"]),
             "megállapítások": " || ".join(page["findings"]),
@@ -1766,7 +1872,8 @@ def export_views(con: duckdb.DuckDBPyConnection, out: Path, name: str) -> dict[s
         "pages": _write(out / f"{name}-view-pages.csv", pages, [
             "url", "szerep", "segédoldal", "nyelv", "canonical", "fő entitás",
             NAME_NOTE_COLUMN, "típus", "megbízhatóság", "bizonyítékok", "másodlagos", "H1", "a H1-ben", "title",
-            "a title-ben", *TITLE_COLUMNS, "további említett entitások", "megállapítások",
+            "a title-ben", *TITLE_COLUMNS, "hub", "hub gyerekei",
+            "további említett entitások", "megállapítások",
             "jelzések",
             *PAGE_FACT_COLUMNS]),
         "headings": _write(out / f"{name}-view-headings.csv",
@@ -1982,6 +2089,12 @@ def _html(name: str, findings: list[dict], site: _Site, overview: list[dict],
                      f"{': ' + detail if detail else ''})</span></summary>"
                      + "".join(_finding_html(f) for f in group) + "</details>")
     parts.append("<h2>Site-áttekintő</h2>")
+    hub_rows = [row for row in pages if row["hub"]]
+    parts.append(
+        f"<details><summary>Hubok <span>({len(hub_rows)})</span></summary>" + _table([
+            (f"{_e(row['hub'])}: {_link(row['url'])}",
+             "<br>".join(_e(child) for child in row["hub gyerekei"].split(" | ")))
+            for row in hub_rows]) + "</details>")
     by_type: dict[str, list[dict]] = defaultdict(list)
     for row in overview:
         by_type[row["típus"]].append(row)
@@ -2023,6 +2136,9 @@ def _html(name: str, findings: list[dict], site: _Site, overview: list[dict],
                 ("title", f"{_e(row['title'])} <span>— benne a fő entitás: "
                           f"{row['a title-ben']}</span>" if row["fő entitás"]
                  else _e(row["title"])),
+                ("hub", _e(row["hub"]) + ("<br>" + "<br>".join(
+                    _e(child) for child in row["hub gyerekei"].split(" | "))
+                    if row["hub"] else "")),
                 ("címmezők", "<br>".join(
                     f"{_e(column)}: {_e(row[column])}" for column in TITLE_COLUMNS
                     if row[column] not in ("", None))),

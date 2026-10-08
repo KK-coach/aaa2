@@ -22,7 +22,7 @@
       "type": "string"
     },
     "schema_version": {
-      "default": "1.15",
+      "default": "1.16",
       "title": "Schema Version",
       "type": "string"
     }
@@ -35,5 +35,5 @@
   "title": "HeadingEntity",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.15"
+  "x-schema-version": "1.16"
 }

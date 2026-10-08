@@ -1,0 +1,37 @@
+{
+  "additionalProperties": false,
+  "description": "Egy hub-oldal egy gyereke: az URL-je, a szerepe, honnan ismert (`source`: menü,\ntartalom vagy mindkettő), és visszalinkel-e a tartalmából a hubra.",
+  "properties": {
+    "links_back": {
+      "default": false,
+      "title": "Links Back",
+      "type": "boolean"
+    },
+    "role": {
+      "title": "Role",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.16",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source": {
+      "title": "Source",
+      "type": "string"
+    },
+    "url": {
+      "title": "Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "url",
+    "role",
+    "source"
+  ],
+  "title": "HubChild",
+  "type": "object",
+  "x-module": "findings",
+  "x-schema-version": "1.16"
+}
