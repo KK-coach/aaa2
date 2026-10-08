@@ -66,6 +66,29 @@ def hub_site():
            for n in ("egy", "ketto", "harom")}})
 
 
+def test_a_flat_submenu_item_under_a_sibling_address_belongs_to_that_sibling():
+    flat = ('<nav><div class="hub"><a href="/rendszer/">Szolgáltatások</a><button></button>'
+            '<div class="almenu"><a href="/seo/">SEO</a>'
+            '<a class="sub" href="/seo/technikai/">Technikai SEO</a>'
+            '<a href="/seo-eszkozok/">SEO-eszközök</a><a href="/meres/">Mérés</a>'
+            '<a href="/rendszer/megvalositas/">Megvalósítás</a></div></div></nav>')
+    assert menu_pairs(f"<html><body>{flat}</body></html>", f"{BASE}/x/") == [
+        (f"{BASE}/rendszer/", f"{BASE}/seo/", "SEO"),
+        (f"{BASE}/seo/", f"{BASE}/seo/technikai/", "Technikai SEO"),     # a testvér címe alatt
+        (f"{BASE}/rendszer/", f"{BASE}/seo-eszkozok/", "SEO-eszközök"),  # nem `/`-határ
+        (f"{BASE}/rendszer/", f"{BASE}/meres/", "Mérés"),
+        # a szülő címe alatti menüpont a szülő gyereke marad
+        (f"{BASE}/rendszer/", f"{BASE}/rendszer/megvalositas/", "Megvalósítás")]
+    # a kezdőlap egy szinten a többivel: nem szülője mindennek; másik host alá nem kerül
+    home = ('<nav><div><a href="/rendszer/">Szolgáltatások</a><div><a href="/">Kezdőlap</a>'
+            '<a href="/seo/">SEO</a><a href="https://masik.hu/seo/technikai/">Külső</a>'
+            '</div></div></nav>')
+    assert menu_pairs(f"<html><body>{home}</body></html>", f"{BASE}/x/") == [
+        (f"{BASE}/rendszer/", f"{BASE}/", "Kezdőlap"),
+        (f"{BASE}/rendszer/", f"{BASE}/seo/", "SEO"),
+        (f"{BASE}/rendszer/", "https://masik.hu/seo/technikai/", "Külső")]
+
+
 def test_hub_labels_and_children_in_the_page_view(tmp_path):
     con = hub_site()
     run_rules(con)
