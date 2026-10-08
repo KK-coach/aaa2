@@ -220,7 +220,7 @@ def test_heading_views_in_the_csv_the_html_and_the_contract(tmp_path):
     page = paths["html"].read_text(encoding="utf-8")
     assert "heading-fa" in page and "Kihagyott heading-szint" in page and "Hiányzó H1" in page
     views = site_views(con, "pelda", "pelda.hu")
-    assert views.schema_version == contracts.SCHEMA_VERSION == "1.11"
+    assert views.schema_version == contracts.SCHEMA_VERSION == "1.12"
     by_url = {p.url: p for p in views.pages}
     tree = by_url[f"{BASE}/jo/"].headings
     assert isinstance(tree[0], contracts.HeadingView)

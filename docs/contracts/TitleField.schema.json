@@ -1,13 +1,9 @@
 {
   "additionalProperties": false,
-  "description": "Az entitás egy neve a site elsődleges nyelvétől eltérő nyelven, a forrásával.",
+  "description": "Az oldal egy schema.org címmezője: a mező és a típus (`field`, pl. „headline (Article)”)\nés a szövege a site-utótag nélkül.",
   "properties": {
-    "lang": {
-      "title": "Lang",
-      "type": "string"
-    },
-    "name": {
-      "title": "Name",
+    "field": {
+      "title": "Field",
       "type": "string"
     },
     "schema_version": {
@@ -15,17 +11,16 @@
       "title": "Schema Version",
       "type": "string"
     },
-    "source": {
-      "title": "Source",
+    "text": {
+      "title": "Text",
       "type": "string"
     }
   },
   "required": [
-    "lang",
-    "name",
-    "source"
+    "field",
+    "text"
   ],
-  "title": "OtherName",
+  "title": "TitleField",
   "type": "object",
   "x-module": "findings",
   "x-schema-version": "1.12"

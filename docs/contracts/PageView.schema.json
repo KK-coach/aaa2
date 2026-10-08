@@ -24,7 +24,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.11",
+          "default": "1.12",
           "title": "Schema Version",
           "type": "string"
         }
@@ -42,7 +42,7 @@
       "description": "Egy H1 a fő tartalmon kívül: `cookie` (cookie- vagy consent-elem), `dialog` (popup,\nmodális ablak), `chrome` (fejléc, menü, lábléc, oldalsáv).",
       "properties": {
         "schema_version": {
-          "default": "1.11",
+          "default": "1.12",
           "title": "Schema Version",
           "type": "string"
         },
@@ -111,7 +111,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.11",
+          "default": "1.12",
           "title": "Schema Version",
           "type": "string"
         },
@@ -161,7 +161,7 @@
           "type": "integer"
         },
         "schema_version": {
-          "default": "1.11",
+          "default": "1.12",
           "title": "Schema Version",
           "type": "string"
         },
@@ -177,10 +177,127 @@
       ],
       "title": "PageMention",
       "type": "object"
+    },
+    "SchemaAbout": {
+      "additionalProperties": false,
+      "description": "Az oldal schema.org `about` értéke: a hivatkozás saját neve, az `@id`, név nélküli\n`@id`-hivatkozásnál a csomópontjainak összes neve a készletben (`names`), és mire mutat, ha\negyértelmű: az entitás, a neve az oldal nyelvén, a típusa, és azonos-e az oldal fő\nentitásával (None: nem oldható fel, vagy nincs fő entitás).",
+      "properties": {
+        "entity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entity"
+        },
+        "entity_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entity Id"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "names": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Names",
+          "type": "array"
+        },
+        "same_as_main": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Same As Main"
+        },
+        "schema_version": {
+          "default": "1.12",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Type"
+        }
+      },
+      "title": "SchemaAbout",
+      "type": "object"
+    },
+    "TitleField": {
+      "additionalProperties": false,
+      "description": "Az oldal egy schema.org címmezője: a mező és a típus (`field`, pl. „headline (Article)”)\nés a szövege a site-utótag nélkül.",
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1.12",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field",
+        "text"
+      ],
+      "title": "TitleField",
+      "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a\nmásodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a további említett\nentitások, az oldal megállapításai, a jelzések (`notes`: a kinyerés nem nevezett meg fő\ntémát; a nyelvi pár fő entitása eltér), és a heading-fa (a sablon- és chrome-headingek nélkül;\n`h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél).",
+  "description": "Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a\nmásodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a címmezők tényként\n(`title_cut`: a title a site-utótag nélkül; `visible_title`: a tartalmi régió első címsora\naz elemével; `h1_count`; `og_title`; `schema_titles`; `title_differences`: mely mezők\nszövege tér el), a schema `about` (`schema_about`), a további említett\nentitások, az oldal megállapításai, a jelzések (`notes`: a kinyerés nem nevezett meg fő\ntémát; a nyelvi pár fő entitása eltér), és a heading-fa (a sablon- és chrome-headingek nélkül;\n`h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél).",
   "properties": {
     "canonical_issue": {
       "anyOf": [
@@ -257,6 +374,11 @@
       ],
       "default": null,
       "title": "H1"
+    },
+    "h1_count": {
+      "default": 0,
+      "title": "H1 Count",
+      "type": "integer"
     },
     "h1_justified": {
       "anyOf": [
@@ -363,6 +485,18 @@
       "title": "Notes",
       "type": "array"
     },
+    "og_title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Og Title"
+    },
     "other_mentions": {
       "items": {
         "$ref": "#/$defs/PageMention"
@@ -378,8 +512,22 @@
       "title": "Role",
       "type": "string"
     },
+    "schema_about": {
+      "items": {
+        "$ref": "#/$defs/SchemaAbout"
+      },
+      "title": "Schema About",
+      "type": "array"
+    },
+    "schema_titles": {
+      "items": {
+        "$ref": "#/$defs/TitleField"
+      },
+      "title": "Schema Titles",
+      "type": "array"
+    },
     "schema_version": {
-      "default": "1.11",
+      "default": "1.12",
       "title": "Schema Version",
       "type": "string"
     },
@@ -414,9 +562,52 @@
       "default": null,
       "title": "Title"
     },
+    "title_cut": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title Cut"
+    },
+    "title_differences": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Title Differences",
+      "type": "array"
+    },
     "url": {
       "title": "Url",
       "type": "string"
+    },
+    "visible_title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Visible Title"
+    },
+    "visible_title_element": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Visible Title Element"
     }
   },
   "required": [
@@ -427,5 +618,5 @@
   "title": "PageView",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.11"
+  "x-schema-version": "1.12"
 }

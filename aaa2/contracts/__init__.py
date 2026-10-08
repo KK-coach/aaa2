@@ -32,11 +32,13 @@ from aaa2.contracts.models import (
     PageNode,
     PageView,
     Relation,
+    SchemaAbout,
     Site,
     SitemapFile,
     SitemapUrl,
     SiteViews,
     StructuredData,
+    TitleField,
 )
 
 __all__ = [
@@ -72,9 +74,11 @@ __all__ = [
     "PageNode",
     "PageView",
     "Relation",
+    "SchemaAbout",
     "Site",
     "SiteViews",
     "SitemapFile",
     "SitemapUrl",
     "StructuredData",
+    "TitleField",
 ]

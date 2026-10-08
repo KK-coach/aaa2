@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.11"
+SCHEMA_VERSION = "1.12"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -563,6 +563,31 @@ class PageMention(Contract):
     weight: float
 
 
+class TitleField(Contract):
+    """Az oldal egy schema.org címmezője: a mező és a típus (`field`, pl. „headline (Article)”)
+    és a szövege a site-utótag nélkül."""
+
+    module: ClassVar[str] = "findings"
+    field: str
+    text: str
+
+
+class SchemaAbout(Contract):
+    """Az oldal schema.org `about` értéke: a hivatkozás saját neve, az `@id`, név nélküli
+    `@id`-hivatkozásnál a csomópontjainak összes neve a készletben (`names`), és mire mutat, ha
+    egyértelmű: az entitás, a neve az oldal nyelvén, a típusa, és azonos-e az oldal fő
+    entitásával (None: nem oldható fel, vagy nincs fő entitás)."""
+
+    module: ClassVar[str] = "findings"
+    name: str | None = None
+    id: str | None = None
+    names: list[str] = Field(default_factory=list)
+    entity_id: int | None = None
+    entity: str | None = None
+    type: str | None = None
+    same_as_main: bool | None = None
+
+
 HeadingRelation = Literal["main", "related", "unrelated", "no_entity", "no_main"]
 
 
@@ -611,7 +636,10 @@ class HeadingView(Contract):
 
 class PageView(Contract):
     """Egy oldal a nézetben: szerep, canonical-döntés, a fő entitás a bizonyítékaival, a
-    másodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a további említett
+    másodlagos entitások, a H1 és a title megnevezi-e a fő entitást, a címmezők tényként
+    (`title_cut`: a title a site-utótag nélkül; `visible_title`: a tartalmi régió első címsora
+    az elemével; `h1_count`; `og_title`; `schema_titles`; `title_differences`: mely mezők
+    szövege tér el), a schema `about` (`schema_about`), a további említett
     entitások, az oldal megállapításai, a jelzések (`notes`: a kinyerés nem nevezett meg fő
     témát; a nyelvi pár fő entitása eltér), és a heading-fa (a sablon- és chrome-headingek nélkül;
     `h1_outside`: H1 a fő tartalmon kívül; `h1_justified`: több H1 indokolt-e, None egy H1-nél)."""
@@ -635,6 +663,14 @@ class PageView(Contract):
     in_h1: bool | None = None
     title: str | None = None
     in_title: bool | None = None
+    title_cut: str | None = None
+    visible_title: str | None = None
+    visible_title_element: str | None = None
+    h1_count: int = 0
+    og_title: str | None = None
+    schema_titles: list[TitleField] = Field(default_factory=list)
+    title_differences: list[str] = Field(default_factory=list)
+    schema_about: list[SchemaAbout] = Field(default_factory=list)
     other_mentions: list[PageMention] = Field(default_factory=list)
     findings: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
@@ -657,7 +693,7 @@ class SiteViews(Contract):
 
 # a több táblából összeállított szerződések (nincs egyetlen forrástáblájuk)
 DERIVED: tuple[type[Contract], ...] = (
-    FindingView, EntityRelation, OtherName, EntityView, PageMention, HeadingEntity, HeadingOutside,
+    FindingView, EntityRelation, OtherName, EntityView, PageMention, TitleField, SchemaAbout, HeadingEntity, HeadingOutside,
     HeadingView, PageView, SiteViews)
 
 CONTRACTS: tuple[type[Contract], ...] = (
