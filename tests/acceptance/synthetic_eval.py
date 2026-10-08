@@ -103,6 +103,9 @@ def output_path(data_dir: Path, page_id: str, model: str, tag: str = "") -> Path
 
 # a futás kérés-beállításai a modellre (`--effort`, `--thinking`); üres: a konfig szerint
 REQUEST_OPTIONS: dict[str, str] = {}
+# a futás kimeneti tokenkorlátja (`--max-output-tokens`); None: a konfig szerint. A gondolkodó
+# modellnél a korlát a gondolkodással együtt értendő.
+MAX_OUTPUT_TOKENS: list[int] = []
 
 
 def _client(con, model: str):
@@ -110,10 +113,12 @@ def _client(con, model: str):
     provider = config.provider_of(model)
     if provider is None:
         raise SystemExit(f"a {model} nincs a konfigurált modellek között")
-    if REQUEST_OPTIONS:
+    if REQUEST_OPTIONS or MAX_OUTPUT_TOKENS:
         own = config.providers[provider]
         own = replace(own, model_options={**own.model_options, model: {
-            **own.model_options.get(model, {}), **REQUEST_OPTIONS}})
+            **own.model_options.get(model, {}), **REQUEST_OPTIONS}},
+            max_output_tokens=MAX_OUTPUT_TOKENS[0] if MAX_OUTPUT_TOKENS
+            else own.max_output_tokens)
         config = replace(config, providers={**config.providers, provider: own})
     clients, skipped = open_clients(con, config=config, models={provider: model})
     if provider not in clients:
@@ -812,6 +817,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--tag", default="", help="a kör címkéje (r1, r2, …)")
     parser.add_argument("--effort", default=None,
                         help="run: a modell effort szintje ehhez a futáshoz (a konfig helyett)")
+    parser.add_argument("--max-output-tokens", type=int, default=None,
+                        help="run: a szolgáltató kimeneti tokenkorlátja ehhez a futáshoz")
     parser.add_argument("--thinking", default=None, choices=("adaptive", "disabled"),
                         help="run: a modell thinking típusa ehhez a futáshoz (a konfig helyett)")
     parser.add_argument("--single", default="", help="compare: egyszeri körök címkéi, vesszővel")
@@ -852,6 +859,8 @@ def main(argv: list[str] | None = None) -> None:
         print(out)
         return
     if args.command == "run":
+        if args.max_output_tokens:
+            MAX_OUTPUT_TOKENS.append(args.max_output_tokens)
         REQUEST_OPTIONS.update({key: value for key, value in (
             ("effort", args.effort), ("thinking", args.thinking)) if value})
         run(args.model, args.data_dir, pages, args.tag)
