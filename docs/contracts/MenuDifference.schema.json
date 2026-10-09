@@ -44,7 +44,7 @@
       "title": "Parent"
     },
     "schema_version": {
-      "default": "1.20",
+      "default": "1.21",
       "title": "Schema Version",
       "type": "string"
     },
@@ -64,5 +64,5 @@
   "title": "MenuDifference",
   "type": "object",
   "x-module": "graph",
-  "x-schema-version": "1.20"
+  "x-schema-version": "1.21"
 }

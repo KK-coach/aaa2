@@ -75,7 +75,7 @@
       "title": "Resolution"
     },
     "schema_version": {
-      "default": "1.20",
+      "default": "1.21",
       "title": "Schema Version",
       "type": "string"
     },
@@ -104,5 +104,5 @@
   "title": "Link",
   "type": "object",
   "x-module": "crawl",
-  "x-schema-version": "1.20"
+  "x-schema-version": "1.21"
 }

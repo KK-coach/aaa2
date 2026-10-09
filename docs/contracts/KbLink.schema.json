@@ -80,7 +80,7 @@
       "title": "Knowledge Checked At"
     },
     "schema_version": {
-      "default": "1.20",
+      "default": "1.21",
       "title": "Schema Version",
       "type": "string"
     },
@@ -152,5 +152,5 @@
   "title": "KbLink",
   "type": "object",
   "x-module": "resolve",
-  "x-schema-version": "1.20"
+  "x-schema-version": "1.21"
 }
