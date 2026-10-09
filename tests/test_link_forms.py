@@ -169,18 +169,26 @@ def test_the_probe_respects_robots_and_the_address_limit(monkeypatch):
         asked.append(str(request.url))
         return httpx.Response(200)
 
-    # a robots.txt által tiltott címre nincs kérés, és a sor sem keletkezik
-    run = probe(con, handler, robots=Robots.parse("User-agent: *\nDisallow: /adat\n"))
+    # a robots.txt által tiltott címre nincs kérés; a sora státusz nélkül, a szabállyal áll
+    robots = Robots.parse("User-agent: *\nDisallow: /adat\nAllow: /adat/\n")
+    assert robots.blocking_rule(f"{BASE}/adat") == "Disallow: /adat"
+    assert robots.blocking_rule(f"{BASE}/adat/") is None
+    run = probe(con, handler, robots=robots)
     assert (run.probed, run.blocked, run.over_limit) == (2, 1, 0)
     assert f"{BASE}/adat" not in asked
-    assert f"{BASE}/adat" not in {variant.raw_url for variant in link_variants(con)}
-    # a korlát fölött nincs kérés: cím szerinti sorrendben az elsők mennek
+    found = {variant.raw_url: variant for variant in link_variants(con)}
+    blocked = found[f"{BASE}/adat"]
+    assert (blocked.status, blocked.final_url, blocked.hops) == (None, None, None)
+    assert blocked.error == "robots_blocked: Disallow: /adat"
+    # a korlát fölött nincs kérés: cím szerinti sorrendben az elsők mennek; a tiltott címre a
+    # korlát nem vonatkozik (arra nincs kérés), a sora megmarad
     asked.clear()
     monkeypatch.setattr(crawl_module, "VARIANT_PROBE_LIMIT", 1)
-    run = probe(con, handler)
-    assert (run.probed, run.over_limit, run.blocked) == (1, 2, 0)
+    run = probe(con, handler, robots=robots)
+    assert (run.probed, run.over_limit, run.blocked) == (1, 1, 1)
     assert asked == ["http://kulso.pelda.hu/x"]
-    assert [variant.raw_url for variant in link_variants(con)] == ["http://kulso.pelda.hu/x"]
+    assert {variant.raw_url: variant.error for variant in link_variants(con)} == {
+        "http://kulso.pelda.hu/x": None, f"{BASE}/adat": "robots_blocked: Disallow: /adat"}
 
 
 def link_findings(con):
@@ -279,3 +287,45 @@ def test_a_menu_redirect_already_reported_is_not_repeated():
     assert "/blog/" not in found                        # a menülinket a menu_broken_target jelzi
     assert [finding.evidence["url"] for finding in stored_findings(con)
             if finding.type == "menu_broken_target"] == [f"{BASE}/blog/"]
+
+
+def test_a_linked_form_blocked_by_robots_is_not_called_unmeasured():
+    con = link_site()
+    link_findings(con)
+    con.execute("INSERT INTO link_variants (raw_url, normalized_url, error, fetched_at) "
+                "VALUES (?, ?, 'robots_blocked: Disallow: /adat', ?)",
+                [f"{BASE}/adat", f"{BASE}/adat/", NOON])
+    blocked = measured_finding(con, f"{BASE}/adat")
+    assert blocked.evidence["linked_status"] == "robots.txt tiltja"
+    assert blocked.evidence["final_url"] is None
+    assert blocked.evidence["final_note"] == "robots.txt tiltja"
+    assert blocked.evidence["robots_rule"] == "Disallow: /adat"
+    assert blocked.evidence["measured"] is False and blocked.severity == "medium"
+    assert "a linkelt címet a robots.txt tiltja" in blocked.summary
+    # szabály nélkül is tiltott, nem „nem mért”
+    con.execute("UPDATE link_variants SET error = 'robots_blocked'")
+    plain = measured_finding(con, f"{BASE}/adat")
+    assert plain.evidence["linked_status"] == "robots.txt tiltja"
+    assert "robots_rule" not in plain.evidence
+
+
+def test_a_linked_form_that_answers_with_an_error_is_a_high_finding():
+    con = link_site()
+    found = link_findings(con)
+    assert found["/allas"].severity == "low"            # egyedi tartalmi link, mérés nélkül
+    con.execute("INSERT INTO link_variants (raw_url, normalized_url, status, final_url, hops, "
+                "fetched_at) VALUES (?, ?, 404, ?, 0, ?)",
+                [f"{BASE}/allas", f"{BASE}/allas/", f"{BASE}/allas", NOON])
+    broken = measured_finding(con, f"{BASE}/allas")
+    assert broken.severity == "high"                    # a területtől és az oldalszámtól függetlenül
+    assert broken.evidence["final_url"] is None
+    assert broken.evidence["note"] == "a linkelt alak hibát ad (404)"
+    assert broken.evidence["differences"] == ["záró perjel", "a linkelt alak hibát ad"]
+    assert (broken.evidence["linked_status"], broken.evidence["hops"]) == (404, 0)
+    assert "a linkelt alak hibát ad (404)" in broken.summary
+    assert "a végleges cím" not in broken.summary
+    assert f"a tárolt oldal címe: {BASE}/allas/" in broken.summary
+    # átirányítás után adott hiba is hiba
+    con.execute("UPDATE link_variants SET status = 500, hops = 1")
+    assert measured_finding(con, f"{BASE}/allas").evidence["note"] == (
+        "a linkelt alak hibát ad (500)")

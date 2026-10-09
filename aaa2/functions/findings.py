@@ -142,9 +142,14 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   linkelt alak státusza és ugrásszáma a `link_variants` mérése szerint (ahol nincs mérés, vagy
   a kérés hibával tért vissza: nem mért, és a végleges cím helyén a tárolt oldal címe áll). Ha
   a linkelt alak maga is 2xx-et ad átirányítás nélkül, a végleges cím a tárolt cél, az eltérések
-  között „két címen elérhető” áll, a bizonyítékban a megjegyzéssel (`note`). Súlyosság: medium, ha a link menüben,
+  között „két címen elérhető” áll, a bizonyítékban a megjegyzéssel (`note`). Ha a linkelt alak
+  4xx-et vagy 5xx-et ad, végleges cím nincs, az eltérések között „a linkelt alak hibát ad” áll,
+  a megjegyzés a státusszal, és a súlyosság high a területtől és az oldalszámtól függetlenül
+  (a látogató hibát kap; csak a normalizálás köti a linket a jó oldalhoz). Ha a címet a
+  robots.txt tiltja (`link_variants.error`: `robots_blocked`), a státusz és a végleges cím
+  megjegyzése „robots.txt tiltja”, a tiltó szabállyal (`robots_rule`), ha ismert. Súlyosság: medium, ha a link menüben,
   láblécben vagy oldalsávban áll, vagy legalább `LINK_FORM_MANY_PAGES` forrásoldalon; különben
-  low.
+  low (a hibát adó linkelt alaknál high).
 - A heading-fa szerkezeti megállapításai (`headings.structure_findings`): `missing_h1`,
   `h1_outside_content`, `multiple_h1`, `empty_section`, `skipped_level`, `missing_h2`; a
   szabályaik a `functions/headings.py` leírásában.
@@ -326,6 +331,10 @@ LINK_NOT_MEASURED = "nem mért"
 LINK_STORED_NOTE = "a tárolt oldal címe"
 LINK_TWO_ADDRESSES = "két címen elérhető"
 LINK_BOTH_SERVED = "a linkelt alak is 200-at ad, átirányítás nélkül (két címen elérhető)"
+LINK_BROKEN = "a linkelt alak hibát ad"
+LINK_ROBOTS_ERROR = "robots_blocked"            # a `link_variants.error` kezdete
+LINK_ROBOTS_BLOCKED = "robots.txt tiltja"
+LINK_ROBOTS_SUMMARY = "a linkelt címet a robots.txt tiltja"
 CRUMB_FLAT_SHARE = 0.5                  # az almenüben álló oldalak ekkora részénél lapos a morzsa
 CRUMB_FLAT_MIN = 3
 MENU_TARGET_PROBLEMS = {"not_found": "200-as státuszú „nem található” oldal",
@@ -1633,9 +1642,16 @@ def _link_forms(site: _Site, menu_targets: Sequence[tuple] = ()) -> list[tuple]:
             patterns.items(), key=lambda item: (-len(item[1]["sources"]), item[0])):
         variant, page = variants.get(raw_url), found["page"]
         measured = variant is not None and variant.status is not None
+        blocked = variant is not None and (variant.error or "").startswith(LINK_ROBOTS_ERROR)
+        broken = measured and variant.status >= 400
         differences = list(found["differences"])
         final, note = found["final"], None
-        if measured:
+        if broken:
+            # a linkelt alak hibát ad: a látogató nem jut el a tárolt oldalra
+            status, hops, final = variant.status, variant.hops, None
+            note = f"{LINK_BROKEN} ({variant.status})"
+            differences.append(LINK_BROKEN)
+        elif measured:
             status, hops = variant.status, variant.hops
             if 200 <= variant.status < 300 and not variant.hops:
                 # a linkelt alak maga is válaszol: a végleges cím a tárolt cél
@@ -1647,6 +1663,8 @@ def _link_forms(site: _Site, menu_targets: Sequence[tuple] = ()) -> list[tuple]:
             status, hops = page.status, page.redirect_hops
         else:
             status = hops = None
+        unmeasured = LINK_ROBOTS_BLOCKED if blocked else LINK_NOT_MEASURED
+        rule = variant.error.partition(": ")[2] if blocked else ""
         count = len(found["sources"])
         in_menu = any(area in crawl.MENU_POSITIONS for area in found["areas"])
         by_area = {LINK_AREAS.get(area, area): number
@@ -1654,15 +1672,20 @@ def _link_forms(site: _Site, menu_targets: Sequence[tuple] = ()) -> list[tuple]:
         in_set = page is not None and page.page_id in site.pages
         rows.append((
             "link_not_final_url",
-            "medium" if in_menu or count >= LINK_FORM_MANY_PAGES else "low",
+            "high" if broken else "medium" if in_menu or count >= LINK_FORM_MANY_PAGES
+            else "low",
             page.page_id if in_set else None, None,
             (f"{count} oldalról mutat belső link erre a címre: {raw_url} — "
+             + (f"{note}; " if broken else f"{LINK_ROBOTS_SUMMARY}; " if blocked else "")
              + (f"a végleges cím: {final}" if final else f"{LINK_STORED_NOTE}: {target}")
              + f" (eltérés: {', '.join(differences)})"),
             {"group": "link_form", "raw_url": raw_url, "stored_url": found["stored"],
-             "final_url": final, "final_note": None if final else LINK_STORED_NOTE,
+             "final_url": final,
+             "final_note": None if final else LINK_ROBOTS_BLOCKED if blocked
+             else LINK_STORED_NOTE,
              "differences": differences, **({"note": note} if note else {}),
-             "linked_status": LINK_NOT_MEASURED if status is None else status,
+             **({"robots_rule": rule} if rule else {}),
+             "linked_status": unmeasured if status is None else status,
              "hops": LINK_NOT_MEASURED if hops is None else hops,
              "measured": measured,
              "source_pages": count, "by_area": by_area,
@@ -2530,6 +2553,8 @@ def _finding_html(finding: dict) -> str:
         pairs = [("a link címe", _link(evidence["raw_url"])),
                  ("a tárolt cél", _link(evidence["stored_url"])),
                  ("végleges cím", _link(evidence["final_url"]) if evidence["final_url"]
+                  else f"{_e(evidence['final_note'])}: {_link(evidence['stored_url'])}"
+                  if evidence["final_note"] != LINK_STORED_NOTE
                   else f"{LINK_NOT_MEASURED} ({_e(evidence['final_note'])}: "
                        f"{_link(evidence['stored_url'])})"),
                  ("eltérés", _e(", ".join(evidence["differences"]))),

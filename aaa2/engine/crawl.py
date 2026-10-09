@@ -612,6 +612,7 @@ def _redirect_columns(result: RenderResult) -> dict:
 
 
 VARIANT_PROBE_LIMIT = 200           # ennél több különböző linkcímet a mérés nem kér le
+ROBOTS_BLOCKED = "robots_blocked"   # a `link_variants.error` kezdete: a címet a robots.txt tiltja
 _HEAD_UNSUPPORTED = (405, 501)      # ilyen válasznál a HEAD helyett GET megy, a törzs nélkül
 
 
@@ -646,9 +647,10 @@ async def probe_link_variants(
     `www`-ben vagy kis/nagybetűben eltér a tárolt céltól (`form_differences`), egy render és
     törzs nélküli kérés az átirányítások követésével (`_variant_response`).
 
-    Fékek: a `robots` által tiltott címre nincs kérés; legfeljebb `VARIANT_PROBE_LIMIT`
-    különböző cím megy lekérésre (cím szerinti sorrendben az elsők), a többi mérés nélkül
-    marad; egyszerre legfeljebb `concurrency` kérés fut, ahogy a crawl dolgozói. A tábla minden
+    Fékek: a `robots` által tiltott címre nincs kérés, a sora státusz nélkül, `robots_blocked`
+    hibával áll (mögötte a tiltó szabály, ha ismert: `robots_blocked: Disallow: /x`); a többi
+    címből legfeljebb `VARIANT_PROBE_LIMIT` megy lekérésre (cím szerinti sorrendben az elsők), a
+    korlát fölöttiek mérés és sor nélkül maradnak; egyszerre legfeljebb `concurrency` kérés fut, ahogy a crawl dolgozói. A tábla minden
     futásnál újraépül. Hálózati hibánál a sor a hibával marad, státusz nélkül."""
     rows = con.execute(
         "SELECT DISTINCT raw_url, to_url FROM links WHERE raw_url IS NOT NULL "
@@ -658,7 +660,7 @@ async def probe_link_variants(
         if raw_url not in wanted and form_differences(raw_url, to_url):
             wanted[raw_url] = to_url
     allowed = [raw_url for raw_url in wanted if robots is None or robots.allowed(raw_url)]
-    chosen = allowed[:VARIANT_PROBE_LIMIT]
+    chosen = allowed[:VARIANT_PROBE_LIMIT]              # a tiltott címre nincs kérés, korlát sem
     gate = asyncio.Semaphore(max(1, concurrency))
 
     async def ask(raw_url: str) -> tuple:
@@ -670,6 +672,14 @@ async def probe_link_variants(
 
     answers = await asyncio.gather(*(ask(raw_url) for raw_url in chosen))
     con.execute("DELETE FROM link_variants")
+    free = set(allowed)
+    for raw_url, to_url in wanted.items():
+        if raw_url not in free:
+            rule = robots.blocking_rule(raw_url) if robots is not None else None
+            con.execute(
+                "INSERT INTO link_variants (raw_url, normalized_url, error, fetched_at) "
+                "VALUES (?, ?, ?, ?)",
+                [raw_url, to_url, ROBOTS_BLOCKED + (f": {rule}" if rule else ""), _now()])
     for raw_url, (status, final_url, steps, error) in zip(chosen, answers, strict=True):
         con.execute(
             "INSERT INTO link_variants (raw_url, normalized_url, status, final_url, hops, chain, "
