@@ -385,11 +385,12 @@ def test_menu_items_pointing_at_broken_pages():
     build_findings(con)
     found = {finding.evidence["url"].removeprefix(BASE): finding
              for finding in structure_findings(con, "menu_broken_target")}
+    # a noindex cél nem megállapítás
     assert {url: finding.evidence["problem"] for url, finding in found.items()} == {
-        "/adat/": "noindex", "/blog/": "error_status", "/landing/": "redirect"}
+        "/blog/": "error_status", "/landing/": "redirect"}
     assert all(finding.severity == "medium" for finding in found.values())
-    assert found["/adat/"].evidence["menu_items"] == [
-        {"anchor": "Adatvédelem", "area": "lábléc", "lang": "en", "pages": 8, "area_pages": 8}]
+    assert found["/blog/"].evidence["menu_items"] == [
+        {"anchor": "Blog", "area": "fejléc", "lang": "en", "pages": 8, "area_pages": 8}]
     assert found["/blog/"].evidence["problem_label"] == "hibás státusz: 404"
     assert found["/landing/"].evidence["final_url"] == f"{BASE}/szolg/"
     assert "„Home” (fejléc)" in found["/landing/"].summary
@@ -406,3 +407,19 @@ def test_the_breadcrumb_that_ignores_the_menu_hierarchy():
     first = finding.evidence["pages"][0]
     assert first["url"] == f"{BASE}/hu/szolg/meres/" and first["menu_parent"] == "Szolgáltatások"
     assert [part["name"] for part in first["breadcrumb"]] == ["Home", "Mérés"]
+
+
+def test_a_noindex_menu_target_is_a_fact_in_the_menu_view(tmp_path):
+    con = structure_site()
+    con.execute("UPDATE pages SET noindex = true WHERE url = ?", [f"{BASE}/adat/"])
+    build_findings(con)
+    assert structure_findings(con, "menu_broken_target") == []
+    menu = {(row.lang, row.area, row.url): row for row in site_views(con, "pelda").structure.menu}
+    assert menu[("en", "footer", f"{BASE}/adat/")].target_noindex is True
+    assert menu[("en", "header", f"{BASE}/blog/")].target_noindex is False
+    paths = export_views(con, tmp_path, "pelda")
+    with paths["menu"].open(encoding="utf-8-sig", newline="") as handle:
+        rows = {(row["nyelv"], row["terület"], row["URL"]): row for row in csv.DictReader(handle)}
+    assert rows[("en", "lábléc", f"{BASE}/adat/")]["a cél noindex"] == "igen"
+    assert rows[("en", "fejléc", f"{BASE}/blog/")]["a cél noindex"] == "nem"
+    assert "a cél noindex" in paths["html"].read_text(encoding="utf-8")

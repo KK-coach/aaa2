@@ -1,6 +1,6 @@
 {
   "additionalProperties": false,
-  "description": "A site menüfájának egy menüpontja a nézetben: a nyelv, a terület, a szint, a\nhorgonyszöveg, a cím, a szülő menüpont (horgonyszöveg), a céloldal fő entitása és szerepe\n(ha a cél a készlet oldala), a céloldal kattintási mélysége a saját nyelvű kezdőoldaltól,\nés hogy hány oldalon áll a területet hordozó oldalak közül.",
+  "description": "A site menüfájának egy menüpontja a nézetben: a nyelv, a terület, a szint, a\nhorgonyszöveg, a cím, a szülő menüpont (horgonyszöveg), a céloldal fő entitása és szerepe\n(ha a cél a készlet oldala), a céloldal kattintási mélysége a saját nyelvű kezdőoldaltól,\nnoindex-e a céloldal (`target_noindex`; tény, nem megállapítás), és hogy hány oldalon áll a\nterületet hordozó oldalak közül.",
   "properties": {
     "anchor": {
       "title": "Anchor",
@@ -97,9 +97,21 @@
       "title": "Role"
     },
     "schema_version": {
-      "default": "1.17",
+      "default": "1.18",
       "title": "Schema Version",
       "type": "string"
+    },
+    "target_noindex": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Target Noindex"
     },
     "url": {
       "anyOf": [
@@ -125,5 +137,5 @@
   "title": "MenuItemView",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.17"
+  "x-schema-version": "1.18"
 }

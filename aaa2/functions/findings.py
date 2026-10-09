@@ -110,9 +110,11 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   site-nak két kezdőoldala van (`two_homes`).
 - `menu_broken_target` (medium): a site-szintű menüfa (fejléc, lábléc, oldalsáv) egy
   menüpontja hibás oldalra mutat: 200-as státuszú „nem található” oldalra (`page_types`:
-  not_found), hibás státuszú (4xx / 5xx, be nem töltött) oldalra, átirányító címre (a végső cím
-  hostja vagy útvonala más; a csak lekérdezésben eltérő végső cím, pl. a végtelen görgetés
-  `?infinite_page=2`-je, nem átirányítás), vagy noindex oldalra. Egy megállapítás célonként; a bizonyítékban a menüpontok
+  not_found), hibás státuszú (4xx / 5xx, be nem töltött) oldalra, vagy átirányító címre (a
+  végső cím hostja vagy útvonala más; a csak lekérdezésben eltérő végső cím, pl. a végtelen
+  görgetés `?infinite_page=2`-je, nem átirányítás). A noindex cél nem megállapítás (gyakran
+  szándékos: adatvédelmi központ, oldaltérkép, akciós lista); tényként áll a menü-nézetben
+  („a cél noindex”). Egy megállapítás célonként; a bizonyítékban a menüpontok
   (horgonyszöveg, terület, nyelv, hány oldalon áll), a cél címe és a hiba fajtája. A készletben
   nem tárolt cél és a nem HTML válasz nem számít.
 - `orphan_pages`: árva oldalak, két külön megállapításban. `sitemap_only`: az oldal a saját
@@ -303,8 +305,7 @@ ORPHAN_PARTIAL = ("részleges bejárás: a rájuk vezető oldal kimaradhatott a 
 CRUMB_FLAT_SHARE = 0.5                  # az almenüben álló oldalak ekkora részénél lapos a morzsa
 CRUMB_FLAT_MIN = 3
 MENU_TARGET_PROBLEMS = {"not_found": "200-as státuszú „nem található” oldal",
-                        "error_status": "hibás státusz", "redirect": "átirányít",
-                        "noindex": "noindex"}
+                        "error_status": "hibás státusz", "redirect": "átirányít"}
 # a kezdőoldalt megnevező menüpont horgonyszövege (`alias_key` alakban)
 HOME_ANCHORS = frozenset({"home", "homepage", "home page", "fooldal", "kezdolap", "kezdooldal",
                           "nyitolap", "nyitooldal", "cimlap"})
@@ -1547,8 +1548,6 @@ def _menu_targets(site: _Site) -> list[tuple]:
             detail = f": {page.status}" if page.status is not None else ": nem töltődött be"
         elif final:
             problem, detail = "redirect", f" ide: {final}"
-        elif page.noindex:
-            problem, detail = "noindex", ""
         else:
             continue
         first = items[0]
@@ -1963,7 +1962,7 @@ STRUCTURE_COLUMNS = ("mélység (minden link)", "mélység (csak menü)", "mély
 URL_PARENT_FLAT = "nem értelmezhető"
 MENU_COLUMNS = ["nyelv", "terület", "szint", "menüpont", "URL", "szülő menüpont",
                 "a készlet oldala", "fő entitás", "szerep", "kattintási mélység",
-                "hány oldalon áll", "a területet hordozó oldalak", "jelölés"]
+                "a cél noindex", "hány oldalon áll", "a területet hordozó oldalak", "jelölés"]
 MENU_DIFFERENCE_COLUMNS = ["oldal", "nyelv", "terület", "eltérés", "menüpont", "horgonyszöveg",
                            "szülő"]
 DIFFERENCE_LABELS = {"extra": "többlet", "missing": "hiány"}
@@ -2033,6 +2032,7 @@ def structure_view(site: _Site) -> dict:
             "main_entity": site.shown(main[0], page) if main is not None else None,
             "role": page["role"] if page is not None else None,
             "click_depth": found["depth"]["all"] if found is not None else None,
+            "target_noindex": bool(page["noindex"]) if page is not None else None,
             "pages": item.pages, "area_pages": item.area_pages, "marker": item.marker})
     hierarchy = structure.url_hierarchy
     return {"menu": menu,
@@ -2054,6 +2054,8 @@ def menu_rows(view: Mapping) -> list[dict]:
              "a készlet oldala": "igen" if item["in_set"] else "nem",
              "fő entitás": item["main_entity"] or "", "szerep": item["role"] or "",
              "kattintási mélység": "" if item["click_depth"] is None else item["click_depth"],
+             "a cél noindex": "" if item["target_noindex"] is None
+             else "igen" if item["target_noindex"] else "nem",
              "hány oldalon áll": item["pages"],
              "a területet hordozó oldalak": item["area_pages"],
              "jelölés": item["marker"] or ""} for item in view["menu"]]
@@ -2510,7 +2512,8 @@ def _structure_html(structure: Mapping) -> str:
             + (_link(item["url"]) if item["url"] else "link nélküli címke")
             + (f" <span>— fő entitás: {_e(item['main_entity'] or '—')}; szerep: "
                f"{_e(item['role'])}; mélység: "
-               f"{'elérhetetlen' if item['click_depth'] is None else item['click_depth']}</span>"
+               f"{'elérhetetlen' if item['click_depth'] is None else item['click_depth']}"
+               f"{'; a cél noindex' if item['target_noindex'] else ''}</span>"
                if item["in_set"] else
                (" <span>— nincs a készlet oldalai között</span>" if item["url"] else ""))
             + f" <span>({item['pages']} / {item['area_pages']} oldalon)</span></div>"
