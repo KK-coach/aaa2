@@ -108,6 +108,26 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   (`HOME_ANCHORS`) vagy kezdőoldal-ikonnal jelölt menüpontja nem kezdőoldalra mutat. A logólink
   külön áll a bizonyítékban: ha a logó a kezdőoldalra mutat, a menüpont pedig máshova, a
   site-nak két kezdőoldala van (`two_homes`).
+- `menu_broken_target` (medium): a site-szintű menüfa (fejléc, lábléc, oldalsáv) egy
+  menüpontja hibás oldalra mutat: 200-as státuszú „nem található” oldalra (`page_types`:
+  not_found), hibás státuszú (4xx / 5xx, be nem töltött) oldalra, átirányító címre (a végső cím
+  hostja vagy útvonala más; a csak lekérdezésben eltérő végső cím, pl. a végtelen görgetés
+  `?infinite_page=2`-je, nem átirányítás), vagy noindex oldalra. Egy megállapítás célonként; a bizonyítékban a menüpontok
+  (horgonyszöveg, terület, nyelv, hány oldalon áll), a cél címe és a hiba fajtája. A készletben
+  nem tárolt cél és a nem HTML válasz nem számít.
+- `orphan_pages`: árva oldalak, két külön megállapításban. `sitemap_only`: az oldal a saját
+  nyelvű kezdőoldalról belső linken nem érhető el, belső link nem mutat rá, és a sitemapben
+  szerepel (az oldalnézet „csak sitemapből ismert” oszlopa). `linked_only_by_orphans`: van rá
+  belső link, de csak más, szintén elérhetetlen oldalakról. Súlyosság a szerep szerint: medium,
+  ha a csoportban van ajánlat-, termék-, kategória- vagy hub-oldal, különben low. A szöveg
+  tényt mond (nem érhető el belső linken), nem szándékot. Részleges bejárásnál
+  (`crawl.completeness`: megállt bejárás vagy sitemap-mód) a megállapítás részlegesként
+  jelölt: a rá vezető oldal kimaradhatott a készletből. A bizonyítékban oldalanként az URL, a
+  szerep, a fő entitás, az indexelhetőség és a szószám.
+- `breadcrumb_ignores_menu` (low, site-szintű): a fejléc-fa almenüiben (1. vagy mélyebb
+  szint) álló oldalak legalább `CRUMB_FLAT_SHARE` részénél, és legalább `CRUMB_FLAT_MIN`
+  oldalnál a morzsa csak „kezdőoldal > oldal”, a menü-szülő nincs benne. A bizonyítékban
+  oldalanként a menü-szülő és a morzsa lánca.
 - A heading-fa szerkezeti megállapításai (`headings.structure_findings`): `missing_h1`,
   `h1_outside_content`, `multiple_h1`, `empty_section`, `skipped_level`, `missing_h2`; a
   szabályaik a `functions/headings.py` leírásában.
@@ -191,7 +211,8 @@ TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
          "uncovered_topic", "unclear_topic", *heading_tree.STRUCTURE_TYPES,
          "canonical_issue", "legal_page", "soft_404", "schema_id_names",
          "title_without_main_entity", "article_markup_on_other_pages",
-         "breadcrumb_foreign_home", "menu_home_target")
+         "breadcrumb_foreign_home", "menu_home_target", "menu_broken_target",
+         "orphan_pages", "breadcrumb_ignores_menu")
 TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "cannibalization": "Lehetséges kannibalizáció",
                "shared_topic": "Közös téma", "missing_page": "Hiányzó oldal",
@@ -205,6 +226,9 @@ TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "article_markup_on_other_pages": "Cikk-jelölés nem cikk oldalakon",
                "breadcrumb_foreign_home": "A morzsa kezdőpontja más nyelvű kezdőoldalra mutat",
                "menu_home_target": "A menü Home pontja nem a kezdőoldalra mutat",
+               "menu_broken_target": "A menü hibás oldalra mutat",
+               "orphan_pages": "Árva oldal",
+               "breadcrumb_ignores_menu": "A morzsa nem követi a menü hierarchiáját",
                "canonical_issue": "Hibás canonical", "legal_page": "Jogi oldal",
                "soft_404": "Nem található oldal 200-as státusszal"}
 # többes szám jele a kulcsban (ékezet nélkül): a kategória neve és a H1 / title összevetéséhez
@@ -269,6 +293,18 @@ CUT_MIN_SHARE = 0.6
 OVERVIEW_TOP = 100                      # a site-áttekintő ennyi legnagyobb súlyú entitást mutat
 PAGE_MENTIONS = 10                      # az oldalnézet ennyi további említett entitást sorol
 EVIDENCE_PAGES = 5
+# ilyen szerepű oldal miatt közepes az árva oldalak megállapítása (a hub-címke is ilyen)
+ORPHAN_KEY_ROLES = ("offer", "product", "category")
+ORPHAN_GROUPS = {
+    "sitemap_only": "belső link nem mutat rájuk, a sitemapben szerepelnek",
+    "linked_only_by_orphans": "csak egymásra linkelnek (más, szintén elérhetetlen oldalakról "
+                              "kapnak linket)"}
+ORPHAN_PARTIAL = ("részleges bejárás: a rájuk vezető oldal kimaradhatott a készletből")
+CRUMB_FLAT_SHARE = 0.5                  # az almenüben álló oldalak ekkora részénél lapos a morzsa
+CRUMB_FLAT_MIN = 3
+MENU_TARGET_PROBLEMS = {"not_found": "200-as státuszú „nem található” oldal",
+                        "error_status": "hibás státusz", "redirect": "átirányít",
+                        "noindex": "noindex"}
 # a kezdőoldalt megnevező menüpont horgonyszövege (`alias_key` alakban)
 HOME_ANCHORS = frozenset({"home", "homepage", "home page", "fooldal", "kezdolap", "kezdooldal",
                           "nyitolap", "nyitooldal", "cimlap"})
@@ -325,7 +361,8 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
             *heading_tree.structure_findings(site.pages, site.headings, ROLE_LABELS),
             *_canonical_issues(site), *_legal_pages(site), *_soft_404(site),
             *_schema_id_names(site), *_title_naming(site, mismatches),
-            *_article_markup(site), *_breadcrumb_home(site), *_menu_home(site)]
+            *_article_markup(site), *_breadcrumb_home(site), *_menu_home(site),
+            *_menu_targets(site), *_orphans(site), *_breadcrumb_menu(site)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -1488,6 +1525,137 @@ def _menu_home(site: _Site) -> list[tuple]:
     return rows
 
 
+def _menu_targets(site: _Site) -> list[tuple]:
+    """A `menu_broken_target` megállapítások (lásd a modul leírását)."""
+    stored = {canonical_key(page.url): page for page in crawl.pages(site.con)}
+    kinds = page_types(site.con, load_site_config(site_domain(site.con)).page_types)
+    targets: dict[str, list] = defaultdict(list)
+    for item in site.structure.menu:
+        if item.url:
+            targets[canonical_key(item.url)].append(item)
+    rows = []
+    for key, items in sorted(targets.items()):
+        page = stored.get(key)
+        if page is None or (page.error or "").startswith("non_html"):
+            continue
+        final = page.final_url if page.final_url and canonical_key(
+            page.final_url.split("?", 1)[0]) != canonical_key(page.url.split("?", 1)[0]) else None
+        if kinds.get(page.page_id) == "not_found":
+            problem, detail = "not_found", ""
+        elif page.status is None or page.status >= 400:
+            problem = "error_status"
+            detail = f": {page.status}" if page.status is not None else ": nem töltődött be"
+        elif final:
+            problem, detail = "redirect", f" ide: {final}"
+        elif page.noindex:
+            problem, detail = "noindex", ""
+        else:
+            continue
+        first = items[0]
+        areas = ", ".join(dict.fromkeys(site_structure.AREA_LABELS[item.area] for item in items))
+        in_set = page.page_id in site.pages
+        rows.append((
+            "menu_broken_target", "medium", page.page_id if in_set else None, None,
+            (f"A menü hibás oldalra mutat: „{first.anchor or '(szöveg nélkül)'}” ({areas}) → "
+             f"{page.url} — {MENU_TARGET_PROBLEMS[problem]}{detail}"),
+            {"group": "menu_target", "url": page.url, "problem": problem,
+             "problem_label": MENU_TARGET_PROBLEMS[problem] + detail, "status": page.status,
+             "final_url": final,
+             "menu_items": [{"anchor": item.anchor, "area": site_structure.AREA_LABELS[item.area],
+                             "lang": item.lang, "pages": item.pages,
+                             "area_pages": item.area_pages} for item in items]}))
+    return rows
+
+
+def _orphans(site: _Site) -> list[tuple]:
+    """Az `orphan_pages` megállapítások (lásd a modul leírását): legfeljebb kettő, a
+    csoportonként egy."""
+    structure = site.structure
+    nodes = {page["page_id"]: page for page in site.nodes()}
+    unreachable = {page_id for page_id, found in structure.pages.items() if found["unreachable"]}
+    if not unreachable:
+        return []
+    page_rows = page_facts(site.con)
+    stored = {page.page_id: page for page in crawl.pages(site.con)}
+    declared = {meta.page_id: meta.canonical for meta in crawl.page_metas(site.con)}
+    state = crawl.completeness(site.con)
+    groups: dict[str, list[int]] = {key: [] for key in ORPHAN_GROUPS}
+    for page_id in unreachable:
+        sources = structure.inbound.get(page_id, set())
+        if sources and sources <= unreachable:
+            groups["linked_only_by_orphans"].append(page_id)
+        elif not sources and page_rows.get(page_id, {}).get("csak sitemapből ismert") == "igen":
+            groups["sitemap_only"].append(page_id)
+    rows = []
+    for group, members in groups.items():
+        if not members:
+            continue
+        pages = []
+        key_page = False
+        for page_id in sorted(members, key=lambda p: nodes[p]["url"]):
+            page = nodes[page_id]
+            main = site.main(page_id)
+            canonical = declared.get(page_id)
+            own = not canonical or canonical_key(canonical) == canonical_key(page["url"])
+            noindex = bool(stored[page_id].noindex) if page_id in stored else False
+            hub = (site.hubs.get(page_id) or {}).get("label")
+            key_page = key_page or page["role"] in ORPHAN_KEY_ROLES or bool(hub)
+            pages.append({
+                "url": page["url"],
+                "role": page["role"] + (f" ({page['support']})" if page["support"] else ""),
+                "hub": hub, "main_entity": site.shown(main[0], page) if main else None,
+                "indexable": not noindex and own, "noindex": noindex,
+                "canonical": None if own else canonical,
+                "word_count": stored[page_id].word_count if page_id in stored else None,
+                **({"linked_from": sorted(nodes[p]["url"]
+                                          for p in structure.inbound.get(page_id, set()))}
+                   if group == "linked_only_by_orphans" else {})})
+        rows.append((
+            "orphan_pages", "medium" if key_page else "low", None, None,
+            (f"{len(pages)} oldal belső linken nem érhető el a kezdőoldalról: "
+             f"{ORPHAN_GROUPS[group]}" + (f" ({ORPHAN_PARTIAL})" if state.partial else "")),
+            {"group": group, "pages": pages,
+             **({"crawl": "partial", "crawl_states": list(state.states),
+                 "crawl_note": ORPHAN_PARTIAL} if state.partial else {})}))
+    return rows
+
+
+def _breadcrumb_menu(site: _Site) -> list[tuple]:
+    """A `breadcrumb_ignores_menu` megállapítás (lásd a modul leírását)."""
+    structure = site.structure
+    home_ids = set(structure.homes.values()) | ({structure.start} if structure.start is not None
+                                                else set())
+    by_id = {item.item_id: item for item in structure.menu}
+    nodes = {page["page_id"]: page for page in site.nodes()}
+    seen: set[int] = set()
+    flat = []
+    for item in structure.menu:
+        if item.area != "header" or item.level < 1 or item.page_id not in nodes \
+                or item.page_id in seen or item.parent_id not in by_id:
+            continue
+        seen.add(item.page_id)
+        above = by_id[item.parent_id]
+        page = nodes[item.page_id]
+        crumb = structure.crumbs.get(item.page_id)
+        if crumb is None:
+            continue
+        trail = crumb[1]
+        last = trail[-1][0]
+        before = trail[:-1] if last is None \
+            or canonical_key(last) == canonical_key(page["url"]) else trail
+        if len(before) == 1 and site.page_of(before[0][0]) in home_ids:
+            flat.append({"url": page["url"], "menu_parent": above.anchor,
+                         "menu_parent_url": above.url,
+                         "breadcrumb": [{"name": name, "url": url} for url, name in trail]})
+    if len(flat) < CRUMB_FLAT_MIN or len(flat) < CRUMB_FLAT_SHARE * len(seen):
+        return []
+    return [("breadcrumb_ignores_menu", "low", None, None,
+             (f"A fejléc-menü almenüiben álló {len(seen)} oldalból {len(flat)} morzsája csak "
+              f"„kezdőoldal > oldal”: a menü-szülő nincs a morzsában"),
+             {"group": "breadcrumb_menu", "submenu_pages": len(seen), "flat": len(flat),
+              "pages": sorted(flat, key=lambda item: item["url"])})]
+
+
 def _soft_404(site: _Site) -> list[tuple]:
     """A 200-as státusszal kiszolgált „nem található” oldalak (`pages.page_types`: not_found;
     ma a Shoprenter `not_found_body` jele ismeri fel) egy közepes megállapításban, az oldalak
@@ -2244,6 +2412,26 @@ def _finding_html(finding: dict) -> str:
                  ("oldalak", "<br>".join(
                      f"{_link(page['url'])} — morzsa: „{_e(page['first_anchor'])}” → "
                      f"{_link(page['first_url'])}" for page in evidence["pages"]))]
+    elif finding["type"] == "menu_broken_target":
+        pairs = [("cél", _link(evidence["url"])), ("hiba", _e(evidence["problem_label"])),
+                 ("menüpontok", "<br>".join(
+                     f"„{_e(item['anchor'])}” — {_e(item['area'])}, {_e(item['lang'])}: "
+                     f"{item['pages']} / {item['area_pages']} oldalon"
+                     for item in evidence["menu_items"]))]
+    elif finding["type"] == "orphan_pages":
+        pairs = [("csoport", _e(ORPHAN_GROUPS[evidence["group"]])),
+                 ("bejárás", _e(evidence.get("crawl_note", "teljes"))),
+                 ("oldalak", "<br>".join(
+                     f"{_link(page['url'])} — {_e(page['role'])}"
+                     + (f"; {_e(page['hub'])}" if page.get("hub") else "")
+                     + f"; fő entitás: {_e(page['main_entity'] or '—')}; indexelhető: "
+                     f"{'igen' if page['indexable'] else 'nem'}; szószám: "
+                     f"{_e(page['word_count'])}" for page in evidence["pages"]))]
+    elif finding["type"] == "breadcrumb_ignores_menu":
+        pairs = [("oldalak", "<br>".join(
+            f"{_link(page['url'])} — menü-szülő: „{_e(page['menu_parent'])}”; morzsa: "
+            + _e(" > ".join(part["name"] or "(név nélkül)" for part in page["breadcrumb"]))
+            for page in evidence["pages"]))]
     elif finding["type"] == "menu_home_target":
         item, logo = evidence["menu_item"], evidence["logo"]
         pairs = [("menüpont", (f"„{_e(item['anchor'])}” → {_link(item['url'])} "
