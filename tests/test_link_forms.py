@@ -234,7 +234,7 @@ def test_links_that_do_not_point_at_the_final_address():
     assert measured.evidence["measured"] is True
     assert (measured.evidence["linked_status"], measured.evidence["hops"],
             measured.evidence["final_url"]) == (200, 1, f"{BASE}/adat/")
-    assert measured.evidence["note"] is None
+    assert "note" not in measured.evidence
     assert measured.evidence["differences"] == ["záró perjel"]
 
 
@@ -264,7 +264,7 @@ def test_a_linked_form_that_answers_itself_is_served_at_two_addresses():
     con.execute("UPDATE link_variants SET status = NULL, final_url = NULL, hops = NULL, "
                 "error = 'ConnectError: nincs válasz'")
     failed = measured_finding(con, f"{BASE}/adat")
-    assert failed.evidence["measured"] is False and failed.evidence["note"] is None
+    assert failed.evidence["measured"] is False and "note" not in failed.evidence
     assert failed.evidence["final_url"] is None
     assert failed.evidence["final_note"] == "a tárolt oldal címe"
     assert (failed.evidence["linked_status"], failed.evidence["hops"]) == ("nem mért", "nem mért")

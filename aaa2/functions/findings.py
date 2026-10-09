@@ -1661,7 +1661,7 @@ def _link_forms(site: _Site, menu_targets: Sequence[tuple] = ()) -> list[tuple]:
              + f" (eltérés: {', '.join(differences)})"),
             {"group": "link_form", "raw_url": raw_url, "stored_url": found["stored"],
              "final_url": final, "final_note": None if final else LINK_STORED_NOTE,
-             "differences": differences, "note": note,
+             "differences": differences, **({"note": note} if note else {}),
              "linked_status": LINK_NOT_MEASURED if status is None else status,
              "hops": LINK_NOT_MEASURED if hops is None else hops,
              "measured": measured,
@@ -2533,7 +2533,7 @@ def _finding_html(finding: dict) -> str:
                   else f"{LINK_NOT_MEASURED} ({_e(evidence['final_note'])}: "
                        f"{_link(evidence['stored_url'])})"),
                  ("eltérés", _e(", ".join(evidence["differences"]))),
-                 ("megjegyzés", _e(evidence.get("note") or "")),
+                 *([("megjegyzés", _e(evidence["note"]))] if evidence.get("note") else []),
                  ("a linkelt alak státusza / ugrások", _e(f"{evidence['linked_status']} / "
                                                          f"{evidence['hops']}")),
                  ("területek", _e(", ".join(f"{area}: {number}" for area, number
