@@ -130,6 +130,26 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   szint) álló oldalak legalább `CRUMB_FLAT_SHARE` részénél, és legalább `CRUMB_FLAT_MIN`
   oldalnál a morzsa csak „kezdőoldal > oldal”, a menü-szülő nincs benne. A bizonyítékban
   oldalanként a menü-szülő és a morzsa lánca.
+- `link_not_final_url`: belső link nem a végleges címre mutat. A link eredeti címe
+  (`links.raw_url`) a saját hoston záró perjelben, kis/nagybetűben, protokollban vagy `www`-ben
+  eltér a tárolt céltól (`normalize.form_differences`), vagy a cél átirányít, és a végső cím
+  hostja vagy útvonala más (a `menu_broken_target` szabálya; a csak lekérdezésben eltérő végső
+  cím nem számít). A site saját hostjától (a kiinduló cím hostja, a `www`-től eltekintve)
+  eltérő hostra mutató link, a gyökér üres útvonala és az eredeti cím nélküli
+  linksor nem tartozik ide; az a menülink, amelynek az átirányítását a `menu_broken_target`
+  jelzi, nem ismétlődik. Egy megállapítás (eredeti cím → cél) mintánként, a forrásoldalak
+  számával és területenként; a bizonyítékban a forrásoldalak a területtel és a horgonnyal, a
+  linkelt alak státusza és ugrásszáma a `link_variants` mérése szerint (ahol nincs mérés, vagy
+  a kérés hibával tért vissza: nem mért, és a végleges cím helyén a tárolt oldal címe áll). Ha
+  a linkelt alak maga is 2xx-et ad átirányítás nélkül, a végleges cím a tárolt cél, az eltérések
+  között „két címen elérhető” áll, a bizonyítékban a megjegyzéssel (`note`). Ha a linkelt alak
+  4xx-et vagy 5xx-et ad, végleges cím nincs, az eltérések között „a linkelt alak hibát ad” áll,
+  a megjegyzés a státusszal, és a súlyosság high a területtől és az oldalszámtól függetlenül
+  (a látogató hibát kap; csak a normalizálás köti a linket a jó oldalhoz). Ha a címet a
+  robots.txt tiltja (`link_variants.error`: `robots_blocked`), a státusz és a végleges cím
+  megjegyzése „robots.txt tiltja”, a tiltó szabállyal (`robots_rule`), ha ismert. Súlyosság: medium, ha a link menüben,
+  láblécben vagy oldalsávban áll, vagy legalább `LINK_FORM_MANY_PAGES` forrásoldalon; különben
+  low (a hibát adó linkelt alaknál high).
 - A heading-fa szerkezeti megállapításai (`headings.structure_findings`): `missing_h1`,
   `h1_outside_content`, `multiple_h1`, `empty_section`, `skipped_level`, `missing_h2`; a
   szabályaik a `functions/headings.py` leírásában.
@@ -177,7 +197,7 @@ import json
 import math
 import re
 from collections import Counter, defaultdict
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from itertools import combinations
 from pathlib import Path
@@ -195,6 +215,7 @@ from aaa2.contracts import (
 )
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
+from aaa2.engine.normalize import form_differences
 from aaa2.entities import queries as extract_queries
 from aaa2.entities import store
 from aaa2.entities.gate import occurs
@@ -214,7 +235,7 @@ TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
          "canonical_issue", "legal_page", "soft_404", "schema_id_names",
          "title_without_main_entity", "article_markup_on_other_pages",
          "breadcrumb_foreign_home", "menu_home_target", "menu_broken_target",
-         "orphan_pages", "breadcrumb_ignores_menu")
+         "orphan_pages", "breadcrumb_ignores_menu", "link_not_final_url")
 TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "cannibalization": "Lehetséges kannibalizáció",
                "shared_topic": "Közös téma", "missing_page": "Hiányzó oldal",
@@ -231,6 +252,7 @@ TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "menu_broken_target": "A menü hibás oldalra mutat",
                "orphan_pages": "Árva oldal",
                "breadcrumb_ignores_menu": "A morzsa nem követi a menü hierarchiáját",
+               "link_not_final_url": "Belső link nem a végleges címre mutat",
                "canonical_issue": "Hibás canonical", "legal_page": "Jogi oldal",
                "soft_404": "Nem található oldal 200-as státusszal"}
 # többes szám jele a kulcsban (ékezet nélkül): a kategória neve és a H1 / title összevetéséhez
@@ -302,6 +324,17 @@ ORPHAN_GROUPS = {
     "linked_only_by_orphans": "csak egymásra linkelnek (más, szintén elérhetetlen oldalakról "
                               "kapnak linket)"}
 ORPHAN_PARTIAL = ("részleges bejárás: a rájuk vezető oldal kimaradhatott a készletből")
+LINK_FORM_MANY_PAGES = 10               # ennyi forrásoldaltól közepes a linkforma-megállapítás
+LINK_AREAS = {"nav": "menü", "body": "tartalom", "footer": "lábléc", "aside": "oldalsáv"}
+LINK_REDIRECT = "átirányítás"
+LINK_NOT_MEASURED = "nem mért"
+LINK_STORED_NOTE = "a tárolt oldal címe"
+LINK_TWO_ADDRESSES = "két címen elérhető"
+LINK_BOTH_SERVED = "a linkelt alak is 200-at ad, átirányítás nélkül (két címen elérhető)"
+LINK_BROKEN = "a linkelt alak hibát ad"
+LINK_ROBOTS_ERROR = "robots_blocked"            # a `link_variants.error` kezdete
+LINK_ROBOTS_BLOCKED = "robots.txt tiltja"
+LINK_ROBOTS_SUMMARY = "a linkelt címet a robots.txt tiltja"
 CRUMB_FLAT_SHARE = 0.5                  # az almenüben álló oldalak ekkora részénél lapos a morzsa
 CRUMB_FLAT_MIN = 3
 MENU_TARGET_PROBLEMS = {"not_found": "200-as státuszú „nem található” oldal",
@@ -362,8 +395,10 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
             *heading_tree.structure_findings(site.pages, site.headings, ROLE_LABELS),
             *_canonical_issues(site), *_legal_pages(site), *_soft_404(site),
             *_schema_id_names(site), *_title_naming(site, mismatches),
-            *_article_markup(site), *_breadcrumb_home(site), *_menu_home(site),
-            *_menu_targets(site), *_orphans(site), *_breadcrumb_menu(site)]
+            *_article_markup(site), *_breadcrumb_home(site), *_menu_home(site)]
+    menu_targets = _menu_targets(site)
+    rows += [*menu_targets, *_orphans(site), *_breadcrumb_menu(site),
+             *_link_forms(site, menu_targets)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -1566,6 +1601,100 @@ def _menu_targets(site: _Site) -> list[tuple]:
     return rows
 
 
+def _link_forms(site: _Site, menu_targets: Sequence[tuple] = ()) -> list[tuple]:
+    """A `link_not_final_url` megállapítások (lásd a modul leírását). `menu_targets`: a
+    `menu_broken_target` sorai (az ott jelzett átirányító menülink itt nem ismétlődik)."""
+    stored = {page.url: page for page in crawl.pages(site.con)}
+    variants = {variant.raw_url: variant for variant in crawl.link_variants(site.con)}
+    in_menu_finding = {canonical_key(row[5]["url"]) for row in menu_targets
+                       if row[5]["problem"] == "redirect"}
+    profile = crawl.site(site.con)
+    own_host = (urlsplit(profile.seed_url).hostname or "").lower().removeprefix("www.") \
+        if profile is not None else ""
+    patterns: dict[tuple[str, str], dict] = {}
+    for link in crawl.counted_links(site.con):
+        source = site.pages.get(link.from_page_id)
+        if not link.raw_url or source is None or (urlsplit(
+                link.raw_url).hostname or "").lower().removeprefix("www.") != own_host:
+            continue
+        differences = list(form_differences(link.raw_url, link.to_url))
+        page = stored.get(link.to_url)
+        final = None
+        if page is not None and page.final_url and canonical_key(
+                page.final_url.split("?", 1)[0]) != canonical_key(page.url.split("?", 1)[0]):
+            if link.position in crawl.MENU_POSITIONS \
+                    and canonical_key(page.url) in in_menu_finding:
+                continue
+            final = page.final_url
+            differences.append(LINK_REDIRECT)
+        if not differences:
+            continue
+        found = patterns.setdefault((link.raw_url, final or link.to_url), {
+            "stored": link.to_url, "final": final, "differences": differences, "page": page,
+            "sources": defaultdict(lambda: {"areas": set(), "anchors": set()}),
+            "areas": Counter()})
+        found["sources"][source["url"]]["areas"].add(LINK_AREAS.get(link.position,
+                                                                     link.position))
+        found["sources"][source["url"]]["anchors"].add(link.anchor or "")
+        found["areas"][link.position] += 1
+    rows = []
+    for (raw_url, target), found in sorted(
+            patterns.items(), key=lambda item: (-len(item[1]["sources"]), item[0])):
+        variant, page = variants.get(raw_url), found["page"]
+        measured = variant is not None and variant.status is not None
+        blocked = variant is not None and (variant.error or "").startswith(LINK_ROBOTS_ERROR)
+        broken = measured and variant.status >= 400
+        differences = list(found["differences"])
+        final, note = found["final"], None
+        if broken:
+            # a linkelt alak hibát ad: a látogató nem jut el a tárolt oldalra
+            status, hops, final = variant.status, variant.hops, None
+            note = f"{LINK_BROKEN} ({variant.status})"
+            differences.append(LINK_BROKEN)
+        elif measured:
+            status, hops = variant.status, variant.hops
+            if 200 <= variant.status < 300 and not variant.hops:
+                # a linkelt alak maga is válaszol: a végleges cím a tárolt cél
+                final, note = found["final"] or found["stored"], LINK_BOTH_SERVED
+                differences.append(LINK_TWO_ADDRESSES)
+            else:
+                final = variant.final_url or final
+        elif found["final"] and page is not None:
+            status, hops = page.status, page.redirect_hops
+        else:
+            status = hops = None
+        unmeasured = LINK_ROBOTS_BLOCKED if blocked else LINK_NOT_MEASURED
+        rule = variant.error.partition(": ")[2] if blocked else ""
+        count = len(found["sources"])
+        in_menu = any(area in crawl.MENU_POSITIONS for area in found["areas"])
+        by_area = {LINK_AREAS.get(area, area): number
+                   for area, number in sorted(found["areas"].items())}
+        in_set = page is not None and page.page_id in site.pages
+        rows.append((
+            "link_not_final_url",
+            "high" if broken else "medium" if in_menu or count >= LINK_FORM_MANY_PAGES
+            else "low",
+            page.page_id if in_set else None, None,
+            (f"{count} oldalról mutat belső link erre a címre: {raw_url} — "
+             + (f"{note}; " if broken else f"{LINK_ROBOTS_SUMMARY}; " if blocked else "")
+             + (f"a végleges cím: {final}" if final else f"{LINK_STORED_NOTE}: {target}")
+             + f" (eltérés: {', '.join(differences)})"),
+            {"group": "link_form", "raw_url": raw_url, "stored_url": found["stored"],
+             "final_url": final,
+             "final_note": None if final else LINK_ROBOTS_BLOCKED if blocked
+             else LINK_STORED_NOTE,
+             "differences": differences, **({"note": note} if note else {}),
+             **({"robots_rule": rule} if rule else {}),
+             "linked_status": unmeasured if status is None else status,
+             "hops": LINK_NOT_MEASURED if hops is None else hops,
+             "measured": measured,
+             "source_pages": count, "by_area": by_area,
+             "pages": [{"url": url, "areas": sorted(item["areas"]),
+                        "anchors": sorted(item["anchors"])}
+                       for url, item in sorted(found["sources"].items())]}))
+    return rows
+
+
 def _orphans(site: _Site) -> list[tuple]:
     """Az `orphan_pages` megállapítások (lásd a modul leírását): legfeljebb kettő, a
     csoportonként egy."""
@@ -2420,6 +2549,23 @@ def _finding_html(finding: dict) -> str:
                      f"„{_e(item['anchor'])}” — {_e(item['area'])}, {_e(item['lang'])}: "
                      f"{item['pages']} / {item['area_pages']} oldalon"
                      for item in evidence["menu_items"]))]
+    elif finding["type"] == "link_not_final_url":
+        pairs = [("a link címe", _link(evidence["raw_url"])),
+                 ("a tárolt cél", _link(evidence["stored_url"])),
+                 ("végleges cím", _link(evidence["final_url"]) if evidence["final_url"]
+                  else f"{_e(evidence['final_note'])}: {_link(evidence['stored_url'])}"
+                  if evidence["final_note"] != LINK_STORED_NOTE
+                  else f"{LINK_NOT_MEASURED} ({_e(evidence['final_note'])}: "
+                       f"{_link(evidence['stored_url'])})"),
+                 ("eltérés", _e(", ".join(evidence["differences"]))),
+                 *([("megjegyzés", _e(evidence["note"]))] if evidence.get("note") else []),
+                 ("a linkelt alak státusza / ugrások", _e(f"{evidence['linked_status']} / "
+                                                         f"{evidence['hops']}")),
+                 ("területek", _e(", ".join(f"{area}: {number}" for area, number
+                                            in evidence["by_area"].items()))),
+                 (f"forrásoldalak ({evidence['source_pages']})", "<br>".join(
+                     f"{_link(page['url'])} — {_e(', '.join(page['areas']))}: "
+                     f"„{_e('”, „'.join(page['anchors']))}”" for page in evidence["pages"]))]
     elif finding["type"] == "orphan_pages":
         pairs = [("csoport", _e(ORPHAN_GROUPS[evidence["group"]])),
                  ("bejárás", _e(evidence.get("crawl_note", "teljes"))),

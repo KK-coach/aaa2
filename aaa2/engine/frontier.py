@@ -61,11 +61,13 @@ class Robots:
 
     rules: tuple[tuple[re.Pattern[str], int, bool], ...] = ()
     sitemaps: tuple[str, ...] = ()
+    sources: tuple[str, ...] = ()       # a szabályok szövege (`Disallow: /x`), a `rules` sorrendjében
 
     @classmethod
     def parse(cls, text: str) -> Robots:
         """Az összes `User-agent: *` csoport szabálya együtt; a többi csoport nem számít."""
         rules: list[tuple[re.Pattern[str], int, bool]] = []
+        sources: list[str] = []
         sitemaps: list[str] = []
         agents: list[str] = []
         in_rules = False
@@ -86,17 +88,31 @@ class Robots:
                 if "*" in agents and value:
                     pattern, length = _robots_pattern(value)
                     rules.append((pattern, length, key == "allow"))
-        return cls(tuple(rules), tuple(sitemaps))
+                    sources.append(f"{key.capitalize()}: {value}")
+        return cls(tuple(rules), tuple(sitemaps), tuple(sources))
+
+    def _deciding(self, url: str) -> tuple[int | None, bool]:
+        """(a döntő szabály sorszáma vagy None, szabad-e): a leghosszabb illeszkedő szabály
+        dönt, egyenlő hossznál az Allow; szabály nélkül szabad."""
+        parts = urlsplit(url)
+        target = (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
+        best, best_length, best_allow = None, -1, True
+        for index, (pattern, length, allow) in enumerate(self.rules):
+            if pattern.match(target) and (length > best_length or (length == best_length and allow)):
+                best, best_length, best_allow = index, length, allow
+        return best, best_allow
 
     def allowed(self, url: str) -> bool:
         """A leghosszabb illeszkedő szabály dönt, egyenlő hossznál az Allow; szabály nélkül szabad."""
-        parts = urlsplit(url)
-        target = (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
-        best_length, best_allow = -1, True
-        for pattern, length, allow in self.rules:
-            if pattern.match(target) and (length > best_length or (length == best_length and allow)):
-                best_length, best_allow = length, allow
-        return best_allow
+        return self._deciding(url)[1]
+
+    def blocking_rule(self, url: str) -> str | None:
+        """A címet tiltó szabály szövege (`Disallow: /x`); None, ha a cím szabad, vagy a
+        szabály szövege nem ismert."""
+        index, allow = self._deciding(url)
+        if allow or index is None or index >= len(self.sources):
+            return None
+        return self.sources[index]
 
 
 @dataclass(frozen=True)

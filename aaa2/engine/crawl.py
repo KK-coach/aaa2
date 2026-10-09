@@ -48,7 +48,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 
 import duckdb
@@ -56,16 +56,24 @@ import httpx
 import zstandard
 
 from aaa2.db.connect import connect, db_path
+from aaa2.db.stable_json import dumps
 from aaa2.engine.frontier import (
     MAX_PAGES,
     PRIORITY,
     Frontier,
     QueueItem,
+    Robots,
     discover,
     fetch_robots,
     refetch_sitemap,
 )
-from aaa2.engine.normalize import UrlPolicy, is_internal, normalize, slash_alternate
+from aaa2.engine.normalize import (
+    UrlPolicy,
+    form_differences,
+    is_internal,
+    normalize,
+    slash_alternate,
+)
 from aaa2.engine.parse import ParsedPage, parse_page
 from aaa2.engine.render import (
     CONCURRENCY,
@@ -87,7 +95,7 @@ _PAGE_COLUMNS = (
     "url", "status", "error", "canonical", "noindex", "title", "meta_description", "h1", "lang",
     "hreflang", "word_count", "main_content", "main_content_method", "external_link_count",
     "raw_html_hash", "rendered_html", "render_ms", "fetched_at", "run_id", "final_url",
-    "seen_crawl_id", "x_robots_tag",
+    "seen_crawl_id", "x_robots_tag", "redirect_hops", "redirect_chain",
 )
 _UPSERT_PAGE = (
     f"INSERT INTO pages ({', '.join(_PAGE_COLUMNS)}) "
@@ -109,6 +117,9 @@ class CrawlOptions:
     exclude: str | None = None
     sitemap_only: bool = False
     overrun_factor: float | None = None
+    # a linkelt, nem normalizált címek lekérése a crawl végén (`link_variants`); csak élő
+    # bejárásnál (a rögzített készlet visszajátszása nem kér le új címet)
+    probe_variants: bool = False
 
 
 @dataclass(frozen=True)
@@ -123,6 +134,9 @@ class CrawlSummary:
     expected_pages: int | None = None
     expected_seconds: float | None = None
     stopped: str | None = None
+    variants_probed: int = 0            # a linkelt alakok mérése: lekért címek
+    variants_over_limit: int = 0        # a korlát (`VARIANT_PROBE_LIMIT`) fölött kimaradt címek
+    variants_blocked: int = 0           # a robots.txt által tiltott címek
 
 
 Progress = Callable[[str, int | None, str | None], None]
@@ -141,7 +155,8 @@ async def run_crawl(
             headers={"User-Agent": renderer.user_agent, **NAVIGATION_HEADERS}, timeout=HTTP_TIMEOUT
         ) as client:
             summary = await crawl(
-                con, seed_url, options, client=client, renderer=renderer, progress=progress
+                con, seed_url, replace(options, probe_variants=True), client=client,
+                renderer=renderer, progress=progress
             )
     finally:
         con.close()
@@ -184,6 +199,7 @@ class _Run:
         self.expected_pages: int | None = None
         self.expected_seconds: float | None = None
         self.stopped: str | None = None
+        self.variants = VariantProbe()
         self._clock = 0.0
         self._compressor = zstandard.ZstdCompressor()
 
@@ -213,6 +229,10 @@ class _Run:
                 await self._start(seed_url, started)
             await self._drain()
             self._finish()
+            if self.options.probe_variants:
+                self.variants = await probe_link_variants(
+                    self.con, self.client, robots=self.frontier.robots,
+                    concurrency=self.options.concurrency)
             finished = True
         finally:
             seconds = asyncio.get_running_loop().time() - clock
@@ -457,6 +477,7 @@ class _Run:
             url=url, status=status, noindex=False, final_url=result.final_url,
             render_ms=result.render_ms, fetched_at=_now(), run_id=self.run_id,
             seen_crawl_id=self.crawl_id, x_robots_tag=robots_header(result.headers),
+            **_redirect_columns(result),
         )
         page_id = self._upsert(values)
         self._clear_children(page_id)
@@ -470,6 +491,7 @@ class _Run:
             raw_html_hash=result.raw_html_hash, render_ms=result.render_ms, fetched_at=_now(),
             run_id=self.run_id, final_url=result.final_url,
             seen_crawl_id=self.crawl_id, x_robots_tag=robots_header(result.headers),
+            **_redirect_columns(result),
         )
         parsed = None
         if error is None and _usable(result):
@@ -511,10 +533,10 @@ class _Run:
     def _write_children(self, page_id: int, parsed: ParsedPage) -> None:
         if parsed.links:
             self.con.executemany(
-                "INSERT INTO links (from_page_id, to_url, anchor, position, nofollow, ordinal) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
-                [(page_id, link.to_url, link.anchor, link.position, link.nofollow, link.ordinal)
-                 for link in parsed.links],
+                "INSERT INTO links (from_page_id, to_url, anchor, position, nofollow, ordinal, "
+                "raw_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [(page_id, link.to_url, link.anchor, link.position, link.nofollow, link.ordinal,
+                  link.raw_url) for link in parsed.links],
             )
         if parsed.headings:
             self.con.executemany(
@@ -577,7 +599,96 @@ class _Run:
             pages_skipped=self.skipped, pages_per_sec=rate, bytes_stored=self.bytes_stored,
             seconds=seconds, expected_pages=self.expected_pages,
             expected_seconds=self.expected_seconds, stopped=self.stopped,
+            variants_probed=self.variants.probed, variants_over_limit=self.variants.over_limit,
+            variants_blocked=self.variants.blocked,
         )
+
+
+def _redirect_columns(result: RenderResult) -> dict:
+    """A válasz átirányítási lánca a `pages` oszlopaihoz: a lépések száma és a lánc."""
+    steps = [{"status": status, "url": url} for status, url in result.redirects]
+    return {"redirect_hops": len(steps),
+            "redirect_chain": dumps(steps, ensure_ascii=False) if steps else None}
+
+
+VARIANT_PROBE_LIMIT = 200           # ennél több különböző linkcímet a mérés nem kér le
+ROBOTS_BLOCKED = "robots_blocked"   # a `link_variants.error` kezdete: a címet a robots.txt tiltja
+_HEAD_UNSUPPORTED = (405, 501)      # ilyen válasznál a HEAD helyett GET megy, a törzs nélkül
+
+
+@dataclass(frozen=True)
+class VariantProbe:
+    """A linkelt alakok mérésének összegzése: a lekért címek, a korlát fölött kimaradtak és a
+    robots.txt által tiltottak száma."""
+
+    probed: int = 0
+    over_limit: int = 0
+    blocked: int = 0
+
+
+async def _variant_response(client: httpx.AsyncClient, url: str
+                            ) -> tuple[int, str, list[dict]]:
+    """(státusz, végső cím, lépések) a címre a törzs letöltése nélkül: HEAD az átirányítások
+    követésével; ha a szerver a HEAD-et nem támogatja (405, 501), GET a törzs olvasása nélkül."""
+    response = await client.head(url, follow_redirects=True)
+    if response.status_code in _HEAD_UNSUPPORTED:
+        async with client.stream("GET", url, follow_redirects=True) as streamed:
+            response = streamed
+    steps = [{"status": step.status_code, "url": str(step.url)} for step in response.history]
+    return response.status_code, str(response.url), steps
+
+
+async def probe_link_variants(
+    con: duckdb.DuckDBPyConnection, client: httpx.AsyncClient, *,
+    robots: Robots | None = None, concurrency: int = CONCURRENCY,
+) -> VariantProbe:
+    """A linkelt, nem normalizált címek mért válasza a `link_variants` táblába: minden
+    különböző belső linkcímre, amelynek az eredeti alakja záró perjelben, protokollban,
+    `www`-ben vagy kis/nagybetűben eltér a tárolt céltól (`form_differences`), egy render és
+    törzs nélküli kérés az átirányítások követésével (`_variant_response`).
+
+    Fékek: a `robots` által tiltott címre nincs kérés, a sora státusz nélkül, `robots_blocked`
+    hibával áll (mögötte a tiltó szabály, ha ismert: `robots_blocked: Disallow: /x`); a többi
+    címből legfeljebb `VARIANT_PROBE_LIMIT` megy lekérésre (cím szerinti sorrendben az elsők), a
+    korlát fölöttiek mérés és sor nélkül maradnak; egyszerre legfeljebb `concurrency` kérés fut, ahogy a crawl dolgozói. A tábla minden
+    futásnál újraépül. Hálózati hibánál a sor a hibával marad, státusz nélkül."""
+    rows = con.execute(
+        "SELECT DISTINCT raw_url, to_url FROM links WHERE raw_url IS NOT NULL "
+        "AND raw_url <> to_url ORDER BY raw_url, to_url").fetchall()
+    wanted: dict[str, str] = {}
+    for raw_url, to_url in rows:
+        if raw_url not in wanted and form_differences(raw_url, to_url):
+            wanted[raw_url] = to_url
+    allowed = [raw_url for raw_url in wanted if robots is None or robots.allowed(raw_url)]
+    chosen = allowed[:VARIANT_PROBE_LIMIT]              # a tiltott címre nincs kérés, korlát sem
+    gate = asyncio.Semaphore(max(1, concurrency))
+
+    async def ask(raw_url: str) -> tuple:
+        async with gate:
+            try:
+                return (*await _variant_response(client, raw_url), None)
+            except httpx.HTTPError as exc:
+                return None, None, [], f"{type(exc).__name__}: {exc}"[:300]
+
+    answers = await asyncio.gather(*(ask(raw_url) for raw_url in chosen))
+    con.execute("DELETE FROM link_variants")
+    free = set(allowed)
+    for raw_url, to_url in wanted.items():
+        if raw_url not in free:
+            rule = robots.blocking_rule(raw_url) if robots is not None else None
+            con.execute(
+                "INSERT INTO link_variants (raw_url, normalized_url, error, fetched_at) "
+                "VALUES (?, ?, ?, ?)",
+                [raw_url, to_url, ROBOTS_BLOCKED + (f": {rule}" if rule else ""), _now()])
+    for raw_url, (status, final_url, steps, error) in zip(chosen, answers, strict=True):
+        con.execute(
+            "INSERT INTO link_variants (raw_url, normalized_url, status, final_url, hops, chain, "
+            "error, fetched_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [raw_url, wanted[raw_url], status, final_url,
+             None if error else len(steps),
+             dumps(steps, ensure_ascii=False) if steps else None, error, _now()])
+    return VariantProbe(probed=len(chosen), over_limit=len(allowed) - len(chosen),
+                        blocked=len(wanted) - len(allowed))
 
 
 def _usable(result: RenderResult) -> bool:

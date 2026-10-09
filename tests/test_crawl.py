@@ -527,4 +527,31 @@ async def test_replay_materia_crawl():
     ) as client:
         con = connect(":memory:")
         await crawl(con, MATERIA, CrawlOptions(concurrency=3), client=client, renderer=renderer)
-    assert crawl_snapshot(con) == json.loads(json.dumps(recording.measured))
+    snapshot = crawl_snapshot(con)
+    measured = json.loads(json.dumps(recording.measured))
+    assert {key: value for key, value in snapshot.items() if key != "links"} == {
+        key: value for key, value in measured.items() if key != "links"}
+    # A felvétel a nem navigációs hrefek (`#`, üres) kihagyása előtt készült: akkor ezek az oldal
+    # saját címére oldódtak fel. A mai linksor a felvett sor ezek nélkül, ugyanabban a sorrendben.
+    def per_page(rows):
+        found = {}
+        for url, to_url, position, _ in rows:
+            found.setdefault(url, []).append((to_url, position))
+        return found
+
+    now, then = per_page(snapshot["links"]), per_page(measured["links"])
+    assert set(now) == set(then)
+    dropped = 0
+    for url, recorded in then.items():
+        kept = iter(now[url])
+        current = next(kept, None)
+        for link in recorded:
+            if link == current:
+                current = next(kept, None)
+            else:
+                assert link[0] == url, (url, link)          # csak saját címre mutató sor esik ki
+                dropped += 1
+        assert current is None, (url, current)
+    assert dropped == 28
+    assert [row[3] for row in snapshot["links"] if row[0] == MATERIA] == list(
+        range(1, len(now[MATERIA]) + 1))

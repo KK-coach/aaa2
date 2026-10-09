@@ -85,6 +85,7 @@ class Link:
     position: str
     nofollow: bool
     ordinal: int
+    raw_url: str | None = None      # a href abszolút alakja a normalizálás előtt, töredék nélkül
 
 
 @dataclass(frozen=True)
@@ -251,7 +252,8 @@ def _links(tree: HTMLParser, base: str, policy: UrlPolicy) -> tuple[tuple[Link, 
         if any(a.tag in _SKIPPED_ANCESTORS for a in _ancestors(anchor)):
             continue
         href = (anchor.attributes.get("href") or "").strip()
-        if href.lower().startswith(_NON_PAGE_SCHEMES):
+        # nem navigációs href: üres, csak töredék (`#`, `#szakasz`), vagy nem oldalra mutató séma
+        if not href or href.startswith("#") or href.lower().startswith(_NON_PAGE_SCHEMES):
             continue
         target = urljoin(base, href)
         if urlsplit(target).scheme.lower() not in ("http", "https"):
@@ -271,6 +273,7 @@ def _links(tree: HTMLParser, base: str, policy: UrlPolicy) -> tuple[tuple[Link, 
             position=link_position(anchor),
             nofollow="nofollow" in rel,
             ordinal=len(links) + 1,
+            raw_url=target.split("#", 1)[0],
         ))
     return tuple(links), external
 

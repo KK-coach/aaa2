@@ -49,6 +49,10 @@ contracts = ["Page", "PageMeta"]
 owner = "crawl"
 contracts = ["Link"]
 
+[tables.link_variants]
+owner = "crawl"
+contracts = ["LinkVariant"]
+
 [tables.headings]
 owner = "crawl"
 contracts = []

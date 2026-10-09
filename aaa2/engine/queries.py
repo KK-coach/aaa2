@@ -21,6 +21,7 @@ from selectolax.parser import HTMLParser
 from aaa2.contracts import (
     CrawlRun,
     Link,
+    LinkVariant,
     Page,
     PageMeta,
     Site,
@@ -450,6 +451,13 @@ def sitemap_urls(con: duckdb.DuckDBPyConnection) -> list[SitemapUrl]:
     """A sitemap címei pillanatképenként, a fájlbeli sorrendben."""
     return [SitemapUrl.from_row(row) for row in _rows(
         con, "SELECT * FROM sitemap_urls ORDER BY snapshot, ordinal")]
+
+
+def link_variants(con: duckdb.DuckDBPyConnection) -> list[LinkVariant]:
+    """A linkelt, nem normalizált címek mért válaszai (`link_variants`), cím szerint. Rögzített
+    készleten üres: a lekérés csak élő bejárásnál fut."""
+    return [LinkVariant.from_row(row) for row in _rows(
+        con, "SELECT * FROM link_variants ORDER BY raw_url")]
 
 
 def queue_status_counts(con: duckdb.DuckDBPyConnection) -> list[tuple[str, int]]:

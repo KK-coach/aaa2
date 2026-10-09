@@ -28,7 +28,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.18",
+          "default": "1.19",
           "title": "Schema Version",
           "type": "string"
         }
@@ -138,7 +138,7 @@
           "title": "Role"
         },
         "schema_version": {
-          "default": "1.18",
+          "default": "1.19",
           "title": "Schema Version",
           "type": "string"
         },
@@ -197,7 +197,7 @@
       "type": "array"
     },
     "schema_version": {
-      "default": "1.18",
+      "default": "1.19",
       "title": "Schema Version",
       "type": "string"
     },
@@ -232,5 +232,5 @@
   "title": "SiteStructureView",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.18"
+  "x-schema-version": "1.19"
 }

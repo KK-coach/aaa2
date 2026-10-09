@@ -65,9 +65,9 @@ def site(pages, languages=("hu",)):
                         [page_id, h.level, h.text, h.ordinal])
         for link in parsed.links:
             con.execute("INSERT INTO links (from_page_id, to_url, anchor, position, nofollow, "
-                        "ordinal) VALUES (?, ?, ?, ?, ?, ?)",
+                        "ordinal, raw_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
                         [page_id, link.to_url, link.anchor, link.position, link.nofollow,
-                         link.ordinal])
+                         link.ordinal, link.raw_url])
         for block in parsed.schema_blocks:
             con.execute("INSERT INTO schema_blocks VALUES (?, ?, ?, ?)",
                         [page_id, block.type, block.json, block.ordinal])
@@ -380,8 +380,8 @@ def test_anchor_mention_sits_in_its_block_under_its_headings():
 
 def nav(extra=""):
     return ("<nav><ul><li><a href='/szolgaltatasok/'>Szolgáltatások</a></li>"
-            "<li><a href='/en/'>English</a></li><li><a href='#'>#</a></li></ul></nav>"
-            "<a href='#tartalom'>Ugrás a tartalomra</a>" + extra)
+            "<li><a href='/en/'>English</a></li><li><a href='.'>#</a></li></ul></nav>"
+            "<a href='./'>Ugrás a tartalomra</a>" + extra)
 
 
 def test_anchor_candidates_with_structural_filters():
@@ -414,7 +414,8 @@ def test_anchor_candidates_with_structural_filters():
     ]
     assert con.execute("SELECT aliases FROM entities WHERE type = 'person'").fetchone() == (
         ["KISS ANNA", "kiss anna"],)
-    # 5 oldalon az "Ugrás a tartalomra", és a /szolgaltatasok/ saját linkje.
+    # 5 oldalon az "Ugrás a tartalomra" (az oldal saját címére), és a /szolgaltatasok/ saját
+    # linkje.
     assert run.skipped["anchor_self_link"] == 5 + 1
     # Az "English" 5 magyar oldalon; az angol oldal "Magyar" linkje a kezdőoldalra mutat.
     assert run.skipped["anchor_language_switch"] == 5
@@ -583,8 +584,8 @@ EXPECTED = {
     },
     # Nincs JSON-LD; a title minden oldalon "Angular Bootstrap". Az "Examples", az "API" és az
     # "Overview" 17 célra, az "ngx-bootstrap" 19 célra mutat: navigációs; a "components" a
-    # kezdőoldalra. A komponens-demók linkjei ("Previous", "Start 🏁") a nem crawlolt
-    # /ngx-bootstrap-ra mutatnak (256 előfordulás): concept nem marad.
+    # kezdőoldalra. A komponens-demók gombjai ("Previous", "Start 🏁") `href="#"` hrefek: nem
+    # linkek (256 előfordulás), concept nem marad.
     "ngx-bootstrap-crawl": {
         "run": (69, 69, 1, 69, {"title": 69}),
         "not_in_block": 0,
@@ -592,7 +593,6 @@ EXPECTED = {
         "absent": {("concept", "ngx-bootstrap"), ("concept", "Examples"), ("concept", "API"),
                    ("concept", "components"), ("concept", "Previous"), ("concept", "Start 🏁")},
         "aliases": {},
-        "uncrawled": 256,
     },
 }
 
