@@ -156,11 +156,16 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   bármelyikére érvényes csoport tilt. Egy megállapítás tiltó szabályonként; a bizonyítékban a
   címek a forrásoldalak számával, területenként, botonként (tiltja-e), a sitemap-jelzéssel és
   a szándékos-tiltás fajtájával. A robots.txt a bejárást tiltja, nem az indexelést: a szöveg
-  azt mondja, hogy a keresők nem látják a cím tartalmát. Súlyosság címenként, a megállapításé
-  a legnagyobb: low, ha a cím a szándékos tiltások listáján van (`ROBOTS_INTENDED`: kosár /
-  pénztár, fiók / belépés, keresés, szűrő / rendezés / lapozás paramétere, admin /
-  rendszer-végpont); medium, ha nincs; high, ha nincs a listán, és a sitemapben szerepel, vagy
-  menüből / láblécből linkelt (a site hivatkozik rá, de a bejárást tiltja).
+  azt mondja, hogy a keresők nem látják a cím tartalmát. A súlyosságot és ezt a szöveget csak
+  a keresők tiltása adja (a saját bejáró `*` csoportja, a Googlebot és a Bingbot). Súlyosság
+  címenként, a megállapításé a legnagyobb: low, ha a cím a szándékos tiltások listáján van
+  (`robots_intended`: kosár / pénztár, fiók / belépés, keresés, szűrő / rendezés / lapozás
+  paramétere, admin / rendszer-végpont; útvonal-szakaszra és paraméternévre illesztve);
+  medium, ha nincs; high, ha nincs a listán, és a sitemapben szerepel, vagy menüből / láblécből
+  linkelt (a site hivatkozik rá, de a bejárást tiltja). Ha a címet csak AI-bot tiltja: low,
+  külön megállapításban, a szöveg „AI-botok elől tiltva (üzleti döntés lehet)”; ha ez a tiltás
+  a `robots_bot_blocked` által már jelzett egész site-ra vagy fő szekcióra szól, a cím nem
+  külön megállapítás, hanem annak a bizonyítékában áll (`linked_urls`).
 - `robots_bot_blocked`: a robots.txt egy vizsgált botot az egész site-ról (`Disallow: /` a
   botra érvényes csoportban) vagy egy fő szekcióról (a fejléc-fa felső szintű menüpontja)
   kitilt. Egy megállapítás a keresőbotokra (Googlebot, Bingbot; high) és egy az AI-botokra
@@ -344,18 +349,22 @@ ORPHAN_GROUPS = {
     "linked_only_by_orphans": "csak egymásra linkelnek (más, szintén elérhetetlen oldalakról "
                               "kapnak linket)"}
 ORPHAN_PARTIAL = ("részleges bejárás: a rájuk vezető oldal kimaradhatott a készletből")
-# ránézésre szándékos robots-tiltás: a cím (útvonal vagy lekérdezés) ilyen részt tartalmaz
+# szándékos robots-tiltás fajtánként: (útvonal-szakasz kulcsai, lekérdezés-paraméterek nevei; az
+# aláhúzásra végződő paraméter előtag, pl. `filter_`)
 ROBOTS_INTENDED = {
-    "kosár / pénztár": ("cart", "kosar", "checkout", "penztar", "basket"),
-    "fiók / belépés": ("account", "login", "logout", "register", "regisztracio", "fiok",
-                        "belepes", "wishlist", "kivansaglista", "profil"),
-    "keresés": ("search", "kereses", "kereso", "?s=", "&s=", "?q=", "&q="),
-    "szűrő / rendezés / lapozás": ("filter", "szuro", "sort=", "order=", "orderby=", "limit=",
-                                    "page=", "paged=", "/page/"),
-    "admin / rendszer-végpont": ("admin", "wp-login", "wp-json", "cgi-bin", "ajax", "/api/",
-                                 "xmlrpc", "feed"),
+    "kosár / pénztár": (("cart", "kosar", "checkout", "penztar", "basket"), ()),
+    "fiók / belépés": (("account", "login", "logout", "register", "regisztracio", "fiok",
+                         "belepes", "wishlist", "kivansaglista", "signin", "signup"), ()),
+    "keresés": (("search", "kereses", "kereso"), ("s", "q", "search", "keres", "kereses")),
+    "szűrő / rendezés / lapozás": (
+        ("filter", "szuro", "page"),
+        ("sort", "order", "orderby", "limit", "page", "paged", "filter", "szuro", "filter_",
+         "sort_")),
+    "admin / rendszer-végpont": (("admin", "wp-login", "wp-json", "cgi-bin", "ajax", "api",
+                                  "xmlrpc", "feed"), ()),
 }
 ROBOTS_CRAWL_NOTE = "a robots.txt tiltja a bejárását: a keresők nem látják a tartalmát"
+ROBOTS_AI_LINK_NOTE = "AI-botok elől tiltva (üzleti döntés lehet)"
 ROBOTS_OWN_BOT = "saját bejáró (*)"
 ROBOTS_AI_NOTE = "üzleti döntés lehet"
 ROBOTS_WHOLE_SITE = "az egész site"
@@ -434,7 +443,7 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
             *_article_markup(site), *_breadcrumb_home(site), *_menu_home(site)]
     menu_targets = _menu_targets(site)
     rows += [*menu_targets, *_orphans(site), *_breadcrumb_menu(site),
-             *_link_forms(site, menu_targets), *_robots_links(site), *_robots_bots(site)]
+             *_link_forms(site, menu_targets), *_robots(site)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -1732,10 +1741,22 @@ def _link_forms(site: _Site, menu_targets: Sequence[tuple] = ()) -> list[tuple]:
 
 
 def robots_intended(url: str) -> str | None:
-    """A szándékos robots-tiltás fajtája a cím alapján (`ROBOTS_INTENDED`), vagy None."""
-    low = url.lower()
-    return next((label for label, parts in ROBOTS_INTENDED.items()
-                 if any(part in low for part in parts)), None)
+    """A szándékos robots-tiltás fajtája a cím alapján, vagy None. Az útvonalban szakaszra
+    illeszt: a szakasz (kiterjesztés nélkül) maga a kulcs, vagy kötőjellel / aláhúzással tagolt
+    részei között áll a kulcs (`/cart`, `/my-account`, `/wp-admin`; az `/accounting` és a
+    `/feedback` nem). A lekérdezésben a paraméter nevére illeszt (`?s=`, `?sort=`, `?filter_x=`)."""
+    parts = urlsplit(url.lower())
+    segments = [segment.rsplit(".", 1)[0] if "." in segment else segment
+                for segment in parts.path.split("/") if segment]
+    tokens = {token for segment in segments for token in re.split(r"[-_]", segment)}
+    names = {piece.split("=", 1)[0] for piece in parts.query.split("&") if piece}
+    for label, (path_keys, parameters) in ROBOTS_INTENDED.items():
+        if any(key in segments or key in tokens for key in path_keys):
+            return label
+        if any(name in parameters or any(name.startswith(prefix) for prefix in parameters
+                                         if prefix.endswith("_")) for name in names):
+            return label
+    return None
 
 
 def _sitemap_keys(con: duckdb.DuckDBPyConnection) -> set[str] | None:
@@ -1750,16 +1771,50 @@ def _sitemap_keys(con: duckdb.DuckDBPyConnection) -> set[str] | None:
             if item.snapshot == current and item.url and item.internal}
 
 
-def _robots_links(site: _Site) -> list[tuple]:
-    """A `robots_blocked_link` megállapítások (lásd a modul leírását)."""
+def _robots(site: _Site) -> list[tuple]:
+    """A `robots_bot_blocked` és a `robots_blocked_link` megállapítások együtt (lásd a modul
+    leírását): az AI-botok elől egy már jelzett tiltás (egész site vagy fő szekció) alá eső
+    linkcél nem külön megállapítás, hanem a bot-megállapítás bizonyítékába kerül."""
     robots = crawl.robots(site.con)
     profile = crawl.site(site.con)
     if robots is None or profile is None:
         return []
     host = urlsplit(profile.seed_url).hostname
     views = {ROBOTS_OWN_BOT: robots, **{bot: robots.for_bot(bot) for bot in CHECKED_BOTS}}
+    search_views = (ROBOTS_OWN_BOT, *SEARCH_BOTS)
+
+    # a botok site-szintű tiltása: egész site, vagy a fejléc-fa felső szintű menüpontja
+    home_ids = set(site.structure.homes.values()) | (
+        {site.structure.start} if site.structure.start is not None else set())
+    sections = [item for item in site.structure.menu
+                if item.area == "header" and item.level == 0 and item.url
+                and item.page_id in site.pages and item.page_id not in home_ids
+                and urlsplit(item.url).hostname == host]
+    scopes: dict[str, dict] = {}
+    for bot in CHECKED_BOTS:
+        view = views[bot]
+        whole = view.blocks_everything()
+        blocked = [] if whole else [item for item in sections if not view.allowed(item.url)]
+        if whole or blocked:
+            scopes[bot] = {
+                "bot": bot, "group": robots.group_of(bot),
+                "scope": ROBOTS_WHOLE_SITE if whole else "fő szekció",
+                "rule": view.blocking_rule("/") if whole else view.blocking_rule(blocked[0].url),
+                "sections": [{"anchor": item.anchor, "url": item.url,
+                              "rule": view.blocking_rule(item.url)} for item in blocked],
+                "linked_urls": []}
+
+    def covered(bot: str, url: str) -> bool:
+        """A bot tiltása erre a címre már a site-szintű megállapításé (ugyanaz a szabály)."""
+        scope = scopes.get(bot)
+        if scope is None:
+            return False
+        rule = views[bot].blocking_rule(url)
+        return scope["scope"] == ROBOTS_WHOLE_SITE and rule == scope["rule"] \
+            or any(rule == section["rule"] for section in scope["sections"])
+
     in_sitemap = _sitemap_keys(site.con)
-    verdicts: dict[str, dict[str, str | bool]] = {}
+    verdicts: dict[str, dict[str, bool]] = {}
     targets: dict[str, dict] = {}
     for link in crawl.counted_links(site.con):
         source = site.pages.get(link.from_page_id)
@@ -1773,74 +1828,57 @@ def _robots_links(site: _Site) -> list[tuple]:
         found = targets.setdefault(link.to_url, {"sources": set(), "areas": Counter()})
         found["sources"].add(source["url"])
         found["areas"][link.position] += 1
-    by_rule: dict[str, list[dict]] = defaultdict(list)
+
+    by_rule: dict[tuple[str, bool], list[dict]] = defaultdict(list)
     for url, found in sorted(targets.items()):
         blocked = verdicts[url]
-        rule = next((views[bot].blocking_rule(url) for bot in views if blocked[bot]), None)
+        ai_only = not any(blocked[bot] for bot in search_views)
+        if ai_only and all(covered(bot, url) for bot in CHECKED_BOTS if blocked[bot]):
+            for bot in CHECKED_BOTS:
+                if blocked[bot]:
+                    scopes[bot]["linked_urls"].append(
+                        {"url": url, "source_pages": len(found["sources"])})
+            continue
+        order = search_views if not ai_only else tuple(views)
+        rule = next((views[bot].blocking_rule(url) for bot in order if blocked[bot]), None)
         intended = robots_intended(url)
         listed = None if in_sitemap is None else canonical_key(url) in in_sitemap
         contradiction = bool(listed) or any(area in ROBOTS_CONTRADICTION_AREAS
                                             for area in found["areas"])
-        by_rule[rule or "ismeretlen szabály"].append({
+        by_rule[(rule or "ismeretlen szabály", ai_only)].append({
             "url": url, "source_pages": len(found["sources"]),
             "sources": sorted(found["sources"])[:EVIDENCE_PAGES],
             "by_area": {LINK_AREAS.get(area, area): number
                         for area, number in sorted(found["areas"].items())},
             "in_sitemap": listed, "intended": intended, "bots": dict(blocked),
-            "severity": "low" if intended else "high" if contradiction else "medium",
+            "severity": "low" if ai_only or intended else "high" if contradiction else "medium",
             "all_sources": sorted(found["sources"])})
-    rows = []
-    for rule, urls in sorted(by_rule.items()):
-        severity = min((item["severity"] for item in urls), key=SEVERITY_ORDER.get)
-        pages = sorted({source for item in urls for source in item.pop("all_sources")})
-        rows.append((
-            "robots_blocked_link", severity, None, None,
-            (f"Belső link a robots.txt által tiltott címre mutat ({rule}): {len(urls)} cím, "
-             f"{len(pages)} forrásoldalról – {ROBOTS_CRAWL_NOTE}"),
-            {"group": "robots_link", "rule": rule, "note": ROBOTS_CRAWL_NOTE, "urls": urls,
-             "pages": [{"url": url} for url in pages]}))
-    return rows
 
-
-def _robots_bots(site: _Site) -> list[tuple]:
-    """A `robots_bot_blocked` megállapítások (lásd a modul leírását)."""
-    robots = crawl.robots(site.con)
-    profile = crawl.site(site.con)
-    if robots is None or profile is None:
-        return []
-    home_ids = set(site.structure.homes.values()) | (
-        {site.structure.start} if site.structure.start is not None else set())
-    sections = [item for item in site.structure.menu
-                if item.area == "header" and item.level == 0 and item.url
-                and item.page_id in site.pages and item.page_id not in home_ids
-                and urlsplit(item.url).hostname == urlsplit(profile.seed_url).hostname]
-    found: dict[bool, list[dict]] = {True: [], False: []}
-    for bot in CHECKED_BOTS:
-        view = robots.for_bot(bot)
-        whole = view.blocks_everything()
-        blocked = [] if whole else [item for item in sections if not view.allowed(item.url)]
-        if not whole and not blocked:
-            continue
-        found[bot in SEARCH_BOTS].append({
-            "bot": bot, "group": robots.group_of(bot),
-            "scope": ROBOTS_WHOLE_SITE if whole else "fő szekció",
-            "rule": view.blocking_rule("/") if whole else view.blocking_rule(blocked[0].url),
-            "sections": [{"anchor": item.anchor, "url": item.url,
-                          "rule": view.blocking_rule(item.url)} for item in blocked]})
     rows = []
-    for search, bots in ((True, found[True]), (False, found[False])):
+    for search, kind in ((True, "search"), (False, "ai")):
+        bots = [scope for bot, scope in scopes.items() if (bot in SEARCH_BOTS) == search]
         if not bots:
             continue
         names = ", ".join(item["bot"] for item in bots)
-        scopes = ", ".join(dict.fromkeys(
+        where = ", ".join(dict.fromkeys(
             ROBOTS_WHOLE_SITE + "ról" if item["scope"] == ROBOTS_WHOLE_SITE
             else "egy fő szekcióról" for item in bots))
         rows.append((
             "robots_bot_blocked", "high" if search else "low", None, None,
-            (f"A robots.txt kitiltja a(z) {names} botot {scopes}: a bot nem járja be, így nem "
+            (f"A robots.txt kitiltja a(z) {names} botot {where}: a bot nem járja be, így nem "
              f"látja a tartalmát" + ("" if search else f" ({ROBOTS_AI_NOTE})")),
-            {"group": "robots_bot", "kind": "search" if search else "ai", "bots": bots,
+            {"group": "robots_bot", "kind": kind, "bots": bots,
              **({} if search else {"note": ROBOTS_AI_NOTE}), "pages": []}))
+    for (rule, ai_only), urls in sorted(by_rule.items()):
+        severity = min((item["severity"] for item in urls), key=SEVERITY_ORDER.get)
+        pages = sorted({source for item in urls for source in item.pop("all_sources")})
+        note = ROBOTS_AI_LINK_NOTE if ai_only else ROBOTS_CRAWL_NOTE
+        rows.append((
+            "robots_blocked_link", severity, None, None,
+            (f"Belső link a robots.txt által tiltott címre mutat ({rule}): {len(urls)} cím, "
+             f"{len(pages)} forrásoldalról – {note}"),
+            {"group": "robots_link", "rule": rule, "note": note, "ai_only": ai_only,
+             "urls": urls, "pages": [{"url": url} for url in pages]}))
     return rows
 
 
@@ -2755,7 +2793,11 @@ def _finding_html(finding: dict) -> str:
             f"{_e(item['bot'])} (csoport: {_e(item['group'])}) — {_e(item['scope'])}: "
             f"{_e(item['rule'] or '')}"
             + "".join(f"<br>&nbsp;&nbsp;„{_e(section['anchor'])}” {_link(section['url'])}"
-                      for section in item["sections"]) for item in evidence["bots"])),
+                      for section in item["sections"])
+            + "".join(f"<br>&nbsp;&nbsp;linkelt, tiltott cím: {_link(linked['url'])} "
+                      f"({linked['source_pages']} forrásoldal)"
+                      for linked in item.get("linked_urls", []))
+            for item in evidence["bots"])),
                  ("megjegyzés", _e(evidence.get("note") or ""))]
     elif finding["type"] == "orphan_pages":
         pairs = [("csoport", _e(ORPHAN_GROUPS[evidence["group"]])),

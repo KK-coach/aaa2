@@ -179,7 +179,7 @@ def test_a_bot_blocked_from_the_site_or_a_main_section():
         "bot": "Googlebot", "group": "googlebot", "scope": "fő szekció",
         "rule": "Disallow: /szolg/",
         "sections": [{"anchor": "Szolgáltatások", "url": f"{BASE}/szolg/",
-                      "rule": "Disallow: /szolg/"}]}]
+                      "rule": "Disallow: /szolg/"}], "linked_urls": []}]
     ai = found["ai"]                                    # AI-bot, egész site: low, semleges szöveg
     assert ai.severity == "low" and "üzleti döntés lehet" in ai.summary
     assert [item["bot"] for item in ai.evidence["bots"]] == ["GPTBot", "Google-Extended"]
@@ -224,3 +224,58 @@ def test_the_final_address_row_of_a_broken_linked_form():
     shown = _finding_html({"type": "link_not_final_url", "severity": "low", "summary": "x",
                            "evidence": unmeasured})
     assert "nem mért (a tárolt oldal címe:" in shown
+
+
+def test_intended_blocks_match_path_segments_and_parameter_names():
+    for path in ("/cart/", "/my-account/", "/?s=x", "/wp-admin/", "/kosar", "/wp-login.php",
+                 "/shop_ajax/x", "/termekek/?filter_szin=kek", "/blog/page/2/", "/?orderby=ar",
+                 "/kereses?q=szappan"):
+        assert robots_intended(f"{BASE}{path}") is not None, path
+    # részszó nem elég: a szakasznak vagy a paraméter nevének kell egyeznie
+    for path in ("/accounting/", "/administration/", "/feedback/", "/company-profile/",
+                 "/cartoon/", "/research/", "/pages/", "/?session=1", "/?squad=2",
+                 "/kosarlabda/"):
+        assert robots_intended(f"{BASE}{path}") is None, path
+
+
+def test_only_search_bots_give_the_severity_and_the_crawl_text():
+    # a /kepek/ címet csak AI-botok tiltják: külön, low megállapítás, más szöveggel
+    con = robots_site(
+        "User-agent: *\nAllow: /\n\nUser-agent: GPTBot\nUser-agent: ClaudeBot\n"
+        "Disallow: /kepek/\n",
+        menu_extra='<a href="/kepek/">Képek</a>', sitemap=("/kepek/",))
+    (finding,) = of_type(con, "robots_blocked_link")
+    assert finding.severity == "low" and finding.evidence["ai_only"] is True
+    assert "AI-botok elől tiltva (üzleti döntés lehet)" in finding.summary
+    assert "a keresők nem látják" not in finding.summary
+    item = finding.evidence["urls"][0]
+    assert item["bots"] == {"saját bejáró (*)": False, "Googlebot": False, "Bingbot": False,
+                            "GPTBot": True, "ClaudeBot": True, "PerplexityBot": False,
+                            "Google-Extended": False}
+    assert of_type(con, "robots_bot_blocked") == []     # a /kepek/ nem készletbeli fő szekció
+    # ugyanaz a cím a Bingbotnak is tiltva: a keresők szerinti súlyosság és szöveg
+    con = robots_site(
+        "User-agent: *\nAllow: /\n\nUser-agent: GPTBot\nDisallow: /kepek/\n\n"
+        "User-agent: Bingbot\nDisallow: /kepek/\n",
+        menu_extra='<a href="/kepek/">Képek</a>')
+    (finding,) = of_type(con, "robots_blocked_link")
+    assert finding.severity == "high" and finding.evidence["ai_only"] is False
+    assert "a keresők nem látják a tartalmát" in finding.summary
+
+
+def test_an_ai_block_already_reported_site_wide_is_not_repeated_per_link():
+    # az AI-bot az egész site-ról ki van tiltva: a linkelt címek a bot-megállapítás bizonyítékában
+    con = robots_site("User-agent: *\nAllow: /\n\nUser-agent: GPTBot\nDisallow: /\n")
+    assert of_type(con, "robots_blocked_link") == []
+    (bots,) = of_type(con, "robots_bot_blocked")
+    assert bots.severity == "low" and bots.evidence["kind"] == "ai"
+    linked = bots.evidence["bots"][0]["linked_urls"]
+    assert {item["url"] for item in linked} == {f"{BASE}/", f"{BASE}/szolg/", f"{BASE}/blog/",
+                                                f"{BASE}/adat/"}
+    # fő szekció tiltása AI-botnak: a szekció linkje sem külön megállapítás
+    con = robots_site("User-agent: *\nAllow: /\n\nUser-agent: ClaudeBot\nDisallow: /blog/\n")
+    assert of_type(con, "robots_blocked_link") == []
+    (bots,) = of_type(con, "robots_bot_blocked")
+    assert bots.evidence["bots"][0]["scope"] == "fő szekció"
+    assert bots.evidence["bots"][0]["linked_urls"] == [{"url": f"{BASE}/blog/",
+                                                        "source_pages": 4}]
