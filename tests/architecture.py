@@ -48,6 +48,7 @@ MODULES: tuple[tuple[str, str], ...] = (
     ("aaa2/functions/graph_queries.py", "graph"),
     ("aaa2/functions/findings.py", "findings"),
     ("aaa2/functions/headings.py", "findings"),
+    ("aaa2/functions/placeholders.py", "findings"),
     ("aaa2/functions/structure.py", "graph"),
     ("aaa2/functions/titles.py", "findings"),
     ("aaa2/functions/__init__.py", "graph"),

@@ -171,6 +171,17 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   kitilt. Egy megállapítás a keresőbotokra (Googlebot, Bingbot; high) és egy az AI-botokra
   (GPTBot, ClaudeBot, PerplexityBot, Google-Extended; low, semleges szöveggel: üzleti döntés
   lehet). A listán kívüli botok teljes tiltása nem megállapítás, tény a site-áttekintőben.
+- `template_placeholder`: lehetséges hiányosság, kitöltetlen sablon-tartalom
+  (`functions/placeholders.py`: szögletes zárójeles helykitöltő, lorem ipsum, alapértelmezett
+  CMS-tartalom, a szöveg helyét jelölő kifejezés; a látható szövegben területenként a
+  kódblokkok nélkül, a title-ben, a meta descriptionben, a H1-ben, az img alt-ban, a linkek
+  címében és horgonyában, és az URL-útvonalban). Egy megállapítás mintánként; a bizonyítékban
+  az érintett oldalak, oldalanként a találatok (mező, terület, legfeljebb 120 karakteres
+  részlet). Súlyosság: medium, ha van olyan indexelhető oldal (nem noindex, a canonicalja
+  saját), ahol a találat a fő tartalomban (látható szöveg, link címe vagy horgonya), a
+  title-ben, a H1-ben vagy az URL-ben áll; különben low (csak alt-ban, meta descriptionben,
+  menüben, láblécben, oldalsávban, vagy nem indexelhető oldalon). A szöveg tényt mond a
+  részlettel és a helyével; nem állítja, hogy hiba.
 - A heading-fa szerkezeti megállapításai (`headings.structure_findings`): `missing_h1`,
   `h1_outside_content`, `multiple_h1`, `empty_section`, `skipped_level`, `missing_h2`; a
   szabályaik a `functions/headings.py` leírásában.
@@ -242,7 +253,7 @@ from aaa2.entities import queries as extract_queries
 from aaa2.entities import store
 from aaa2.entities.gate import occurs
 from aaa2.entities.rules import alias_key
-from aaa2.functions import graph_queries, titles
+from aaa2.functions import graph_queries, placeholders, titles
 from aaa2.functions import headings as heading_tree
 from aaa2.functions import structure as site_structure
 from aaa2.functions.graph import _walk, evidence_text, url_has_word
@@ -258,7 +269,7 @@ TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
          "title_without_main_entity", "article_markup_on_other_pages",
          "breadcrumb_foreign_home", "menu_home_target", "menu_broken_target",
          "orphan_pages", "breadcrumb_ignores_menu", "link_not_final_url",
-         "robots_blocked_link", "robots_bot_blocked")
+         "robots_blocked_link", "robots_bot_blocked", "template_placeholder")
 TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "cannibalization": "Lehetséges kannibalizáció",
                "shared_topic": "Közös téma", "missing_page": "Hiányzó oldal",
@@ -278,6 +289,7 @@ TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "link_not_final_url": "Belső link nem a végleges címre mutat",
                "robots_blocked_link": "Belső link a robots.txt által tiltott címre mutat",
                "robots_bot_blocked": "A robots.txt kitilt egy botot",
+               "template_placeholder": "Lehetséges hiányosság: kitöltetlen sablon-tartalom",
                "canonical_issue": "Hibás canonical", "legal_page": "Jogi oldal",
                "soft_404": "Nem található oldal 200-as státusszal"}
 # többes szám jele a kulcsban (ékezet nélkül): a kategória neve és a H1 / title összevetéséhez
@@ -369,6 +381,13 @@ ROBOTS_OWN_BOT = "saját bejáró (*)"
 ROBOTS_AI_NOTE = "üzleti döntés lehet"
 ROBOTS_WHOLE_SITE = "az egész site"
 ROBOTS_CONTRADICTION_AREAS = ("nav", "footer")
+# kitöltetlen sablon-tartalom: ezekben a fej-mezőkben, illetve a fő tartalom ezen mezőiben álló
+# találat közepes (indexelhető oldalon)
+PLACEHOLDER_HEAD_FIELDS = ("title", "h1", "url")
+PLACEHOLDER_BODY_FIELDS = ("text", "href", "anchor")
+PLACEHOLDER_AREAS = {"nav": "menü", "body": "fő tartalom", "footer": "lábléc",
+                     "aside": "oldalsáv"}
+PLACEHOLDER_PAGE_HITS = 10              # oldalanként ennyi találat áll a bizonyítékban
 LINK_FORM_MANY_PAGES = 10               # ennyi forrásoldaltól közepes a linkforma-megállapítás
 LINK_AREAS = {"nav": "menü", "body": "tartalom", "footer": "lábléc", "aside": "oldalsáv"}
 LINK_REDIRECT = "átirányítás"
@@ -443,7 +462,7 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
             *_article_markup(site), *_breadcrumb_home(site), *_menu_home(site)]
     menu_targets = _menu_targets(site)
     rows += [*menu_targets, *_orphans(site), *_breadcrumb_menu(site),
-             *_link_forms(site, menu_targets), *_robots(site)]
+             *_link_forms(site, menu_targets), *_robots(site), *_placeholders(site)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -1740,6 +1759,54 @@ def _link_forms(site: _Site, menu_targets: Sequence[tuple] = ()) -> list[tuple]:
     return rows
 
 
+def _placeholders(site: _Site) -> list[tuple]:
+    """A `template_placeholder` megállapítások (lásd a modul leírását): mintánként egy."""
+    texts = crawl.page_texts(site.con)
+    stored = {page.page_id: page for page in crawl.pages(site.con)}
+    declared = {meta.page_id: meta.canonical for meta in crawl.page_metas(site.con)}
+    groups: dict[str, list[dict]] = defaultdict(list)
+    for page in sorted(site.pages.values(), key=lambda item: item["url"]):
+        page_id = page["page_id"]
+        row = stored.get(page_id)
+        hits = placeholders.page_hits(
+            page["url"], page["title"], row.meta_description if row is not None else None,
+            page["h1"], texts.get(page_id))
+        if not hits:
+            continue
+        canonical = declared.get(page_id)
+        own = not canonical or canonical_key(canonical) == canonical_key(page["url"])
+        indexable = not page["noindex"] and own
+        for pattern in placeholders.PATTERNS:
+            found = [hit for hit in hits if hit["pattern"] == pattern]
+            if not found:
+                continue
+            prominent = any(
+                hit["field"] in PLACEHOLDER_HEAD_FIELDS
+                or (hit["field"] in PLACEHOLDER_BODY_FIELDS and hit["area"] == CONTENT_LINK)
+                for hit in found)
+            groups[pattern].append({
+                "url": page["url"], "indexable": indexable,
+                "severity": "medium" if indexable and prominent else "low",
+                "hit_count": len(found),
+                "hits": [{"field": placeholders.FIELD_LABELS[hit["field"]],
+                          "area": PLACEHOLDER_AREAS.get(hit["area"], hit["area"]),
+                          "snippet": hit["snippet"]} for hit in found[:PLACEHOLDER_PAGE_HITS]]})
+    rows = []
+    for pattern, pages in groups.items():
+        label = placeholders.PATTERNS[pattern]
+        severity = min((item["severity"] for item in pages), key=SEVERITY_ORDER.get)
+        first = next(item for item in pages if item["severity"] == severity)
+        hit = first["hits"][0]
+        place = hit["field"] + (f", {hit['area']}" if hit["area"] else "")
+        rows.append((
+            "template_placeholder", severity, None, None,
+            (f"Lehetséges hiányosság: kitöltetlen sablon-tartalom ({label}) {len(pages)} "
+             f"oldalon; pl. {first['url']} – {place}: „{hit['snippet']}”"),
+            {"group": "template_placeholder", "pattern": pattern, "pattern_label": label,
+             "pages": pages}))
+    return rows
+
+
 def robots_intended(url: str) -> str | None:
     """A szándékos robots-tiltás fajtája a cím alapján, vagy None. Az útvonalban szakaszra
     illeszt: a szakasz (kiterjesztés nélkül) maga a kulcs, vagy kötőjellel / aláhúzással tagolt
@@ -2775,6 +2842,17 @@ def _finding_html(finding: dict) -> str:
                  (f"forrásoldalak ({evidence['source_pages']})", "<br>".join(
                      f"{_link(page['url'])} — {_e(', '.join(page['areas']))}: "
                      f"„{_e('”, „'.join(page['anchors']))}”" for page in evidence["pages"]))]
+    elif finding["type"] == "template_placeholder":
+        pairs = [("minta", _e(evidence["pattern_label"])),
+                 ("oldalak", "<br>".join(
+                     f"{_link(page['url'])} <span class=\"{page['severity']}\">"
+                     f"[{page['severity']}]</span> — indexelhető: "
+                     f"{'igen' if page['indexable'] else 'nem'}; {page['hit_count']} találat"
+                     + "".join(
+                         f"<br>&nbsp;&nbsp;{_e(hit['field'])}"
+                         + (f" ({_e(hit['area'])})" if hit["area"] else "")
+                         + f": „{_e(hit['snippet'])}”" for hit in page["hits"])
+                     for page in evidence["pages"]))]
     elif finding["type"] == "robots_blocked_link":
         pairs = [("szabály", _e(evidence["rule"])), ("mit jelent", _e(evidence["note"])),
                  ("címek", "<br>".join(

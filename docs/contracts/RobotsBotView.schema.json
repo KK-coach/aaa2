@@ -36,7 +36,7 @@
       "type": "array"
     },
     "schema_version": {
-      "default": "1.20",
+      "default": "1.21",
       "title": "Schema Version",
       "type": "string"
     }
@@ -47,5 +47,5 @@
   "title": "RobotsBotView",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.20"
+  "x-schema-version": "1.21"
 }

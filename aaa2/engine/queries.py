@@ -32,6 +32,8 @@ from aaa2.contracts import (
 from aaa2.engine.frontier import ROBOTS_BLOCKED, Robots
 from aaa2.engine.menu import MenuEntry, visible_breadcrumb
 from aaa2.engine.menu import menu_entries as page_menu_entries
+from aaa2.engine.textfields import PageTexts
+from aaa2.engine.textfields import page_texts as dom_page_texts
 
 # Az aktuális audit oldalkészlete: amit a legutóbbi crawl látott (feldolgozott, vagy a változatlan
 # tartalom miatt kihagyott; a folytatás ugyanaz a crawl). A jelölés nélküli sor (nem crawlból
@@ -113,6 +115,20 @@ def menu_entries(con: duckdb.DuckDBPyConnection) -> dict[int, list[MenuEntry]]:
             "rendered_html IS NOT NULL ORDER BY page_id").fetchall():
         html = decompressor.decompress(blob).decode("utf-8", "replace")
         found[page_id] = page_menu_entries(html, final_url or url, homes)
+    return found
+
+
+def page_texts(con: duckdb.DuckDBPyConnection) -> dict[int, PageTexts]:
+    """Oldalanként a szövegmezők a tárolt renderelt DOM-ból (`engine.textfields`: a látható
+    szöveg területenként a kódblokkok nélkül, a képek alt-ja, a linkek címe és horgonya). Az
+    aktuális készlet oldalai, amelyeknek van tárolt DOM-ja."""
+    found: dict[int, PageTexts] = {}
+    decompressor = zstandard.ZstdDecompressor()
+    for page_id, url, final_url, blob in con.execute(
+            f"SELECT page_id, url, final_url, rendered_html FROM pages WHERE {CURRENT} AND "
+            "rendered_html IS NOT NULL ORDER BY page_id").fetchall():
+        found[page_id] = dom_page_texts(
+            decompressor.decompress(blob).decode("utf-8", "replace"), final_url or url)
     return found
 
 
