@@ -17,7 +17,7 @@
   "duex-view-site.csv": "fce7728f8a8e135faeaa8268f910132290a6a02e65303cda58f4c1fede7e01d4",
   "duex-view-sitemap.csv": "83d80e18473257dbb3636bad6e5fb7bbfc6150617cee10aeaeda490fdfdf9ae2",
   "duex-view-structured-data.csv": "da85c54c155cbafbc57a8e6e063adc10da22994f7f785b006bb42d6cb903a297",
-  "duex-views.html": "c1100f5c9ff0e7c6496c5b0906b8cb564ade79a14cc87a9647fb2c00042252ea",
+  "duex-views.html": "49dd6a2c6b483f1ff8becab4bab8499751ea046d719a2049f54249619bc26ca0",
   "duex-weights.csv": "41e7811c1685e8124a91484a6d21bf3b7235210a90f5ce8436cd670fc30c680c"
  },
  "kk-coach": {
@@ -38,7 +38,7 @@
   "kk-coach-view-site.csv": "3d5a3ecedc4d2fa0b7fe9bd696668d711d6d4614f48f61059c1b405c1a76ccb9",
   "kk-coach-view-sitemap.csv": "15c6697cc4c0ffd56cce4105f4c31f323f5e1dbacb96001e1f03c972ffbe8894",
   "kk-coach-view-structured-data.csv": "2fd3cce62d63d16a2f353e522791ad412134c4a7481896a24fab3bbd20a4930e",
-  "kk-coach-views.html": "8c51bc189c1ef4670313ec7b2ae245e1ad56b8980667c3f0f1220d7942ef1316",
+  "kk-coach-views.html": "17997dc66d4f7693067eee28a73d7b58fd92483c70db04db561a5145f7a9b575",
   "kk-coach-weights.csv": "ef8541bb5e1bc143a6ac63bc13d0863c7213b0a4718638f7cfc2325f5c8196ba"
  },
  "kk-coach-2026-10": {
@@ -59,7 +59,7 @@
   "kk-coach-2026-10-view-site.csv": "03a77af6720d1b81868e679d606dd56a4d898614ba6195edd38892c36ecab514",
   "kk-coach-2026-10-view-sitemap.csv": "45f69c0231e8554e5da8d4045016c6c3146c8e8cf45bf62b13da197da0f0d11f",
   "kk-coach-2026-10-view-structured-data.csv": "a506158b610658cfb0ec47ceeee2bec5ac07209bbad59c2e655726e1deb65b85",
-  "kk-coach-2026-10-views.html": "785f5ef3a6acad9d034a77d933c4c476c0eba39eb176b4c26f14867b172d8654",
+  "kk-coach-2026-10-views.html": "80945878ffe27fa97b4c9f779c02db24e77b11d431786dcadeabd6f66f1d542d",
   "kk-coach-2026-10-weights.csv": "ca47b8c4846a8ccbedd99057b2e0c397d11ce87e78f1574af3ea0b7a607e448e"
  },
  "marketinglens": {
@@ -80,7 +80,7 @@
   "marketinglens-view-site.csv": "9bd4ee3904e72894c6ab66f765c0e8d981e0989755722abb163610c7932b95bd",
   "marketinglens-view-sitemap.csv": "34f8fa4676e97199cb312004474509424f37a7100e477879299235ddb7ce5192",
   "marketinglens-view-structured-data.csv": "bce703edf8d8ce75805b7d91b656d3994a5aa2fc6ebc9367b2ee3a0fd243d5e7",
-  "marketinglens-views.html": "0f47d69962c17e60598c905b713f0aeb8b85c9f1f1bd075dbe676f9d52466943",
+  "marketinglens-views.html": "8358e225625f983fe01907e4f66808fdddd8071480bd84850f148f558a0b561c",
   "marketinglens-weights.csv": "44d198efae94e368d9c76bc66bb236acec5a45e99b674bbb288a4f681c519c5f"
  },
  "materia": {
@@ -101,7 +101,7 @@
   "materia-view-site.csv": "5bb3a802552241f7b7a0bf8026b83974dd3791f057b8d0d0e3848ca5351426db",
   "materia-view-sitemap.csv": "1d3446746d2641e60f4a1f6045340c72d9535edd0af4563e98b2d90eac078780",
   "materia-view-structured-data.csv": "287c4323c7c7029ec1a649a093541e268fa4844025e680bf84787156b3e65abc",
-  "materia-views.html": "31c2a9a683ba0d3b37368a5989142d7c0f2a0a9f279b614ab96d3036fc08ab3d",
+  "materia-views.html": "d65bf4d2b04eb596380f952fc2449f66b102b444c73d6edfc719f86a3226f92e",
   "materia-weights.csv": "f6ff520311fc460ec1c8681ef916e11f15ce8a329dc8355bf5ce76b08ddce739"
  },
  "ngx-bootstrap": {
@@ -122,7 +122,7 @@
   "ngx-bootstrap-view-site.csv": "081af30181696455da62a85c984fc7dc659e3a22db69522064ade3a49f290cf9",
   "ngx-bootstrap-view-sitemap.csv": "f2e2c73333594891222aa8f35e15d3a5890c51d2122106d9d9fe42a5bab3058c",
   "ngx-bootstrap-view-structured-data.csv": "287c4323c7c7029ec1a649a093541e268fa4844025e680bf84787156b3e65abc",
-  "ngx-bootstrap-views.html": "6a031b26ec8ccb18738b2990020c62dd8e506de26a3499f9fa24a946f0898cb2",
+  "ngx-bootstrap-views.html": "d22250f0820dc7b0295e3372c8545d99f782a52eb0fe64960a61fdeac7f1fe47",
   "ngx-bootstrap-weights.csv": "adb0d2b6555478004e4e7fa78ec2ba8320acc2a601fe51e9db84005b3199dddb"
  }
 }
