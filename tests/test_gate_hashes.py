@@ -90,3 +90,51 @@ def test_gate_steps_run_the_suite_then_the_hash_on_every_set(tmp_path):
     assert "duexhungary.hu=mashol/duex.duckdb" in updating[1]
     with pytest.raises(SystemExit):
         gate.steps(tmp_path / "run", {"nincs-ilyen": "x.duckdb"}, False, None)
+
+
+def test_a_failed_suite_never_updates_the_baseline(tmp_path):
+    def hashing(update, suite_code):
+        return gate.steps(tmp_path / "run", {}, update, None, suite_code)[1][1]
+    assert "--write" in hashing(True, 0)
+    for code in (1, 2, -1):
+        failed = hashing(True, code)
+        assert "--write" not in failed
+        assert "--hashes" in failed and len([a for a in failed if "=" in a]) == 8   # a lépés fut
+    assert "--write" not in hashing(False, 0)
+
+
+def test_the_gate_writes_the_reason_when_the_suite_fails(tmp_path, monkeypatch):
+    calls = []
+
+    class Done:
+        def __init__(self, code, stdout=""):
+            self.returncode, self.stdout = code, stdout
+
+    def run(command, **kwargs):
+        if command[0] == "git":
+            return Done(0, "abc1234\n")
+        calls.append(command)
+        kwargs["stdout"].write("kimenet\n")
+        return Done(1 if "pytest" in command else 0)
+
+    monkeypatch.setattr(gate.subprocess, "run", run)
+    run_dir = tmp_path / "run"
+    monkeypatch.setattr(sys, "argv", ["gate", str(run_dir), "--update-hashes"])
+    with pytest.raises(SystemExit) as stopped:
+        gate.main()
+    assert stopped.value.code == 1
+    assert "pytest" in calls[0] and "--write" not in calls[1] and "--hashes" in calls[1]
+    done = (run_dir / "done.txt").read_text(encoding="utf-8").splitlines()
+    assert done[0].startswith("suite: kilépési kód 1") and done[1] == gate.NOT_UPDATED
+    assert done[2].startswith("hash: kilépési kód 0") and done[-1].endswith("ELTÉRÉS VAGY HIBA")
+
+    calls.clear()
+    monkeypatch.setattr(gate.subprocess, "run", lambda command, **kwargs: (
+        Done(0, "abc1234\n") if command[0] == "git"
+        else (calls.append(command), kwargs["stdout"].write("ok\n"), Done(0))[2]))
+    green = tmp_path / "green"
+    monkeypatch.setattr(sys, "argv", ["gate", str(green), "--update-hashes"])
+    with pytest.raises(SystemExit) as stopped:
+        gate.main()
+    assert stopped.value.code == 0 and "--write" in calls[1]
+    assert gate.NOT_UPDATED not in (green / "done.txt").read_text(encoding="utf-8")

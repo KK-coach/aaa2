@@ -17,8 +17,10 @@ eltérő fájlokkal (vagy „0 eltérés”).
 Kilépési kód: 0, ha a teljes sor zöld, és mind a nyolc készleten 0 az eltérés (a két futás között
 és a rögzített alaphoz képest); különben 1.
 
-`--update-hashes`: a rögzített alap a mostani kimenetekre cserélődik (csak ha a két futás között
-nincs eltérés). E kapcsoló nélkül a kapu az alapot nem írja."""
+`--update-hashes`: a rögzített alap a mostani kimenetekre cserélődik, de csak ha a teljes sor
+zöld, és a két futás között nincs eltérés. Bukott teljes sornál a hash-lépés lefut (a kimenete
+a hibakereséshez kell), de az alapot nem írja, és a `done.txt`-ben ez áll: „alap nem frissítve:
+a teljes sor nem zöld”. E kapcsoló nélkül a kapu az alapot nem írja."""
 from __future__ import annotations
 
 import subprocess
@@ -33,18 +35,20 @@ SITES = (("kk.coach", "kk-coach"), ("valor-software.com", "ngx-bootstrap"),
          ("materia-tm.com", "materia"), ("marketinglens.com", "marketinglens"),
          ("duexhungary.hu", "duex"), ("kk.coach", "kk-coach-2026-10"),
          ("serafimszappan.hu", "serafim"), ("napviragszappan.hu", "napvirag"))
+NOT_UPDATED = "alap nem frissítve: a teljes sor nem zöld"
 
 
-def steps(run_dir: Path, override: dict[str, str], update: bool, jobs: str | None
-          ) -> list[tuple[str, list[str]]]:
-    """A kapu lépései sorban: (név, parancs)."""
+def steps(run_dir: Path, override: dict[str, str], update: bool, jobs: str | None,
+          suite_code: int = 0) -> list[tuple[str, list[str]]]:
+    """A kapu lépései sorban: (név, parancs). `suite_code`: a teljes sor kilépési kódja; ha nem
+    0, a hash-lépés `update` mellett sem írja az alapot."""
     unknown = sorted(set(override) - {name for _, name in SITES})
     if unknown:
         raise SystemExit(f"ismeretlen készlet: {', '.join(unknown)}")
     sites = [f"{domain}={override.get(name, DATA / f'{name}.duckdb')}" for domain, name in SITES]
     hashing = [sys.executable, "-m", "tests.acceptance.determinism", "--hashes", str(HASHES),
                "--keep", str(run_dir / "keep")]
-    hashing += ["--write"] if update else []
+    hashing += ["--write"] if update and suite_code == 0 else []
     hashing += ["--jobs", jobs] if jobs else []
     return [("suite", [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-n",
                        "auto"]),
@@ -63,20 +67,27 @@ def main() -> None:
     run_dir = Path(folders[0])
     if run_dir.exists():
         raise SystemExit(f"a futásmappa már létezik, a kapu nem indul: {run_dir}")
-    planned = steps(run_dir, dict(a.split("=", 1) for a in plain if "=" in a), update, jobs)
+    override = dict(a.split("=", 1) for a in plain if "=" in a)
+    steps(run_dir, override, update, jobs)              # a készletnevek ellenőrzése indulás előtt
     run_dir.mkdir(parents=True)
     commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
                             check=False).stdout.strip()
     started_at = datetime.now().astimezone().isoformat(timespec="seconds")
     (run_dir / "run.txt").write_text(f"commit {commit}\nindult {started_at}\n", encoding="utf-8")
     failed = False
-    for name, command in planned:
+    suite_code = 0
+    for index in range(2):
+        name, command = steps(run_dir, override, update, jobs, suite_code)[index]
         started = time.monotonic()
         with open(run_dir / f"{name}.out", "w", encoding="utf-8") as out:
             code = subprocess.run(command, stdout=out, stderr=subprocess.STDOUT,
                                   check=False).returncode
         failed = failed or code != 0
         line = f"{name}: kilépési kód {code}, {time.monotonic() - started:.0f} mp"
+        if name == "suite":
+            suite_code = code
+            if update and code != 0:
+                line += f"\n{NOT_UPDATED}"
         with open(run_dir / "done.txt", "a", encoding="utf-8") as done:
             done.write(line + "\n")
         print(line, flush=True)
