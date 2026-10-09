@@ -80,7 +80,7 @@
       "title": "Parent Id"
     },
     "schema_version": {
-      "default": "1.19",
+      "default": "1.20",
       "title": "Schema Version",
       "type": "string"
     },
@@ -110,5 +110,5 @@
   "title": "MenuItem",
   "type": "object",
   "x-module": "graph",
-  "x-schema-version": "1.19"
+  "x-schema-version": "1.20"
 }

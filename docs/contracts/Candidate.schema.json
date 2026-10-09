@@ -91,7 +91,7 @@
       "type": "integer"
     },
     "schema_version": {
-      "default": "1.19",
+      "default": "1.20",
       "title": "Schema Version",
       "type": "string"
     },
@@ -162,5 +162,5 @@
   "title": "Candidate",
   "type": "object",
   "x-module": "extract",
-  "x-schema-version": "1.19"
+  "x-schema-version": "1.20"
 }
