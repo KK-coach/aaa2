@@ -26,7 +26,10 @@ def test_bracket_placeholders_are_upper_case_tokens():
                 if hit["pattern"] == "placeholder"]
     assert found("Írj nekünk: [IDE_JÖN_A_KAPCSOLAT_OLDAL_LINKJE_VAGY_EMAIL_LINK]")
     assert found("Welcome to [COMPANY NAME]") and found("Ár: [PLACEHOLDER]")
+    assert found("Írj ide: [IDE_JÖN_A_LINK]") and found("[COMPANY NAME 2] rólunk")
+    # a csak számjegyből álló tag nem szó
     for plain in ("Forrás [1] és [2]", "Állapot: [OK]", "[Lásd a táblázatot]", "[A] változat",
+                  "Hírek [UPDATED 2025]", "Nézd meg: [VIDEO 2]", "[2025 UPDATED]", "[10_20]",
                   "{{ nev }} és TODO: megírni"):
         assert found(plain) == [], plain
 
@@ -66,6 +69,18 @@ def test_cms_defaults_and_text_slots():
     assert patterns(hits) == [("cms_default", "title", None), ("text_slot", "description", None),
                               ("cms_default", "h1", None)]
     assert page_hits(f"{BASE}/", "Mintaoldalak gyűjteménye", None, "Szia, világ", None) == []
+
+
+def test_ide_jon_counts_only_as_a_slot():
+    def slots(text):
+        return [hit["pattern"] for hit in page_hits(f"{BASE}/", text, None, None, None)]
+    for slot in ("[Ide jön a leírás]", "Ide jön a szöveg", "(ide jön majd valami)",
+                 "Ide jön az ajánlat címe: ide jön a cím", "ide jön a logó", "Szöveg helye",
+                 "Your text here"):
+        assert slots(slot) == ["text_slot"], slot
+    for plain in ("Aki egyszer ide jön, visszatér.", "Ide jön a vendég minden nyáron",
+                  "Sokan azért jönnek ide, mert csend van", "Ide jön a címzett levele"):
+        assert slots(plain) == [], plain
 
 
 def test_page_texts_by_area_without_code_blocks():

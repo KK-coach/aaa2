@@ -6,7 +6,8 @@ meta description, a H1, a képek `alt`-ja, a linkek címe és horgonya, és az U
 Minták (`PATTERNS`):
 
 - `placeholder`: szögletes zárójeles helykitöltő – nagybetűs, több szavas vagy aláhúzásos token
-  (`[IDE_JÖN_A_LINK]`, `[COMPANY NAME]`), vagy `[PLACEHOLDER]`;
+  (`[IDE_JÖN_A_LINK]`, `[COMPANY NAME]`), vagy `[PLACEHOLDER]`. A csak számjegyből álló tag nem
+  szó: az `[UPDATED 2025]` és a `[VIDEO 2]` egyszavas, nem helykitöltő;
 - `lorem_ipsum`: latin töltőszöveg. Folyó szövegben `LOREM_WINDOW` egymást követő szóból
   legalább `LOREM_MIN_WORDS` erős töltőszó, köztük legalább `LOREM_MIN_DISTINCT` különböző.
   Rövid mezőben (title, H1, meta description, alt, horgony) és az URL egy szakaszában
@@ -16,7 +17,9 @@ Minták (`PATTERNS`):
   elég;
 - `cms_default`: alapértelmezett CMS-tartalom („Hello world!”, „Sample Page”, „Mintaoldal”,
   „Just another WordPress site”);
-- `text_slot`: a szöveg helyét jelölő kifejezés („ide jön”, „szöveg helye”, „your text here”).
+- `text_slot`: a szöveg helyét jelölő kifejezés („szöveg helye”, „your text here”, és az „ide
+  jön”, ha szögletes vagy kerek zárójelben áll, vagy ha „ide jön a/az” után szöveg, link, kép,
+  leírás, cím, logó vagy tartalom következik; a mondatbeli „aki ide jön” nem az).
 
 A `{{…}}` sablon-szintaxis és a TODO-jellegű jelölés nem minta: a mért készleteken csak
 kódpéldában fordult elő."""
@@ -34,12 +37,17 @@ PATTERNS = {"placeholder": "helykitöltő szögletes zárójelben", "lorem_ipsum
             "text_slot": "a szöveg helyét jelölő kifejezés"}
 _REGEX = {
     "placeholder": re.compile(
-        rf"\[(?:[{_UPPER}][{_UPPER}0-9]*(?:[_ ][{_UPPER}0-9]+)+|PLACEHOLDER)\]"),
+        rf"\[(?:[{_UPPER}0-9]+(?:[_ ][{_UPPER}0-9]+)+|PLACEHOLDER)\]"),
     "cms_default": re.compile(
         r"hello world\s*!|\bsample page\b|\bmintaoldal\b|just another wordpress site",
         re.IGNORECASE),
-    "text_slot": re.compile(r"\bide jön\b|\bszöveg helye\b|\byour text here\b", re.IGNORECASE),
+    "text_slot": re.compile(
+        r"[\[(][^\[\]()]*\bide jön\b[^\[\]()]*[\])]"
+        r"|\bide jön az? (?:szöveg|link|kép|leírás|cím|logó|tartalom)\b"
+        r"|\bszöveg helye\b|\byour text here\b", re.IGNORECASE),
 }
+_LETTER = re.compile(rf"[{_UPPER}]")
+PLACEHOLDER_MIN_WORDS = 2               # ennyi betűt tartalmazó tag kell a szögletes zárójelben
 # erős töltőszavak: a lorem ipsum jellegzetes latin szavai
 STRONG = frozenset([
     "lorem", "ipsum", "dolor", "amet", "consectetur", "adipiscing", "adipisicing", "eiusmod",
@@ -99,11 +107,21 @@ def _lorem_in_path(path: str) -> str | None:
     return None
 
 
+def _placeholder_token(token: str) -> bool:
+    """Helykitöltő-e a szögletes zárójeles token: `[PLACEHOLDER]`, vagy legalább
+    `PLACEHOLDER_MIN_WORDS` betűt tartalmazó tagja van (a csak számjegyből álló tag nem szó)."""
+    inner = token[1:-1]
+    words = [part for part in re.split(r"[_ ]", inner) if _LETTER.search(part)]
+    return inner == "PLACEHOLDER" or len(words) >= PLACEHOLDER_MIN_WORDS
+
+
 def _regex_hits(text: str, kinds: Iterable[str] = ("placeholder", "cms_default", "text_slot")
                 ) -> list[tuple[str, str]]:
     found = []
     for kind in kinds:
         for match in _REGEX[kind].finditer(text):
+            if kind == "placeholder" and not _placeholder_token(match.group(0)):
+                continue
             start, end = max(0, match.start() - _CONTEXT), match.end() + _CONTEXT
             found.append((kind, _snippet(text[start:end])))
     return found
