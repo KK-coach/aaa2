@@ -7,7 +7,7 @@ from aaa2.engine.menu import menu_entries, visible_breadcrumb
 from aaa2.entities.rules import run_rules
 from aaa2.functions.findings import build_findings, export_views, site_views, stored_findings
 from aaa2.functions.graph import build_graph
-from aaa2.functions.structure import menu_differences, menu_items
+from aaa2.functions.structure import menu_differences, menu_items, name_key
 from aaa2.resolver.site import run_site
 from tests.test_entities_rules import html, ld, site
 from tests.test_entities_site import NOON
@@ -103,7 +103,7 @@ CRUMB_NAMES = {"szolg": "Szolgáltatások", "seo": "SEO", "meres": "Mérés", "b
                "cikk": "Cikk", "adat": "Adatvédelem", "landing": "Landing", "arva": "Árva"}
 
 
-def structure_page(path):
+def structure_page(path, flat_crumbs=False):
     lang = "hu" if path.startswith("/hu/") else "en"
     prefix = "/hu" if lang == "hu" else ""
     home = f"{prefix}/"
@@ -120,6 +120,8 @@ def structure_page(path):
     parts = [part for part in path.removeprefix(prefix).split("/") if part]
     trail = [{"@type": "ListItem", "position": 1, "name": "Home", "item": f"{BASE}/"}]
     for index, part in enumerate(parts, start=1):
+        if flat_crumbs and index < len(parts):
+            continue
         trail.append({"@type": "ListItem", "position": index + 1, "name": CRUMB_NAMES[part],
                       "item": f"{BASE}{prefix}/{'/'.join(parts[:index])}/"})
     head = ld({"@type": "BreadcrumbList", "itemListElement": trail}) if parts else ""
@@ -208,8 +210,9 @@ def test_page_depths_levels_and_parents_in_the_page_view(tmp_path):
     # az egyszakaszos oldalnál az URL nem mond szülőt
     assert services.menu_parent == "(felső szint)" and services.url_parent is None
     assert services.url_parent_applicable is False and seo.url_parent_applicable is True
-    assert services.breadcrumb_parent == f"{BASE}/"                 # a másik nyelv kezdőoldala
-    assert services.parents_agree is False
+    # a morzsa a másik nyelv kezdőoldalára mutat: ez nem szülő-eltérés (külön megállapítás)
+    assert services.breadcrumb_parent == f"{BASE}/"
+    assert services.parents_agree is True
     assert pages["/hu/"].parents_agree is None
     # site-szint: menüfa a mélységgel, eloszlás nyelvenként, elérhetetlen oldalak
     structure = views.structure
@@ -228,7 +231,7 @@ def test_page_depths_levels_and_parents_in_the_page_view(tmp_path):
     assert rows["/hu/arva/"]["elérhetetlen a kezdőoldalról"] == "igen"
     assert rows["/hu/arva/"]["mélység (minden link)"] == ""
     assert rows["/hu/szolg/seo/"]["szülő (URL)"] == f"{BASE}/hu/szolg/"
-    assert rows["/hu/szolg/"]["a szülők egyeznek"] == "nem"
+    assert rows["/hu/szolg/"]["a szülők egyeznek"] == "igen"
     assert rows["/hu/szolg/"]["szülő (URL)"] == "nem értelmezhető"
     with paths["menu"].open(encoding="utf-8-sig", newline="") as handle:
         menu = list(csv.DictReader(handle))
@@ -280,3 +283,143 @@ def test_the_two_structure_findings():
     # a magyar menü „Főoldal” pontja a magyar kezdőoldalra mutat: nincs megállapítás
     assert sum(1 for finding in stored_findings(con)
                if finding.type == "menu_home_target") == 1
+
+
+def built(pages, languages=("hu",), homes=None):
+    con = site(pages, languages=languages)
+    if homes:
+        con.execute("UPDATE site SET home_urls = ?", [homes])
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    build_graph(con)
+    build_findings(con)
+    return con
+
+
+def test_a_linkless_menu_label_agrees_with_the_same_named_breadcrumb_parent():
+    assert name_key("Termékek!") == name_key("  termekek ") == "termekek"
+
+    def page(path, name, crumbs):
+        header = ('<header><a class="logo" href="/">Pelda</a><ul><li><a href="#">Termékek</a>'
+                  '<ul><li><a href="/t/egy/">Egy</a></li><li><a href="/t/ketto/">Kettő</a></li>'
+                  "</ul></li></ul></header>")
+        trail = [{"@type": "ListItem", "position": n, "name": label, "item": f"{BASE}{url}"}
+                 for n, (label, url) in enumerate(crumbs, start=1)]
+        return html(f"{name} · Pelda", f"{header}<main><h1>{name}</h1><p>Szöveg.</p></main>",
+                    head=ld({"@type": "BreadcrumbList", "itemListElement": trail}) if trail
+                    else "")
+
+    con = built({
+        "/": page("/", "Pelda", []),
+        "/termekek/": page("/termekek/", "Termékek", [("Főoldal", "/"), ("Termékek", "/termekek/")]),
+        # a morzsa-szülő a címkével azonos nevű oldal, ugyanazon a szinten: egyezik
+        "/t/egy/": page("/t/egy/", "Egy", [("Főoldal", "/"), ("TERMÉKEK", "/termekek/"),
+                                           ("Egy", "/t/egy/")]),
+        # más nevű morzsa-szülő: eltér
+        "/t/ketto/": page("/t/ketto/", "Kettő", [("Főoldal", "/"), ("Akciók", "/termekek/"),
+                                                 ("Kettő", "/t/ketto/")])})
+    pages = {p.url.removeprefix(BASE): p for p in site_views(con, "pelda").pages}
+    assert pages["/t/egy/"].menu_parent == "(címke: Termékek)"
+    assert pages["/t/egy/"].parents_agree is True
+    assert pages["/t/ketto/"].parents_agree is False
+
+
+def structure_findings(con, kind):
+    return [finding for finding in stored_findings(con) if finding.type == kind]
+
+
+def test_orphan_pages_in_two_groups_with_severity_by_role():
+    ring = {path: html(f"{name} · Pelda", f'<main><h1>{name}</h1><p>Szöveg. <a href="{other}">'
+                       f"Tovább</a></p></main>", lang="hu")
+            for path, name, other in (("/hu/kor-a/", "Kör A", "/hu/kor-b/"),
+                                      ("/hu/kor-b/", "Kör B", "/hu/kor-a/"))}
+    con = site({**{path: structure_page(path) for path in sorted({*PAIRS, *PAIRS.values()})},
+                **ring}, languages=("en", "hu"))
+    con.execute("UPDATE site SET home_urls = ?", [[f"{BASE}/", f"{BASE}/hu/"]])
+    con.execute("INSERT INTO sitemap_files (snapshot, ordinal, url, source, found, urls, "
+                "fetched_at) VALUES ('crawl', 0, ?, 'robots', true, 1, ?)",
+                [f"{BASE}/sitemap.xml", NOON])
+    con.execute("INSERT INTO sitemap_urls (snapshot, ordinal, raw_url, url, lastmod, "
+                "sitemap_file, source, fetched_at) VALUES ('crawl', 0, ?, ?, '2026-09-01', ?, "
+                "'robots', ?)", [f"{BASE}/hu/arva/", f"{BASE}/hu/arva/", f"{BASE}/sitemap.xml",
+                                 NOON])
+    run_rules(con)
+    run_site(con, clock=lambda: NOON)
+    build_graph(con)
+    build_findings(con)
+    found = {finding.evidence["group"]: finding for finding in
+             structure_findings(con, "orphan_pages")}
+    assert set(found) == {"sitemap_only", "linked_only_by_orphans"}
+    alone = found["sitemap_only"]
+    assert alone.severity == "low" and "a sitemapben szerepelnek" in alone.summary
+    assert [(page["url"].removeprefix(BASE), page["indexable"]) for page in
+            alone.evidence["pages"]] == [("/hu/arva/", True)]
+    assert set(alone.evidence["pages"][0]) == {"url", "role", "hub", "main_entity", "indexable",
+                                               "noindex", "canonical", "word_count"}
+    assert "crawl" not in alone.evidence                    # nincs részleges bejárás
+    ring_found = found["linked_only_by_orphans"]
+    assert [page["url"].removeprefix(BASE) for page in ring_found.evidence["pages"]] == [
+        "/hu/kor-a/", "/hu/kor-b/"]
+    assert ring_found.evidence["pages"][0]["linked_from"] == [f"{BASE}/hu/kor-b/"]
+    # termék-szerepű árva oldallal közepes; sitemap-módú bejárásnál részlegesként jelölt
+    con.execute("UPDATE page_nodes SET role = 'product' WHERE url = ?", [f"{BASE}/hu/arva/"])
+    con.execute("INSERT INTO crawl_runs (started_at, pages_done, notes, mode) VALUES "
+                "(?, 18, 'teszt', 'sitemap')", [NOON])
+    build_findings(con)
+    alone = next(finding for finding in structure_findings(con, "orphan_pages")
+                 if finding.evidence["group"] == "sitemap_only")
+    assert alone.severity == "medium"
+    assert alone.evidence["crawl"] == "partial" and "részleges bejárás" in alone.summary
+
+
+def test_menu_items_pointing_at_broken_pages():
+    con = structure_site()
+    assert structure_findings(con, "menu_broken_target") == []
+    con.execute("UPDATE pages SET noindex = true WHERE url = ?", [f"{BASE}/adat/"])
+    con.execute("UPDATE pages SET status = 404 WHERE url = ?", [f"{BASE}/blog/"])
+    con.execute("UPDATE pages SET final_url = ? WHERE url = ?",
+                [f"{BASE}/szolg/", f"{BASE}/landing/"])
+    # a csak lekérdezésben eltérő végső cím nem átirányítás
+    con.execute("UPDATE pages SET final_url = ? WHERE url = ?",
+                [f"{BASE}/szolg/seo/?infinite_page=2", f"{BASE}/szolg/seo/"])
+    build_findings(con)
+    found = {finding.evidence["url"].removeprefix(BASE): finding
+             for finding in structure_findings(con, "menu_broken_target")}
+    # a noindex cél nem megállapítás
+    assert {url: finding.evidence["problem"] for url, finding in found.items()} == {
+        "/blog/": "error_status", "/landing/": "redirect"}
+    assert all(finding.severity == "medium" for finding in found.values())
+    assert found["/blog/"].evidence["menu_items"] == [
+        {"anchor": "Blog", "area": "fejléc", "lang": "en", "pages": 8, "area_pages": 8}]
+    assert found["/blog/"].evidence["problem_label"] == "hibás státusz: 404"
+    assert found["/landing/"].evidence["final_url"] == f"{BASE}/szolg/"
+    assert "„Home” (fejléc)" in found["/landing/"].summary
+
+
+def test_the_breadcrumb_that_ignores_the_menu_hierarchy():
+    assert structure_findings(structure_site(), "breadcrumb_ignores_menu") == []
+    con = built({path: structure_page(path, flat_crumbs=True)
+                 for path in sorted({*PAIRS, *PAIRS.values()})}, languages=("en", "hu"),
+                homes=[f"{BASE}/", f"{BASE}/hu/"])
+    (finding,) = structure_findings(con, "breadcrumb_ignores_menu")
+    assert finding.severity == "low" and finding.page_id is None
+    assert (finding.evidence["submenu_pages"], finding.evidence["flat"]) == (4, 4)
+    first = finding.evidence["pages"][0]
+    assert first["url"] == f"{BASE}/hu/szolg/meres/" and first["menu_parent"] == "Szolgáltatások"
+    assert [part["name"] for part in first["breadcrumb"]] == ["Home", "Mérés"]
+
+
+def test_a_noindex_menu_target_is_a_fact_in_the_menu_view(tmp_path):
+    con = structure_site()
+    con.execute("UPDATE pages SET noindex = true WHERE url = ?", [f"{BASE}/adat/"])
+    build_findings(con)
+    assert structure_findings(con, "menu_broken_target") == []
+    menu = {(row.lang, row.area, row.url): row for row in site_views(con, "pelda").structure.menu}
+    assert menu[("en", "footer", f"{BASE}/adat/")].target_noindex is True
+    assert menu[("en", "header", f"{BASE}/blog/")].target_noindex is False
+    paths = export_views(con, tmp_path, "pelda")
+    with paths["menu"].open(encoding="utf-8-sig", newline="") as handle:
+        rows = {(row["nyelv"], row["terület"], row["URL"]): row for row in csv.DictReader(handle)}
+    assert rows[("en", "lábléc", f"{BASE}/adat/")]["a cél noindex"] == "igen"
+    assert rows[("en", "fejléc", f"{BASE}/blog/")]["a cél noindex"] == "nem"
+    assert "a cél noindex" in paths["html"].read_text(encoding="utf-8")

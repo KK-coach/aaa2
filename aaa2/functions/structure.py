@@ -49,8 +49,15 @@ egyszakaszos oldalainál (a webshop gyökér alatti termékei) az URL nem mond s
 
 A szülők összevetése (`parents_agree`): a menüfa, a morzsa és (hierarchikus site-on) az URL
 szerinti szülő közül azok, amelyek az oldalra megvannak; ha legalább kettő van, egyeznek vagy
-nem. A felső szintű menüpont menü-szülője a nyelv kezdőoldala; a link nélküli szülő-címke
-önálló szülő (oldallal nem egyezik)."""
+nem. A felső szintű menüpont menü-szülője a nyelv kezdőoldala. A link nélküli szülő-címke
+önálló szülő; egyezik viszont a morzsa-szülővel, ha annak a neve a címkéé (kis- és nagybetű,
+ékezet és írásjel nélkül összevetve), és a morzsában ugyanazon a szinten áll, mint a címke a
+menüben (a morzsa kezdőoldal-eleme nem számít szintnek). A más nyelv kezdőoldalára mutató
+morzsa-szülő az összevetésben az oldal saját nyelvű kezdőoldalának számít (ez a hiba a
+`breadcrumb_foreign_home` megállapításé, nem szülő-eltérés).
+
+`inbound`: oldalanként a rá belső linkkel mutató többi oldal (minden link; a
+canonical-duplikátum az eredetire számít)."""
 from __future__ import annotations
 
 import re
@@ -64,6 +71,7 @@ import duckdb
 from aaa2.contracts import MenuDifference, MenuItem
 from aaa2.engine import queries as crawl
 from aaa2.engine.menu import AREAS, label_key, url_key
+from aaa2.entities.rules import alias_key
 from aaa2.functions import graph_queries
 from aaa2.resolver.pages import canonical_key
 
@@ -77,6 +85,12 @@ DEPTH_BUCKETS = ("0", "1", "2", "3", "4+", "elérhetetlen")
 AREA_LABELS = {"header": "fejléc", "footer": "lábléc", "sidebar": "oldalsáv"}
 TOP_LEVEL = "(felső szint)"
 _LANGUAGE_SEGMENT = re.compile(r"^[a-z]{2,3}(?:-[a-z0-9]{2,4})?$", re.IGNORECASE)
+_NOT_NAME = re.compile(r"[^0-9a-z]+")
+
+
+def name_key(text: str) -> str:
+    """A név az összevetéshez: kisbetűvel, ékezet, írásjel és szóköz nélkül."""
+    return _NOT_NAME.sub("", alias_key(text or ""))
 
 
 @dataclass
@@ -278,6 +292,7 @@ class SiteStructure:
     url_hierarchy: dict
     crumbs: dict[int, tuple[str, list[tuple[str | None, str]]]]
     menu: list[MenuItem]
+    inbound: dict[int, set[int]] = field(default_factory=dict)
 
     def distribution(self) -> list[dict]:
         """Nyelvenként a kattintási mélység eloszlása (minden link): a nyelv, a kiindulás
@@ -403,7 +418,7 @@ def page_structure(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping]
         is_home = page_id in home_set
         parents: dict[str, object] = {}
         item = tree[(lang, "header")].get(page_id)
-        menu_parent = None
+        menu_parent = label = None
         if item is not None:
             above = by_id.get(item.parent_id) if item.parent_id is not None else None
             if above is None:
@@ -413,6 +428,7 @@ def page_structure(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping]
             elif above.url is None:
                 menu_parent = label_key(above.anchor)
                 parents["menu"] = menu_parent
+                label = above
             else:
                 menu_parent = above.url
                 parents["menu"] = above.page_id if above.page_id is not None \
@@ -431,7 +447,14 @@ def page_structure(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping]
                     parents["crumb"] = crumb_parent
                 else:
                     crumb_parent = parent_url
-                    parents["crumb"] = resolve(parent_url) or canonical_key(parent_url)
+                    target = resolve(parent_url)
+                    if target in home_set and target != home and home is not None:
+                        target = home               # más nyelv kezdőoldala
+                    parents["crumb"] = target or canonical_key(parent_url)
+                first_home = resolve(before[0][0]) in home_set
+                if label is not None and name_key(parent_name) == name_key(label.anchor) \
+                        and len(before) - first_home == item.level:
+                    parents["menu"] = parents["crumb"]
         applicable = hierarchical and page_id in deep_pages
         above_url = url_parents[page_id] if applicable else None
         if above_url is not None:
@@ -451,5 +474,9 @@ def page_structure(con: duckdb.DuckDBPyConnection, pages: Mapping[int, Mapping]
             "url_parent": nodes[above_url]["url"] if above_url is not None else None,
             "url_parent_applicable": applicable,
             "parent_sources": sorted(parents), "parents_agree": agree}
+    inbound: dict[int, set[int]] = defaultdict(set)
+    for source, goals in edges["all"].items():
+        for goal in goals:
+            inbound[goal].add(source)
     return SiteStructure(pages=found, homes=homes, start=start, url_hierarchy=url_hierarchy,
-                         crumbs=crumbs, menu=menu)
+                         crumbs=crumbs, menu=menu, inbound=dict(inbound))

@@ -23,7 +23,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.17"
+SCHEMA_VERSION = "1.18"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -648,7 +648,8 @@ class MenuItemView(Contract):
     """A site menüfájának egy menüpontja a nézetben: a nyelv, a terület, a szint, a
     horgonyszöveg, a cím, a szülő menüpont (horgonyszöveg), a céloldal fő entitása és szerepe
     (ha a cél a készlet oldala), a céloldal kattintási mélysége a saját nyelvű kezdőoldaltól,
-    és hogy hány oldalon áll a területet hordozó oldalak közül."""
+    noindex-e a céloldal (`target_noindex`; tény, nem megállapítás), és hogy hány oldalon áll a
+    területet hordozó oldalak közül."""
 
     module: ClassVar[str] = "findings"
     lang: str
@@ -661,6 +662,7 @@ class MenuItemView(Contract):
     main_entity: str | None = None
     role: str | None = None
     click_depth: int | None = None
+    target_noindex: bool | None = None
     pages: int
     area_pages: int
     marker: str | None = None
