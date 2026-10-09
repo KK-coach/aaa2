@@ -246,3 +246,34 @@ def _is_file(path: str) -> bool:
     last = path.rstrip("/").rsplit("/", 1)[-1]
     _, dot, extension = last.rpartition(".")
     return bool(dot) and extension.lower() in _FILE_EXTENSIONS
+
+
+FORM_DIFFERENCES = ("protokoll", "www", "záró perjel", "kis/nagybetű")
+
+
+def form_differences(raw_url: str, stored_url: str) -> tuple[str, ...]:
+    """Miben tér el egy link eredeti címe a tárolt (normalizált) céltól ugyanazon a hoston:
+    `protokoll` (http / https), `www` (www-s és www nélküli host), `záró perjel`,
+    `kis/nagybetű` (az útvonalban). Üres, ha a két cím hostja más (a `www`-től eltekintve), ha
+    az alakjuk azonos, vagy ha csak a lekérdezésük, a töredékük vagy az útvonal kódolása tér el.
+    A gyökér üres útvonala (`https://x.hu` és `https://x.hu/`) nem eltérés."""
+    raw, stored = urlsplit(raw_url), urlsplit(stored_url)
+    raw_host, stored_host = (raw.hostname or "").lower(), (stored.hostname or "").lower()
+    if not raw_host or raw_host.removeprefix("www.") != stored_host.removeprefix("www."):
+        return ()
+    found = []
+    if raw.scheme.lower() != stored.scheme.lower():
+        found.append("protokoll")
+    if raw_host != stored_host:
+        found.append("www")
+    raw_path = normalize_path_encoding(raw.path or "/")
+    stored_path = normalize_path_encoding(stored.path or "/")
+    if raw_path != stored_path:
+        bare_raw, bare_stored = raw_path.rstrip("/"), stored_path.rstrip("/")
+        if bare_raw == bare_stored:
+            found.append("záró perjel")
+        elif bare_raw.lower() == bare_stored.lower():
+            if raw_path.endswith("/") != stored_path.endswith("/"):
+                found.append("záró perjel")
+            found.append("kis/nagybetű")
+    return tuple(found)

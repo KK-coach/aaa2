@@ -20,6 +20,7 @@ SOURCES: dict[type[Contract], tuple[str, str]] = {
     contracts.Page: ("pages", ("SELECT * EXCLUDE (rendered_html), rendered_html IS NOT NULL AS "
                                "has_rendered_html FROM pages ORDER BY page_id")),
     contracts.Link: ("links", "SELECT * FROM links ORDER BY from_page_id, ordinal, to_url"),
+    contracts.LinkVariant: ("link_variants", "SELECT * FROM link_variants ORDER BY raw_url"),
     contracts.StructuredData: ("schema_blocks",
                                "SELECT * FROM schema_blocks ORDER BY page_id, ordinal"),
     contracts.Block: ("blocks", "SELECT * FROM blocks ORDER BY block_id"),

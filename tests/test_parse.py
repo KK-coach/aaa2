@@ -91,11 +91,16 @@ def test_links_internal_normalized_in_dom_order():
       <a href="">üres</a>
       <a href="https://en.kk.coach/">aldomain</a>
     """)
+    # a csak töredékből álló és az üres href nem link
     assert [link.to_url for link in parsed.links] == [
         "https://kk.coach/b/", "https://kk.coach/a/", "https://kk.coach/b/",
-        "https://kk.coach/", "https://kk.coach/", "https://en.kk.coach/",
+        "https://en.kk.coach/",
     ]
-    assert [link.ordinal for link in parsed.links] == [1, 2, 3, 4, 5, 6]
+    assert [link.ordinal for link in parsed.links] == [1, 2, 3, 4]
+    assert [link.raw_url for link in parsed.links] == [
+        "https://kk.coach/b", "http://www.kk.coach/a/?utm_source=x", "https://kk.coach/b/",
+        "https://en.kk.coach/",
+    ]
 
 
 def test_external_links_only_counted():

@@ -1,0 +1,85 @@
+{
+  "additionalProperties": false,
+  "description": "Egy linkelt, nem normalizált cím mért válasza (`link_variants`): a link eredeti címe, a\ntárolt (normalizált) cél, a kérés státusza, a végső cím, az átirányítási lépések száma és\nlánca ({status, url}). Csak élő bejárásnál keletkezik.",
+  "properties": {
+    "chain": {
+      "default": null,
+      "title": "Chain"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error"
+    },
+    "fetched_at": {
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "final_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Final Url"
+    },
+    "hops": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Hops"
+    },
+    "normalized_url": {
+      "title": "Normalized Url",
+      "type": "string"
+    },
+    "raw_url": {
+      "title": "Raw Url",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.19",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Status"
+    }
+  },
+  "required": [
+    "raw_url",
+    "normalized_url",
+    "fetched_at"
+  ],
+  "title": "LinkVariant",
+  "type": "object",
+  "x-module": "crawl",
+  "x-schema-version": "1.19"
+}

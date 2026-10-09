@@ -48,7 +48,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 
 import duckdb
@@ -56,6 +56,7 @@ import httpx
 import zstandard
 
 from aaa2.db.connect import connect, db_path
+from aaa2.db.stable_json import dumps
 from aaa2.engine.frontier import (
     MAX_PAGES,
     PRIORITY,
@@ -65,7 +66,13 @@ from aaa2.engine.frontier import (
     fetch_robots,
     refetch_sitemap,
 )
-from aaa2.engine.normalize import UrlPolicy, is_internal, normalize, slash_alternate
+from aaa2.engine.normalize import (
+    UrlPolicy,
+    form_differences,
+    is_internal,
+    normalize,
+    slash_alternate,
+)
 from aaa2.engine.parse import ParsedPage, parse_page
 from aaa2.engine.render import (
     CONCURRENCY,
@@ -87,7 +94,7 @@ _PAGE_COLUMNS = (
     "url", "status", "error", "canonical", "noindex", "title", "meta_description", "h1", "lang",
     "hreflang", "word_count", "main_content", "main_content_method", "external_link_count",
     "raw_html_hash", "rendered_html", "render_ms", "fetched_at", "run_id", "final_url",
-    "seen_crawl_id", "x_robots_tag",
+    "seen_crawl_id", "x_robots_tag", "redirect_hops", "redirect_chain",
 )
 _UPSERT_PAGE = (
     f"INSERT INTO pages ({', '.join(_PAGE_COLUMNS)}) "
@@ -109,6 +116,9 @@ class CrawlOptions:
     exclude: str | None = None
     sitemap_only: bool = False
     overrun_factor: float | None = None
+    # a linkelt, nem normalizált címek lekérése a crawl végén (`link_variants`); csak élő
+    # bejárásnál (a rögzített készlet visszajátszása nem kér le új címet)
+    probe_variants: bool = False
 
 
 @dataclass(frozen=True)
@@ -141,7 +151,8 @@ async def run_crawl(
             headers={"User-Agent": renderer.user_agent, **NAVIGATION_HEADERS}, timeout=HTTP_TIMEOUT
         ) as client:
             summary = await crawl(
-                con, seed_url, options, client=client, renderer=renderer, progress=progress
+                con, seed_url, replace(options, probe_variants=True), client=client,
+                renderer=renderer, progress=progress
             )
     finally:
         con.close()
@@ -213,6 +224,8 @@ class _Run:
                 await self._start(seed_url, started)
             await self._drain()
             self._finish()
+            if self.options.probe_variants:
+                await probe_link_variants(self.con, self.client)
             finished = True
         finally:
             seconds = asyncio.get_running_loop().time() - clock
@@ -457,6 +470,7 @@ class _Run:
             url=url, status=status, noindex=False, final_url=result.final_url,
             render_ms=result.render_ms, fetched_at=_now(), run_id=self.run_id,
             seen_crawl_id=self.crawl_id, x_robots_tag=robots_header(result.headers),
+            **_redirect_columns(result),
         )
         page_id = self._upsert(values)
         self._clear_children(page_id)
@@ -470,6 +484,7 @@ class _Run:
             raw_html_hash=result.raw_html_hash, render_ms=result.render_ms, fetched_at=_now(),
             run_id=self.run_id, final_url=result.final_url,
             seen_crawl_id=self.crawl_id, x_robots_tag=robots_header(result.headers),
+            **_redirect_columns(result),
         )
         parsed = None
         if error is None and _usable(result):
@@ -511,10 +526,10 @@ class _Run:
     def _write_children(self, page_id: int, parsed: ParsedPage) -> None:
         if parsed.links:
             self.con.executemany(
-                "INSERT INTO links (from_page_id, to_url, anchor, position, nofollow, ordinal) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
-                [(page_id, link.to_url, link.anchor, link.position, link.nofollow, link.ordinal)
-                 for link in parsed.links],
+                "INSERT INTO links (from_page_id, to_url, anchor, position, nofollow, ordinal, "
+                "raw_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [(page_id, link.to_url, link.anchor, link.position, link.nofollow, link.ordinal,
+                  link.raw_url) for link in parsed.links],
             )
         if parsed.headings:
             self.con.executemany(
@@ -578,6 +593,44 @@ class _Run:
             seconds=seconds, expected_pages=self.expected_pages,
             expected_seconds=self.expected_seconds, stopped=self.stopped,
         )
+
+
+def _redirect_columns(result: RenderResult) -> dict:
+    """A válasz átirányítási lánca a `pages` oszlopaihoz: a lépések száma és a lánc."""
+    steps = [{"status": status, "url": url} for status, url in result.redirects]
+    return {"redirect_hops": len(steps),
+            "redirect_chain": dumps(steps, ensure_ascii=False) if steps else None}
+
+
+async def probe_link_variants(con: duckdb.DuckDBPyConnection, client: httpx.AsyncClient) -> int:
+    """A linkelt, nem normalizált címek mért válasza a `link_variants` táblába: minden
+    különböző belső linkcímre, amelynek az eredeti alakja záró perjelben, protokollban,
+    `www`-ben vagy kis/nagybetűben eltér a tárolt céltól (`form_differences`), egy render nélküli
+    kérés az átirányítások követésével. A tábla minden futásnál újraépül; a lekért címek
+    számát adja vissza. Hálózati hibánál a sor a hibával marad, státusz nélkül."""
+    rows = con.execute(
+        "SELECT DISTINCT raw_url, to_url FROM links WHERE raw_url IS NOT NULL "
+        "AND raw_url <> to_url ORDER BY raw_url, to_url").fetchall()
+    con.execute("DELETE FROM link_variants")
+    done: set[str] = set()
+    for raw_url, to_url in rows:
+        if raw_url in done or not form_differences(raw_url, to_url):
+            continue
+        done.add(raw_url)
+        try:
+            response = await client.get(raw_url, follow_redirects=True)
+        except httpx.HTTPError as exc:
+            con.execute("INSERT INTO link_variants (raw_url, normalized_url, error, fetched_at) "
+                        "VALUES (?, ?, ?, ?)",
+                        [raw_url, to_url, f"{type(exc).__name__}: {exc}"[:300], _now()])
+            continue
+        steps = [{"status": step.status_code, "url": str(step.url)} for step in response.history]
+        con.execute(
+            "INSERT INTO link_variants (raw_url, normalized_url, status, final_url, hops, chain, "
+            "fetched_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [raw_url, to_url, response.status_code, str(response.url), len(steps),
+             dumps(steps, ensure_ascii=False) if steps else None, _now()])
+    return len(done)
 
 
 def _usable(result: RenderResult) -> bool:

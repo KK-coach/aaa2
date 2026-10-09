@@ -56,6 +56,10 @@ def test_contracts_build_from_the_current_data(monkeypatch):
     con.execute("INSERT INTO merge_log (run_id, kept_id, removed_id, kept_name, removed_name, "
                 "rule, evidence, merged_at) VALUES (?, ?, NULL, ?, 'x', 'alias', ?, ?)",
                 [run_id, entity_id, name, json.dumps({"alias": "x"}), NOON])
+    con.execute("INSERT INTO link_variants (raw_url, normalized_url, status, final_url, hops, "
+                "chain, fetched_at) VALUES (?, ?, 200, ?, 1, ?, ?)",
+                [f"{BASE}/meres", f"{BASE}/meres/", f"{BASE}/meres/",
+                 json.dumps([{"status": 301, "url": f"{BASE}/meres"}]), NOON])
     con.execute("INSERT INTO menu_items (item_id, lang, area, ordinal, url, page_id, anchor, "
                 "parent_id, level, marker, pages, area_pages) VALUES (1, 'hu', 'header', 0, ?, "
                 "?, 'Mérés', NULL, 0, NULL, 2, 2)", [f"{BASE}/meres/", other_page])

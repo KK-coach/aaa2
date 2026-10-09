@@ -1,6 +1,6 @@
 {
   "additionalProperties": false,
-  "description": "Egy belső link (`links`). `to_page_id`: a céloldal a készletben; `resolution`: honnan\ntudjuk (`stored`: a crawl tárolta, a link célja a készletbeli cím; `inferred`: a cél a\nkészletbeli oldal kategóriaúttal bővített címe, a tárolt címekből következtetve; None: a\ncél nincs a készletben).",
+  "description": "Egy belső link (`links`). `to_page_id`: a céloldal a készletben; `resolution`: honnan\ntudjuk (`stored`: a crawl tárolta, a link célja a készletbeli cím; `inferred`: a cél a\nkészletbeli oldal kategóriaúttal bővített címe, a tárolt címekből következtetve; None: a\ncél nincs a készletben). `raw_url`: a href abszolút alakja a normalizálás előtt, töredék\nnélkül (None a vissza nem töltött korábbi soroknál); a `to_url` a normalizált cél.",
   "properties": {
     "anchor": {
       "anyOf": [
@@ -46,6 +46,18 @@
       "title": "Position",
       "type": "string"
     },
+    "raw_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Raw Url"
+    },
     "resolution": {
       "anyOf": [
         {
@@ -63,7 +75,7 @@
       "title": "Resolution"
     },
     "schema_version": {
-      "default": "1.18",
+      "default": "1.19",
       "title": "Schema Version",
       "type": "string"
     },
@@ -92,5 +104,5 @@
   "title": "Link",
   "type": "object",
   "x-module": "crawl",
-  "x-schema-version": "1.18"
+  "x-schema-version": "1.19"
 }

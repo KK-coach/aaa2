@@ -23,7 +23,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.18"
+SCHEMA_VERSION = "1.19"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -198,6 +198,8 @@ class Page(Contract):
     run_id: int | None = None
     seen_crawl_id: int | None = None  # melyik crawl látta utoljára (az aktuális készlet jelölése)
     x_robots_tag: str | None = None   # a válasz X-Robots-Tag fejléce; None: nem ismert
+    redirect_hops: int | None = None  # HTTP-átirányítási lépések a végső válasz előtt; None: nem mért
+    redirect_chain: Any = _json()     # a lépések sorrendben: {status, url}
     has_rendered_html: bool | None = None
 
     @property
@@ -211,7 +213,8 @@ class Link(Contract):
     """Egy belső link (`links`). `to_page_id`: a céloldal a készletben; `resolution`: honnan
     tudjuk (`stored`: a crawl tárolta, a link célja a készletbeli cím; `inferred`: a cél a
     készletbeli oldal kategóriaúttal bővített címe, a tárolt címekből következtetve; None: a
-    cél nincs a készletben)."""
+    cél nincs a készletben). `raw_url`: a href abszolút alakja a normalizálás előtt, töredék
+    nélkül (None a vissza nem töltött korábbi soroknál); a `to_url` a normalizált cél."""
 
     module: ClassVar[str] = "crawl"
     from_page_id: int
@@ -222,6 +225,23 @@ class Link(Contract):
     position: str
     nofollow: bool | None = None
     ordinal: int | None = None
+    raw_url: str | None = None
+
+
+class LinkVariant(Contract):
+    """Egy linkelt, nem normalizált cím mért válasza (`link_variants`): a link eredeti címe, a
+    tárolt (normalizált) cél, a kérés státusza, a végső cím, az átirányítási lépések száma és
+    lánca ({status, url}). Csak élő bejárásnál keletkezik."""
+
+    module: ClassVar[str] = "crawl"
+    raw_url: str
+    normalized_url: str
+    status: int | None = None
+    final_url: str | None = None
+    hops: int | None = None
+    chain: Any = _json()
+    error: str | None = None
+    fetched_at: datetime
 
 
 class StructuredData(Contract):
@@ -825,7 +845,7 @@ DERIVED: tuple[type[Contract], ...] = (
     SiteStructureView, HeadingEntity, HeadingOutside, HeadingView, PageView, SiteViews)
 
 CONTRACTS: tuple[type[Contract], ...] = (
-    LLMCall, Site, CrawlRun, SitemapFile, SitemapUrl, Page, Link, PageMeta, StructuredData, Block, Mention, MentionSource, Candidate, Entity, Alias,
+    LLMCall, Site, CrawlRun, SitemapFile, SitemapUrl, Page, Link, LinkVariant, PageMeta, StructuredData, Block, Mention, MentionSource, Candidate, Entity, Alias,
     Relation, MergeRecord, KbLink, PageNode, Edge, MainEntity, EntityWeight, MenuItem,
     MenuDifference, Finding,
     *DERIVED)
