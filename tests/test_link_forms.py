@@ -122,30 +122,65 @@ def test_the_redirect_chain_is_stored_with_the_page():
                                                      {"status": 302, "url": f"{BASE}/a/"}]
 
 
-def test_link_variants_are_probed_only_for_differing_forms():
+def probe(con, handler, **options):
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await probe_link_variants(con, client, **options)
+    return asyncio.run(run())
+
+
+def test_link_variants_are_probed_only_for_differing_forms_without_the_body():
+    con = link_site()
+    asked = []
+
+    def handler(request):
+        asked.append((request.method, str(request.url)))
+        url = str(request.url)
+        if url == f"{BASE}/adat":
+            return httpx.Response(301, headers={"location": f"{BASE}/adat/"})
+        if url == f"{BASE}/allas":
+            raise httpx.ConnectError("nincs válasz", request=request)
+        if url == "http://kulso.pelda.hu/x" and request.method == "HEAD":
+            return httpx.Response(405)                  # a HEAD nem támogatott: GET, törzs nélkül
+        return httpx.Response(200, text="ok")
+
+    run = probe(con, handler, concurrency=1)            # az azonos alakú linkcím nem megy
+    assert (run.probed, run.over_limit, run.blocked) == (3, 0, 0)
+    assert asked == [("HEAD", "http://kulso.pelda.hu/x"), ("GET", "http://kulso.pelda.hu/x"),
+                     ("HEAD", f"{BASE}/adat"), ("HEAD", f"{BASE}/adat/"),
+                     ("HEAD", f"{BASE}/allas")]
+    found = {variant.raw_url: variant for variant in link_variants(con)}
+    moved = found[f"{BASE}/adat"]
+    assert (moved.status, moved.final_url, moved.hops) == (200, f"{BASE}/adat/", 1)
+    assert moved.chain == [{"status": 301, "url": f"{BASE}/adat"}]
+    failed = found[f"{BASE}/allas"]
+    assert failed.status is None and failed.hops is None and "ConnectError" in failed.error
+    assert found["http://kulso.pelda.hu/x"].status == 200
+
+
+def test_the_probe_respects_robots_and_the_address_limit(monkeypatch):
+    from aaa2.engine import crawl as crawl_module
+    from aaa2.engine.frontier import Robots
+
     con = link_site()
     asked = []
 
     def handler(request):
         asked.append(str(request.url))
-        if str(request.url) == f"{BASE}/adat":
-            return httpx.Response(301, headers={"location": f"{BASE}/adat/"})
-        if str(request.url) == f"{BASE}/allas":
-            raise httpx.ConnectError("nincs válasz", request=request)
-        return httpx.Response(200, text="ok")
+        return httpx.Response(200)
 
-    async def probe():
-        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-            return await probe_link_variants(con, client)
-
-    assert asyncio.run(probe()) == 3                    # az azonos alakú linkcím nem
-    assert asked == ["http://kulso.pelda.hu/x", f"{BASE}/adat", f"{BASE}/adat/",
-                     f"{BASE}/allas"]
-    found = {variant.raw_url: variant for variant in link_variants(con)}
-    moved = found[f"{BASE}/adat"]
-    assert (moved.status, moved.final_url, moved.hops) == (200, f"{BASE}/adat/", 1)
-    assert moved.chain == [{"status": 301, "url": f"{BASE}/adat"}]
-    assert found[f"{BASE}/allas"].status is None and "ConnectError" in found[f"{BASE}/allas"].error
+    # a robots.txt által tiltott címre nincs kérés, és a sor sem keletkezik
+    run = probe(con, handler, robots=Robots.parse("User-agent: *\nDisallow: /adat\n"))
+    assert (run.probed, run.blocked, run.over_limit) == (2, 1, 0)
+    assert f"{BASE}/adat" not in asked
+    assert f"{BASE}/adat" not in {variant.raw_url for variant in link_variants(con)}
+    # a korlát fölött nincs kérés: cím szerinti sorrendben az elsők mennek
+    asked.clear()
+    monkeypatch.setattr(crawl_module, "VARIANT_PROBE_LIMIT", 1)
+    run = probe(con, handler)
+    assert (run.probed, run.over_limit, run.blocked) == (1, 2, 0)
+    assert asked == ["http://kulso.pelda.hu/x"]
+    assert [variant.raw_url for variant in link_variants(con)] == ["http://kulso.pelda.hu/x"]
 
 
 def link_findings(con):
@@ -199,6 +234,41 @@ def test_links_that_do_not_point_at_the_final_address():
     assert measured.evidence["measured"] is True
     assert (measured.evidence["linked_status"], measured.evidence["hops"],
             measured.evidence["final_url"]) == (200, 1, f"{BASE}/adat/")
+    assert measured.evidence["note"] is None
+    assert measured.evidence["differences"] == ["záró perjel"]
+
+
+def measured_finding(con, raw_url):
+    build_findings(con)
+    return next(finding for finding in stored_findings(con)
+                if finding.type == "link_not_final_url"
+                and finding.evidence["raw_url"] == raw_url)
+
+
+def test_a_linked_form_that_answers_itself_is_served_at_two_addresses():
+    con = link_site()
+    link_findings(con)
+    # a linkelt alak is 200-at ad, átirányítás nélkül: a végleges cím a tárolt cél
+    con.execute("INSERT INTO link_variants (raw_url, normalized_url, status, final_url, hops, "
+                "fetched_at) VALUES (?, ?, 200, ?, 0, ?)",
+                [f"{BASE}/adat", f"{BASE}/adat/", f"{BASE}/adat", NOON])
+    both = measured_finding(con, f"{BASE}/adat")
+    assert both.evidence["final_url"] == f"{BASE}/adat/"
+    assert both.evidence["note"] == (
+        "a linkelt alak is 200-at ad, átirányítás nélkül (két címen elérhető)")
+    assert both.evidence["differences"] == ["záró perjel", "két címen elérhető"]
+    assert (both.evidence["linked_status"], both.evidence["hops"]) == (200, 0)
+    assert f"a végleges cím: {BASE}/adat/" in both.summary
+    assert "két címen elérhető" in both.summary
+    # hibával visszatért mérés: nem mért, mint a rögzített készleten
+    con.execute("UPDATE link_variants SET status = NULL, final_url = NULL, hops = NULL, "
+                "error = 'ConnectError: nincs válasz'")
+    failed = measured_finding(con, f"{BASE}/adat")
+    assert failed.evidence["measured"] is False and failed.evidence["note"] is None
+    assert failed.evidence["final_url"] is None
+    assert failed.evidence["final_note"] == "a tárolt oldal címe"
+    assert (failed.evidence["linked_status"], failed.evidence["hops"]) == ("nem mért", "nem mért")
+    assert failed.evidence["differences"] == ["záró perjel"]
 
 
 def test_a_menu_redirect_already_reported_is_not_repeated():

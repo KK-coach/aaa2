@@ -139,8 +139,10 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   linksor nem tartozik ide; az a menülink, amelynek az átirányítását a `menu_broken_target`
   jelzi, nem ismétlődik. Egy megállapítás (eredeti cím → cél) mintánként, a forrásoldalak
   számával és területenként; a bizonyítékban a forrásoldalak a területtel és a horgonnyal, a
-  linkelt alak státusza és ugrásszáma a `link_variants` mérése szerint (ahol nincs: nem mért,
-  és a végleges cím helyén a tárolt oldal címe áll). Súlyosság: medium, ha a link menüben,
+  linkelt alak státusza és ugrásszáma a `link_variants` mérése szerint (ahol nincs mérés, vagy
+  a kérés hibával tért vissza: nem mért, és a végleges cím helyén a tárolt oldal címe áll). Ha
+  a linkelt alak maga is 2xx-et ad átirányítás nélkül, a végleges cím a tárolt cél, az eltérések
+  között „két címen elérhető” áll, a bizonyítékban a megjegyzéssel (`note`). Súlyosság: medium, ha a link menüben,
   láblécben vagy oldalsávban áll, vagy legalább `LINK_FORM_MANY_PAGES` forrásoldalon; különben
   low.
 - A heading-fa szerkezeti megállapításai (`headings.structure_findings`): `missing_h1`,
@@ -322,6 +324,8 @@ LINK_AREAS = {"nav": "menü", "body": "tartalom", "footer": "lábléc", "aside":
 LINK_REDIRECT = "átirányítás"
 LINK_NOT_MEASURED = "nem mért"
 LINK_STORED_NOTE = "a tárolt oldal címe"
+LINK_TWO_ADDRESSES = "két címen elérhető"
+LINK_BOTH_SERVED = "a linkelt alak is 200-at ad, átirányítás nélkül (két címen elérhető)"
 CRUMB_FLAT_SHARE = 0.5                  # az almenüben álló oldalak ekkora részénél lapos a morzsa
 CRUMB_FLAT_MIN = 3
 MENU_TARGET_PROBLEMS = {"not_found": "200-as státuszú „nem található” oldal",
@@ -1628,10 +1632,17 @@ def _link_forms(site: _Site, menu_targets: Sequence[tuple] = ()) -> list[tuple]:
     for (raw_url, target), found in sorted(
             patterns.items(), key=lambda item: (-len(item[1]["sources"]), item[0])):
         variant, page = variants.get(raw_url), found["page"]
-        final = variant.final_url if variant is not None and variant.final_url \
-            else found["final"]
-        if variant is not None and variant.status is not None:
+        measured = variant is not None and variant.status is not None
+        differences = list(found["differences"])
+        final, note = found["final"], None
+        if measured:
             status, hops = variant.status, variant.hops
+            if 200 <= variant.status < 300 and not variant.hops:
+                # a linkelt alak maga is válaszol: a végleges cím a tárolt cél
+                final, note = found["final"] or found["stored"], LINK_BOTH_SERVED
+                differences.append(LINK_TWO_ADDRESSES)
+            else:
+                final = variant.final_url or final
         elif found["final"] and page is not None:
             status, hops = page.status, page.redirect_hops
         else:
@@ -1647,13 +1658,13 @@ def _link_forms(site: _Site, menu_targets: Sequence[tuple] = ()) -> list[tuple]:
             page.page_id if in_set else None, None,
             (f"{count} oldalról mutat belső link erre a címre: {raw_url} — "
              + (f"a végleges cím: {final}" if final else f"{LINK_STORED_NOTE}: {target}")
-             + f" (eltérés: {', '.join(found['differences'])})"),
+             + f" (eltérés: {', '.join(differences)})"),
             {"group": "link_form", "raw_url": raw_url, "stored_url": found["stored"],
              "final_url": final, "final_note": None if final else LINK_STORED_NOTE,
-             "differences": found["differences"],
+             "differences": differences, "note": note,
              "linked_status": LINK_NOT_MEASURED if status is None else status,
              "hops": LINK_NOT_MEASURED if hops is None else hops,
-             "measured": variant is not None and variant.status is not None,
+             "measured": measured,
              "source_pages": count, "by_area": by_area,
              "pages": [{"url": url, "areas": sorted(item["areas"]),
                         "anchors": sorted(item["anchors"])}
@@ -2522,6 +2533,7 @@ def _finding_html(finding: dict) -> str:
                   else f"{LINK_NOT_MEASURED} ({_e(evidence['final_note'])}: "
                        f"{_link(evidence['stored_url'])})"),
                  ("eltérés", _e(", ".join(evidence["differences"]))),
+                 ("megjegyzés", _e(evidence.get("note") or "")),
                  ("a linkelt alak státusza / ugrások", _e(f"{evidence['linked_status']} / "
                                                          f"{evidence['hops']}")),
                  ("területek", _e(", ".join(f"{area}: {number}" for area, number

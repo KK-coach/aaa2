@@ -75,6 +75,12 @@ def crawl(
         f"{summary.pages_skipped} kihagyva (hash egyezett), {summary.pages_per_sec:.2f} oldal/mp, "
         f"{summary.bytes_stored} bájt renderelt HTML; {result.path}"
     )
+    if summary.variants_probed or summary.variants_over_limit or summary.variants_blocked:
+        typer.echo(
+            f"linkelt alakok mérése: {summary.variants_probed} cím lekérve, "
+            f"{summary.variants_over_limit} kimaradt a korlát fölött, "
+            f"{summary.variants_blocked} a robots.txt miatt"
+        )
 
 
 @app.command()
