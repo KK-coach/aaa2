@@ -23,7 +23,7 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "1.19"
+SCHEMA_VERSION = "1.20"
 
 NodeKind = Literal["page", "entity"]
 EdgeType = Literal["mentions", "main_entity", "part_of", "brand_of", "offers", "is_a", "about",
@@ -698,6 +698,28 @@ class DepthDistribution(Contract):
     counts: dict[str, int] = Field(default_factory=dict)
 
 
+class RobotsBotView(Contract):
+    """Egy vizsgált botra érvényes robots.txt-csoport: a csoport neve (`*`, vagy a bot saját
+    csoportja), a szabályai, és hogy az egész site-ot tiltja-e."""
+
+    module: ClassVar[str] = "findings"
+    bot: str
+    group: str | None = None
+    own_group: bool = False
+    rules: list[str] = Field(default_factory=list)
+    blocks_everything: bool = False
+
+
+class RobotsView(Contract):
+    """A robots.txt tényei: a vizsgált botok csoportjai, a `*` csoport szabályai (a saját
+    bejáróé), és a listán kívüli botok, amelyeket az egész site-ról kitilt."""
+
+    module: ClassVar[str] = "findings"
+    bots: list[RobotsBotView] = Field(default_factory=list)
+    own_rules: list[str] = Field(default_factory=list)
+    other_blocked: list[str] = Field(default_factory=list)
+
+
 class SiteStructureView(Contract):
     """A site belső struktúrája a nézetben: a menüfa, a mélység-eloszlás nyelvenként, a
     kezdőoldalról elérhetetlen oldalak, és az URL-hierarchia mért feltétele (`url_pages`: a nem
@@ -706,6 +728,7 @@ class SiteStructureView(Contract):
 
     module: ClassVar[str] = "findings"
     menu: list[MenuItemView] = Field(default_factory=list)
+    robots: RobotsView | None = None
     depth: list[DepthDistribution] = Field(default_factory=list)
     unreachable: list[str] = Field(default_factory=list)
     url_hierarchical: bool = False
@@ -841,7 +864,7 @@ class SiteViews(Contract):
 
 # a több táblából összeállított szerződések (nincs egyetlen forrástáblájuk)
 DERIVED: tuple[type[Contract], ...] = (
-    FindingView, EntityRelation, OtherName, EntityView, PageMention, TitleField, SchemaAbout, HubChild, MenuItemView, DepthDistribution,
+    FindingView, EntityRelation, OtherName, EntityView, PageMention, TitleField, SchemaAbout, HubChild, MenuItemView, DepthDistribution, RobotsBotView, RobotsView,
     SiteStructureView, HeadingEntity, HeadingOutside, HeadingView, PageView, SiteViews)
 
 CONTRACTS: tuple[type[Contract], ...] = (

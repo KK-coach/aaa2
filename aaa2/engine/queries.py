@@ -29,6 +29,7 @@ from aaa2.contracts import (
     SitemapUrl,
     StructuredData,
 )
+from aaa2.engine.frontier import ROBOTS_BLOCKED, Robots
 from aaa2.engine.menu import MenuEntry, visible_breadcrumb
 from aaa2.engine.menu import menu_entries as page_menu_entries
 
@@ -437,8 +438,26 @@ def completeness(con: duckdb.DuckDBPyConnection) -> Completeness:
 
 
 def queue_size(con: duckdb.DuckDBPyConnection) -> int:
-    """A crawl-sor mérete (ezt korlátozza a `max_pages`)."""
-    return con.execute("SELECT count(*) FROM crawl_queue").fetchone()[0]
+    """A crawl-sor mérete (ezt korlátozza a `max_pages`); a robots.txt által tiltott címek
+    sorai nélkül, azok nem számítanak a korlátba."""
+    return con.execute("SELECT count(*) FROM crawl_queue WHERE status <> ?",
+                       [ROBOTS_BLOCKED]).fetchone()[0]
+
+
+def robots(con: duckdb.DuckDBPyConnection) -> Robots | None:
+    """A site tárolt robots.txt-je értelmezve (`frontier.Robots`, minden csoporttal); None, ha
+    nincs tárolt szöveg."""
+    row = con.execute("SELECT robots_txt FROM site").fetchone()
+    return Robots.parse(row[0]) if row and row[0] is not None else None
+
+
+def robots_blocked_urls(con: duckdb.DuckDBPyConnection) -> dict[str, str]:
+    """A crawl által a robots.txt miatt kihagyott, linkelt belső címek: cím → a csoport és a
+    tiltó szabály (`*: Disallow: /x`). A rájuk mutató linkek `to_page_id`-ja üres; a link célja
+    ebből látszik tiltottnak."""
+    return dict(con.execute(
+        "SELECT url, coalesce(error, '') FROM crawl_queue WHERE status = ? ORDER BY url",
+        [ROBOTS_BLOCKED]).fetchall())
 
 
 def sitemap_files(con: duckdb.DuckDBPyConnection) -> list[SitemapFile]:

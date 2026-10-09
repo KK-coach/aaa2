@@ -147,7 +147,9 @@ def pages(con):
 
 
 def queue(con):
-    return dict(con.execute("SELECT url, status FROM crawl_queue").fetchall())
+    """A bejárandó sor; a robots.txt által tiltott, linkelt címek nyoma (`robots_blocked`) nélkül."""
+    return dict(con.execute("SELECT url, status FROM crawl_queue "
+                            "WHERE status <> 'robots_blocked'").fetchall())
 
 
 EXPECTED_PAGES = {
@@ -182,6 +184,10 @@ async def test_fresh_crawl_of_mini_site(site, tools):
     assert states[site.url("/rejtett/")] == "done"
     assert {s for url, s in states.items() if url != site.url("/szakad/")} == {"done"}
     assert site.url("/tiltott/x/") not in queue(con)
+    # a tiltott, linkelt cím nyoma a sorban: lekérés nélkül, a tiltó szabállyal
+    assert con.execute("SELECT status, error FROM crawl_queue WHERE url = ?",
+                       [site.url("/tiltott/x/")]).fetchone() == (
+        "robots_blocked", "*: Disallow: /tiltott/")
 
     (hash_, compressed, method) = con.execute(
         "SELECT raw_html_hash, rendered_html, main_content_method FROM pages WHERE url = ?",

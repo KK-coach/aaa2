@@ -28,7 +28,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": "1.19",
+          "default": "1.20",
           "title": "Schema Version",
           "type": "string"
         }
@@ -138,7 +138,7 @@
           "title": "Role"
         },
         "schema_version": {
-          "default": "1.19",
+          "default": "1.20",
           "title": "Schema Version",
           "type": "string"
         },
@@ -177,6 +177,89 @@
       ],
       "title": "MenuItemView",
       "type": "object"
+    },
+    "RobotsBotView": {
+      "additionalProperties": false,
+      "description": "Egy vizsgált botra érvényes robots.txt-csoport: a csoport neve (`*`, vagy a bot saját\ncsoportja), a szabályai, és hogy az egész site-ot tiltja-e.",
+      "properties": {
+        "blocks_everything": {
+          "default": false,
+          "title": "Blocks Everything",
+          "type": "boolean"
+        },
+        "bot": {
+          "title": "Bot",
+          "type": "string"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group"
+        },
+        "own_group": {
+          "default": false,
+          "title": "Own Group",
+          "type": "boolean"
+        },
+        "rules": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rules",
+          "type": "array"
+        },
+        "schema_version": {
+          "default": "1.20",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bot"
+      ],
+      "title": "RobotsBotView",
+      "type": "object"
+    },
+    "RobotsView": {
+      "additionalProperties": false,
+      "description": "A robots.txt tényei: a vizsgált botok csoportjai, a `*` csoport szabályai (a saját\nbejáróé), és a listán kívüli botok, amelyeket az egész site-ról kitilt.",
+      "properties": {
+        "bots": {
+          "items": {
+            "$ref": "#/$defs/RobotsBotView"
+          },
+          "title": "Bots",
+          "type": "array"
+        },
+        "other_blocked": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Other Blocked",
+          "type": "array"
+        },
+        "own_rules": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Own Rules",
+          "type": "array"
+        },
+        "schema_version": {
+          "default": "1.20",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "title": "RobotsView",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -196,8 +279,19 @@
       "title": "Menu",
       "type": "array"
     },
+    "robots": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RobotsView"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
     "schema_version": {
-      "default": "1.19",
+      "default": "1.20",
       "title": "Schema Version",
       "type": "string"
     },
@@ -232,5 +326,5 @@
   "title": "SiteStructureView",
   "type": "object",
   "x-module": "findings",
-  "x-schema-version": "1.19"
+  "x-schema-version": "1.20"
 }

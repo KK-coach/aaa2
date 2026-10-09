@@ -314,10 +314,16 @@ DISCOVERY = Discovery(
 
 
 def queue(con):
+    """A bejárandó sor; a robots.txt által tiltott, linkelt címek nyoma (`robots_blocked`) nélkül."""
     return con.execute(
         "SELECT url, depth, priority, status, discovered_from FROM crawl_queue "
-        "ORDER BY depth, priority, url"
+        "WHERE status <> 'robots_blocked' ORDER BY depth, priority, url"
     ).fetchall()
+
+
+def blocked(con):
+    return dict(con.execute("SELECT url, error FROM crawl_queue WHERE status = 'robots_blocked' "
+                            "ORDER BY url").fetchall())
 
 
 def site_row(con):
@@ -478,6 +484,9 @@ def test_robots_only_applies_to_seed_host():
         ("https://en.kk.coach/x/", "body"),
     ])
     assert [row[0] for row in queue(con)] == [SEED, "https://en.kk.coach/x/"]
+    # a seed hostján tiltott, linkelt cím nyoma megmarad, a szabállyal; nem kerül lekérésre
+    assert blocked(con) == {"https://kk.coach/x/": "*: Disallow: /x/",
+                            "https://kk.coach/x/a/": "*: Disallow: /x/"}
 
 
 def test_max_pages_is_a_hard_limit():

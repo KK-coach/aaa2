@@ -150,6 +150,22 @@ a canonical-duplikátum oldal egyikben sem szerepel:
   megjegyzése „robots.txt tiltja”, a tiltó szabállyal (`robots_rule`), ha ismert. Súlyosság: medium, ha a link menüben,
   láblécben vagy oldalsávban áll, vagy legalább `LINK_FORM_MANY_PAGES` forrásoldalon; különben
   low (a hibát adó linkelt alaknál high).
+- `robots_blocked_link`: belső link a robots.txt által tiltott címre mutat (a kiinduló host
+  címei; a tárolt robots.txt és a linkek alapján, a crawl módjától függetlenül). Tiltott az a
+  cím, amelyet a saját bejáróra érvényes `*` csoport vagy a vizsgált botok (`CHECKED_BOTS`)
+  bármelyikére érvényes csoport tilt. Egy megállapítás tiltó szabályonként; a bizonyítékban a
+  címek a forrásoldalak számával, területenként, botonként (tiltja-e), a sitemap-jelzéssel és
+  a szándékos-tiltás fajtájával. A robots.txt a bejárást tiltja, nem az indexelést: a szöveg
+  azt mondja, hogy a keresők nem látják a cím tartalmát. Súlyosság címenként, a megállapításé
+  a legnagyobb: low, ha a cím a szándékos tiltások listáján van (`ROBOTS_INTENDED`: kosár /
+  pénztár, fiók / belépés, keresés, szűrő / rendezés / lapozás paramétere, admin /
+  rendszer-végpont); medium, ha nincs; high, ha nincs a listán, és a sitemapben szerepel, vagy
+  menüből / láblécből linkelt (a site hivatkozik rá, de a bejárást tiltja).
+- `robots_bot_blocked`: a robots.txt egy vizsgált botot az egész site-ról (`Disallow: /` a
+  botra érvényes csoportban) vagy egy fő szekcióról (a fejléc-fa felső szintű menüpontja)
+  kitilt. Egy megállapítás a keresőbotokra (Googlebot, Bingbot; high) és egy az AI-botokra
+  (GPTBot, ClaudeBot, PerplexityBot, Google-Extended; low, semleges szöveggel: üzleti döntés
+  lehet). A listán kívüli botok teljes tiltása nem megállapítás, tény a site-áttekintőben.
 - A heading-fa szerkezeti megállapításai (`headings.structure_findings`): `missing_h1`,
   `h1_outside_content`, `multiple_h1`, `empty_section`, `skipped_level`, `missing_h2`; a
   szabályaik a `functions/headings.py` leírásában.
@@ -215,6 +231,7 @@ from aaa2.contracts import (
 )
 from aaa2.db.stable_json import dumps
 from aaa2.engine import queries as crawl
+from aaa2.engine.frontier import CHECKED_BOTS, SEARCH_BOTS, Robots
 from aaa2.engine.normalize import form_differences
 from aaa2.entities import queries as extract_queries
 from aaa2.entities import store
@@ -235,7 +252,8 @@ TYPES = ("h1_title_mismatch", "cannibalization", "shared_topic", "missing_page",
          "canonical_issue", "legal_page", "soft_404", "schema_id_names",
          "title_without_main_entity", "article_markup_on_other_pages",
          "breadcrumb_foreign_home", "menu_home_target", "menu_broken_target",
-         "orphan_pages", "breadcrumb_ignores_menu", "link_not_final_url")
+         "orphan_pages", "breadcrumb_ignores_menu", "link_not_final_url",
+         "robots_blocked_link", "robots_bot_blocked")
 TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "cannibalization": "Lehetséges kannibalizáció",
                "shared_topic": "Közös téma", "missing_page": "Hiányzó oldal",
@@ -253,6 +271,8 @@ TYPE_LABELS = {"h1_title_mismatch": "H1/title-eltérés",
                "orphan_pages": "Árva oldal",
                "breadcrumb_ignores_menu": "A morzsa nem követi a menü hierarchiáját",
                "link_not_final_url": "Belső link nem a végleges címre mutat",
+               "robots_blocked_link": "Belső link a robots.txt által tiltott címre mutat",
+               "robots_bot_blocked": "A robots.txt kitilt egy botot",
                "canonical_issue": "Hibás canonical", "legal_page": "Jogi oldal",
                "soft_404": "Nem található oldal 200-as státusszal"}
 # többes szám jele a kulcsban (ékezet nélkül): a kategória neve és a H1 / title összevetéséhez
@@ -324,6 +344,22 @@ ORPHAN_GROUPS = {
     "linked_only_by_orphans": "csak egymásra linkelnek (más, szintén elérhetetlen oldalakról "
                               "kapnak linket)"}
 ORPHAN_PARTIAL = ("részleges bejárás: a rájuk vezető oldal kimaradhatott a készletből")
+# ránézésre szándékos robots-tiltás: a cím (útvonal vagy lekérdezés) ilyen részt tartalmaz
+ROBOTS_INTENDED = {
+    "kosár / pénztár": ("cart", "kosar", "checkout", "penztar", "basket"),
+    "fiók / belépés": ("account", "login", "logout", "register", "regisztracio", "fiok",
+                        "belepes", "wishlist", "kivansaglista", "profil"),
+    "keresés": ("search", "kereses", "kereso", "?s=", "&s=", "?q=", "&q="),
+    "szűrő / rendezés / lapozás": ("filter", "szuro", "sort=", "order=", "orderby=", "limit=",
+                                    "page=", "paged=", "/page/"),
+    "admin / rendszer-végpont": ("admin", "wp-login", "wp-json", "cgi-bin", "ajax", "/api/",
+                                 "xmlrpc", "feed"),
+}
+ROBOTS_CRAWL_NOTE = "a robots.txt tiltja a bejárását: a keresők nem látják a tartalmát"
+ROBOTS_OWN_BOT = "saját bejáró (*)"
+ROBOTS_AI_NOTE = "üzleti döntés lehet"
+ROBOTS_WHOLE_SITE = "az egész site"
+ROBOTS_CONTRADICTION_AREAS = ("nav", "footer")
 LINK_FORM_MANY_PAGES = 10               # ennyi forrásoldaltól közepes a linkforma-megállapítás
 LINK_AREAS = {"nav": "menü", "body": "tartalom", "footer": "lábléc", "aside": "oldalsáv"}
 LINK_REDIRECT = "átirányítás"
@@ -398,7 +434,7 @@ def build_findings(con: duckdb.DuckDBPyConnection) -> FindingsRun:
             *_article_markup(site), *_breadcrumb_home(site), *_menu_home(site)]
     menu_targets = _menu_targets(site)
     rows += [*menu_targets, *_orphans(site), *_breadcrumb_menu(site),
-             *_link_forms(site, menu_targets)]
+             *_link_forms(site, menu_targets), *_robots_links(site), *_robots_bots(site)]
     rows.sort(key=lambda r: (TYPES.index(r[0]), SEVERITY_ORDER[r[1]], r[4]))
     for number, (kind, severity, page_id, entity_id, summary, evidence) in enumerate(rows, 1):
         con.execute("INSERT INTO findings (finding_id, type, severity, page_id, entity_id, "
@@ -1695,6 +1731,139 @@ def _link_forms(site: _Site, menu_targets: Sequence[tuple] = ()) -> list[tuple]:
     return rows
 
 
+def robots_intended(url: str) -> str | None:
+    """A szándékos robots-tiltás fajtája a cím alapján (`ROBOTS_INTENDED`), vagy None."""
+    low = url.lower()
+    return next((label for label, parts in ROBOTS_INTENDED.items()
+                 if any(part in low for part in parts)), None)
+
+
+def _sitemap_keys(con: duckdb.DuckDBPyConnection) -> set[str] | None:
+    """A legfrissebb tárolt sitemap-pillanatkép belső címei (canonical kulcs); None, ha nincs
+    tárolt sitemap-adat."""
+    listed = crawl.sitemap_urls(con)
+    snapshots = {item.snapshot for item in listed}
+    current = "refetch" if "refetch" in snapshots else "crawl" if "crawl" in snapshots else None
+    if current is None:
+        return None
+    return {canonical_key(item.url) for item in listed
+            if item.snapshot == current and item.url and item.internal}
+
+
+def _robots_links(site: _Site) -> list[tuple]:
+    """A `robots_blocked_link` megállapítások (lásd a modul leírását)."""
+    robots = crawl.robots(site.con)
+    profile = crawl.site(site.con)
+    if robots is None or profile is None:
+        return []
+    host = urlsplit(profile.seed_url).hostname
+    views = {ROBOTS_OWN_BOT: robots, **{bot: robots.for_bot(bot) for bot in CHECKED_BOTS}}
+    in_sitemap = _sitemap_keys(site.con)
+    verdicts: dict[str, dict[str, str | bool]] = {}
+    targets: dict[str, dict] = {}
+    for link in crawl.counted_links(site.con):
+        source = site.pages.get(link.from_page_id)
+        if source is None or urlsplit(link.to_url).hostname != host:
+            continue
+        if link.to_url not in verdicts:
+            verdicts[link.to_url] = {bot: not view.allowed(link.to_url)
+                                     for bot, view in views.items()}
+        if not any(verdicts[link.to_url].values()):
+            continue
+        found = targets.setdefault(link.to_url, {"sources": set(), "areas": Counter()})
+        found["sources"].add(source["url"])
+        found["areas"][link.position] += 1
+    by_rule: dict[str, list[dict]] = defaultdict(list)
+    for url, found in sorted(targets.items()):
+        blocked = verdicts[url]
+        rule = next((views[bot].blocking_rule(url) for bot in views if blocked[bot]), None)
+        intended = robots_intended(url)
+        listed = None if in_sitemap is None else canonical_key(url) in in_sitemap
+        contradiction = bool(listed) or any(area in ROBOTS_CONTRADICTION_AREAS
+                                            for area in found["areas"])
+        by_rule[rule or "ismeretlen szabály"].append({
+            "url": url, "source_pages": len(found["sources"]),
+            "sources": sorted(found["sources"])[:EVIDENCE_PAGES],
+            "by_area": {LINK_AREAS.get(area, area): number
+                        for area, number in sorted(found["areas"].items())},
+            "in_sitemap": listed, "intended": intended, "bots": dict(blocked),
+            "severity": "low" if intended else "high" if contradiction else "medium",
+            "all_sources": sorted(found["sources"])})
+    rows = []
+    for rule, urls in sorted(by_rule.items()):
+        severity = min((item["severity"] for item in urls), key=SEVERITY_ORDER.get)
+        pages = sorted({source for item in urls for source in item.pop("all_sources")})
+        rows.append((
+            "robots_blocked_link", severity, None, None,
+            (f"Belső link a robots.txt által tiltott címre mutat ({rule}): {len(urls)} cím, "
+             f"{len(pages)} forrásoldalról – {ROBOTS_CRAWL_NOTE}"),
+            {"group": "robots_link", "rule": rule, "note": ROBOTS_CRAWL_NOTE, "urls": urls,
+             "pages": [{"url": url} for url in pages]}))
+    return rows
+
+
+def _robots_bots(site: _Site) -> list[tuple]:
+    """A `robots_bot_blocked` megállapítások (lásd a modul leírását)."""
+    robots = crawl.robots(site.con)
+    profile = crawl.site(site.con)
+    if robots is None or profile is None:
+        return []
+    home_ids = set(site.structure.homes.values()) | (
+        {site.structure.start} if site.structure.start is not None else set())
+    sections = [item for item in site.structure.menu
+                if item.area == "header" and item.level == 0 and item.url
+                and item.page_id in site.pages and item.page_id not in home_ids
+                and urlsplit(item.url).hostname == urlsplit(profile.seed_url).hostname]
+    found: dict[bool, list[dict]] = {True: [], False: []}
+    for bot in CHECKED_BOTS:
+        view = robots.for_bot(bot)
+        whole = view.blocks_everything()
+        blocked = [] if whole else [item for item in sections if not view.allowed(item.url)]
+        if not whole and not blocked:
+            continue
+        found[bot in SEARCH_BOTS].append({
+            "bot": bot, "group": robots.group_of(bot),
+            "scope": ROBOTS_WHOLE_SITE if whole else "fő szekció",
+            "rule": view.blocking_rule("/") if whole else view.blocking_rule(blocked[0].url),
+            "sections": [{"anchor": item.anchor, "url": item.url,
+                          "rule": view.blocking_rule(item.url)} for item in blocked]})
+    rows = []
+    for search, bots in ((True, found[True]), (False, found[False])):
+        if not bots:
+            continue
+        names = ", ".join(item["bot"] for item in bots)
+        scopes = ", ".join(dict.fromkeys(
+            ROBOTS_WHOLE_SITE + "ról" if item["scope"] == ROBOTS_WHOLE_SITE
+            else "egy fő szekcióról" for item in bots))
+        rows.append((
+            "robots_bot_blocked", "high" if search else "low", None, None,
+            (f"A robots.txt kitiltja a(z) {names} botot {scopes}: a bot nem járja be, így nem "
+             f"látja a tartalmát" + ("" if search else f" ({ROBOTS_AI_NOTE})")),
+            {"group": "robots_bot", "kind": "search" if search else "ai", "bots": bots,
+             **({} if search else {"note": ROBOTS_AI_NOTE}), "pages": []}))
+    return rows
+
+
+def robots_view(site: _Site) -> dict | None:
+    """A robots.txt tényei a site-áttekintőhöz (`RobotsView`): a vizsgált botokra érvényes
+    csoport a szabályaival, és a listán kívüli botok, amelyeket a robots.txt az egész site-ról
+    kitilt. None, ha nincs tárolt robots.txt."""
+    robots = crawl.robots(site.con)
+    if robots is None:
+        return None
+    checked = {bot.lower() for bot in CHECKED_BOTS}
+    return {
+        "bots": [{"bot": bot, "group": robots.group_of(bot),
+                  "own_group": robots.group_of(bot) not in (None, "*"),
+                  "rules": list(robots.for_bot(bot).sources),
+                  "blocks_everything": robots.for_bot(bot).blocks_everything()}
+                 for bot in CHECKED_BOTS],
+        "own_rules": list(robots.sources),
+        "other_blocked": sorted(agent for agent, rules, sources in robots.groups
+                                if agent != "*" and agent not in checked
+                                and Robots(rules, (), sources).blocks_everything())}
+
+
 def _orphans(site: _Site) -> list[tuple]:
     """Az `orphan_pages` megállapítások (lásd a modul leírását): legfeljebb kettő, a
     csoportonként egy."""
@@ -2164,7 +2333,7 @@ def structure_view(site: _Site) -> dict:
             "target_noindex": bool(page["noindex"]) if page is not None else None,
             "pages": item.pages, "area_pages": item.area_pages, "marker": item.marker})
     hierarchy = structure.url_hierarchy
-    return {"menu": menu,
+    return {"menu": menu, "robots": robots_view(site),
             "depth": [{"lang": row["lang"],
                        "home": site.pages[row["home"]]["url"] if row["home"] is not None
                        else None, "counts": row["counts"]} for row in structure.distribution()],
@@ -2553,6 +2722,8 @@ def _finding_html(finding: dict) -> str:
         pairs = [("a link címe", _link(evidence["raw_url"])),
                  ("a tárolt cél", _link(evidence["stored_url"])),
                  ("végleges cím", _link(evidence["final_url"]) if evidence["final_url"]
+                  else f"nincs: {_e(evidence['note'])}"
+                  if (evidence.get("note") or "").startswith(LINK_BROKEN)
                   else f"{_e(evidence['final_note'])}: {_link(evidence['stored_url'])}"
                   if evidence["final_note"] != LINK_STORED_NOTE
                   else f"{LINK_NOT_MEASURED} ({_e(evidence['final_note'])}: "
@@ -2566,6 +2737,26 @@ def _finding_html(finding: dict) -> str:
                  (f"forrásoldalak ({evidence['source_pages']})", "<br>".join(
                      f"{_link(page['url'])} — {_e(', '.join(page['areas']))}: "
                      f"„{_e('”, „'.join(page['anchors']))}”" for page in evidence["pages"]))]
+    elif finding["type"] == "robots_blocked_link":
+        pairs = [("szabály", _e(evidence["rule"])), ("mit jelent", _e(evidence["note"])),
+                 ("címek", "<br>".join(
+                     f"{_link(item['url'])} — {item['source_pages']} forrásoldal ("
+                     + _e(", ".join(f"{area}: {number}"
+                                    for area, number in item["by_area"].items()))
+                     + "); sitemapben: "
+                     + ("nem ismert" if item["in_sitemap"] is None
+                        else "igen" if item["in_sitemap"] else "nem")
+                     + f"; szándékos tiltás: {_e(item['intended'] or 'nem tudni')}; tiltja: "
+                     + _e(", ".join(bot for bot, blocked in item["bots"].items() if blocked))
+                     + f" <span class=\"{item['severity']}\">[{item['severity']}]</span>"
+                     for item in evidence["urls"]))]
+    elif finding["type"] == "robots_bot_blocked":
+        pairs = [("botok", "<br>".join(
+            f"{_e(item['bot'])} (csoport: {_e(item['group'])}) — {_e(item['scope'])}: "
+            f"{_e(item['rule'] or '')}"
+            + "".join(f"<br>&nbsp;&nbsp;„{_e(section['anchor'])}” {_link(section['url'])}"
+                      for section in item["sections"]) for item in evidence["bots"])),
+                 ("megjegyzés", _e(evidence.get("note") or ""))]
     elif finding["type"] == "orphan_pages":
         pairs = [("csoport", _e(ORPHAN_GROUPS[evidence["group"]])),
                  ("bejárás", _e(evidence.get("crawl_note", "teljes"))),
@@ -2644,6 +2835,26 @@ def _tree_html(nodes: list[dict]) -> str:
     return f"<ul>{''.join(items)}</ul>"
 
 
+def _robots_html(robots: Mapping | None) -> str:
+    """A robots.txt tényei a site-áttekintőben: csak ha van mit mutatni (egy vizsgált botnak
+    saját csoportja van, vagy a listán kívüli botot az egész site-ról kitilt)."""
+    if not robots:
+        return ""
+    own = [bot for bot in robots["bots"] if bot["own_group"]]
+    if not own and not robots["other_blocked"]:
+        return ""
+    lines = [("a saját bejáróra és a külön csoport nélküli botokra érvényes (*): "
+              + _e("; ".join(robots["own_rules"]) or "nincs szabály"))]
+    lines += [f"{_e(bot['bot'])}: saját csoport ({_e(bot['group'])}) — "
+              f"{_e('; '.join(bot['rules']) or 'nincs tiltás')}"
+              + ("; az egész site tiltva" if bot["blocks_everything"] else "") for bot in own]
+    if robots["other_blocked"]:
+        lines.append("az egész site-ról kitiltott egyéb botok: "
+                     + _e(", ".join(robots["other_blocked"])))
+    return ("<details><summary>robots.txt <span>(botonként)</span></summary>"
+            + "<br>".join(lines) + "</details>")
+
+
 def _structure_html(structure: Mapping) -> str:
     """A belső struktúra a site-áttekintőben: a menüfa nyelvenként és területenként behúzva, a
     mélység-eloszlás és a kezdőoldalról elérhetetlen oldalak."""
@@ -2677,7 +2888,7 @@ def _structure_html(structure: Mapping) -> str:
         f"({structure['url_pages']} nem kezdőoldalból {structure['url_deep']} áll legalább két "
         f"útvonal-szakaszon, ezekből {structure['url_with_parent']} szülő útvonalán áll létező "
         f"oldal); lapos szerkezetnél az URL-szülő nem értelmezhető.")
-    return (
+    return _robots_html(structure.get("robots")) + (
         f"<details><summary>Menüfa <span>({len(structure['menu'])} menüpont)</span></summary>"
         + "".join(trees) + "</details>"
         "<details><summary>Kattintási mélység <span>(a saját nyelvű kezdőoldaltól, minden "

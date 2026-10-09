@@ -55,19 +55,32 @@ DEFAULT_SITEMAPS = ("/sitemap.xml", "/sitemap_index.xml", "/wp-sitemap.xml")
 SITEMAP_SOURCES = ("given", "robots", "default")
 
 
+# a botok, amelyekre a robots.txt külön kiértékelődik (a saját bejáró a `*` csoportot követi)
+CHECKED_BOTS = ("Googlebot", "Bingbot", "GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended")
+SEARCH_BOTS = ("Googlebot", "Bingbot")
+OWN_GROUP = "*"
+ROBOTS_BLOCKED = "robots_blocked"       # a `crawl_queue.status` értéke a tiltott címnél
+
+
 @dataclass(frozen=True)
 class Robots:
-    """A robots.txt `*` user-agent csoportja és a Sitemap-sorai, RFC 9309 szerinti illesztéssel."""
+    """A robots.txt csoportjai és Sitemap-sorai, RFC 9309 szerinti illesztéssel. A `rules` és a
+    `sources` a `*` user-agent csoporté (a saját bejáró ezt követi; az `allowed` és a
+    `blocking_rule` erre vonatkozik). A `groups` minden csoportot őriz a nevével (kisbetűvel; az
+    azonos nevű csoportok összevonva, a szabály nélküli csoport is csoport): egy botra a saját
+    nevű csoportja érvényes, ha van, különben a `*` csoport (`for_bot`)."""
 
     rules: tuple[tuple[re.Pattern[str], int, bool], ...] = ()
     sitemaps: tuple[str, ...] = ()
     sources: tuple[str, ...] = ()       # a szabályok szövege (`Disallow: /x`), a `rules` sorrendjében
+    groups: tuple[tuple[str, tuple[tuple[re.Pattern[str], int, bool], ...], tuple[str, ...]],
+                  ...] = ()
 
     @classmethod
     def parse(cls, text: str) -> Robots:
-        """Az összes `User-agent: *` csoport szabálya együtt; a többi csoport nem számít."""
-        rules: list[tuple[re.Pattern[str], int, bool]] = []
-        sources: list[str] = []
+        """Minden `User-agent` csoport a szabályaival; a `rules` az összes `*` csoport szabálya
+        együtt."""
+        found: dict[str, tuple[list, list]] = {}
         sitemaps: list[str] = []
         agents: list[str] = []
         in_rules = False
@@ -85,11 +98,16 @@ class Robots:
                 agents.append(value.lower())
             elif key in ("allow", "disallow"):
                 in_rules = True
-                if "*" in agents and value:
-                    pattern, length = _robots_pattern(value)
-                    rules.append((pattern, length, key == "allow"))
-                    sources.append(f"{key.capitalize()}: {value}")
-        return cls(tuple(rules), tuple(sitemaps), tuple(sources))
+                for agent in agents:
+                    rules, sources = found.setdefault(agent, ([], []))
+                    if value:
+                        pattern, length = _robots_pattern(value)
+                        rules.append((pattern, length, key == "allow"))
+                        sources.append(f"{key.capitalize()}: {value}")
+        own_rules, own_sources = found.get(OWN_GROUP, ([], []))
+        return cls(tuple(own_rules), tuple(sitemaps), tuple(own_sources),
+                   tuple((agent, tuple(rules), tuple(sources))
+                         for agent, (rules, sources) in found.items()))
 
     def _deciding(self, url: str) -> tuple[int | None, bool]:
         """(a döntő szabály sorszáma vagy None, szabad-e): a leghosszabb illeszkedő szabály
@@ -113,6 +131,27 @@ class Robots:
         if allow or index is None or index >= len(self.sources):
             return None
         return self.sources[index]
+
+    def group_of(self, bot: str) -> str | None:
+        """A botra érvényes csoport neve: a saját nevű csoportja (kis- és nagybetűtől
+        függetlenül), ha van, különben a `*`; None, ha egyik sincs."""
+        names = {agent for agent, _, _ in self.groups}
+        if bot.lower() in names:
+            return bot.lower()
+        return OWN_GROUP if OWN_GROUP in names else None
+
+    def for_bot(self, bot: str) -> Robots:
+        """A botra érvényes csoport szabályai külön `Robots`-ként (`allowed`, `blocking_rule`):
+        ha a botnak saját csoportja van, a `*` csoport szabályai nem vonatkoznak rá."""
+        name = self.group_of(bot)
+        for agent, rules, sources in self.groups:
+            if agent == name:
+                return Robots(rules, self.sitemaps, sources)
+        return Robots(sitemaps=self.sitemaps)
+
+    def blocks_everything(self) -> bool:
+        """A csoport a gyökeret tiltja (`Disallow: /`): az egész site tiltva van."""
+        return not self.allowed("/")
 
 
 @dataclass(frozen=True)
@@ -439,7 +478,11 @@ class Frontier:
         self.follow_links = follow_links
         self._include = re.compile(include) if include else None
         self._exclude = re.compile(exclude) if exclude else None
-        self._known = {url for (url,) in con.execute("SELECT url FROM crawl_queue").fetchall()}
+        self._known = {url for (url,) in con.execute(
+            "SELECT url FROM crawl_queue WHERE status <> ?", [ROBOTS_BLOCKED]).fetchall()}
+        # a robots.txt által tiltott, linkelt címek: soruk van, de nem számítanak a korlátba
+        self._blocked = {url for (url,) in con.execute(
+            "SELECT url FROM crawl_queue WHERE status = ?", [ROBOTS_BLOCKED]).fetchall()}
         self.limit_skipped: set[str] = set()   # a `max_pages` miatt a sorból kimaradt címek
         self._leased: set[str] = set()
 
@@ -543,8 +586,8 @@ class Frontier:
         (url,) = self.con.execute("SELECT seed_url FROM site").fetchone()
         return url
 
-    def admit(self, url: str) -> str | None:
-        """A sorba kerülő alak; None, ha külső, a szűrő kizárja, vagy a robots.txt tiltja."""
+    def _scoped(self, url: str) -> str | None:
+        """A cím normalizált alakja, ha belső és a szűrők átengedik (a robots.txt nélkül)."""
         if not is_internal(url, self.policy):
             return None
         target = normalize(url, self.policy)
@@ -554,13 +597,37 @@ class Frontier:
             return None
         if self._include and not self._include.search(target):
             return None
-        if (
-            self.robots is not None
-            and urlsplit(target).hostname == self.policy.seed_host
-            and not self.robots.allowed(target)
-        ):
+        return target
+
+    def _robots_blocks(self, target: str) -> bool:
+        return (self.robots is not None
+                and urlsplit(target).hostname == self.policy.seed_host
+                and not self.robots.allowed(target))
+
+    def admit(self, url: str) -> str | None:
+        """A sorba kerülő alak; None, ha külső, a szűrő kizárja, vagy a robots.txt tiltja."""
+        target = self._scoped(url)
+        if target is None or self._robots_blocks(target):
             return None
         return target
+
+    def note_blocked(self, url: str, *, depth: int, discovered_from: str | None = None) -> bool:
+        """A robots.txt által tiltott, linkelt belső cím nyoma a sorban: `robots_blocked`
+        állapotú sor, az `error` mezőben a csoport és a tiltó szabály (`*: Disallow: /x`). A
+        címet a crawl nem kéri le, és a sor nem számít a `max_pages` korlátba. True, ha új sor
+        keletkezett; a nem tiltott és a hatókörön kívüli címre nem ír."""
+        target = self._scoped(url)
+        if target is None or not self._robots_blocks(target) or target in self._blocked \
+                or target in self._known:
+            return False
+        rule = self.robots.blocking_rule(target) if self.robots is not None else None
+        self.con.execute(
+            "INSERT INTO crawl_queue (url, depth, priority, status, discovered_from, error, "
+            "updated_at) VALUES (?, ?, ?, ?, ?, ?, current_timestamp)",
+            [target, depth, PRIORITY["body"], ROBOTS_BLOCKED, discovered_from,
+             f"{OWN_GROUP}: {rule}" if rule else OWN_GROUP])
+        self._blocked.add(target)
+        return True
 
     def add(
         self, url: str, *, depth: int, priority: int, discovered_from: str | None = None
@@ -587,6 +654,9 @@ class Frontier:
     def add_links(self, source: QueueItem, links: Iterable[tuple[str, str]]) -> int:
         """Egy oldal linkjei (abszolút URL, pozíció) a sorba; a pozíció a prioritást adja.
         Sitemap-módban (`follow_links=False`) a linkek nem kerülnek a sorba."""
+        links = list(links)
+        for url, _ in links:
+            self.note_blocked(url, depth=source.depth + 1, discovered_from=source.url)
         if not self.follow_links:
             return 0
         return sum(
