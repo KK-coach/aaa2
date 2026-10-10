@@ -6,8 +6,13 @@
 Site-onként az adatbázis munkamásolatán kétszer egymás után lefut a site-lépés LLM nélkül
 (`aaa entities --no-llm`), a gráf (`aaa graph`), a megállapítások (`aaa findings`) és az
 entitásjelentés (`aaa entity-report`); a két futás kimeneti fájljai bájtra összevetve. A forrás
-adatbázis nem változik. A futásjelentés a futás sorszáma és időpontja nélkül számít. `--hashes`: a kimenetek sha256-a a megadott fájl rögzített értékeivel
-összevetve; `--write`-tal a fájl a mostani értékekkel íródik. `--keep`: a munkamásolatok és a
+adatbázis nem változik. A hash a futásfüggő sorok rögzített alakjával számol (`RUN_LINES`: a
+futásjelentésben a szabálykör sorszáma és időpontja, és a site-kör sorszáma); a kimeneti fájl
+nem változik, és a futásjelentés minden más sora (a tárolt LLM-futás sorszáma és ideje is)
+beleszámít. `--hashes`: a kimenetek sha256-a a megadott fájl rögzített értékeivel összevetve;
+`--write`-tal a lefutott site-ok rögzített értékei a mostaniakra cserélődnek (a többi site-é
+marad), de csak ha a két futás között nincs eltérés. Kilépési kód: 0, ha sehol nincs eltérés.
+`--keep`: a munkamásolatok és a
 kimenetek a megadott mappában maradnak. `--jobs`: ennyi site fut egyszerre (alapból mind; a
 site-ok külön munkamásolaton, külön folyamatokban futnak, a sorok a megadott sorrendben jelennek
 meg, a végén site-onként az idővel). A site-ok lépései saját munkamappából futnak, a közös
@@ -29,7 +34,14 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 SHARED = Path("data") / "shared.duckdb"
 RUN_REPORT = "-run.md"
-RUN_MARKS = (re.compile(rb"#\d+"), re.compile(rb"\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?"))
+# a futásjelentés futásfüggő sorai: (minta, rögzített alak); csak a sor eleji, illesztett rész
+# cserélődik, a sor többi része beleszámít a hash-be
+RUN_LINES = (
+    (re.compile(rb"^- szab\xc3\xa1lyk\xc3\xb6r: #\d+, (?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}"
+                rb"|nincs lez\xc3\xa1rva)", re.MULTILINE),
+     "- szabálykör: #N, <időpont>".encode()),
+    (re.compile(rb"^- site-k\xc3\xb6r: #\d+", re.MULTILINE), "- site-kör: #N".encode()),
+)
 STEPS = (("entities", "--no-llm"), ("graph", "--out"), ("findings", "--out"),
          ("entity-report", "--out"))
 
@@ -50,13 +62,23 @@ def run_once(domain: str, db: Path, out: Path, cwd: Path) -> None:
 
 
 def stable_bytes(path: Path) -> bytes:
-    """A fájl tartalma; a futásjelentésből (`-run.md`) a futás sorszáma és időpontja nélkül,
-    mert az futásonként szükségképpen más."""
+    """A fájl tartalma a hash-hez; a futásjelentés (`-run.md`) futásfüggő sorai (`RUN_LINES`)
+    rögzített alakban, mert a szabálykör és a site-kör sorszáma és ideje futásonként más. A fájl
+    maga nem változik."""
     data = path.read_bytes()
     if path.name.endswith(RUN_REPORT):
-        for pattern in RUN_MARKS:
-            data = pattern.sub(b"", data)
+        for pattern, fixed in RUN_LINES:
+            data = pattern.sub(fixed, data)
     return data
+
+
+def differences(one: dict[str, str], other: dict[str, str]) -> list[str]:
+    """A fájlok, amelyeknek a hash-e a két készletben más, vagy csak az egyikben szerepelnek."""
+    return sorted(name for name in set(one) | set(other) if one.get(name) != other.get(name))
+
+
+def shown(files: list[str]) -> str:
+    return f"{len(files)} eltérés" + (" (" + ", ".join(files) + ")" if files else "")
 
 
 def digests(out: Path) -> dict[str, str]:
@@ -79,8 +101,7 @@ def probe(name: str, domain: str, source: Path, work: Path
     run_once(domain, db, first, cwd)
     run_once(domain, db, second, cwd)
     one, two = digests(first), digests(second)
-    differing = sorted(f for f in set(one) | set(two) if one.get(f) != two.get(f))
-    return one, differing, time.monotonic() - started
+    return one, differences(one, two), time.monotonic() - started
 
 
 def main() -> None:
@@ -112,23 +133,26 @@ def main() -> None:
         for (name, _, _), future in zip(named, running, strict=True):
             one, differing, seconds = future.result()
             current[name] = one
-            line = f"{name}: {len(one)} fájl, a két futás között eltérő: {len(differing)}"
-            if differing:
-                failed += 1
-                line += " (" + ", ".join(differing) + ")"
+            line = f"{name}: {len(one)} fájl; a két futás között: {shown(differing)}"
+            failed += bool(differing)
             if hashes_file and not write:
-                changed = sorted(f for f in set(one) | set(recorded.get(name, {}))
-                                 if one.get(f) != recorded.get(name, {}).get(f))
-                line += f"; a rögzítetthez képest eltérő: {len(changed)}"
-                if changed:
+                if name not in recorded:
                     failed += 1
-                    line += " (" + ", ".join(changed) + ")"
+                    line += "; nincs rögzített alapja"
+                else:
+                    changed = differences(one, recorded[name])
+                    failed += bool(changed)
+                    line += f"; a rögzítetthez képest: {shown(changed)}"
             print(f"{line} [{seconds:.0f} mp]", flush=True)
     print(f"összesen {time.monotonic() - started:.0f} mp, {jobs} site egyszerre", flush=True)
     if hashes_file and write:
-        hashes_file.write_text(json.dumps(current, ensure_ascii=False, indent=1, sort_keys=True)
-                               + "\n", encoding="utf-8", newline="\n")
-        print(f"rögzítve: {hashes_file}")
+        if failed:
+            print(f"nem rögzítve (a két futás között eltérés van): {hashes_file}")
+        else:
+            hashes_file.write_text(
+                json.dumps({**recorded, **current}, ensure_ascii=False, indent=1, sort_keys=True)
+                + "\n", encoding="utf-8", newline="\n")
+            print(f"rögzítve: {hashes_file} ({', '.join(sorted(current))})")
     sys.exit(1 if failed else 0)
 
 
